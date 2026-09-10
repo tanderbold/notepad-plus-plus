@@ -166,3 +166,5 @@ PowerEditor/src/MISC/md5/RCa06792
 *.db
 *.sln
 *.opendb
+# macOS port build artifacts
+macos/build/
