@@ -14,6 +14,8 @@
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
+#import "JsonCommands.h"
+#import "CompareCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -21,6 +23,8 @@
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
+#import "JsonCommands.h"
+#import "CompareCommands.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #import "Tests.h"
@@ -38,6 +42,8 @@
 @property (nonatomic, strong) ShortcutMapperWindow *shortcutWindow;
 @property (nonatomic, strong) NppToolbar *toolbar;
 @property (nonatomic, strong) NSMenu *recentMenu;
+@property (nonatomic, strong) NSPanel *jsonTreePanel;
+@property (nonatomic, strong) NSTextView *jsonTreeText;
 @property (nonatomic) BOOL alwaysOnTop;
 @end
 
@@ -756,6 +762,45 @@
     [self item:@"Open Plugins Folder…" action:@selector(openPluginsFolder:) key:@"" flags:0 menu:runMenu];
     runItem.submenu = runMenu;
 
+    // ---- Plugins: the functionality Notepad++ gets from its popular plugins,
+    // built in rather than loaded, since its plugin ABI is Windows-only.
+    NSMenuItem *pluginsItem = [[NSMenuItem alloc] init];
+    [bar addItem:pluginsItem];
+    NSMenu *pluginsMenu = [[NSMenu alloc] initWithTitle:@"Plugins"];
+
+    NSMenu *jsonMenu = [[NSMenu alloc] initWithTitle:@"JSON"];
+    [self item:@"Format" action:@selector(jsonFormat:) key:@"j"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:jsonMenu];
+    [self item:@"Compact" action:@selector(jsonCompact:) key:@"" flags:0 menu:jsonMenu];
+    [self item:@"Sort Keys" action:@selector(jsonSort:) key:@"" flags:0 menu:jsonMenu];
+    [self item:@"Validate" action:@selector(jsonValidate:) key:@"" flags:0 menu:jsonMenu];
+    [self item:@"Show JSON Tree" action:@selector(jsonTree:) key:@"" flags:0 menu:jsonMenu];
+    [pluginsMenu addItemWithTitle:@"JSON" action:nil keyEquivalent:@""].submenu = jsonMenu;
+
+    NSMenu *compareMenu = [[NSMenu alloc] initWithTitle:@"Compare"];
+    [self item:@"Set as First to Compare" action:@selector(compareSetFirst:) key:@"" flags:0 menu:compareMenu];
+    [self item:@"Compare" action:@selector(compareRun:) key:@"d"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:compareMenu];
+    [self item:@"Compare with File…" action:@selector(compareWithFile:) key:@"" flags:0 menu:compareMenu];
+    [compareMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Next Difference" action:@selector(compareNext:) key:@"" flags:0 menu:compareMenu];
+    [self item:@"Previous Difference" action:@selector(comparePrevious:) key:@"" flags:0 menu:compareMenu];
+    [self item:@"First Difference" action:@selector(compareFirst:) key:@"" flags:0 menu:compareMenu];
+    [self item:@"Last Difference" action:@selector(compareLast:) key:@"" flags:0 menu:compareMenu];
+    [self item:@"Compare Summary" action:@selector(compareSummary:) key:@"" flags:0 menu:compareMenu];
+    [compareMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Ignore Case" action:@selector(compareToggleIgnoreCase:) key:@"" flags:0 menu:compareMenu];
+    [self item:@"Ignore Spaces" action:@selector(compareToggleIgnoreSpaces:) key:@"" flags:0 menu:compareMenu];
+    [self item:@"Ignore Empty Lines" action:@selector(compareToggleIgnoreEmpty:) key:@"" flags:0 menu:compareMenu];
+    [compareMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Clear Active Compare" action:@selector(compareClear:) key:@"" flags:0 menu:compareMenu];
+    [self item:@"Clear All Compares" action:@selector(compareClearAll:) key:@"" flags:0 menu:compareMenu];
+    [pluginsMenu addItemWithTitle:@"Compare" action:nil keyEquivalent:@""].submenu = compareMenu;
+
+    [pluginsMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Open Plugins Folder…" action:@selector(openPluginsFolder:) key:@"" flags:0 menu:pluginsMenu];
+    pluginsItem.submenu = pluginsMenu;
+
     // ---- Settings
     NSMenuItem *settingsItem = [[NSMenuItem alloc] init];
     [bar addItem:settingsItem];
@@ -839,6 +884,120 @@
     self.toolbar.displayMode = p.toolbarDisplayMode;
     self.toolbar.iconSize = p.toolbarIconSize;
     self.toolbar.visible = p.showToolbar;
+}
+
+#pragma mark - JSON
+
+- (void)jsonFormat:(id)sender  { if (![self.editor formatJSONDocument]) [self reportJSONProblem]; }
+- (void)jsonCompact:(id)sender { if (![self.editor compactJSONDocument]) [self reportJSONProblem]; }
+- (void)jsonSort:(id)sender    { if (![self.editor sortJSONDocument]) [self reportJSONProblem]; }
+
+- (void)reportJSONProblem {
+    NppJsonError *error = [self.editor validateJSONDocument];
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"This document is not valid JSON.";
+    alert.informativeText = error.line >= 0
+        ? [NSString stringWithFormat:@"Line %ld, column %ld.\n\n%@",
+           (long)error.line + 1, (long)error.column + 1, error.message]
+        : (error.message ?: @"");
+    [alert runModal];
+}
+
+- (void)jsonValidate:(id)sender {
+    NppJsonError *error = [self.editor validateJSONDocument];
+    NSAlert *alert = [[NSAlert alloc] init];
+    if (!error) {
+        alert.messageText = @"Valid JSON.";
+    } else {
+        alert.messageText = @"Invalid JSON.";
+        alert.informativeText = error.line >= 0
+            ? [NSString stringWithFormat:@"Line %ld, column %ld.\n\n%@",
+               (long)error.line + 1, (long)error.column + 1, error.message]
+            : (error.message ?: @"");
+    }
+    [alert runModal];
+}
+
+- (void)jsonTree:(id)sender {
+    NSArray *tree = [self.editor jsonTree];
+    if (!tree.count) { [self reportJSONProblem]; return; }
+
+    if (!self.jsonTreePanel) {
+        NSRect frame = NSMakeRect(0, 0, 460, 500);
+        self.jsonTreePanel = [[NSPanel alloc] initWithContentRect:frame
+            styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                       NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
+              backing:NSBackingStoreBuffered defer:YES];
+        self.jsonTreePanel.title = @"JSON Tree";
+        self.jsonTreePanel.releasedWhenClosed = NO;
+        NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:frame];
+        scroll.hasVerticalScroller = YES;
+        scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        self.jsonTreeText = [[NSTextView alloc] initWithFrame:frame];
+        self.jsonTreeText.editable = NO;
+        self.jsonTreeText.font = [NSFont fontWithName:@"Menlo" size:11];
+        scroll.documentView = self.jsonTreeText;
+        self.jsonTreePanel.contentView = scroll;
+    }
+
+    NSMutableString *rendered = [NSMutableString string];
+    for (NSDictionary *node in tree) {
+        [rendered appendFormat:@"%@ = %@\n", node[@"path"], node[@"value"]];
+    }
+    self.jsonTreeText.string = rendered;
+    [self.jsonTreePanel makeKeyAndOrderFront:nil];
+}
+
+#pragma mark - Compare
+
+- (void)compareSetFirst:(id)sender {
+    [self.editor setFirstToCompare];
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"Set as the first file to compare.";
+    alert.informativeText = [self.editor firstToCompare] ?: @"";
+    [alert runModal];
+}
+
+- (void)compareRun:(id)sender {
+    if (![self.editor compareWithFirst]) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = @"Nothing to compare with.";
+        alert.informativeText = @"Choose \"Set as First to Compare\" on one file, "
+                                @"then run Compare on the other.";
+        [alert runModal];
+        return;
+    }
+    [self presentText:[self.editor compareSummary] title:@"Compare"];
+}
+
+- (void)compareWithFile:(id)sender {
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseDirectories = NO;
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    if ([self.editor compareWithFileAtPath:panel.URL.path]) {
+        [self presentText:[self.editor compareSummary] title:@"Compare"];
+    }
+}
+
+- (void)compareNext:(id)sender     { [self.editor goToDiff:1]; }
+- (void)comparePrevious:(id)sender { [self.editor goToDiff:-1]; }
+- (void)compareFirst:(id)sender    { [self.editor goToFirstDiff]; }
+- (void)compareLast:(id)sender     { [self.editor goToLastDiff]; }
+- (void)compareClear:(id)sender    { [self.editor clearActiveCompare]; }
+- (void)compareClearAll:(id)sender { [self.editor clearAllCompares]; }
+
+- (void)compareSummary:(id)sender {
+    [self presentText:[self.editor compareSummary] title:@"Compare"];
+}
+
+- (void)compareToggleIgnoreCase:(id)sender {
+    self.editor.compareIgnoreCase = !self.editor.compareIgnoreCase;
+}
+- (void)compareToggleIgnoreSpaces:(id)sender {
+    self.editor.compareIgnoreSpaces = !self.editor.compareIgnoreSpaces;
+}
+- (void)compareToggleIgnoreEmpty:(id)sender {
+    self.editor.compareIgnoreEmptyLines = !self.editor.compareIgnoreEmptyLines;
 }
 
 #pragma mark - Settings
@@ -1051,6 +1210,12 @@
         return [self.editor.sci message:SCI_CANREDO] != 0;
     } else if (a == @selector(pasteText:)) {
         return [self.editor.sci message:SCI_CANPASTE] != 0;
+    } else if (a == @selector(compareToggleIgnoreCase:)) {
+        item.state = self.editor.compareIgnoreCase ? NSControlStateValueOn : NSControlStateValueOff;
+    } else if (a == @selector(compareToggleIgnoreSpaces:)) {
+        item.state = self.editor.compareIgnoreSpaces ? NSControlStateValueOn : NSControlStateValueOff;
+    } else if (a == @selector(compareToggleIgnoreEmpty:)) {
+        item.state = self.editor.compareIgnoreEmptyLines ? NSControlStateValueOn : NSControlStateValueOff;
     } else if (a == @selector(pickEncoding:)) {
         item.state = [item.title isEqualToString:[self.editor encodingDisplayName]]
                      ? NSControlStateValueOn : NSControlStateValueOff;

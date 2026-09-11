@@ -223,6 +223,22 @@ than from a list written by hand -- but it is not the same as being Notepad++.
 
 What it does not cover:
 
+### Plugin functionality, without plugins
+
+Two of the most used plugins have their functionality built in, since their own
+binaries can never load here:
+
+- **JSON** (what JSON Viewer provides): format, compact, sort keys, validate
+  with the line and column of the fault, and a tree of the document.
+- **Compare** (what ComparePlus provides): set one file aside, compare, mark
+  added, removed and changed lines, step between differences, a summary, and
+  the ignore-case, ignore-spaces and ignore-empty-lines options.
+
+No plugin code was copied. The comparison uses Myers' algorithm, which is what
+ComparePlus uses, written here against this editor's own structures; the JSON
+side uses Foundation rather than the rapidjson those plugins bundle. Their
+repositories were read to establish what the commands are and how they behave.
+
 - **Plugins cannot run.** The plugin ABI is a Windows DLL contract built on
   `HWND` and `SendMessage`. "Open Plugins Folder" works; loading a Notepad++
   plugin binary does not and cannot without a new plugin system.

@@ -78,6 +78,10 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"rememberPanelState"): @NO,
         Key(@"panelState"): @{},
         Key(@"settingsDirectory"): @"",
+        Key(@"compareIgnoreCase"): @NO,
+        Key(@"compareIgnoreSpaces"): @NO,
+        Key(@"compareIgnoreEmptyLines"): @NO,
+        Key(@"jsonIndent"): @4,
         Key(@"autoCompleteOnInput"): @NO,
         Key(@"autoCompleteSource"): @2,
         Key(@"autoCompleteThreshold"): @3,
@@ -186,6 +190,7 @@ NPP_PREF_INT(autoCompleteThreshold, setAutoCompleteThreshold, @"autoCompleteThre
 NPP_PREF_INT(recentFilesMax, setRecentFilesMax, @"recentFilesMax")
 NPP_PREF_INT(recentFilesMaxLength, setRecentFilesMaxLength, @"recentFilesMaxLength")
 NPP_PREF_INT(defaultDirectoryMode, setDefaultDirectoryMode, @"defaultDirectoryMode")
+NPP_PREF_INT(jsonIndent, setJsonIndent, @"jsonIndent")
 NPP_PREF_BOOL(useSpaces, setUseSpaces, @"useSpaces")
 NPP_PREF_BOOL(wordWrap, setWordWrap, @"wordWrap")
 NPP_PREF_BOOL(showWhitespace, setShowWhitespace, @"showWhitespace")
@@ -241,6 +246,9 @@ NPP_PREF_BOOL(replaceStaysOnOccurrence, setReplaceStaysOnOccurrence, @"replaceSt
 NPP_PREF_BOOL(confirmReplaceAll, setConfirmReplaceAll, @"confirmReplaceAll")
 NPP_PREF_BOOL(smartHighlightMatchCase, setSmartHighlightMatchCase, @"smartHighlightMatchCase")
 NPP_PREF_BOOL(smartHighlightWholeWord, setSmartHighlightWholeWord, @"smartHighlightWholeWord")
+NPP_PREF_BOOL(compareIgnoreCase, setCompareIgnoreCase, @"compareIgnoreCase")
+NPP_PREF_BOOL(compareIgnoreSpaces, setCompareIgnoreSpaces, @"compareIgnoreSpaces")
+NPP_PREF_BOOL(compareIgnoreEmptyLines, setCompareIgnoreEmptyLines, @"compareIgnoreEmptyLines")
 
 #define NPP_PREF_DOUBLE(getter, setter, key)                                      \
 - (double)getter { return [[NSUserDefaults standardUserDefaults] doubleForKey:Key(key)]; } \

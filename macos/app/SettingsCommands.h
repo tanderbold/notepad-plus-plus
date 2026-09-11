@@ -137,6 +137,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL smartHighlightMatchCase;
 @property (nonatomic) BOOL smartHighlightWholeWord;
 
+/// Compare (the ComparePlus options) and JSON formatting.
+@property (nonatomic) BOOL compareIgnoreCase;
+@property (nonatomic) BOOL compareIgnoreSpaces;
+@property (nonatomic) BOOL compareIgnoreEmptyLines;
+@property (nonatomic) NSInteger jsonIndent;
+
 /// Settings folder ("cloud location"); empty means the default support folder.
 @property (nonatomic, copy) NSString *settingsDirectory;
 

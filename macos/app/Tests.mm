@@ -20,6 +20,8 @@
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
 #import "TabBarView.h"
+#import "JsonCommands.h"
+#import "CompareCommands.h"
 #import "FunctionListPanel.h"
 #import "FunctionListCatalog.h"
 #import "LanguageCatalog.h"
@@ -2608,6 +2610,142 @@ int NppMacRunTests(AppDelegate *app) {
               collection != nil && [collection.scheme isEqualToString:@"https"]);
 
         [ed setLanguageNamed:@"normal"];
+    }
+
+    printf("\n== JSON ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+        [ed newDocument];
+
+        // Format: compact input becomes indented, and stays the same document.
+        p.jsonIndent = 4;
+        SetDoc(ed, @"{\"b\":1,\"a\":[1,2,{\"c\":null}]}");
+        BOOL formatted = [ed formatJSONDocument];
+        NSString *pretty = DocText(ed);
+        Check(@"JSON format", @"compact JSON becomes indented",
+              formatted && [pretty containsString:@"\n"] &&
+              [pretty containsString:@"    "] && [pretty containsString:@"\"a\""]);
+
+        // Compacting it again must give back an equivalent single line.
+        BOOL compacted = [ed compactJSONDocument];
+        NSString *tight = DocText(ed);
+        Check(@"JSON compact", @"indented JSON becomes one line again",
+              compacted && ![tight containsString:@"\n"] && [tight hasPrefix:@"{"] &&
+              [tight containsString:@"\"c\":null"]);
+
+        // Round trip: the data must survive both directions.
+        NSData *original = [tight dataUsingEncoding:NSUTF8StringEncoding];
+        id parsedAgain = [NSJSONSerialization JSONObjectWithData:original options:0 error:NULL];
+        Check(@"JSON round trip", @"the value is unchanged by formatting",
+              [parsedAgain[@"b"] integerValue] == 1 && [parsedAgain[@"a"] count] == 3);
+
+        // Sorting puts the keys in order.
+        SetDoc(ed, @"{\"zeta\":1,\"alpha\":2}");
+        [ed sortJSONDocument];
+        NSString *sorted = DocText(ed);
+        Check(@"JSON sort", @"keys come out in order",
+              [sorted rangeOfString:@"alpha"].location < [sorted rangeOfString:@"zeta"].location);
+
+        // Validation reports where the problem is.
+        SetDoc(ed, @"{\"ok\": 1}");
+        NppJsonError *clean = [ed validateJSONDocument];
+        SetDoc(ed, @"{\n  \"ok\": 1,\n  bad\n}");
+        NppJsonError *broken = [ed validateJSONDocument];
+        Check(@"JSON validate", @"valid passes, invalid reports a line",
+              clean == nil && broken != nil && broken.line >= 1 && broken.message.length > 0);
+
+        // Formatting must refuse rather than damage a document that is not JSON.
+        SetDoc(ed, @"this is not json at all\n");
+        NSString *before = DocText(ed);
+        BOOL refused = ![ed formatJSONDocument];
+        Check(@"JSON refuses non-JSON", @"a non-JSON document is left untouched",
+              refused && [DocText(ed) isEqualToString:before]);
+
+        // The tree lists every node with its path.
+        SetDoc(ed, @"{\"top\":{\"inner\":[10,20]}}");
+        NSArray *tree = [ed jsonTree];
+        NSMutableArray *paths = [NSMutableArray array];
+        for (NSDictionary *node in tree) [paths addObject:node[@"path"]];
+        Check(@"JSON tree", @"nested paths are reported",
+              [paths containsObject:@"top.inner[0]"] && [paths containsObject:@"top.inner[1]"] &&
+              [paths containsObject:@"top.inner"]);
+    }
+
+    printf("\n== Compare ==\n");
+    {
+        NSArray *oldLines = @[@"alpha", @"beta", @"gamma", @"delta"];
+        NSArray *newLines = @[@"alpha", @"BETA", @"gamma", @"delta", @"epsilon"];
+
+        NSArray<NppDiffLine *> *diff = [EditorController diffBetween:oldLines and:newLines
+                                                         ignoreCase:NO ignoreSpaces:NO
+                                                   ignoreEmptyLines:NO];
+        NSUInteger changed = 0, added = 0, same = 0;
+        for (NppDiffLine *l in diff) {
+            if (l.kind == NppDiffChanged) changed++;
+            else if (l.kind == NppDiffAdded) added++;
+            else if (l.kind == NppDiffSame) same++;
+        }
+        Check(@"Compare diff", @"one changed line, one added, three unchanged",
+              changed == 1 && added == 1 && same == 3);
+
+        // Ignoring case makes the changed line equal.
+        NSArray *ignoringCase = [EditorController diffBetween:oldLines and:newLines
+                                                   ignoreCase:YES ignoreSpaces:NO
+                                             ignoreEmptyLines:NO];
+        NSUInteger stillDifferent = 0;
+        for (NppDiffLine *l in ignoringCase) if (l.kind != NppDiffSame) stillDifferent++;
+        Check(@"Compare ignore case", @"only the added line remains a difference",
+              stillDifferent == 1);
+
+        // Ignoring spaces makes re-indented lines equal.
+        NSArray *spacedDiff = [EditorController diffBetween:@[@"a  b", @"c"]
+                                                       and:@[@"a b", @"c"]
+                                                ignoreCase:NO ignoreSpaces:YES
+                                          ignoreEmptyLines:NO];
+        NSUInteger spaceDiffs = 0;
+        for (NppDiffLine *l in spacedDiff) if (l.kind != NppDiffSame) spaceDiffs++;
+        Check(@"Compare ignore spaces", @"re-spaced lines count as equal", spaceDiffs == 0);
+
+        // Identical input produces no differences at all.
+        NSArray *identical = [EditorController diffBetween:oldLines and:oldLines
+                                                ignoreCase:NO ignoreSpaces:NO ignoreEmptyLines:NO];
+        NSUInteger anyDiff = 0;
+        for (NppDiffLine *l in identical) if (l.kind != NppDiffSame) anyDiff++;
+        Check(@"Compare identical", @"identical files differ nowhere",
+              anyDiff == 0 && identical.count == oldLines.count);
+
+        // End to end, through the editor.
+        NSError *err = nil;
+        NSString *oldPath = TempFile(@"cmp_old.txt", @"alpha\nbeta\ngamma\n");
+        NSString *newPath = TempFile(@"cmp_new.txt", @"alpha\nBETA\ngamma\ndelta\n");
+        [ed openFileAtPath:newPath error:&err];
+        BOOL compared = [ed compareWithFileAtPath:oldPath];
+        Check(@"Compare run", @"comparing marks differences and shows both files",
+              compared && [ed compareActive] && [ed secondaryViewVisible] &&
+              [[ed compareSummary] containsString:@"changed"]);
+
+        // Navigation walks the marked lines.
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0];
+        BOOL next = [ed goToDiff:1];
+        long firstStop = [sci message:SCI_LINEFROMPOSITION
+                               wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+        BOOL last = [ed goToLastDiff];
+        long lastStop = [sci message:SCI_LINEFROMPOSITION
+                              wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+        Check(@"Compare navigation", @"next and last land on marked lines",
+              next && last && firstStop > 0 && lastStop >= firstStop);
+
+        // "Set as first" then compare, the way the menu drives it.
+        [ed openFileAtPath:oldPath error:&err];
+        [ed setFirstToCompare];
+        [ed openFileAtPath:newPath error:&err];
+        BOOL viaFirst = [ed compareWithFirst];
+        Check(@"Compare set first", @"the file set aside is the one compared against",
+              viaFirst && [[ed firstToCompare] isEqualToString:oldPath]);
+
+        [ed clearAllCompares];
+        Check(@"Compare clear", @"clearing removes the comparison and the second pane",
+              ![ed compareActive] && [ed firstToCompare] == nil && ![ed secondaryViewVisible]);
     }
 
     // ---- meta-test: nothing may be declared implemented without a test
