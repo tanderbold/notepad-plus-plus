@@ -93,6 +93,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)foldCurrent:(BOOL)fold;   // IDM_VIEW_FOLD_CURRENT / IDM_VIEW_UNFOLD_CURRENT
 - (void)showAutoCompletion;
 - (void)applyTheme;                               // re-apply npp styles (e.g. on appearance change)
+- (void)applyLanguage;                            // re-attach lexer, keywords and styles
+- (void)rebuildContextMenu;                       // right-click menu from Preferences
 - (void)refreshChrome;                            // tab titles + status bar
 - (void)setChromeVisible:(BOOL)visible;           // hides tab bar + status bar
 - (BOOL)chromeVisible;

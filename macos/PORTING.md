@@ -160,9 +160,29 @@ otherwise returns a desktop with no windows at all. It captures Scintilla, which
 draws itself, but not the text of AppKit controls -- the tab bar and status bar
 come out blank there, which is why the self-test asserts their contents instead.
 
-**This is still the editor, not Notepad++.** Preferences, sessions, the docking
-panel system, macros, column mode, document map, function list and the plugin
-system remain Windows-only.
+### What 100% of menu commands does and does not mean
+
+Every one of the 579 commands in the Windows menu resource now has a working
+counterpart here, each covered by a test. That is a meaningful measure -- it is
+the user-facing command surface, counted from upstream's own resource rather
+than from a list written by hand -- but it is not the same as being Notepad++.
+
+What it does not cover:
+
+- **Plugins cannot run.** The plugin ABI is a Windows DLL contract built on
+  `HWND` and `SendMessage`. "Open Plugins Folder" works; loading a Notepad++
+  plugin binary does not and cannot without a new plugin system.
+- **Depth behind a command varies.** Preferences here covers the settings this
+  editor actually has, not the several hundred on upstream's pages. The Style
+  Configurator edits foreground colours rather than every attribute. Function
+  List uses a per-language pattern table, not upstream's functionList.xml.
+- **Some commands are macOS equivalents, not the same thing.** Finder for
+  Explorer, Terminal for cmd and PowerShell, Trash for the Recycle Bin, Safari
+  for Internet Explorer, POSIX permissions for the Windows read-only attribute.
+  These are listed at each site in the source.
+- **The docked panel system is approximated.** Workspace, Document Map and
+  Function List are a split view and floating panels rather than a dockable
+  layout that can be rearranged and saved.
 
 ### Fix applied to make this possible
 

@@ -13,6 +13,8 @@
 #import "AdvancedEditCommands.h"
 #import "AuxPanels.h"
 #import "ToolsCommands.h"
+#import "SettingsCommands.h"
+#import "SettingsPanels.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -1748,6 +1750,96 @@ int NppMacRunTests(AppDelegate *app) {
                                   withIntermediateDirectories:YES attributes:nil error:NULL];
         Check(@"IDM_SETTING_OPENPLUGINSDIR", @"has a plugins folder to open",
               [[NSFileManager defaultManager] fileExistsAtPath:pluginDir]);
+    }
+
+    printf("\n== Settings ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+        NSString *fontBefore = p.fontName;
+        p.fontName = @"Courier";
+        p.fontSize = 17;
+        p.tabWidth = 7;
+        p.useSpaces = NO;
+        p.wordWrap = YES;
+        p.showWhitespace = YES;
+        [p applyToEditor:ed];
+        BOOL applied = [sci message:SCI_GETTABWIDTH] == 7 &&
+                       [sci message:SCI_GETUSETABS] == 1 &&
+                       [sci message:SCI_GETWRAPMODE] != SC_WRAP_NONE &&
+                       [sci message:SCI_GETVIEWWS] != SCWS_INVISIBLE;
+        Check(@"IDM_SETTING_PREFERENCE", @"settings reach the editor", applied);
+
+        // Restore something sane for the tests that follow.
+        p.fontName = fontBefore ?: @"Menlo";
+        p.tabWidth = 4; p.useSpaces = YES; p.wordWrap = NO; p.showWhitespace = NO;
+        [p applyToEditor:ed];
+
+        [ed setLanguageNamed:@"cpp"];
+        [p setStyleOverride:@"FF0000" forLanguage:@"cpp" styleID:SCE_C_COMMENTLINE];
+        [ed applyLanguage];
+        long fore = [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE];
+        // Scintilla stores colours as 0xBBGGRR, so pure red reads back as 0x0000FF.
+        Check(@"IDM_LANGSTYLE_CONFIG_DLG", @"a style override reaches the lexer style",
+              fore == 0x0000FF);
+        [p setStyleOverride:nil forLanguage:@"cpp" styleID:SCE_C_COMMENTLINE];
+        [ed applyLanguage];
+
+        ShortcutMapperWindow *mapper = [[ShortcutMapperWindow alloc] initWithEditor:ed];
+        NSArray *titles = [mapper commandTitles];
+        NSMenuItem *probe = [[NSMenuItem alloc] initWithTitle:@"Probe" action:@selector(showAbout:)
+                                                keyEquivalent:@"z"];
+        ApplyShortcutSpec(probe, @"cmd+shift+k");
+        Check(@"IDM_SETTING_SHORTCUT_MAPPER", @"lists shortcuts and applies a new one",
+              titles.count > 20 && [probe.keyEquivalent isEqualToString:@"k"] &&
+              (probe.keyEquivalentModifierMask & NSEventModifierFlagCommand) &&
+              (probe.keyEquivalentModifierMask & NSEventModifierFlagShift));
+
+        NSString *plugin = TempFile(@"t_plugin.bundle", @"fake plugin\n");
+        NSUInteger copiedPlugins = [ed importFiles:@[plugin] intoSubdirectory:@"plugins"];
+        Check(@"IDM_SETTING_IMPORTPLUGIN", @"copies plugins into the support folder",
+              copiedPlugins == 1 &&
+              [[ed importedFilesIn:@"plugins"] containsObject:@"t_plugin.bundle"]);
+
+        NSString *theme = TempFile(@"t_theme.xml", @"<theme/>\n");
+        NSUInteger copiedThemes = [ed importFiles:@[theme] intoSubdirectory:@"themes"];
+        Check(@"IDM_SETTING_IMPORTSTYLETHEMES", @"copies themes into the support folder",
+              copiedThemes == 1 &&
+              [[ed importedFilesIn:@"themes"] containsObject:@"t_theme.xml"]);
+
+        p.contextMenuCommands = @[@"Copy", @"Paste", @"Toggle Line Comment"];
+        [ed rebuildContextMenu];
+        NSMenu *ctx = ed.sci.menu;
+        NSMutableArray *ctxTitles = [NSMutableArray array];
+        for (NSMenuItem *mi in ctx.itemArray) [ctxTitles addObject:mi.title];
+        Check(@"IDM_SETTING_EDITCONTEXTMENU", @"the right-click menu follows the setting",
+              ctx.numberOfItems == 3 && [ctxTitles containsObject:@"Toggle Line Comment"]);
+    }
+
+    printf("\n== Language: user defined ==\n");
+    {
+        LanguageCatalog *cat = [LanguageCatalog sharedCatalog];
+        [ed setLanguageNamed:@"javascript.js"];
+        Check(@"IDM_LANG_JS", @"the .js JavaScript variant can be selected",
+              [cat languageNamed:@"javascript.js"] != nil &&
+              [ed.currentDocument.language.name isEqualToString:@"javascript.js"]);
+
+        BOOL defined = [ed defineUserLanguageNamed:@"MyLang" extensions:@"mylang ml2"
+                                          keywords:@"alpha beta" commentLine:@"#"];
+        NSDictionary *readBack = [ed userDefinedLanguage];
+        Check(@"IDM_LANG_USER_DLG", @"writes userDefineLang.xml and applies the language",
+              defined && [readBack[@"name"] isEqualToString:@"MyLang"] &&
+              [readBack[@"ext"] isEqualToString:@"mylang ml2"] &&
+              [ed.currentDocument.language.name isEqualToString:@"MyLang"]);
+
+        Check(@"IDM_LANG_OPENUDLDIR", @"the user-defined language file has a folder to open",
+              [[NSFileManager defaultManager] fileExistsAtPath:[ed userDefinedLanguagePath]]);
+
+        NSURL *collection = [NSURL URLWithString:
+            @"https://github.com/notepad-plus-plus/userDefinedLanguages"];
+        Check(@"IDM_LANG_UDLCOLLECTION_PROJECT_SITE", @"points at a valid https URL",
+              collection != nil && [collection.scheme isEqualToString:@"https"]);
+
+        [ed setLanguageNamed:@"normal"];
     }
 
     // ---- meta-test: nothing may be declared implemented without a test

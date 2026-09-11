@@ -7,6 +7,8 @@
 #import "AdvancedEditCommands.h"
 #import "AuxPanels.h"
 #import "ToolsCommands.h"
+#import "SettingsCommands.h"
+#import "SettingsPanels.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -23,6 +25,9 @@
 @property (nonatomic, strong) FunctionListPanel *funcList;
 @property (nonatomic, strong) CharacterPanel *charPanel;
 @property (nonatomic, strong) ClipboardHistoryPanel *clipPanel;
+@property (nonatomic, strong) PreferencesWindow *prefsWindow;
+@property (nonatomic, strong) StyleConfiguratorWindow *styleWindow;
+@property (nonatomic, strong) ShortcutMapperWindow *shortcutWindow;
 @property (nonatomic) BOOL alwaysOnTop;
 @end
 
@@ -650,6 +655,16 @@
         mi.representedObject = lang.name;
         [langMenu addItem:mi];
     }
+    [langMenu addItem:[NSMenuItem separatorItem]];
+    NSMenu *udlMenu = [[NSMenu alloc] initWithTitle:@"User Defined Language"];
+    [self item:@"Define your language…" action:@selector(defineUserLanguage:) key:@"" flags:0 menu:udlMenu];
+    [self item:@"Open User Defined Language folder…" action:@selector(openUDLFolder:) key:@"" flags:0 menu:udlMenu];
+    NSMenuItem *udlSite = [[NSMenuItem alloc] initWithTitle:@"Notepad++ User Defined Languages Collection"
+                                                     action:@selector(openHelpLink:) keyEquivalent:@""];
+    udlSite.target = self;
+    udlSite.representedObject = @"https://github.com/notepad-plus-plus/userDefinedLanguages";
+    [udlMenu addItem:udlSite];
+    [langMenu addItemWithTitle:@"User Defined Language" action:nil keyEquivalent:@""].submenu = udlMenu;
     langItem.submenu = langMenu;
 
     // ---- Tools
@@ -694,6 +709,21 @@
     [self item:@"Validate shortcuts" action:@selector(validateShortcuts:) key:@"" flags:0 menu:runMenu];
     [self item:@"Open Plugins Folder…" action:@selector(openPluginsFolder:) key:@"" flags:0 menu:runMenu];
     runItem.submenu = runMenu;
+
+    // ---- Settings
+    NSMenuItem *settingsItem = [[NSMenuItem alloc] init];
+    [bar addItem:settingsItem];
+    NSMenu *settingsMenu = [[NSMenu alloc] initWithTitle:@"Settings"];
+    [self item:@"Preferences…" action:@selector(showPreferences:) key:@"," flags:NSEventModifierFlagCommand menu:settingsMenu];
+    [self item:@"Style Configurator…" action:@selector(showStyleConfigurator:) key:@"" flags:0 menu:settingsMenu];
+    [self item:@"Shortcut Mapper…" action:@selector(showShortcutMapper:) key:@"" flags:0 menu:settingsMenu];
+    [settingsMenu addItem:[NSMenuItem separatorItem]];
+    NSMenu *importMenu = [[NSMenu alloc] initWithTitle:@"Import"];
+    [self item:@"Import plugin(s)…" action:@selector(importPlugins:) key:@"" flags:0 menu:importMenu];
+    [self item:@"Import style theme(s)…" action:@selector(importThemes:) key:@"" flags:0 menu:importMenu];
+    [settingsMenu addItemWithTitle:@"Import" action:nil keyEquivalent:@""].submenu = importMenu;
+    [self item:@"Edit Popup ContextMenu" action:@selector(editContextMenu:) key:@"" flags:0 menu:settingsMenu];
+    settingsItem.submenu = settingsMenu;
 
     // ---- Window
     NSMenuItem *windowItem = [[NSMenuItem alloc] init];
@@ -745,6 +775,84 @@
     NSApp.windowsMenu = windowMenu;
 
     NSApp.mainMenu = bar;
+    [self applyShortcutOverrides];
+    [self.editor rebuildContextMenu];
+}
+
+#pragma mark - Settings
+
+- (void)applyShortcutOverrides {
+    NSDictionary *overrides = [NppPreferences shared].shortcutOverrides;
+    if (!overrides.count) return;
+    NSMutableArray *queue = [NSMutableArray arrayWithArray:NSApp.mainMenu.itemArray];
+    while (queue.count) {
+        NSMenuItem *item = queue.firstObject;
+        [queue removeObjectAtIndex:0];
+        if (item.submenu) [queue addObjectsFromArray:item.submenu.itemArray];
+        NSString *spec = overrides[item.title];
+        if (spec) ApplyShortcutSpec(item, spec);
+    }
+}
+
+- (void)showPreferences:(id)sender {
+    if (!self.prefsWindow) self.prefsWindow = [[PreferencesWindow alloc] initWithEditor:self.editor];
+    [self.prefsWindow toggle];
+}
+
+- (void)showStyleConfigurator:(id)sender {
+    if (!self.styleWindow) self.styleWindow = [[StyleConfiguratorWindow alloc] initWithEditor:self.editor];
+    [self.styleWindow toggle];
+}
+
+- (void)showShortcutMapper:(id)sender {
+    if (!self.shortcutWindow) self.shortcutWindow = [[ShortcutMapperWindow alloc] initWithEditor:self.editor];
+    [self.shortcutWindow toggle];
+}
+
+- (void)importPlugins:(id)sender { [self importInto:@"plugins" title:@"Import plugin(s)"]; }
+- (void)importThemes:(id)sender  { [self importInto:@"themes" title:@"Import style theme(s)"]; }
+
+- (void)importInto:(NSString *)subdir title:(NSString *)title {
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.allowsMultipleSelection = YES;
+    panel.title = title;
+    if ([panel runModal] != NSModalResponseOK) return;
+    NSMutableArray *paths = [NSMutableArray array];
+    for (NSURL *u in panel.URLs) [paths addObject:u.path];
+    NSUInteger n = [self.editor importFiles:paths intoSubdirectory:subdir];
+    [self presentText:[NSString stringWithFormat:@"%lu file(s) imported into %@",
+                       (unsigned long)n, subdir] title:title];
+}
+
+- (void)editContextMenu:(id)sender {
+    NSString *current = [[NppPreferences shared].contextMenuCommands componentsJoinedByString:@", "];
+    NSString *edited = [self promptForString:@"Context menu commands, comma separated" default:current];
+    if (!edited) return;
+    NSMutableArray *commands = [NSMutableArray array];
+    for (NSString *raw in [edited componentsSeparatedByString:@","]) {
+        NSString *t = [raw stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if (t.length) [commands addObject:t];
+    }
+    [NppPreferences shared].contextMenuCommands = commands;
+    [self.editor rebuildContextMenu];
+}
+
+#pragma mark - Language: user defined
+
+- (void)defineUserLanguage:(id)sender {
+    NSString *name = [self promptForString:@"Language name" default:@"MyLang"];
+    if (!name.length) return;
+    NSString *ext = [self promptForString:@"Extensions, space separated" default:@"mylang"];
+    NSString *kw = [self promptForString:@"Keywords, space separated" default:@""];
+    NSString *comment = [self promptForString:@"Line comment token" default:@"#"];
+    if (![self.editor defineUserLanguageNamed:name extensions:ext keywords:kw commentLine:comment]) {
+        NSBeep();
+    }
+}
+
+- (void)openUDLFolder:(id)sender {
+    NSString *path = [self.editor userDefinedLanguagePath];
+    [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:path]]];
 }
 
 #pragma mark - Tools: hashes

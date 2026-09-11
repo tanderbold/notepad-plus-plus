@@ -5,6 +5,7 @@
 #import "WorkspacePanel.h"
 #import "EncodingCommands.h"
 #import "ToolsCommands.h"
+#import "SettingsCommands.h"
 #include "ILexer.h"
 #include "Lexilla.h"
 
@@ -751,6 +752,19 @@ static long SciColor(NSColor *c) {
 
     for (NppStyle *s in [styles stylesForLexerName:langName]) applyStyle(s, s.styleID);
 
+    // Colours chosen in the Style Configurator win over the shipped theme.
+    NSDictionary *overrides = [NppPreferences shared].styleOverrides;
+    for (NSString *key in overrides) {
+        NSArray *parts = [key componentsSeparatedByString:@"/"];
+        if (parts.count != 2 || ![parts[0] isEqualToString:langName]) continue;
+        unsigned int rgb = 0;
+        if (![[NSScanner scannerWithString:overrides[key]] scanHexInt:&rgb]) continue;
+        NSColor *c = [NSColor colorWithSRGBRed:((rgb >> 16) & 0xFF) / 255.0
+                                         green:((rgb >> 8) & 0xFF) / 255.0
+                                          blue:(rgb & 0xFF) / 255.0 alpha:1.0];
+        [sci message:SCI_STYLESETFORE wParam:(uptr_t)[parts[1] intValue] lParam:SciColor(c)];
+    }
+
     NppStyle *lineNo = styles.globalStyles[@"Line number margin"];
     if (lineNo) applyStyle(lineNo, STYLE_LINENUMBER);
     NppStyle *indent = styles.globalStyles[@"Indent guideline style"];
@@ -973,6 +987,30 @@ static long SciColor(NSColor *c) {
     [sci message:SCI_AUTOCSETSEPARATOR wParam:(uptr_t)' ' lParam:0];
     [sci setStringProperty:SCI_AUTOCSHOW parameter:pos - start
                      value:[sorted componentsJoinedByString:@" "]];
+}
+
+/// Right-click menu, built from the commands listed in Preferences.
+- (void)rebuildContextMenu {
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Context"];
+    for (NSString *title in [NppPreferences shared].contextMenuCommands) {
+        NSMenuItem *found = nil;
+        NSMutableArray *queue = [NSMutableArray arrayWithArray:NSApp.mainMenu.itemArray];
+        while (queue.count && !found) {
+            NSMenuItem *item = queue.firstObject;
+            [queue removeObjectAtIndex:0];
+            if (item.submenu) [queue addObjectsFromArray:item.submenu.itemArray];
+            if ([item.title isEqualToString:title] && item.action) found = item;
+        }
+        if (!found) continue;
+        NSMenuItem *copy = [[NSMenuItem alloc] initWithTitle:found.title
+                                                      action:found.action keyEquivalent:@""];
+        copy.target = found.target;
+        copy.tag = found.tag;
+        copy.representedObject = found.representedObject;
+        [menu addItem:copy];
+    }
+    self.sciView.menu = menu;
+    self.secondaryView.menu = menu;
 }
 
 #pragma mark - Chrome refresh
