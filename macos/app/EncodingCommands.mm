@@ -1,5 +1,6 @@
 #import "EncodingCommands.h"
 #import "ScintillaView.h"
+#include "CP720Table.h"
 
 const NppCharset kNppCharsets[] = {
     // Arabic
@@ -88,7 +89,40 @@ const int kNppCharsetCount = (int)(sizeof(kNppCharsets) / sizeof(kNppCharsets[0]
 }
 
 + (BOOL)supportsCodepage:(unsigned int)codepage {
+    if (codepage == 720) return YES;        // handled by the embedded table
     return [self encodingForCodepage:codepage] != 0;
+}
+
+/// Code page 720 (Arabic DOS) has no converter in CoreFoundation or in the
+/// system iconv, so it is decoded and encoded from the generated table in
+/// CP720Table.h. Bytes 0x00-0x7F are ASCII.
+static NSString *DecodeCP720(NSData *data) {
+    if (!data) return nil;
+    const unsigned char *bytes = (const unsigned char *)data.bytes;
+    NSMutableString *out = [NSMutableString stringWithCapacity:data.length];
+    for (NSUInteger i = 0; i < data.length; ++i) {
+        unichar c = bytes[i] < 0x80 ? (unichar)bytes[i] : kCP720High[bytes[i] - 0x80];
+        [out appendString:[NSString stringWithCharacters:&c length:1]];
+    }
+    return out;
+}
+
+static NSData *EncodeCP720(NSString *text) {
+    if (!text) return nil;
+    NSMutableData *out = [NSMutableData dataWithCapacity:text.length];
+    for (NSUInteger i = 0; i < text.length; ++i) {
+        unichar c = [text characterAtIndex:i];
+        unsigned char b = '?';
+        if (c < 0x80) {
+            b = (unsigned char)c;
+        } else {
+            for (int h = 0; h < 128; ++h) {
+                if (kCP720High[h] == c) { b = (unsigned char)(0x80 + h); break; }
+            }
+        }
+        [out appendBytes:&b length:1];
+    }
+    return out;
 }
 
 /// Code page 858 is code page 850 with byte 0xD5 carrying the euro sign instead
@@ -97,6 +131,7 @@ const int kNppCharsetCount = (int)(sizeof(kNppCharsets) / sizeof(kNppCharsets[0]
 static const unsigned char kCP858EuroByte = 0xD5;
 
 + (NSString *)stringFromData:(NSData *)data codepage:(unsigned int)codepage {
+    if (codepage == 720) return DecodeCP720(data);
     NSStringEncoding enc = [self encodingForCodepage:codepage];
     if (!enc || !data) return nil;
     if (codepage != 858) return [[NSString alloc] initWithData:data encoding:enc];
@@ -117,6 +152,7 @@ static const unsigned char kCP858EuroByte = 0xD5;
 }
 
 + (NSData *)dataFromString:(NSString *)string codepage:(unsigned int)codepage {
+    if (codepage == 720) return EncodeCP720(string);
     NSStringEncoding enc = [self encodingForCodepage:codepage];
     if (!enc || !string) return nil;
     if (codepage != 858) return [string dataUsingEncoding:enc allowLossyConversion:YES];
@@ -133,22 +169,23 @@ static const unsigned char kCP858EuroByte = 0xD5;
 }
 
 - (BOOL)reinterpretAsCodepage:(unsigned int)codepage {
+    if (![EditorController supportsCodepage:codepage]) { NSBeep(); return NO; }
     NSStringEncoding target = [EditorController encodingForCodepage:codepage];
-    if (!target) { NSBeep(); return NO; }
 
     NppDocument *doc = self.currentDocument;
     NSString *text = [self.sci string] ?: @"";
     // Recover the bytes as they stand, then read them through the new charset.
-    NSData *bytes = [text dataUsingEncoding:doc.encoding ?: NSUTF8StringEncoding
-                       allowLossyConversion:YES];
+    NSData *bytes = doc.codepage
+        ? [EditorController dataFromString:text codepage:doc.codepage]
+        : [text dataUsingEncoding:doc.encoding ?: NSUTF8StringEncoding allowLossyConversion:YES];
     NSString *reread = [EditorController stringFromData:bytes codepage:codepage];
-    (void)target;
     if (!reread) { NSBeep(); return NO; }
 
     [self.sci message:SCI_BEGINUNDOACTION];
     [self.sci setString:reread];
     [self.sci message:SCI_ENDUNDOACTION];
-    doc.encoding = target;
+    doc.encoding = target ?: NSUTF8StringEncoding;
+    doc.codepage = codepage;
     doc.hasBOM = NO;
     doc.modified = YES;
     [self refreshChrome];
@@ -156,8 +193,14 @@ static const unsigned char kCP858EuroByte = 0xD5;
 }
 
 - (BOOL)convertToCodepage:(unsigned int)codepage {
+    if (![EditorController supportsCodepage:codepage]) { NSBeep(); return NO; }
     NSStringEncoding target = [EditorController encodingForCodepage:codepage];
-    if (!target) { NSBeep(); return NO; }
+    if (!target) {                                   // code-page-only charset
+        self.currentDocument.codepage = codepage;
+        self.currentDocument.modified = YES;
+        [self refreshChrome];
+        return YES;
+    }
     // The text is unchanged; only the encoding it will be written in changes.
     if (![[self.sci string] ?: @"" canBeConvertedToEncoding:target]) {
         NSAlert *alert = [[NSAlert alloc] init];

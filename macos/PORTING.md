@@ -42,12 +42,11 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   a status bar with path, line/column, size, language, encoding and EOL.
 - Encodings (UTF-8, UTF-8-BOM, UTF-16 LE/BE, ANSI) sniffed on open and applied
   on save; EOL conversion between CRLF, LF and CR.
-- 45 of Notepad++'s 46 character sets, as both "Encode in" (reinterpret the
-  bytes) and "Convert to" (re-encode the text). Code page 858 is built from 850
-  plus its one differing byte, since macOS ships 850 but not 858. Code page 720
-  is the single omission -- macOS has no converter for it, and the nearest DOS
-  Arabic set (864) is a different mapping, so offering it would silently
-  mis-decode rather than read the text.
+- All 46 of Notepad++'s character sets, as both "Encode in" (reinterpret the
+  bytes) and "Convert to" (re-encode the text). Two needed building by hand:
+  code page 858 is 850 plus its one differing byte, and code page 720 has no
+  converter anywhere on macOS, so its mapping is embedded from the Unicode
+  Consortium table by `macos/gen_cp720.py`.
 - Comment toggling and uncommenting, bookmarks, code folding, word completion.
 - Case conversion (8 modes), line operations (sorting by 7 keys in both
   directions, dedup, split/join, move, blank-line handling), whitespace
@@ -272,6 +271,9 @@ macos/
 ├── PORTING.md         this document
 ├── build.sh           builds Lexilla + Scintilla/Cocoa + NotepadMac.app
 ├── gen_langmap.sh     regenerates app/LangMap.h from the Windows source
+├── gen_cp720.py       regenerates app/CP720Table.h (code page 720)
+├── gen_features.sh    regenerates FEATURES.md from the Windows menu resource
+├── test.sh            builds if needed, then runs the built-in suite
 └── app/
     ├── main.mm            entry point
     ├── AppDelegate.mm     menus, shortcuts, file/search actions, self-test

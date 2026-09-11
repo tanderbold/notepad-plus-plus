@@ -3,6 +3,7 @@
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
 #import "WorkspacePanel.h"
+#import "EncodingCommands.h"
 #include "ILexer.h"
 #include "Lexilla.h"
 
@@ -302,6 +303,7 @@ static long SciColor(NSColor *c) {
     doc.language = [[LanguageCatalog sharedCatalog] languageForFileName:path];
     doc.encoding = used;
     doc.hasBOM = bom;
+    doc.codepage = 0;
     doc.eolMode = DetectEOL(text);
 
     [self.docs addObject:doc];
@@ -364,7 +366,9 @@ static long SciColor(NSColor *c) {
     NSString *text = [self.sciView string] ?: @"";
     NppDocument *doc = self.currentDocument;
     NSStringEncoding enc = doc.encoding ?: NSUTF8StringEncoding;
-    NSData *data = EncodeText(text, enc, doc.hasBOM);
+    NSData *data = doc.codepage
+        ? [EditorController dataFromString:text codepage:doc.codepage]
+        : EncodeText(text, enc, doc.hasBOM);
     if (!data || ![data writeToFile:path options:NSDataWritingAtomic error:&err]) {
         if (!err) err = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnknownError
                                         userInfo:@{NSLocalizedDescriptionKey:

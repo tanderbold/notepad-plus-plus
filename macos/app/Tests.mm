@@ -1193,7 +1193,7 @@ int NppMacRunTests(AppDelegate *app) {
             unsigned int cp = kNppCharsets[i].codepage;
             NSString *cmd = @(kNppCharsets[i].menuID);
             if (![EditorController supportsCodepage:cp]) {
-                // macOS ships no converter for this code page. The command must
+                // Nothing on the system can decode this page; the command must
                 // decline cleanly rather than silently decode as something else.
                 [unsupported addObject:@(kNppCharsets[i].label)];
                 Check([cmd stringByAppendingString:@" (unsupported)"],
@@ -1202,6 +1202,7 @@ int NppMacRunTests(AppDelegate *app) {
                       ![ed reinterpretAsCodepage:cp]);
                 continue;
             }
+            if (cp == 720) { resolved++; continue; }   // covered by its own test below
             NSStringEncoding enc = [EditorController encodingForCodepage:cp];
             resolved++;
             // ASCII is representable in every one of these sets, so a round trip
@@ -1218,6 +1219,45 @@ int NppMacRunTests(AppDelegate *app) {
 
         // Encode in: the bytes stay, the reading changes. Round-tripping a
         // Cyrillic byte through Windows-1251 and back must restore the text.
+        // Code page 720 is decoded from an embedded table; every byte must
+        // survive a byte -> character -> byte round trip.
+        {
+            NSMutableData *all = [NSMutableData dataWithCapacity:256];
+            for (int b = 0; b < 256; ++b) { unsigned char c = (unsigned char)b; [all appendBytes:&c length:1]; }
+            NSString *decoded = [EditorController stringFromData:all codepage:720];
+            NSData *reencoded = [EditorController dataFromString:decoded codepage:720];
+            BOOL identity = decoded.length == 256 && [reencoded isEqualToData:all];
+
+            // Spot-check against the published mapping.
+            unichar c0xA0 = [decoded characterAtIndex:0xA0];
+            unichar c0x98 = [decoded characterAtIndex:0x98];
+            unichar c0x41 = [decoded characterAtIndex:0x41];
+            Check(@"IDM_FORMAT_DOS_720", @"all 256 bytes round-trip and match the spec",
+                  identity && c0xA0 == 0x0628 && c0x98 == 0x0621 && c0x41 == 'A');
+        }
+
+        // End to end: real Arabic bytes on disk, opened and read back as CP720.
+        // Reference produced with Python's cp720 codec:
+        //   'مرحبا'.encode('cp720') -> EA A9 A5 A0 9F
+        {
+            const unsigned char arabicBytes[] = {0xEA, 0xA9, 0xA5, 0xA0, 0x9F, '\n'};
+            NSString *expected = @"\u0645\u0631\u062D\u0628\u0627\n";
+            NSString *p = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_cp720.txt"];
+            [[NSData dataWithBytes:arabicBytes length:sizeof(arabicBytes)] writeToFile:p atomically:YES];
+
+            NSError *e = nil;
+            [ed openFileAtPath:p error:&e];
+            BOOL ok = [ed reinterpretAsCodepage:720];
+            BOOL textOK = [DocText(ed) isEqualToString:expected];
+
+            // Saving must put the very same bytes back on disk.
+            [ed saveCurrentDocument];
+            NSData *back = [NSData dataWithContentsOfFile:p];
+            BOOL bytesOK = [back isEqualToData:[NSData dataWithBytes:arabicBytes length:sizeof(arabicBytes)]];
+            Check(@"IDM_FORMAT_DOS_720", @"Arabic file round-trips through open, decode and save",
+                  ok && textOK && bytesOK);
+        }
+
         // Code page 858 must differ from 850 in exactly the euro byte.
         NSData *euroByte = [NSData dataWithBytes:(const unsigned char[]){0xD5} length:1];
         NSString *as858 = [EditorController stringFromData:euroByte codepage:858];

@@ -392,9 +392,9 @@ IDM_VIEW_PROJECT_PANEL_2
 IDM_VIEW_PROJECT_PANEL_3
 
 # --- Encoding: character sets (Encode in ...)
-# OEM 720 is deliberately absent: macOS ships no converter for code page 720,
-# and the nearest DOS Arabic set (864) is a different mapping, so selecting it
-# would silently mis-decode the text rather than read it.
+# OEM 720 has no converter on macOS, so its mapping is embedded from the
+# Unicode Consortium table -- see macos/gen_cp720.py.
+IDM_FORMAT_DOS_720
 IDM_FORMAT_ISO_8859_6
 IDM_FORMAT_WIN_1256
 IDM_FORMAT_ISO_8859_4
