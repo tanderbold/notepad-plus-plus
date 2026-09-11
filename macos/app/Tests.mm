@@ -22,6 +22,7 @@
 #import "TabBarView.h"
 #import "JsonCommands.h"
 #import "CompareCommands.h"
+#import "FtpCommands.h"
 #import "FunctionListPanel.h"
 #import "FunctionListCatalog.h"
 #import "LanguageCatalog.h"
@@ -2746,6 +2747,119 @@ int NppMacRunTests(AppDelegate *app) {
         [ed clearAllCompares];
         Check(@"Compare clear", @"clearing removes the comparison and the second pane",
               ![ed compareActive] && [ed firstToCompare] == nil && ![ed secondaryViewVisible]);
+    }
+
+    printf("\n== FTP ==\n");
+    {
+        // The listing parser sees both layouts servers actually send.
+        NSString *unixListing =
+            @"drwxr-xr-x 2 owner group     4096 Jan  1 00:00 folder\r\n"
+            @"-rw-r--r-- 1 owner group      137 Jan  1 00:00 notes.txt\r\n"
+            @"lrwxrwxrwx 1 owner group        7 Jan  1 00:00 link -> target\r\n"
+            @"drwxr-xr-x 2 owner group     4096 Jan  1 00:00 .\r\n";
+        NSArray<NppFtpEntry *> *unix = [NppFtpClient parseListing:unixListing];
+        NSMutableDictionary<NSString *, NppFtpEntry *> *byName = [NSMutableDictionary dictionary];
+        for (NppFtpEntry *e in unix) byName[e.name] = e;
+        NppFtpEntry *folder = byName[@"folder"];
+        NppFtpEntry *notes = byName[@"notes.txt"];
+        Check(@"FTP listing (unix)",
+              @"directories, sizes and symlink names are read correctly",
+              unix.count == 3 && folder.isDirectory && !notes.isDirectory &&
+              notes.size == 137 && byName[@"link"] != nil);
+
+        NSString *dosListing =
+            @"01-01-24  12:00AM       <DIR>          images\r\n"
+            @"01-01-24  12:00AM                 2048 report.doc\r\n";
+        NSArray<NppFtpEntry *> *dos = [NppFtpClient parseListing:dosListing];
+        NppFtpEntry *dosDir = dos.count ? dos[0] : nil;
+        NppFtpEntry *dosFile = dos.count > 1 ? dos[1] : nil;
+        Check(@"FTP listing (DOS)", @"the other layout is read too",
+              dos.count == 2 && dosDir.isDirectory && !dosFile.isDirectory &&
+              dosFile.size == 2048);
+
+        // Profiles round-trip through the settings.
+        NppFtpProfile *profile = [[NppFtpProfile alloc] init];
+        profile.name = @"test-server";
+        profile.host = @"127.0.0.1";
+        profile.username = @"tester";
+        profile.protocol = NppFtpPlain;
+        profile.initialDirectory = @"/";
+        [ed saveFtpProfile:profile];
+        NppFtpProfile *read = [ed ftpProfileNamed:@"test-server"];
+        Check(@"FTP profiles", @"a connection is saved and read back",
+              read != nil && [read.host isEqualToString:@"127.0.0.1"] &&
+              [read.username isEqualToString:@"tester"]);
+
+        Check(@"FTP url", @"the URL carries host, port and path",
+              [[read urlForPath:@"dir/file.txt"] isEqualToString:@"ftp://127.0.0.1:21/dir/file.txt"]);
+
+        // End to end against a real server, started for this test.
+        NSString *script = [[NSBundle mainBundle] pathForResource:@"test-ftp-server" ofType:@"py"];
+        NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_ftproot"];
+        [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:
+            [root stringByAppendingPathComponent:@"sub"]
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        [@"remote hello\n" writeToFile:[root stringByAppendingPathComponent:@"greeting.txt"]
+                            atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+
+        NSTask *server = nil;
+        NSInteger port = 0;
+        if (script) {
+            server = [[NSTask alloc] init];
+            server.executableURL = [NSURL fileURLWithPath:@"/usr/bin/python3"];
+            server.arguments = @[script, root];
+            NSPipe *out = [NSPipe pipe];
+            server.standardOutput = out;
+            if ([server launchAndReturnError:NULL]) {
+                // The server prints the port it was given; read just that line.
+                NSData *line = [out.fileHandleForReading availableData];
+                NSString *text = [[NSString alloc] initWithData:line encoding:NSUTF8StringEncoding];
+                NSScanner *scanner = [NSScanner scannerWithString:text ?: @""];
+                [scanner scanUpToCharactersFromSet:[NSCharacterSet decimalDigitCharacterSet]
+                                        intoString:NULL];
+                [scanner scanInteger:&port];
+            }
+        }
+
+        if (port <= 0) {
+            Check(@"FTP transfer", @"the test server could not be started", NO);
+        } else {
+            profile.port = port;
+            [ed saveFtpProfile:profile];
+
+            BOOL connected = [ed connectToFtpProfile:profile password:@"secret"];
+            NSArray<NppFtpEntry *> *listing = connected ? [ed ftpListCurrentDirectory] : nil;
+            NSMutableArray *names = [NSMutableArray array];
+            for (NppFtpEntry *e in listing) [names addObject:e.name];
+            Check(@"FTP connect", @"logging in and listing the directory works",
+                  connected && [ed ftpConnected] && [names containsObject:@"greeting.txt"] &&
+                  [names containsObject:@"sub"]);
+
+            BOOL opened = [ed openRemoteFileAtPath:@"greeting.txt"];
+            Check(@"FTP download", @"a remote file opens in a tab with its contents",
+                  opened && [DocText(ed) isEqualToString:@"remote hello\n"] &&
+                  [[ed remotePathForCurrentDocument] isEqualToString:@"/greeting.txt"]);
+
+            SetDoc(ed, @"changed here\n");
+            BOOL uploaded = [ed uploadCurrentDocument];
+            NSString *onServer = [NSString stringWithContentsOfFile:
+                [root stringByAppendingPathComponent:@"greeting.txt"]
+                                                           encoding:NSUTF8StringEncoding error:NULL];
+            Check(@"FTP upload", @"saving sends the file back to where it came from",
+                  uploaded && [onServer isEqualToString:@"changed here\n"]);
+
+            BOOL descended = [ed ftpChangeDirectory:@"sub"];
+            Check(@"FTP directories", @"changing directory follows the server",
+                  descended && [[ed ftpCurrentDirectory] hasSuffix:@"sub"]);
+
+            [ed disconnectFtp];
+            Check(@"FTP disconnect", @"disconnecting drops the connection",
+                  ![ed ftpConnected] && [ed ftpClient] == nil);
+
+            [server terminate];
+        }
+        [ed removeFtpProfileNamed:@"test-server"];
     }
 
     // ---- meta-test: nothing may be declared implemented without a test

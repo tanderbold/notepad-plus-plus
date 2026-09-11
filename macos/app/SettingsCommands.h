@@ -143,6 +143,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL compareIgnoreEmptyLines;
 @property (nonatomic) NSInteger jsonIndent;
 
+/// Saved FTP connections. Passwords are kept in the Keychain, not here.
+@property (nonatomic, copy) NSArray<NSDictionary *> *ftpProfiles;
+
 /// Settings folder ("cloud location"); empty means the default support folder.
 @property (nonatomic, copy) NSString *settingsDirectory;
 

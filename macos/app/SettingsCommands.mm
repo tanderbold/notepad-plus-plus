@@ -82,6 +82,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"compareIgnoreSpaces"): @NO,
         Key(@"compareIgnoreEmptyLines"): @NO,
         Key(@"jsonIndent"): @4,
+        Key(@"ftpProfiles"): @[],
         Key(@"autoCompleteOnInput"): @NO,
         Key(@"autoCompleteSource"): @2,
         Key(@"autoCompleteThreshold"): @3,
@@ -170,6 +171,7 @@ NPP_PREF_OBJ(defaultLanguage, setDefaultLanguage, NSString, @"defaultLanguage")
 NPP_PREF_OBJ(recentFiles, setRecentFiles, NSArray, @"recentFiles")
 NPP_PREF_OBJ(lastUsedDirectory, setLastUsedDirectory, NSString, @"lastUsedDirectory")
 NPP_PREF_OBJ(fixedDirectory, setFixedDirectory, NSString, @"fixedDirectory")
+NPP_PREF_OBJ(ftpProfiles, setFtpProfiles, NSArray, @"ftpProfiles")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")

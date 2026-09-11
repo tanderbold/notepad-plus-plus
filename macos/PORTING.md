@@ -233,6 +233,11 @@ binaries can never load here:
 - **Compare** (what ComparePlus provides): set one file aside, compare, mark
   added, removed and changed lines, step between differences, a summary, and
   the ignore-case, ignore-spaces and ignore-empty-lines options.
+- **FTP** (what NppFTP provides): saved connections with the password in the
+  Keychain, a remote file browser, opening a remote file into a tab and sending
+  it back. Foundation dropped ftp:// support, so FTP and FTPS go through
+  libcurl; SFTP goes through the system OpenSSH client, because Apple's libcurl
+  is built without libssh2 and therefore cannot speak it.
 
 No plugin code was copied. The comparison uses Myers' algorithm, which is what
 ComparePlus uses, written here against this editor's own structures; the JSON

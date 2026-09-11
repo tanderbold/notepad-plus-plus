@@ -16,6 +16,7 @@
 #import "TypingCommands.h"
 #import "JsonCommands.h"
 #import "CompareCommands.h"
+#import "FtpCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -25,6 +26,7 @@
 #import "TypingCommands.h"
 #import "JsonCommands.h"
 #import "CompareCommands.h"
+#import "FtpCommands.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #import "Tests.h"
@@ -44,6 +46,9 @@
 @property (nonatomic, strong) NSMenu *recentMenu;
 @property (nonatomic, strong) NSPanel *jsonTreePanel;
 @property (nonatomic, strong) NSTextView *jsonTreeText;
+@property (nonatomic, strong) NSPanel *ftpPanel;
+@property (nonatomic, strong) NSTableView *ftpTable;
+@property (nonatomic, strong) NSArray *ftpEntries;
 @property (nonatomic) BOOL alwaysOnTop;
 @end
 
@@ -797,6 +802,15 @@
     [self item:@"Clear All Compares" action:@selector(compareClearAll:) key:@"" flags:0 menu:compareMenu];
     [pluginsMenu addItemWithTitle:@"Compare" action:nil keyEquivalent:@""].submenu = compareMenu;
 
+    NSMenu *ftpMenu = [[NSMenu alloc] initWithTitle:@"FTP"];
+    [self item:@"Connections…" action:@selector(ftpProfiles:) key:@"" flags:0 menu:ftpMenu];
+    [self item:@"Connect…" action:@selector(ftpConnect:) key:@"" flags:0 menu:ftpMenu];
+    [self item:@"Disconnect" action:@selector(ftpDisconnect:) key:@"" flags:0 menu:ftpMenu];
+    [ftpMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Show Remote Files" action:@selector(ftpBrowse:) key:@"" flags:0 menu:ftpMenu];
+    [self item:@"Upload Current File" action:@selector(ftpUpload:) key:@"" flags:0 menu:ftpMenu];
+    [pluginsMenu addItemWithTitle:@"FTP" action:nil keyEquivalent:@""].submenu = ftpMenu;
+
     [pluginsMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Open Plugins Folder…" action:@selector(openPluginsFolder:) key:@"" flags:0 menu:pluginsMenu];
     pluginsItem.submenu = pluginsMenu;
@@ -998,6 +1012,148 @@
 }
 - (void)compareToggleIgnoreEmpty:(id)sender {
     self.editor.compareIgnoreEmptyLines = !self.editor.compareIgnoreEmptyLines;
+}
+
+#pragma mark - FTP
+
+- (void)ftpProfiles:(id)sender {
+    NSMutableArray *names = [NSMutableArray array];
+    for (NppFtpProfile *p in [self.editor ftpProfiles]) {
+        [names addObject:[NSString stringWithFormat:@"%@ (%@@%@)", p.name, p.username, p.host]];
+    }
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"FTP connections";
+    alert.informativeText = names.count ? [names componentsJoinedByString:@"\n"]
+                                        : @"No connections saved yet.";
+    [alert addButtonWithTitle:@"Add…"];
+    [alert addButtonWithTitle:@"Close"];
+    if ([alert runModal] != NSAlertFirstButtonReturn) return;
+
+    NppFtpProfile *profile = [[NppFtpProfile alloc] init];
+    profile.name = [self promptForString:@"Connection name" default:@"server"];
+    if (!profile.name.length) return;
+    profile.host = [self promptForString:@"Host" default:@""];
+    if (!profile.host.length) return;
+    NSString *protocol = [self promptForString:@"Protocol: ftp, ftps or sftp" default:@"ftp"];
+    profile.protocol = [protocol hasPrefix:@"sftp"] ? NppFtpSFTP
+                     : [protocol hasPrefix:@"ftps"] ? NppFtpTLS : NppFtpPlain;
+    profile.port = [[self promptForString:@"Port (0 for the default)" default:@"0"] integerValue];
+    profile.username = [self promptForString:@"User name" default:@""];
+    profile.initialDirectory = [self promptForString:@"Initial directory" default:@"/"];
+    [self.editor saveFtpProfile:profile];
+
+    NSString *password = [self promptForString:
+        @"Password (stored in the Keychain; leave empty for an SSH key)" default:@""];
+    if (password.length) [NppFtpClient storePassword:password forProfile:profile];
+}
+
+- (void)ftpConnect:(id)sender {
+    NSArray<NppFtpProfile *> *profiles = [self.editor ftpProfiles];
+    if (!profiles.count) { [self ftpProfiles:sender]; return; }
+    NSMutableArray *names = [NSMutableArray array];
+    for (NppFtpProfile *p in profiles) [names addObject:p.name];
+
+    NSString *chosen = [self promptForString:
+        [NSString stringWithFormat:@"Connect to which? (%@)", [names componentsJoinedByString:@", "]]
+                                     default:names.firstObject];
+    NppFtpProfile *profile = [self.editor ftpProfileNamed:chosen];
+    if (!profile) { NSBeep(); return; }
+
+    if (![self.editor connectToFtpProfile:profile]) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = @"Cannot connect.";
+        alert.informativeText = [self.editor ftpClient].lastError
+            ?: @"The server did not answer, or the credentials were refused.";
+        [alert runModal];
+        return;
+    }
+    [self ftpBrowse:sender];
+}
+
+- (void)ftpDisconnect:(id)sender {
+    [self.editor disconnectFtp];
+    [self.ftpPanel orderOut:nil];
+}
+
+- (void)ftpBrowse:(id)sender {
+    if (![self.editor ftpConnected]) { [self ftpConnect:sender]; return; }
+    NSArray *entries = [self.editor ftpListCurrentDirectory];
+    if (!entries) {
+        [self presentText:[self.editor ftpClient].lastError ?: @"Cannot list the directory."
+                    title:@"FTP"];
+        return;
+    }
+    self.ftpEntries = entries;
+
+    if (!self.ftpPanel) {
+        NSRect frame = NSMakeRect(0, 0, 420, 460);
+        self.ftpPanel = [[NSPanel alloc] initWithContentRect:frame
+            styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                       NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
+              backing:NSBackingStoreBuffered defer:YES];
+        self.ftpPanel.title = @"Remote Files";
+        self.ftpPanel.releasedWhenClosed = NO;
+        self.ftpTable = [[NSTableView alloc] initWithFrame:frame];
+        NSTableColumn *col = [[NSTableColumn alloc] initWithIdentifier:@"remote"];
+        col.width = frame.size.width - 4;
+        [self.ftpTable addTableColumn:col];
+        self.ftpTable.headerView = nil;
+        self.ftpTable.dataSource = (id<NSTableViewDataSource>)self;
+        self.ftpTable.target = self;
+        self.ftpTable.doubleAction = @selector(ftpRowActivated:);
+        NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:frame];
+        scroll.hasVerticalScroller = YES;
+        scroll.documentView = self.ftpTable;
+        scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        self.ftpPanel.contentView = scroll;
+    }
+    self.ftpPanel.title = [NSString stringWithFormat:@"Remote Files — %@",
+                           [self.editor ftpCurrentDirectory] ?: @"/"];
+    [self.ftpTable reloadData];
+    [self.ftpPanel makeKeyAndOrderFront:nil];
+}
+
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tv {
+    return (NSInteger)self.ftpEntries.count + 1;          // row 0 walks up
+}
+
+- (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row {
+    if (row == 0) return @"..";
+    NSInteger index = row - 1;
+    if (index < 0 || index >= (NSInteger)self.ftpEntries.count) return @"";
+    NppFtpEntry *entry = self.ftpEntries[(NSUInteger)index];
+    return entry.isDirectory
+        ? [NSString stringWithFormat:@"%@/", entry.name]
+        : [NSString stringWithFormat:@"%@   %lld bytes", entry.name, entry.size];
+}
+
+- (void)ftpRowActivated:(id)sender {
+    NSInteger row = self.ftpTable.clickedRow;
+    if (row == 0) { [self.editor ftpChangeDirectory:@".."]; [self ftpBrowse:nil]; return; }
+    NSInteger index = row - 1;
+    if (index < 0 || index >= (NSInteger)self.ftpEntries.count) return;
+
+    NppFtpEntry *entry = self.ftpEntries[(NSUInteger)index];
+    if (entry.isDirectory) {
+        [self.editor ftpChangeDirectory:entry.name];
+        [self ftpBrowse:nil];
+        return;
+    }
+    if (![self.editor openRemoteFileAtPath:entry.name]) {
+        [self presentText:[self.editor ftpClient].lastError ?: @"Cannot open that file."
+                    title:@"FTP"];
+    }
+}
+
+- (void)ftpUpload:(id)sender {
+    if (![self.editor ftpConnected]) { NSBeep(); return; }
+    if ([self.editor uploadCurrentDocument]) {
+        [self presentText:[NSString stringWithFormat:@"Uploaded to %@",
+                           [self.editor remotePathForCurrentDocument] ?: @"the server"]
+                    title:@"FTP"];
+    } else {
+        [self presentText:[self.editor ftpClient].lastError ?: @"The upload failed." title:@"FTP"];
+    }
 }
 
 #pragma mark - Settings
