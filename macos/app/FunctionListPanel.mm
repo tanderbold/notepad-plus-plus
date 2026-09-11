@@ -2,6 +2,7 @@
 #import "EditorController.h"
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
+#import "FunctionListCatalog.h"
 
 @interface FunctionListPanel () <NSTableViewDataSource, NSTableViewDelegate>
 @property (nonatomic, strong) NSPanel *panel;
@@ -76,6 +77,24 @@ static NSString *PatternForLanguage(NSString *lang) {
 - (void)reload {
     NSString *text = [self.editor.sci string] ?: @"";
     NSString *lang = self.editor.currentDocument.language.name;
+
+    // Notepad++'s own parser for this language, when it has one.
+    NSString *ext = self.editor.currentDocument.path.pathExtension;
+    NSArray<NppFunctionEntry *> *upstream =
+        [[FunctionListCatalog sharedCatalog] entriesInText:text forLanguage:lang ?: @"" extension:ext];
+    if (upstream.count) {
+        NSMutableArray *found = [NSMutableArray array];
+        for (NppFunctionEntry *e in upstream) {
+            NSString *shown = e.container.length
+                ? [NSString stringWithFormat:@"%@::%@", e.container, e.name] : e.name;
+            [found addObject:@{@"name": shown, @"line": @(e.line)}];
+        }
+        self.entries = found;
+        [self.table reloadData];
+        return;
+    }
+
+    // Languages upstream has no parser for still get the built-in patterns.
     NSRegularExpression *re = [NSRegularExpression
         regularExpressionWithPattern:PatternForLanguage(lang)
                              options:NSRegularExpressionAnchorsMatchLines error:NULL];

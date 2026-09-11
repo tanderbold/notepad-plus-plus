@@ -44,7 +44,7 @@ libtool -static -o "$OUT/libscintilla-cocoa.a" "$OUT"/obj/*.o 2>/dev/null
 echo "==> NotepadMac"
 APPOBJ="$OUT/appobj"
 mkdir -p "$APPOBJ"
-for f in LanguageCatalog StyleCatalog WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands AppDelegate Tests main; do
+for f in LanguageCatalog StyleCatalog FunctionListCatalog WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands AppDelegate Tests main; do
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
 done
 clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o \
@@ -66,6 +66,9 @@ cp "$ROOT/macos/implemented.txt"            "$APP/Contents/Resources/"
 # Notepad++'s own colour themes; the Style Configurator and Preferences list these.
 mkdir -p "$APP/Contents/Resources/themes"
 cp "$ROOT"/PowerEditor/installer/themes/*.xml "$APP/Contents/Resources/themes/"
+# Notepad++'s own function-list parsers, read by the Function List panel.
+mkdir -p "$APP/Contents/Resources/functionList"
+cp "$ROOT"/PowerEditor/installer/functionList/*.xml "$APP/Contents/Resources/functionList/"
 codesign --force --deep --sign - "$APP" 2>/dev/null
 
 echo

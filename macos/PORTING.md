@@ -70,7 +70,8 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
 - Change History in its own margin: jump to the next or previous modified line, clear.
 - A second editor pane: move or clone a document into it, focus between panes,
   synchronised vertical and horizontal scrolling and zoom.
-- Document Map, Function List and three project panels.
+- Document Map, three project panels, and a Function List driven by Notepad++'s
+  own functionList parsers for 47 languages.
 - Sessions: save and reopen the set of open files.
 - A toolbar of the editing commands, with the buttons, their labels and the bar
   size all configurable.
@@ -229,9 +230,8 @@ What it does not cover:
   large-file restriction, clickable links, delimiter selection, multi-instance
   handling and the relocatable settings folder were all added so their settings
   would mean something. What remains thinner than upstream is depth inside a
-  few features rather than whole pages: Function List uses a per-language
-  pattern table rather than functionList.xml, and the tab bar is a segmented
-  control rather than a bar with per-tab close buttons and vertical layout.
+  few features rather than whole pages: the tab bar is a segmented control
+  rather than a bar with per-tab close buttons and vertical layout.
 - **Some commands are macOS equivalents, not the same thing.** Finder for
   Explorer, Terminal for cmd and PowerShell, Trash for the Recycle Bin, Safari
   for Internet Explorer, POSIX permissions for the Windows read-only attribute.

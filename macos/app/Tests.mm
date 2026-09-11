@@ -20,6 +20,7 @@
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
 #import "FunctionListPanel.h"
+#import "FunctionListCatalog.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -1374,7 +1375,39 @@ int NppMacRunTests(AppDelegate *app) {
         FunctionListPanel *fl = [[FunctionListPanel alloc] initWithEditor:ed];
         NSArray *names = [fl functionNames];
         Check(@"IDM_VIEW_FUNC_LIST", @"lists the declarations in the document",
-              names.count == 2 && [names containsObject:@"alpha"] && [names containsObject:@"beta"]);
+              names.count >= 2 &&
+              [[names componentsJoinedByString:@" "] containsString:@"alpha"] &&
+              [[names componentsJoinedByString:@" "] containsString:@"beta"]);
+
+        // The definitions come from Notepad++'s own functionList parsers.
+        FunctionListCatalog *cat = [FunctionListCatalog sharedCatalog];
+        Check(@"IDM_VIEW_FUNC_LIST (upstream parsers)",
+              @"the bundled parser definitions are loaded",
+              cat.parserIDs.count > 30 &&
+              [cat parserIDForLanguage:@"python" extension:@"py"] != nil &&
+              [cat parserIDForLanguage:@"cpp" extension:@"cpp"] != nil);
+
+        // \K is PCRE-only; ICU needs the part after it captured instead.
+        NSString *translated = [FunctionListCatalog icuPatternFrom:@"^class\\x20\\K.*?(?=\\n)"];
+        NSRegularExpression *check = translated
+            ? [NSRegularExpression regularExpressionWithPattern:translated options:0 error:NULL] : nil;
+        Check(@"IDM_VIEW_FUNC_LIST (pattern translation)",
+              @"a \\K pattern becomes a capturing one ICU accepts",
+              [translated containsString:@"("] && ![translated containsString:@"\\K"] && check != nil);
+
+        // A Python class with methods, through the upstream parser.
+        NSArray<NppFunctionEntry *> *entries = [cat entriesInText:
+            @"class Alpha:\n    def one(self):\n        pass\n    def two(self):\n        pass\n"
+                                                     forLanguage:@"python" extension:@"py"];
+        NSMutableArray *found = [NSMutableArray array];
+        for (NppFunctionEntry *e in entries) [found addObject:e.name];
+        // The names must be just the names: upstream's python pattern keeps the
+        // part after \K, which excludes the "def " keyword.
+        Check(@"IDM_VIEW_FUNC_LIST (classes and methods)",
+              @"the class and its methods are reported, without the def keyword",
+              entries.count == 3 && [found containsObject:@"Alpha"] &&
+              [found containsObject:@"one(self)"] && [found containsObject:@"two(self)"] &&
+              ![[found componentsJoinedByString:@" "] containsString:@"def "]);
 
         NSString *projDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_proj"];
         [[NSFileManager defaultManager] removeItemAtPath:projDir error:NULL];
