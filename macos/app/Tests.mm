@@ -16,6 +16,7 @@
 #import "SettingsCommands.h"
 #import "SettingsPanels.h"
 #import "Toolbar.h"
+#import "BackupAndPrint.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -1968,6 +1969,119 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_SETTING_PREFERENCE (toolbar layout)",
               @"display mode and size reach AppKit, including their interaction",
               labels && labelsOnly && iconsOnly && regular && small);
+    }
+
+    printf("\n== Backup and autosave ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+        NSFileManager *fm = [NSFileManager defaultManager];
+        NSInteger savedMode = p.backupMode;
+
+        // No backup: saving must leave nothing beside the file.
+        NSString *path = TempFile(@"t_backup.txt", @"first version\n");
+        [[NSFileManager defaultManager] removeItemAtPath:[path stringByAppendingPathExtension:@"bak"] error:NULL];
+        p.backupMode = NppBackupNone;
+        NSError *err = nil;
+        [ed openFileAtPath:path error:&err];
+        SetDoc(ed, @"second version\n");
+        [ed saveCurrentDocument];
+        Check(@"IDM_SETTING_PREFERENCE (backup off)", @"no backup is written when it is off",
+              ![fm fileExistsAtPath:[path stringByAppendingPathExtension:@"bak"]]);
+
+        // Simple: the previous contents land in file.ext.bak.
+        p.backupMode = NppBackupSimple;
+        SetDoc(ed, @"third version\n");
+        NSString *simple = [ed writeBackupForPath:path];
+        NSString *backedUp = [NSString stringWithContentsOfFile:simple
+                                                       encoding:NSUTF8StringEncoding error:NULL];
+        Check(@"IDM_SETTING_PREFERENCE (backup simple)",
+              @"the copy holds what was on disk before the save",
+              [simple hasSuffix:@".bak"] && [backedUp isEqualToString:@"second version\n"]);
+
+        // Verbose: a timestamped copy in the backup folder.
+        p.backupMode = NppBackupVerbose;
+        NSString *verbose = [ed writeBackupForPath:path];
+        Check(@"IDM_SETTING_PREFERENCE (backup verbose)",
+              @"a timestamped copy lands in the backup folder",
+              [verbose hasPrefix:[ed backupDirectory]] &&
+              [[ed backupsForPath:path] containsObject:verbose]);
+        p.backupMode = savedMode;
+
+        // An autosave pass writes modified documents and snapshots unsaved ones.
+        [ed closeAllDocuments];
+        NSString *tracked = TempFile(@"t_autosave.txt", @"original\n");
+        [ed openFileAtPath:tracked error:&err];
+        SetDoc(ed, @"changed by autosave\n");
+        ed.currentDocument.modified = YES;
+        [ed newDocument];
+        SetDoc(ed, @"never saved anywhere\n");
+
+        NSUInteger written = [ed runAutosavePass];
+        NSString *onDisk = [NSString stringWithContentsOfFile:tracked
+                                                     encoding:NSUTF8StringEncoding error:NULL];
+        NSData *snapJson = [NSData dataWithContentsOfFile:[ed snapshotPath]];
+        NSDictionary *snap = snapJson ? [NSJSONSerialization JSONObjectWithData:snapJson
+                                                                       options:0 error:NULL] : nil;
+        BOOL snapshotHasText = NO;
+        for (NSDictionary *entry in snap[@"unsaved"]) {
+            if ([entry[@"text"] containsString:@"never saved anywhere"]) snapshotHasText = YES;
+        }
+        Check(@"IDM_SETTING_PREFERENCE (autosave)",
+              @"modified files are written and unsaved text is snapshotted",
+              written == 1 && [onDisk isEqualToString:@"changed by autosave\n"] && snapshotHasText);
+
+        [ed setAutosaveEnabled:YES interval:60];
+        BOOL running = [ed autosaveRunning];
+        [ed setAutosaveEnabled:NO interval:60];
+        Check(@"IDM_SETTING_PREFERENCE (autosave timer)", @"the timer starts and stops",
+              running && ![ed autosaveRunning]);
+    }
+
+    printf("\n== Print options ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+        NSError *err = nil;
+        NSString *path = TempFile(@"t_print.txt", @"alpha\nbeta\ngamma\n");
+        [ed openFileAtPath:path error:&err];
+
+        NSString *header = [ed expandPrintTemplate:
+            @"$(FILE_NAME) | $(NAME_PART).$(EXT_PART) | page $(CURRENT_PRINTING_PAGE) of $(TOTAL_PRINTING_PAGE)"
+                                              page:2 of:7];
+        Check(@"IDM_SETTING_PREFERENCE (print header)",
+              @"the $(...) variables are expanded",
+              [header isEqualToString:@"t_print.txt | t_print.txt | page 2 of 7"] &&
+              ![header containsString:@"$("]);
+
+        p.printLineNumbers = NO;
+        NSString *plain = [ed textForPrinting];
+        p.printLineNumbers = YES;
+        NSString *numbered = [ed textForPrinting];
+        p.printLineNumbers = NO;
+        Check(@"IDM_SETTING_PREFERENCE (print line numbers)",
+              @"line numbers are added only when asked for",
+              ![plain hasPrefix:@"1"] && [numbered hasPrefix:@"1  alpha"] &&
+              [numbered containsString:@"3  gamma"]);
+
+        p.printMarginLeft = 11; p.printMarginRight = 22;
+        p.printMarginTop = 33; p.printMarginBottom = 44;
+        NSPrintInfo *info = [ed printInfoFromPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (print margins)",
+              @"the configured margins reach the print info",
+              info.leftMargin == 11 && info.rightMargin == 22 &&
+              info.topMargin == 33 && info.bottomMargin == 44);
+
+        // Building the job must not reach a printer, so only the job is checked.
+        p.printColourMode = NppPrintInvert;
+        NSPrintOperation *op = [ed printOperationShowingPanel:NO];
+        NSTextView *page = (NSTextView *)op.view;
+        BOOL inverted = [page.backgroundColor isEqual:[NSColor blackColor]] && page.drawsBackground;
+        p.printColourMode = NppPrintBlackOnWhite;
+        NSTextView *plainPage = (NSTextView *)[ed printOperationShowingPanel:NO].view;
+        Check(@"IDM_SETTING_PREFERENCE (print colours)",
+              @"the colour mode reaches the printed page",
+              op != nil && inverted && !plainPage.drawsBackground &&
+              [plainPage.textColor isEqual:[NSColor blackColor]]);
+        p.printColourMode = 2;
     }
 
     printf("\n== Language: user defined ==\n");

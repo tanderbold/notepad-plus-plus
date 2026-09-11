@@ -74,6 +74,10 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
 - Sessions: save and reopen the set of open files.
 - A toolbar of the editing commands, with the buttons, their labels and the bar
   size all configurable.
+- Backup on save, simple or timestamped, in a configurable folder; autosave on
+  a timer, with the text of never-saved documents kept in a snapshot file.
+- Print options: line numbers, four colour modes, page margins, and header and
+  footer templates using the same $(...) variables Notepad++ accepts.
 - Themes: all 20 that Notepad++ ships, plus any imported, chosen separately for
   light and dark and switched by an Appearance setting that can follow macOS.
 - Folder as Workspace: a file tree beside the editor; Document List in a panel.

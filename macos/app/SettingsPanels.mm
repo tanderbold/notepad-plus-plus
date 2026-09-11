@@ -5,6 +5,7 @@
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
 #import "Toolbar.h"
+#import "BackupAndPrint.h"
 
 #pragma mark - Preferences
 
@@ -21,7 +22,7 @@
     _editor = editor;
     _controls = [NSMutableDictionary dictionary];
 
-    NSRect frame = NSMakeRect(0, 0, 460, 560);
+    NSRect frame = NSMakeRect(0, 0, 470, 800);
     _panel = [[NSPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskUtilityWindow)
@@ -72,6 +73,30 @@
     y = [self addPopup:@"Toolbar size" key:@"toolbarIconSize"
                  items:@[@"Regular", @"Small"]
               selected:[NppPreferences shared].toolbarIconSize to:content atY:y];
+
+    y -= 8;
+    y = [self addPopup:@"Backup on save" key:@"backupMode"
+                 items:@[@"None", @"Simple", @"Verbose (timestamped)"]
+              selected:[NppPreferences shared].backupMode to:content atY:y];
+    y = [self addField:@"Backup folder" key:@"backupDirectory"
+                  value:[NppPreferences shared].backupDirectory to:content atY:y];
+    y = [self addCheckbox:@"Autosave modified documents" key:@"autosaveEnabled"
+                      on:[NppPreferences shared].autosaveEnabled to:content atY:y];
+    y = [self addField:@"Autosave every (seconds)" key:@"autosaveInterval"
+                  value:[@([NppPreferences shared].autosaveInterval) stringValue] to:content atY:y];
+
+    y -= 8;
+    y = [self addCheckbox:@"Print line numbers" key:@"printLineNumbers"
+                      on:[NppPreferences shared].printLineNumbers to:content atY:y];
+    y = [self addPopup:@"Print colours" key:@"printColourMode"
+                 items:@[@"As shown", @"Inverted", @"Black on white", @"No background"]
+              selected:[NppPreferences shared].printColourMode to:content atY:y];
+    y = [self addField:@"Header (left)" key:@"printHeaderLeft"
+                  value:[NppPreferences shared].printHeaderLeft to:content atY:y];
+    y = [self addField:@"Header (right)" key:@"printHeaderRight"
+                  value:[NppPreferences shared].printHeaderRight to:content atY:y];
+    y = [self addField:@"Footer (middle)" key:@"printFooterMiddle"
+                  value:[NppPreferences shared].printFooterMiddle to:content atY:y];
 
     NSButton *apply = [[NSButton alloc] initWithFrame:NSMakeRect(300, 12, 100, 28)];
     apply.title = @"Apply";
@@ -152,6 +177,16 @@
     p.showToolbar = [self.controls[@"showToolbar"] state] == NSControlStateValueOn;
     p.toolbarDisplayMode = [self.controls[@"toolbarDisplayMode"] indexOfSelectedItem];
     p.toolbarIconSize = [self.controls[@"toolbarIconSize"] indexOfSelectedItem];
+    p.backupMode = [self.controls[@"backupMode"] indexOfSelectedItem];
+    p.backupDirectory = [self.controls[@"backupDirectory"] stringValue];
+    p.autosaveEnabled = [self.controls[@"autosaveEnabled"] state] == NSControlStateValueOn;
+    p.autosaveInterval = MAX(5, [[self.controls[@"autosaveInterval"] stringValue] integerValue]);
+    p.printLineNumbers = [self.controls[@"printLineNumbers"] state] == NSControlStateValueOn;
+    p.printColourMode = [self.controls[@"printColourMode"] indexOfSelectedItem];
+    p.printHeaderLeft = [self.controls[@"printHeaderLeft"] stringValue];
+    p.printHeaderRight = [self.controls[@"printHeaderRight"] stringValue];
+    p.printFooterMiddle = [self.controls[@"printFooterMiddle"] stringValue];
+    [self.editor setAutosaveEnabled:p.autosaveEnabled interval:p.autosaveInterval];
     [p applyToEditor:self.editor];
     // The toolbar lives on the window, so the delegate applies those three.
     if ([NSApp.delegate respondsToSelector:@selector(applyToolbarPreferences)]) {

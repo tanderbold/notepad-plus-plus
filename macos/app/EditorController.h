@@ -39,6 +39,9 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (void)newDocument;
 - (BOOL)openFileAtPath:(NSString *)path error:(NSError **)error;
 - (BOOL)saveCurrentDocument;          // prompts if unsaved
+/// Writes the current document to `path` in its own encoding, making a backup
+/// first when Preferences asks for one.
+- (BOOL)writeCurrentToPath:(NSString *)path;
 - (BOOL)saveCurrentDocumentAs;
 - (void)closeCurrentDocument;
 /// Non-interactive close used by the Close All family and by tests.

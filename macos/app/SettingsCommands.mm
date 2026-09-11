@@ -34,6 +34,26 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"showToolbar"):     @YES,
         Key(@"toolbarDisplayMode"): @0,
         Key(@"toolbarIconSize"): @1,
+        Key(@"backupMode"):      @0,
+        Key(@"backupDirectory"): @"",
+        Key(@"autosaveEnabled"): @NO,
+        Key(@"autosaveInterval"): @60,
+        Key(@"printLineNumbers"): @NO,
+        Key(@"printColourMode"): @2,
+        Key(@"printMarginLeft"): @36.0,
+        Key(@"printMarginRight"): @36.0,
+        Key(@"printMarginTop"): @36.0,
+        Key(@"printMarginBottom"): @36.0,
+        Key(@"printHeaderLeft"): @"$(FULL_CURRENT_PATH)",
+        Key(@"printHeaderMiddle"): @"",
+        Key(@"printHeaderRight"): @"$(CURRENT_DATE)",
+        Key(@"printFooterLeft"): @"",
+        Key(@"printFooterMiddle"): @"Page $(CURRENT_PRINTING_PAGE) of $(TOTAL_PRINTING_PAGE)",
+        Key(@"printFooterRight"): @"",
+        Key(@"printHeaderFontName"): @"Helvetica",
+        Key(@"printHeaderFontSize"): @9,
+        Key(@"printHeaderBold"): @NO,
+        Key(@"printHeaderItalic"): @NO,
         Key(@"lightThemeName"):  @"Default",
         Key(@"darkThemeName"):   @"DarkModeDefault",
         Key(@"styleOverrides"):  @{},
@@ -66,6 +86,14 @@ NPP_PREF_OBJ(fontName, setFontName, NSString, @"fontName")
 NPP_PREF_OBJ(defaultEncoding, setDefaultEncoding, NSString, @"defaultEncoding")
 NPP_PREF_OBJ(lightThemeName, setLightThemeName, NSString, @"lightThemeName")
 NPP_PREF_OBJ(darkThemeName, setDarkThemeName, NSString, @"darkThemeName")
+NPP_PREF_OBJ(backupDirectory, setBackupDirectory, NSString, @"backupDirectory")
+NPP_PREF_OBJ(printHeaderLeft, setPrintHeaderLeft, NSString, @"printHeaderLeft")
+NPP_PREF_OBJ(printHeaderMiddle, setPrintHeaderMiddle, NSString, @"printHeaderMiddle")
+NPP_PREF_OBJ(printHeaderRight, setPrintHeaderRight, NSString, @"printHeaderRight")
+NPP_PREF_OBJ(printFooterLeft, setPrintFooterLeft, NSString, @"printFooterLeft")
+NPP_PREF_OBJ(printFooterMiddle, setPrintFooterMiddle, NSString, @"printFooterMiddle")
+NPP_PREF_OBJ(printFooterRight, setPrintFooterRight, NSString, @"printFooterRight")
+NPP_PREF_OBJ(printHeaderFontName, setPrintHeaderFontName, NSString, @"printHeaderFontName")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
@@ -75,12 +103,31 @@ NPP_PREF_INT(defaultEOL, setDefaultEOL, @"defaultEOL")
 NPP_PREF_INT(appearanceMode, setAppearanceMode, @"appearanceMode")
 NPP_PREF_INT(toolbarDisplayMode, setToolbarDisplayMode, @"toolbarDisplayMode")
 NPP_PREF_INT(toolbarIconSize, setToolbarIconSize, @"toolbarIconSize")
+NPP_PREF_INT(backupMode, setBackupMode, @"backupMode")
+NPP_PREF_INT(autosaveInterval, setAutosaveInterval, @"autosaveInterval")
+NPP_PREF_INT(printColourMode, setPrintColourMode, @"printColourMode")
+NPP_PREF_INT(printHeaderFontSize, setPrintHeaderFontSize, @"printHeaderFontSize")
 NPP_PREF_BOOL(useSpaces, setUseSpaces, @"useSpaces")
 NPP_PREF_BOOL(wordWrap, setWordWrap, @"wordWrap")
 NPP_PREF_BOOL(showWhitespace, setShowWhitespace, @"showWhitespace")
 NPP_PREF_BOOL(showIndentGuides, setShowIndentGuides, @"showIndentGuides")
 NPP_PREF_BOOL(restoreSession, setRestoreSession, @"restoreSession")
 NPP_PREF_BOOL(showToolbar, setShowToolbar, @"showToolbar")
+NPP_PREF_BOOL(autosaveEnabled, setAutosaveEnabled, @"autosaveEnabled")
+NPP_PREF_BOOL(printLineNumbers, setPrintLineNumbers, @"printLineNumbers")
+NPP_PREF_BOOL(printHeaderBold, setPrintHeaderBold, @"printHeaderBold")
+NPP_PREF_BOOL(printHeaderItalic, setPrintHeaderItalic, @"printHeaderItalic")
+
+#define NPP_PREF_DOUBLE(getter, setter, key)                                      \
+- (double)getter { return [[NSUserDefaults standardUserDefaults] doubleForKey:Key(key)]; } \
+- (void)setter:(double)value {                                                    \
+    [[NSUserDefaults standardUserDefaults] setDouble:value forKey:Key(key)];       \
+}
+
+NPP_PREF_DOUBLE(printMarginLeft, setPrintMarginLeft, @"printMarginLeft")
+NPP_PREF_DOUBLE(printMarginRight, setPrintMarginRight, @"printMarginRight")
+NPP_PREF_DOUBLE(printMarginTop, setPrintMarginTop, @"printMarginTop")
+NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
 
 - (BOOL)systemIsDark {
     NSString *match = [NSApp.effectiveAppearance bestMatchFromAppearancesWithNames:

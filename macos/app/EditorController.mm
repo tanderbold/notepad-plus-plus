@@ -5,6 +5,7 @@
 #import "WorkspacePanel.h"
 #import "EncodingCommands.h"
 #import "ToolsCommands.h"
+#import "BackupAndPrint.h"
 #import "SettingsCommands.h"
 #include "ILexer.h"
 #include "Lexilla.h"
@@ -370,6 +371,8 @@ static long SciColor(NSColor *c) {
 
 - (BOOL)writeCurrentToPath:(NSString *)path {
     NSError *err = nil;
+    // Preserve what is on disk before overwriting it, if Backup asks for that.
+    [self writeBackupForPath:path];
     NSString *text = [self.sciView string] ?: @"";
     NppDocument *doc = self.currentDocument;
     NSStringEncoding enc = doc.encoding ?: NSUTF8StringEncoding;

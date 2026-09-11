@@ -11,10 +11,12 @@
 #import "SettingsPanels.h"
 #import "Toolbar.h"
 #import "StyleCatalog.h"
+#import "BackupAndPrint.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
+#import "BackupAndPrint.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #import "Tests.h"
@@ -62,6 +64,8 @@
     self.toolbar = [[NppToolbar alloc] initWithWindow:self.window target:self];
     [[NppPreferences shared] applyToEditor:self.editor];
     [self applyToolbarPreferences];
+    [self.editor setAutosaveEnabled:[NppPreferences shared].autosaveEnabled
+                           interval:[NppPreferences shared].autosaveInterval];
 
     // Follow the system appearance while Preferences is set to do so.
     [NSApp addObserver:self forKeyPath:@"effectiveAppearance"

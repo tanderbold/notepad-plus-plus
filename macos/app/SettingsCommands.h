@@ -28,6 +28,30 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger toolbarDisplayMode;
 @property (nonatomic) NSInteger toolbarIconSize;
 
+/// Backup. 0 none, 1 simple (.bak beside the file), 2 verbose (timestamped).
+@property (nonatomic) NSInteger backupMode;
+@property (nonatomic, copy) NSString *backupDirectory;   // empty = the support folder
+@property (nonatomic) BOOL autosaveEnabled;
+@property (nonatomic) NSInteger autosaveInterval;        // seconds
+
+/// Print. Colour mode 0 as shown, 1 inverted, 2 black on white, 3 no background.
+@property (nonatomic) BOOL printLineNumbers;
+@property (nonatomic) NSInteger printColourMode;
+@property (nonatomic) double printMarginLeft;
+@property (nonatomic) double printMarginRight;
+@property (nonatomic) double printMarginTop;
+@property (nonatomic) double printMarginBottom;
+@property (nonatomic, copy) NSString *printHeaderLeft;
+@property (nonatomic, copy) NSString *printHeaderMiddle;
+@property (nonatomic, copy) NSString *printHeaderRight;
+@property (nonatomic, copy) NSString *printFooterLeft;
+@property (nonatomic, copy) NSString *printFooterMiddle;
+@property (nonatomic, copy) NSString *printFooterRight;
+@property (nonatomic, copy) NSString *printHeaderFontName;
+@property (nonatomic) NSInteger printHeaderFontSize;
+@property (nonatomic) BOOL printHeaderBold;
+@property (nonatomic) BOOL printHeaderItalic;
+
 /// The theme that should be in effect right now.
 - (NSString *)effectiveThemeName;
 - (BOOL)systemIsDark;
