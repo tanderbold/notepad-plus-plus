@@ -44,7 +44,7 @@ libtool -static -o "$OUT/libscintilla-cocoa.a" "$OUT"/obj/*.o 2>/dev/null
 echo "==> NotepadMac"
 APPOBJ="$OUT/appobj"
 mkdir -p "$APPOBJ"
-for f in LanguageCatalog StyleCatalog EditorController AppDelegate main; do
+for f in LanguageCatalog StyleCatalog EditorController AppDelegate Tests main; do
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
 done
 clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o \
@@ -61,9 +61,11 @@ cp "$SRC/Info.plist" "$APP/Contents/Info.plist"
 # Notepad++'s own language and colour definitions, read at runtime.
 cp "$ROOT/PowerEditor/src/langs.model.xml"   "$APP/Contents/Resources/"
 cp "$ROOT/PowerEditor/src/stylers.model.xml" "$APP/Contents/Resources/"
+# read back by the coverage meta-test in the built-in suite
+cp "$ROOT/macos/implemented.txt"            "$APP/Contents/Resources/"
 codesign --force --deep --sign - "$APP" 2>/dev/null
 
 echo
 echo "Built: $APP"
 echo "Run:   open $APP"
-echo "Test:  NPPMAC_SELFTEST=1 $APP/Contents/MacOS/NotepadMac"
+echo "Test:  NPPMAC_TEST=1 $APP/Contents/MacOS/NotepadMac"

@@ -5,6 +5,9 @@
 #include "ILexer.h"
 #include "Lexilla.h"
 
+/// Marker 1: bookmarks. Fold markers occupy 25-31, so this cannot collide.
+#define NPPMAC_BOOKMARK_MARKER 1
+
 @implementation NppDocument
 @end
 
@@ -22,6 +25,61 @@
 /// Scintilla wants 0xBBGGRR. Note setColorProperty: puts the colour in lParam,
 /// which is wrong for messages like SCI_SETCARETLINEBACK that take it in wParam,
 /// so every colour goes through message:wParam:lParam: explicitly.
+/// Sniffs a BOM, then falls back to UTF-8 and finally Latin-1, which always
+/// succeeds -- the same order of preference a plain-text editor should use.
+static NSString *DecodeText(NSData *data, NSStringEncoding *outEnc, BOOL *outBOM) {
+    const unsigned char *b = (const unsigned char *)data.bytes;
+    NSUInteger n = data.length;
+
+    if (n >= 3 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF) {
+        *outEnc = NSUTF8StringEncoding; *outBOM = YES;
+        return [[NSString alloc] initWithData:[data subdataWithRange:NSMakeRange(3, n - 3)]
+                                     encoding:NSUTF8StringEncoding];
+    }
+    if (n >= 2 && b[0] == 0xFF && b[1] == 0xFE) {
+        *outEnc = NSUTF16LittleEndianStringEncoding; *outBOM = YES;
+        return [[NSString alloc] initWithData:[data subdataWithRange:NSMakeRange(2, n - 2)]
+                                     encoding:NSUTF16LittleEndianStringEncoding];
+    }
+    if (n >= 2 && b[0] == 0xFE && b[1] == 0xFF) {
+        *outEnc = NSUTF16BigEndianStringEncoding; *outBOM = YES;
+        return [[NSString alloc] initWithData:[data subdataWithRange:NSMakeRange(2, n - 2)]
+                                     encoding:NSUTF16BigEndianStringEncoding];
+    }
+
+    *outBOM = NO;
+    NSString *s = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    if (s) { *outEnc = NSUTF8StringEncoding; return s; }
+    *outEnc = NSISOLatin1StringEncoding;
+    return [[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
+}
+
+/// First line ending wins, matching how Notepad++ reports a file's EOL.
+static int DetectEOL(NSString *text) {
+    NSRange cr = [text rangeOfString:@"\r"];
+    NSRange lf = [text rangeOfString:@"\n"];
+    if (cr.location == NSNotFound) return SC_EOL_LF;   // no CR at all, incl. no line ending
+    if (lf.location == NSNotFound) return SC_EOL_CR;
+    return (lf.location == cr.location + 1) ? SC_EOL_CRLF : SC_EOL_CR;
+}
+
+static NSData *EncodeText(NSString *text, NSStringEncoding enc, BOOL bom) {
+    NSMutableData *out = [NSMutableData data];
+    if (bom) {
+        if (enc == NSUTF8StringEncoding) {
+            const unsigned char b[] = {0xEF, 0xBB, 0xBF}; [out appendBytes:b length:3];
+        } else if (enc == NSUTF16LittleEndianStringEncoding) {
+            const unsigned char b[] = {0xFF, 0xFE}; [out appendBytes:b length:2];
+        } else if (enc == NSUTF16BigEndianStringEncoding) {
+            const unsigned char b[] = {0xFE, 0xFF}; [out appendBytes:b length:2];
+        }
+    }
+    NSData *body = [text dataUsingEncoding:enc allowLossyConversion:YES];
+    if (!body) return nil;
+    [out appendData:body];
+    return out;
+}
+
 static long SciColor(NSColor *c) {
     NSColor *d = [c colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
     long r = (long)(d.redComponent * 255);
@@ -85,8 +143,28 @@ static long SciColor(NSColor *c) {
     ScintillaView *sci = self.sciView;
     [sci message:SCI_SETMARGINTYPEN wParam:0 lParam:SC_MARGIN_NUMBER];
     [sci message:SCI_SETMARGINWIDTHN wParam:0 lParam:52];
+    // Margin 1: bookmarks. Margin 2: folding.
     [sci message:SCI_SETMARGINTYPEN wParam:1 lParam:SC_MARGIN_SYMBOL];
     [sci message:SCI_SETMARGINWIDTHN wParam:1 lParam:14];
+    [sci message:SCI_SETMARGINMASKN wParam:1 lParam:(1 << NPPMAC_BOOKMARK_MARKER)];
+    [sci message:SCI_SETMARGINSENSITIVEN wParam:1 lParam:1];
+    [sci message:SCI_MARKERDEFINE wParam:NPPMAC_BOOKMARK_MARKER lParam:SC_MARK_BOOKMARK];
+
+    [sci message:SCI_SETMARGINTYPEN wParam:2 lParam:SC_MARGIN_SYMBOL];
+    [sci message:SCI_SETMARGINMASKN wParam:2 lParam:(long)SC_MASK_FOLDERS];
+    [sci message:SCI_SETMARGINWIDTHN wParam:2 lParam:16];
+    [sci message:SCI_SETMARGINSENSITIVEN wParam:2 lParam:1];
+    [sci message:SCI_SETAUTOMATICFOLD wParam:(SC_AUTOMATICFOLD_SHOW | SC_AUTOMATICFOLD_CLICK | SC_AUTOMATICFOLD_CHANGE) lParam:0];
+    for (int mk = SC_MARKNUM_FOLDEREND; mk <= SC_MARKNUM_FOLDEROPEN; ++mk) {
+        [sci message:SCI_MARKERDEFINE wParam:(uptr_t)mk lParam:SC_MARK_BOXPLUS];
+    }
+    [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDEROPEN lParam:SC_MARK_BOXMINUS];
+    [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDER lParam:SC_MARK_BOXPLUS];
+    [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDERSUB lParam:SC_MARK_VLINE];
+    [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDERTAIL lParam:SC_MARK_LCORNER];
+    [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDEREND lParam:SC_MARK_BOXPLUSCONNECTED];
+    [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDEROPENMID lParam:SC_MARK_BOXMINUSCONNECTED];
+    [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDERMIDTAIL lParam:SC_MARK_TCORNER];
     [sci message:SCI_SETCARETLINEVISIBLE wParam:1 lParam:0];
     [sci message:SCI_SETTABWIDTH wParam:4 lParam:0];
     [sci message:SCI_SETUSETABS wParam:0 lParam:0];
@@ -103,6 +181,9 @@ static long SciColor(NSColor *c) {
     doc.docPointer = (void *)[self.sciView message:SCI_CREATEDOCUMENT wParam:0 lParam:SC_DOCUMENTOPTION_DEFAULT];
     doc.displayName = @"new 1";
     doc.language = [[LanguageCatalog sharedCatalog] languageNamed:@"normal"];
+    doc.encoding = NSUTF8StringEncoding;
+    doc.hasBOM = NO;
+    doc.eolMode = SC_EOL_LF;      // macOS default; Notepad++ uses CRLF on Windows
 
     NSInteger n = 1;
     for (NppDocument *d in self.docs) if (!d.path) n++;
@@ -118,20 +199,18 @@ static long SciColor(NSColor *c) {
         if ([self.docs[i].path isEqualToString:path]) { [self selectDocumentAtIndex:(NSInteger)i]; return YES; }
     }
 
-    NSStringEncoding used = 0;
-    NSString *text = [NSString stringWithContentsOfFile:path usedEncoding:&used error:NULL];
-    if (!text) {  // not UTF-8/UTF-16: fall back the way a plain-text editor should
-        NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
-        if (!data) return NO;
-        text = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
-            ?: [[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
-        if (!text) {
-            if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain
-                                                    code:NSFileReadUnknownStringEncodingError
-                                                userInfo:@{NSLocalizedDescriptionKey:
-                                                    [NSString stringWithFormat:@"Cannot decode %@", path.lastPathComponent]}];
-            return NO;
-        }
+    NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
+    if (!data) return NO;
+
+    NSStringEncoding used = NSUTF8StringEncoding;
+    BOOL bom = NO;
+    NSString *text = DecodeText(data, &used, &bom);
+    if (!text) {
+        if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain
+                                                code:NSFileReadUnknownStringEncodingError
+                                            userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:@"Cannot decode %@", path.lastPathComponent]}];
+        return NO;
     }
 
     NppDocument *doc = [[NppDocument alloc] init];
@@ -139,11 +218,15 @@ static long SciColor(NSColor *c) {
     doc.path = path;
     doc.displayName = path.lastPathComponent;
     doc.language = [[LanguageCatalog sharedCatalog] languageForFileName:path];
+    doc.encoding = used;
+    doc.hasBOM = bom;
+    doc.eolMode = DetectEOL(text);
 
     [self.docs addObject:doc];
     [self selectDocumentAtIndex:(NSInteger)self.docs.count - 1];
 
     [self.sciView setString:text];
+    [self.sciView message:SCI_SETEOLMODE wParam:(uptr_t)doc.eolMode lParam:0];
     [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     [self.sciView message:SCI_GOTOPOS wParam:0 lParam:0];
     [self.sciView message:SCI_EMPTYUNDOBUFFER wParam:0 lParam:0];
@@ -196,7 +279,13 @@ static long SciColor(NSColor *c) {
 - (BOOL)writeCurrentToPath:(NSString *)path {
     NSError *err = nil;
     NSString *text = [self.sciView string] ?: @"";
-    if (![text writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:&err]) {
+    NppDocument *doc = self.currentDocument;
+    NSStringEncoding enc = doc.encoding ?: NSUTF8StringEncoding;
+    NSData *data = EncodeText(text, enc, doc.hasBOM);
+    if (!data || ![data writeToFile:path options:NSDataWritingAtomic error:&err]) {
+        if (!err) err = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnknownError
+                                        userInfo:@{NSLocalizedDescriptionKey:
+                                            @"Cannot encode the document in the selected encoding."}];
         [[NSAlert alertWithError:err] runModal];
         return NO;
     }
@@ -253,6 +342,8 @@ static long SciColor(NSColor *c) {
 
     void *lexer = CreateLexer(lang.lexerID.UTF8String);
     [sci message:SCI_SETILEXER wParam:0 lParam:(sptr_t)lexer];
+    [sci setLexerProperty:@"fold" value:@"1"];
+    [sci setLexerProperty:@"fold.compact" value:@"0"];
 
     for (NSNumber *idx in lang.keywordSets) {
         [sci setStringProperty:SCI_SETKEYWORDS parameter:idx.integerValue value:lang.keywordSets[idx]];
@@ -311,6 +402,194 @@ static long SciColor(NSColor *c) {
     if (ws.foreground) [sci message:SCI_SETWHITESPACEFORE wParam:1 lParam:SciColor(ws.foreground)];
 }
 
+#pragma mark - Encoding + EOL
+
+- (void)setEncoding:(NSStringEncoding)enc withBOM:(BOOL)bom {
+    NppDocument *doc = self.currentDocument;
+    if (!doc) return;
+    doc.encoding = enc;
+    doc.hasBOM = bom;
+    // Changing the encoding changes the bytes on disk, so the document is dirty.
+    [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+    doc.modified = YES;
+    [self refreshChrome];
+}
+
+- (void)convertEOLTo:(int)eolMode {
+    NppDocument *doc = self.currentDocument;
+    if (!doc) return;
+    [self.sciView message:SCI_SETEOLMODE wParam:(uptr_t)eolMode lParam:0];
+    [self.sciView message:SCI_CONVERTEOLS wParam:(uptr_t)eolMode lParam:0];
+    doc.eolMode = eolMode;
+    [self refreshChrome];
+}
+
+- (NSString *)encodingDisplayName {
+    NppDocument *doc = self.currentDocument;
+    // These strings match the Encoding menu labels used by Notepad++.
+    switch (doc.encoding) {
+        case NSUTF16LittleEndianStringEncoding: return @"UTF-16 LE BOM";
+        case NSUTF16BigEndianStringEncoding:    return @"UTF-16 BE BOM";
+        case NSISOLatin1StringEncoding:         return @"ANSI";
+        default: return doc.hasBOM ? @"UTF-8-BOM" : @"UTF-8";
+    }
+}
+
+#pragma mark - Editing commands
+
+/// Reads `len` bytes at `pos` as a string, for prefix tests.
+- (NSString *)textAt:(long)pos length:(long)len {
+    if (len <= 0) return @"";
+    NSMutableString *out = [NSMutableString stringWithCapacity:(NSUInteger)len];
+    long docLen = [self.sciView message:SCI_GETLENGTH];
+    for (long i = 0; i < len && pos + i < docLen; ++i) {
+        [out appendFormat:@"%c", (char)[self.sciView message:SCI_GETCHARAT wParam:(uptr_t)(pos + i)]];
+    }
+    return out;
+}
+
+- (void)toggleLineComment {
+    NppDocument *doc = self.currentDocument;
+    NSString *token = doc.language.commentLine;
+    if (!token.length) { NSBeep(); return; }
+
+    ScintillaView *sci = self.sciView;
+    long selStart = [sci message:SCI_GETSELECTIONSTART];
+    long selEnd   = [sci message:SCI_GETSELECTIONEND];
+    long firstLine = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)selStart];
+    long lastLine  = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)selEnd];
+    if (lastLine > firstLine && selEnd == [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)lastLine]) {
+        lastLine--;   // a trailing selection edge at column 0 does not include that line
+    }
+
+    // Comment unless every non-blank line is already commented -- Notepad++'s rule.
+    BOOL allCommented = YES;
+    for (long ln = firstLine; ln <= lastLine; ++ln) {
+        long indent = [sci message:SCI_GETLINEINDENTPOSITION wParam:(uptr_t)ln];
+        long end = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)ln];
+        if (indent >= end) continue;                       // blank line: ignore
+        if (![[self textAt:indent length:(long)token.length] isEqualToString:token]) {
+            allCommented = NO; break;
+        }
+    }
+
+    [sci message:SCI_BEGINUNDOACTION];
+    for (long ln = lastLine; ln >= firstLine; --ln) {      // bottom-up keeps positions valid
+        long indent = [sci message:SCI_GETLINEINDENTPOSITION wParam:(uptr_t)ln];
+        long end = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)ln];
+        if (indent >= end) continue;
+        if (allCommented) {
+            long extra = [[self textAt:indent + (long)token.length length:1] isEqualToString:@" "] ? 1 : 0;
+            [sci message:SCI_DELETERANGE wParam:(uptr_t)indent lParam:(long)token.length + extra];
+        } else {
+            [sci setStringProperty:SCI_INSERTTEXT parameter:indent
+                             value:[token stringByAppendingString:@" "]];
+        }
+    }
+    [sci message:SCI_ENDUNDOACTION];
+    [self refreshChrome];
+}
+
+- (void)toggleBlockComment {
+    NppDocument *doc = self.currentDocument;
+    NSString *open = doc.language.commentStart, *close = doc.language.commentEnd;
+    if (!open.length || !close.length) { NSBeep(); return; }
+
+    ScintillaView *sci = self.sciView;
+    long selStart = [sci message:SCI_GETSELECTIONSTART];
+    long selEnd   = [sci message:SCI_GETSELECTIONEND];
+    if (selEnd == selStart) { NSBeep(); return; }
+
+    [sci message:SCI_BEGINUNDOACTION];
+    [sci setStringProperty:SCI_INSERTTEXT parameter:selEnd value:close];
+    [sci setStringProperty:SCI_INSERTTEXT parameter:selStart value:open];
+    [sci message:SCI_ENDUNDOACTION];
+    [sci message:SCI_SETSEL wParam:(uptr_t)selStart
+             lParam:selEnd + (long)open.length + (long)close.length];
+    [self refreshChrome];
+}
+
+- (void)toggleBookmark {
+    ScintillaView *sci = self.sciView;
+    long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+    long markers = [sci message:SCI_MARKERGET wParam:(uptr_t)line];
+    if (markers & (1 << NPPMAC_BOOKMARK_MARKER)) {
+        [sci message:SCI_MARKERDELETE wParam:(uptr_t)line lParam:NPPMAC_BOOKMARK_MARKER];
+    } else {
+        [sci message:SCI_MARKERADD wParam:(uptr_t)line lParam:NPPMAC_BOOKMARK_MARKER];
+    }
+}
+
+- (void)nextBookmark {
+    ScintillaView *sci = self.sciView;
+    long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+    long found = [sci message:SCI_MARKERNEXT wParam:(uptr_t)(line + 1) lParam:(1 << NPPMAC_BOOKMARK_MARKER)];
+    if (found < 0) found = [sci message:SCI_MARKERNEXT wParam:0 lParam:(1 << NPPMAC_BOOKMARK_MARKER)];
+    if (found < 0) { NSBeep(); return; }
+    [sci message:SCI_GOTOLINE wParam:(uptr_t)found lParam:0];
+    [self refreshChrome];
+}
+
+- (void)previousBookmark {
+    ScintillaView *sci = self.sciView;
+    long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+    long found = [sci message:SCI_MARKERPREVIOUS wParam:(uptr_t)(line - 1) lParam:(1 << NPPMAC_BOOKMARK_MARKER)];
+    if (found < 0) {
+        found = [sci message:SCI_MARKERPREVIOUS
+                       wParam:(uptr_t)[sci message:SCI_GETLINECOUNT] lParam:(1 << NPPMAC_BOOKMARK_MARKER)];
+    }
+    if (found < 0) { NSBeep(); return; }
+    [sci message:SCI_GOTOLINE wParam:(uptr_t)found lParam:0];
+    [self refreshChrome];
+}
+
+- (void)clearBookmarks {
+    [self.sciView message:SCI_MARKERDELETEALL wParam:NPPMAC_BOOKMARK_MARKER lParam:0];
+}
+
+- (void)foldAll:(BOOL)fold {
+    [self.sciView message:SCI_FOLDALL wParam:(uptr_t)(fold ? SC_FOLDACTION_CONTRACT : SC_FOLDACTION_EXPAND) lParam:0];
+}
+
+- (void)toggleFoldAtCursor {
+    ScintillaView *sci = self.sciView;
+    long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+    [sci message:SCI_TOGGLEFOLD wParam:(uptr_t)line lParam:0];
+}
+
+- (void)foldCurrent:(BOOL)fold {
+    ScintillaView *sci = self.sciView;
+    long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+    // Act on the enclosing fold point, which is what "current level" means.
+    long parent = [sci message:SCI_GETFOLDPARENT wParam:(uptr_t)line];
+    if (parent < 0) parent = line;
+    [sci message:SCI_FOLDLINE wParam:(uptr_t)parent
+             lParam:(fold ? SC_FOLDACTION_CONTRACT : SC_FOLDACTION_EXPAND)];
+}
+
+- (void)showAutoCompletion {
+    ScintillaView *sci = self.sciView;
+    long pos = [sci message:SCI_GETCURRENTPOS];
+    long start = [sci message:SCI_WORDSTARTPOSITION wParam:(uptr_t)pos lParam:1];
+    if (pos <= start) { NSBeep(); return; }
+    NSString *prefix = [self textAt:start length:pos - start];
+
+    // Candidates: distinct words already in the document, as Notepad++ does.
+    NSMutableSet *words = [NSMutableSet set];
+    NSString *all = [sci string] ?: @"";
+    NSCharacterSet *sep = [[NSCharacterSet characterSetWithCharactersInString:
+        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"] invertedSet];
+    for (NSString *w in [all componentsSeparatedByCharactersInSet:sep]) {
+        if (w.length > prefix.length && [w hasPrefix:prefix]) [words addObject:w];
+    }
+    if (!words.count) { NSBeep(); return; }
+
+    NSArray *sorted = [words.allObjects sortedArrayUsingSelector:@selector(compare:)];
+    [sci message:SCI_AUTOCSETSEPARATOR wParam:(uptr_t)' ' lParam:0];
+    [sci setStringProperty:SCI_AUTOCSHOW parameter:pos - start
+                     value:[sorted componentsJoinedByString:@" "]];
+}
+
 #pragma mark - Chrome refresh
 
 - (void)refreshChrome {
@@ -333,10 +612,11 @@ static long SciColor(NSColor *c) {
     long len = [sci message:SCI_GETLENGTH];
     long lines = [sci message:SCI_GETLINECOUNT];
 
+    NSString *eol = doc.eolMode == SC_EOL_CRLF ? @"CRLF" : doc.eolMode == SC_EOL_CR ? @"CR" : @"LF";
     self.statusField.stringValue = [NSString stringWithFormat:
-        @"%@    Ln %ld, Col %ld    %ld lines, %ld bytes    %@",
+        @"%@    Ln %ld, Col %ld    %ld lines, %ld bytes    %@    %@    %@",
         doc.path ?: @"(unsaved)", line, col, lines, len,
-        doc.language.name ?: @"normal"];
+        doc.language.name ?: @"normal", [self encodingDisplayName], eol];
 
     self.window.title = doc.path ? [NSString stringWithFormat:@"%@ — %@", doc.displayName,
                                     doc.path.stringByDeletingLastPathComponent]

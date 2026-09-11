@@ -4,6 +4,7 @@
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
+#import "Tests.h"
 
 @interface AppDelegate ()
 @property (nonatomic, strong) NSWindow *window;
@@ -37,6 +38,9 @@
     [self.window makeFirstResponder:self.editor.sci];
     [NSApp activateIgnoringOtherApps:YES];
 
+    if (getenv("NPPMAC_TEST")) {
+        [self performSelector:@selector(runTestSuite) withObject:nil afterDelay:0.5];
+    }
     if (getenv("NPPMAC_SELFTEST")) {
         [self performSelector:@selector(runSelfTest) withObject:nil afterDelay:0.8];
     }
@@ -124,6 +128,13 @@
     [self item:@"Select All" action:@selector(selectAllText:) key:@"a" flags:NSEventModifierFlagCommand menu:editMenu];
     [editMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Duplicate Line" action:@selector(duplicateLine:) key:@"d" flags:NSEventModifierFlagCommand menu:editMenu];
+    [editMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Toggle Line Comment" action:@selector(toggleLineComment:) key:@"/" flags:NSEventModifierFlagCommand menu:editMenu];
+    [self item:@"Block Comment" action:@selector(toggleBlockComment:) key:@"/"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:editMenu];
+    [editMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Complete Word" action:@selector(showAutoComplete:) key:@" "
+         flags:NSEventModifierFlagControl menu:editMenu];
     editItem.submenu = editMenu;
 
     // ---- Search
@@ -138,6 +149,13 @@
          flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:searchMenu];
     [searchMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Go to Line…" action:@selector(goToLine:) key:@"l" flags:NSEventModifierFlagCommand menu:searchMenu];
+    [searchMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Toggle Bookmark" action:@selector(toggleBookmark:) key:@"b" flags:NSEventModifierFlagCommand menu:searchMenu];
+    [self item:@"Next Bookmark" action:@selector(nextBookmark:) key:@"b"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:searchMenu];
+    [self item:@"Previous Bookmark" action:@selector(previousBookmark:) key:@"b"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:searchMenu];
+    [self item:@"Clear All Bookmarks" action:@selector(clearBookmarks:) key:@"" flags:0 menu:searchMenu];
     searchItem.submenu = searchMenu;
 
     // ---- View
@@ -152,7 +170,41 @@
          flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:viewMenu];
     [self item:@"Show Whitespace" action:@selector(toggleWhitespace:) key:@"i"
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:viewMenu];
+    [viewMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Toggle Fold" action:@selector(toggleFold:) key:@"." flags:NSEventModifierFlagCommand menu:viewMenu];
+    [self item:@"Fold All" action:@selector(foldAll:) key:@"." 
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:viewMenu];
+    [self item:@"Unfold All" action:@selector(unfoldAll:) key:@"."
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:viewMenu];
+    [self item:@"Fold Current Level" action:@selector(foldCurrent:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Unfold Current Level" action:@selector(unfoldCurrent:) key:@"" flags:0 menu:viewMenu];
     viewItem.submenu = viewMenu;
+
+    // ---- Encoding
+    NSMenuItem *encItem = [[NSMenuItem alloc] init];
+    [bar addItem:encItem];
+    NSMenu *encMenu = [[NSMenu alloc] initWithTitle:@"Encoding"];
+    struct { NSString *title; NSStringEncoding enc; BOOL bom; } encodings[] = {
+        {@"UTF-8",           NSUTF8StringEncoding,               NO},
+        {@"UTF-8-BOM",       NSUTF8StringEncoding,               YES},
+        {@"UTF-16 LE BOM",   NSUTF16LittleEndianStringEncoding,  YES},
+        {@"UTF-16 BE BOM",   NSUTF16BigEndianStringEncoding,     YES},
+        {@"ANSI",            NSISOLatin1StringEncoding,          NO},
+    };
+    for (size_t i = 0; i < sizeof(encodings)/sizeof(encodings[0]); ++i) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:encodings[i].title
+                                                    action:@selector(pickEncoding:) keyEquivalent:@""];
+        mi.target = self;
+        mi.tag = (NSInteger)i;
+        [encMenu addItem:mi];
+    }
+    [encMenu addItem:[NSMenuItem separatorItem]];
+    NSMenuItem *eolHeader = [encMenu addItemWithTitle:@"EOL Conversion" action:nil keyEquivalent:@""];
+    eolHeader.enabled = NO;
+    [self item:@"Windows (CR LF)" action:@selector(eolCRLF:) key:@"" flags:0 menu:encMenu];
+    [self item:@"Unix (LF)"       action:@selector(eolLF:) key:@"" flags:0 menu:encMenu];
+    [self item:@"Classic Mac (CR)" action:@selector(eolCR:) key:@"" flags:0 menu:encMenu];
+    encItem.submenu = encMenu;
 
     // ---- Language (populated from Notepad++'s langs.model.xml)
     NSMenuItem *langItem = [[NSMenuItem alloc] init];
@@ -204,6 +256,9 @@
         return [self.editor.sci message:SCI_CANREDO] != 0;
     } else if (a == @selector(pasteText:)) {
         return [self.editor.sci message:SCI_CANPASTE] != 0;
+    } else if (a == @selector(pickEncoding:)) {
+        item.state = [item.title isEqualToString:[self.editor encodingDisplayName]]
+                     ? NSControlStateValueOn : NSControlStateValueOff;
     }
     return YES;
 }
@@ -266,6 +321,46 @@
     [self.editor setLanguageNamed:sender.representedObject];
 }
 
+#pragma mark - Comment / completion
+
+- (void)toggleLineComment:(id)sender  { [self.editor toggleLineComment]; }
+- (void)toggleBlockComment:(id)sender { [self.editor toggleBlockComment]; }
+- (void)showAutoComplete:(id)sender   { [self.editor showAutoCompletion]; }
+
+#pragma mark - Bookmarks
+
+- (void)toggleBookmark:(id)sender   { [self.editor toggleBookmark]; }
+- (void)nextBookmark:(id)sender     { [self.editor nextBookmark]; }
+- (void)previousBookmark:(id)sender { [self.editor previousBookmark]; }
+- (void)clearBookmarks:(id)sender   { [self.editor clearBookmarks]; }
+
+#pragma mark - Folding
+
+- (void)toggleFold:(id)sender { [self.editor toggleFoldAtCursor]; }
+- (void)foldAll:(id)sender    { [self.editor foldAll:YES]; }
+- (void)unfoldAll:(id)sender  { [self.editor foldAll:NO]; }
+- (void)foldCurrent:(id)sender   { [self.editor foldCurrent:YES]; }
+- (void)unfoldCurrent:(id)sender { [self.editor foldCurrent:NO]; }
+
+#pragma mark - Encoding + EOL
+
+- (void)pickEncoding:(NSMenuItem *)sender {
+    struct { NSStringEncoding enc; BOOL bom; } table[] = {
+        {NSUTF8StringEncoding,              NO},
+        {NSUTF8StringEncoding,              YES},
+        {NSUTF16LittleEndianStringEncoding, YES},
+        {NSUTF16BigEndianStringEncoding,    YES},
+        {NSISOLatin1StringEncoding,         NO},
+    };
+    NSInteger i = sender.tag;
+    if (i < 0 || i >= (NSInteger)(sizeof(table)/sizeof(table[0]))) return;
+    [self.editor setEncoding:table[i].enc withBOM:table[i].bom];
+}
+
+- (void)eolCRLF:(id)sender { [self.editor convertEOLTo:SC_EOL_CRLF]; }
+- (void)eolLF:(id)sender   { [self.editor convertEOLTo:SC_EOL_LF]; }
+- (void)eolCR:(id)sender   { [self.editor convertEOLTo:SC_EOL_CR]; }
+
 #pragma mark - Tabs
 
 - (void)nextTab:(id)sender {
@@ -314,39 +409,56 @@
     [self searchFrom:[self.editor.sci message:SCI_GETSELECTIONSTART] forward:NO wrap:YES];
 }
 
-/// Returns YES when a match was selected.
+/// Returns YES when a match was found and selected.
+///
+/// SCI_SEARCHINTARGET returns -1 when there is no match and leaves the target
+/// range untouched, so the result must be read from the return value. Reading
+/// SCI_GETTARGETSTART/END instead reports the range we just set as a hit.
 - (BOOL)searchFrom:(long)start forward:(BOOL)forward wrap:(BOOL)wrap {
     ScintillaView *sci = self.editor.sci;
     NSString *term = self.lastSearchTerm;
     if (!term.length) return NO;
 
-    long len = [sci message:SCI_GETLENGTH];
-    long from = forward ? start : start;
-    long to   = forward ? len : 0;
+    const char *needle = term.UTF8String;
+    long needleLen = (long)strlen(needle);
+    long docLen = [sci message:SCI_GETLENGTH];
 
+    long found = [self searchTarget:forward ? start : 0
+                                 to:forward ? docLen : start
+                             needle:needle length:needleLen];
+
+    if (found < 0 && wrap) {
+        found = [self searchTarget:forward ? 0 : docLen
+                                to:forward ? docLen : 0
+                            needle:needle length:needleLen];
+    }
+    if (found < 0) { NSBeep(); return NO; }
+
+    // Backwards: SCI_SEARCHINTARGET reports the first hit in the range, so take
+    // the last one before the caret instead.
+    if (!forward) {
+        long best = found, probe = found;
+        while (probe >= 0) {
+            long nextStart = probe + 1;
+            if (nextStart >= (forward ? docLen : start)) break;
+            probe = [self searchTarget:nextStart to:start needle:needle length:needleLen];
+            if (probe >= 0) best = probe;
+        }
+        found = best;
+    }
+
+    [sci message:SCI_SETSEL wParam:(uptr_t)found lParam:found + needleLen];
+    [sci message:SCI_SCROLLCARET];
+    return YES;
+}
+
+/// One SCI_SEARCHINTARGET pass; returns the match position or -1.
+- (long)searchTarget:(long)from to:(long)to needle:(const char *)needle length:(long)len {
+    ScintillaView *sci = self.editor.sci;
     [sci message:SCI_SETTARGETSTART wParam:(uptr_t)from lParam:0];
     [sci message:SCI_SETTARGETEND wParam:(uptr_t)to lParam:0];
     [sci message:SCI_SETSEARCHFLAGS wParam:0 lParam:0];
-    [sci setStringProperty:SCI_SEARCHINTARGET parameter:(long)strlen(term.UTF8String) value:term];
-    long found = [sci message:SCI_GETTARGETSTART];
-    long foundEnd = [sci message:SCI_GETTARGETEND];
-
-    // SCI_SEARCHINTARGET returns -1 via the target when nothing matched.
-    if (foundEnd <= found && wrap) {
-        [sci message:SCI_SETTARGETSTART wParam:(uptr_t)(forward ? 0 : len) lParam:0];
-        [sci message:SCI_SETTARGETEND wParam:(uptr_t)(forward ? len : 0) lParam:0];
-        [sci setStringProperty:SCI_SEARCHINTARGET parameter:(long)strlen(term.UTF8String) value:term];
-        found = [sci message:SCI_GETTARGETSTART];
-        foundEnd = [sci message:SCI_GETTARGETEND];
-        if (foundEnd <= found) { NSBeep(); return NO; }
-    } else if (foundEnd <= found) {
-        NSBeep();
-        return NO;
-    }
-
-    [sci message:SCI_SETSEL wParam:(uptr_t)found lParam:foundEnd];
-    [sci message:SCI_SCROLLCARET];
-    return YES;
+    return [sci message:SCI_SEARCHINTARGET wParam:(uptr_t)len lParam:(sptr_t)needle];
 }
 
 - (void)showReplace:(id)sender {
@@ -358,13 +470,17 @@
 
     ScintillaView *sci = self.editor.sci;
     long count = 0;
-    [sci message:SCI_SETCURRENTPOS wParam:0 lParam:0];
-    [sci message:SCI_SETANCHOR wParam:0 lParam:0];
+    [sci message:SCI_SETSEL wParam:0 lParam:0];
+    [sci message:SCI_BEGINUNDOACTION];
     while ([self searchFrom:[sci message:SCI_GETSELECTIONEND] forward:YES wrap:NO]) {
+        // searchFrom left the target on the match, so replace it directly.
         [sci setStringProperty:SCI_REPLACETARGET parameter:(long)strlen(with.UTF8String) value:with];
+        long end = [sci message:SCI_GETTARGETEND];
+        [sci message:SCI_SETSEL wParam:(uptr_t)end lParam:end];
         count++;
         if (count > 100000) break;   // pathological guard
     }
+    [sci message:SCI_ENDUNDOACTION];
     NSAlert *done = [[NSAlert alloc] init];
     done.messageText = [NSString stringWithFormat:@"%ld replacement%@ made", count, count == 1 ? @"" : @"s"];
     [done runModal];
@@ -378,6 +494,14 @@
     if (line < 0) return;
     [self.editor.sci message:SCI_GOTOLINE wParam:(uptr_t)line lParam:0];
     [self.editor refreshChrome];
+}
+
+#pragma mark - Test suite
+
+- (void)runTestSuite {
+    int failures = NppMacRunTests(self);
+    fflush(stdout);
+    exit(failures == 0 ? 0 : 1);   // exit code carries the result to CI
 }
 
 #pragma mark - Snapshot
