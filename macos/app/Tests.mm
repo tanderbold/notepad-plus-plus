@@ -122,11 +122,21 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_FILE_PRINTNOW", @"builds a job with no panel",
               op2 != nil && !op2.showsPrintPanel);
 
-        // Quit is wired to NSApp; running it would end the suite.
-        NSMenuItem *quit = [[NSApp.mainMenu itemAtIndex:0].submenu
-                            itemAtIndex:[NSApp.mainMenu itemAtIndex:0].submenu.numberOfItems - 1];
-        Check(@"IDM_FILE_EXIT", @"Quit targets NSApp terminate:",
-              quit.action == @selector(terminate:) && quit.target == NSApp);
+        // Quit is wired to NSApp; running it would end the suite, so only the
+        // wiring is checked. It is found by walking the whole bar for the
+        // terminate: action: AppKit is still rearranging and localising menus
+        // while the suite starts, so neither the item's position nor its title
+        // can be relied on.
+        NSMenuItem *quit = nil;
+        NSMutableArray *menuQueue = [NSMutableArray arrayWithArray:NSApp.mainMenu.itemArray];
+        while (menuQueue.count && !quit) {
+            NSMenuItem *mi = menuQueue.firstObject;
+            [menuQueue removeObjectAtIndex:0];
+            if (mi.submenu) [menuQueue addObjectsFromArray:mi.submenu.itemArray];
+            if (mi.action == @selector(terminate:)) quit = mi;
+        }
+        Check(@"IDM_FILE_EXIT", @"a Quit item is wired to NSApp terminate:",
+              quit != nil && quit.target == NSApp);
     }
 
     printf("\n== File: close family ==\n");

@@ -120,6 +120,15 @@ crash that appeared on roughly one run in three:
 Both are covered by tests: one calls a data source with a deliberately stale row,
 the other runs a shell command repeatedly in a single pass.
 
+A third failure was the suite's own fault rather than the app's. The Quit test
+identified the menu item by position, then by title. Neither holds: AppKit is
+still rearranging and localising menus while the suite starts, so on roughly one
+run in five the item was not where the test looked. It now walks the whole menu
+bar for the `terminate:` action, which depends on neither.
+
+`macos/test.sh` keeps the last run's output in `macos/build/last-test-run.txt`,
+because an occasional failure that is not captured cannot be diagnosed.
+
 ### Tests
 
 Every command declared implemented has at least one test, and a coverage
