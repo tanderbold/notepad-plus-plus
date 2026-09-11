@@ -28,6 +28,7 @@
 - (void)toggleAlwaysOnTop:(id)sender;
 - (void)toggleFileBrowser:(id)sender;
 - (void)toggleDocumentList:(id)sender;
+- (void)applyToolbarPreferences;
 // View
 - (void)zoomIn:(id)sender;
 - (void)zoomOut:(id)sender;

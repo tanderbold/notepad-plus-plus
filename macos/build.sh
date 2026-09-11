@@ -44,7 +44,7 @@ libtool -static -o "$OUT/libscintilla-cocoa.a" "$OUT"/obj/*.o 2>/dev/null
 echo "==> NotepadMac"
 APPOBJ="$OUT/appobj"
 mkdir -p "$APPOBJ"
-for f in LanguageCatalog StyleCatalog WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels AppDelegate Tests main; do
+for f in LanguageCatalog StyleCatalog WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar AppDelegate Tests main; do
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
 done
 clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o \
@@ -63,6 +63,9 @@ cp "$ROOT/PowerEditor/src/langs.model.xml"   "$APP/Contents/Resources/"
 cp "$ROOT/PowerEditor/src/stylers.model.xml" "$APP/Contents/Resources/"
 # read back by the coverage meta-test in the built-in suite
 cp "$ROOT/macos/implemented.txt"            "$APP/Contents/Resources/"
+# Notepad++'s own colour themes; the Style Configurator and Preferences list these.
+mkdir -p "$APP/Contents/Resources/themes"
+cp "$ROOT"/PowerEditor/installer/themes/*.xml "$APP/Contents/Resources/themes/"
 codesign --force --deep --sign - "$APP" 2>/dev/null
 
 echo

@@ -15,6 +15,7 @@
 #import "ToolsCommands.h"
 #import "SettingsCommands.h"
 #import "SettingsPanels.h"
+#import "Toolbar.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -1864,6 +1865,109 @@ int NppMacRunTests(AppDelegate *app) {
         for (NSMenuItem *mi in ctx.itemArray) [ctxTitles addObject:mi.title];
         Check(@"IDM_SETTING_EDITCONTEXTMENU", @"the right-click menu follows the setting",
               ctx.numberOfItems == 3 && [ctxTitles containsObject:@"Toggle Line Comment"]);
+    }
+
+    printf("\n== Appearance: themes ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+        NSArray *themes = [StyleCatalog availableThemeNames];
+        Check(@"IDM_SETTING_PREFERENCE (themes listed)",
+              @"the bundled Notepad++ themes are offered",
+              themes.count > 15 && [themes containsObject:@"Default"] &&
+              [themes containsObject:@"DarkModeDefault"] && [themes containsObject:@"Monokai"]);
+
+        // The dark theme's default background is 3F3F3F; the light one's is white.
+        [StyleCatalog loadThemeNamed:@"Default"];
+        [ed applyLanguage];
+        long lightBack = [sci message:SCI_STYLEGETBACK wParam:STYLE_DEFAULT];
+        [StyleCatalog loadThemeNamed:@"DarkModeDefault"];
+        [ed applyLanguage];
+        long darkBack = [sci message:SCI_STYLEGETBACK wParam:STYLE_DEFAULT];
+        Check(@"IDM_SETTING_PREFERENCE (dark theme)",
+              @"switching to the dark theme repaints the editor",
+              lightBack == 0xFFFFFF && darkBack == 0x3F3F3F &&
+              [[StyleCatalog sharedCatalog].themeName isEqualToString:@"DarkModeDefault"]);
+
+        p.appearanceMode = 2;
+        BOOL forcesDark = [[p effectiveThemeName] isEqualToString:p.darkThemeName];
+        p.appearanceMode = 1;
+        BOOL forcesLight = [[p effectiveThemeName] isEqualToString:p.lightThemeName];
+        p.appearanceMode = 0;
+        NSString *followed = [p effectiveThemeName];
+        BOOL follows = [followed isEqualToString:[p systemIsDark] ? p.darkThemeName : p.lightThemeName];
+        Check(@"IDM_SETTING_PREFERENCE (appearance)",
+              @"light, dark and follow-the-system each pick the right theme",
+              forcesDark && forcesLight && follows);
+
+        // An imported theme must show up in the picker alongside the bundled ones.
+        NSString *custom = TempFile(@"TestTheme.xml",
+            @"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus><LexerStyles>"
+            @"<LexerType name=\"cpp\"><WordsStyle name=\"DEFAULT\" styleID=\"11\" "
+            @"fgColor=\"123456\" bgColor=\"654321\" /></LexerType></LexerStyles>"
+            @"<GlobalStyles><WidgetStyle name=\"Default Style\" styleID=\"32\" "
+            @"fgColor=\"ABCDEF\" bgColor=\"222222\" /></GlobalStyles></NotepadPlus>");
+        [ed importFiles:@[custom] intoSubdirectory:@"themes"];
+        [StyleCatalog setImportedThemesDirectory:
+            [[ed supportDirectory] stringByAppendingPathComponent:@"themes"]];
+        NSArray *withImported = [StyleCatalog availableThemeNames];
+        [StyleCatalog loadThemeNamed:@"TestTheme"];
+        [ed applyLanguage];
+        // 0x222222 is the same in either byte order, so the foreground is checked too.
+        BOOL imported = [withImported containsObject:@"TestTheme"] &&
+                        [sci message:SCI_STYLEGETBACK wParam:STYLE_DEFAULT] == 0x222222 &&
+                        [sci message:SCI_STYLEGETFORE wParam:STYLE_DEFAULT] == 0xEFCDAB;
+        Check(@"IDM_SETTING_IMPORTSTYLETHEMES (usable)",
+              @"an imported theme is listed and can be applied", imported);
+
+        [StyleCatalog loadThemeNamed:@"Default"];
+        [ed applyLanguage];
+    }
+
+    printf("\n== Toolbar ==\n");
+    {
+        NppToolbar *tb = [app valueForKey:@"toolbar"];
+        NSArray *ids = [tb itemIdentifiers];
+        Check(@"IDM_SETTING_PREFERENCE (toolbar buttons)",
+              @"the bar carries the editing commands",
+              ids.count > 10 && [ids containsObject:@"npp.save"] &&
+              [ids containsObject:@"npp.find"]);
+
+        Check(@"IDM_SETTING_PREFERENCE (toolbar actions)",
+              @"each button drives the matching menu command",
+              [tb actionForIdentifier:@"npp.save"] == @selector(saveDocument:) &&
+              [tb actionForIdentifier:@"npp.find"] == @selector(showFind:) &&
+              [tb actionForIdentifier:@"npp.undo"] == @selector(undo:));
+
+        NppPreferences *p = [NppPreferences shared];
+        p.showToolbar = NO;  [app applyToolbarPreferences];
+        BOOL hidden = ![tb visible];
+        p.showToolbar = YES; [app applyToolbarPreferences];
+        BOOL shown = [tb visible];
+        Check(@"IDM_SETTING_PREFERENCE (toolbar visibility)",
+              @"the setting shows and hides the bar", hidden && shown);
+
+        // Labels must reach AppKit, not just the stored request: the compact
+        // toolbar style silently ignores the display mode, so asking for labels
+        // has to switch the window style too.
+        p.toolbarDisplayMode = 1; [app applyToolbarPreferences];
+        BOOL labels = tb.displayMode == 1 &&
+                      tb.effectiveDisplayMode == NSToolbarDisplayModeIconAndLabel &&
+                      app.window.toolbarStyle == NSWindowToolbarStyleExpanded;
+
+        p.toolbarDisplayMode = 2; [app applyToolbarPreferences];
+        BOOL labelsOnly = tb.effectiveDisplayMode == NSToolbarDisplayModeLabelOnly;
+
+        p.toolbarDisplayMode = 0; [app applyToolbarPreferences];
+        BOOL iconsOnly = tb.effectiveDisplayMode == NSToolbarDisplayModeIconOnly;
+
+        p.toolbarIconSize = 0; [app applyToolbarPreferences];
+        BOOL regular = tb.iconSize == 0 && app.window.toolbarStyle == NSWindowToolbarStyleExpanded;
+        p.toolbarIconSize = 1; [app applyToolbarPreferences];
+        BOOL small = tb.iconSize == 1 && app.window.toolbarStyle == NSWindowToolbarStyleUnifiedCompact;
+
+        Check(@"IDM_SETTING_PREFERENCE (toolbar layout)",
+              @"display mode and size reach AppKit, including their interaction",
+              labels && labelsOnly && iconsOnly && regular && small);
     }
 
     printf("\n== Language: user defined ==\n");

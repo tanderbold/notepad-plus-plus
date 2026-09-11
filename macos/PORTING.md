@@ -72,6 +72,10 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   synchronised vertical and horizontal scrolling and zoom.
 - Document Map, Function List and three project panels.
 - Sessions: save and reopen the set of open files.
+- A toolbar of the editing commands, with the buttons, their labels and the bar
+  size all configurable.
+- Themes: all 20 that Notepad++ ships, plus any imported, chosen separately for
+  light and dark and switched by an Appearance setting that can follow macOS.
 - Folder as Workspace: a file tree beside the editor; Document List in a panel.
 - Tab navigation (go to tab 1-9, first/last/next/previous), reordering and the
   five tab colours; fold and unfold by level 1-8; symbol display; hide lines;

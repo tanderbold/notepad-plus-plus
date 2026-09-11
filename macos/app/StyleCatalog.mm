@@ -3,7 +3,11 @@
 @implementation NppStyle
 @end
 
+static NSString *gRequestedTheme = @"Default";
+static NSString *gImportedThemesDirectory = nil;
+
 @interface StyleCatalog () <NSXMLParserDelegate>
+@property (nonatomic, copy) NSString *loadedThemeName;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<NppStyle *> *> *byLexer;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NppStyle *> *globals;
 @property (nonatomic, copy, nullable) NSString *currentLexer;
@@ -12,12 +16,55 @@
 
 @implementation StyleCatalog
 
+static StyleCatalog *gShared = nil;
+
 + (instancetype)sharedCatalog {
-    static StyleCatalog *shared;
     static dispatch_once_t once;
-    dispatch_once(&once, ^{ shared = [[StyleCatalog alloc] init]; });
-    return shared;
+    dispatch_once(&once, ^{ gShared = [[StyleCatalog alloc] init]; });
+    return gShared;
 }
+
+/// Imported themes are looked for here as well as in the bundle.
++ (void)setImportedThemesDirectory:(NSString *)dir { gImportedThemesDirectory = [dir copy]; }
+
++ (NSArray<NSString *> *)availableThemeNames {
+    NSMutableArray *names = [NSMutableArray arrayWithObject:@"Default"];
+    NSFileManager *fm = [NSFileManager defaultManager];
+    for (NSString *dir in @[[[NSBundle mainBundle] pathForResource:@"themes" ofType:nil] ?: @"",
+                            gImportedThemesDirectory ?: @""]) {
+        if (!dir.length) continue;
+        for (NSString *file in [[fm contentsOfDirectoryAtPath:dir error:NULL]
+                                sortedArrayUsingSelector:@selector(localizedStandardCompare:)]) {
+            if (![file.pathExtension.lowercaseString isEqualToString:@"xml"]) continue;
+            NSString *name = file.stringByDeletingPathExtension;
+            if (![names containsObject:name]) [names addObject:name];
+        }
+    }
+    return names;
+}
+
++ (NSString *)pathForThemeNamed:(NSString *)name {
+    if (!name.length || [name isEqualToString:@"Default"]) {
+        return [[NSBundle mainBundle] pathForResource:@"stylers.model" ofType:@"xml"];
+    }
+    NSFileManager *fm = [NSFileManager defaultManager];
+    for (NSString *dir in @[[[NSBundle mainBundle] pathForResource:@"themes" ofType:nil] ?: @"",
+                            gImportedThemesDirectory ?: @""]) {
+        if (!dir.length) continue;
+        NSString *candidate = [dir stringByAppendingPathComponent:
+                               [name stringByAppendingPathExtension:@"xml"]];
+        if ([fm fileExistsAtPath:candidate]) return candidate;
+    }
+    return nil;
+}
+
++ (void)loadThemeNamed:(NSString *)name {
+    gRequestedTheme = [name copy] ?: @"Default";
+    [self sharedCatalog];                 // make sure the singleton exists
+    gShared = [[StyleCatalog alloc] init];
+}
+
+- (NSString *)themeName { return self.loadedThemeName; }
 
 /// "RRGGBB" -> NSColor. Notepad++ stores colours without a leading '#'.
 static NSColor *ColorFromHex(NSString *hex) {
@@ -35,7 +82,12 @@ static NSColor *ColorFromHex(NSString *hex) {
     _byLexer = [NSMutableDictionary dictionary];
     _globals = [NSMutableDictionary dictionary];
 
-    NSString *path = [[NSBundle mainBundle] pathForResource:@"stylers.model" ofType:@"xml"];
+    _loadedThemeName = gRequestedTheme ?: @"Default";
+    NSString *path = [StyleCatalog pathForThemeNamed:_loadedThemeName];
+    if (!path) {                          // a theme was removed since it was chosen
+        _loadedThemeName = @"Default";
+        path = [StyleCatalog pathForThemeNamed:@"Default"];
+    }
     if (path) {
         NSXMLParser *parser = [[NSXMLParser alloc] initWithData:[NSData dataWithContentsOfFile:path]];
         parser.delegate = self;

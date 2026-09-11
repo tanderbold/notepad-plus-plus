@@ -9,6 +9,8 @@
 #import "ToolsCommands.h"
 #import "SettingsCommands.h"
 #import "SettingsPanels.h"
+#import "Toolbar.h"
+#import "StyleCatalog.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -28,6 +30,7 @@
 @property (nonatomic, strong) PreferencesWindow *prefsWindow;
 @property (nonatomic, strong) StyleConfiguratorWindow *styleWindow;
 @property (nonatomic, strong) ShortcutMapperWindow *shortcutWindow;
+@property (nonatomic, strong) NppToolbar *toolbar;
 @property (nonatomic) BOOL alwaysOnTop;
 @end
 
@@ -51,6 +54,19 @@
     self.window.contentView = self.editor.view;
 
     [self buildMenus];
+
+    // Imported themes join the bundled ones in the Preferences picker.
+    [StyleCatalog setImportedThemesDirectory:
+        [[self.editor supportDirectory] stringByAppendingPathComponent:@"themes"]];
+
+    self.toolbar = [[NppToolbar alloc] initWithWindow:self.window target:self];
+    [[NppPreferences shared] applyToEditor:self.editor];
+    [self applyToolbarPreferences];
+
+    // Follow the system appearance while Preferences is set to do so.
+    [NSApp addObserver:self forKeyPath:@"effectiveAppearance"
+               options:NSKeyValueObservingOptionNew context:NULL];
+
     [self.editor refreshChrome];
 
     [self.window makeKeyAndOrderFront:nil];
@@ -777,6 +793,22 @@
     NSApp.mainMenu = bar;
     [self applyShortcutOverrides];
     [self.editor rebuildContextMenu];
+}
+
+#pragma mark - Appearance and toolbar
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object
+                        change:(NSDictionary *)change context:(void *)context {
+    if (![keyPath isEqualToString:@"effectiveAppearance"]) return;
+    if ([NppPreferences shared].appearanceMode != 0) return;   // only when following the system
+    [[NppPreferences shared] applyToEditor:self.editor];
+}
+
+- (void)applyToolbarPreferences {
+    NppPreferences *p = [NppPreferences shared];
+    self.toolbar.displayMode = p.toolbarDisplayMode;
+    self.toolbar.iconSize = p.toolbarIconSize;
+    self.toolbar.visible = p.showToolbar;
 }
 
 #pragma mark - Settings

@@ -18,6 +18,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface StyleCatalog : NSObject
 + (instancetype)sharedCatalog;
+
+/// Themes are the same XML as stylers.model.xml. Notepad++ ships a folder of
+/// them; imported ones live beside the app's other support files.
++ (NSArray<NSString *> *)availableThemeNames;      // "Default" plus every theme found
++ (nullable NSString *)pathForThemeNamed:(NSString *)name;
+/// Reloads the shared catalogue from a theme. "Default" restores stylers.model.xml.
++ (void)loadThemeNamed:(NSString *)name;
++ (void)setImportedThemesDirectory:(nullable NSString *)dir;
+@property (nonatomic, readonly, copy) NSString *themeName;
 /// Styles for a Notepad++ lexer name (the <LexerType name="..."> key), or nil.
 - (nullable NSArray<NppStyle *> *)stylesForLexerName:(NSString *)lexerName;
 /// Entries from <GlobalStyles>, keyed by their name attribute.

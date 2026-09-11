@@ -4,6 +4,7 @@
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
+#import "Toolbar.h"
 
 #pragma mark - Preferences
 
@@ -20,7 +21,7 @@
     _editor = editor;
     _controls = [NSMutableDictionary dictionary];
 
-    NSRect frame = NSMakeRect(0, 0, 420, 360);
+    NSRect frame = NSMakeRect(0, 0, 460, 560);
     _panel = [[NSPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskUtilityWindow)
@@ -49,6 +50,28 @@
                       on:[NppPreferences shared].restoreSession to:content atY:y];
     y = [self addField:@"Default encoding" key:@"defaultEncoding"
                   value:[NppPreferences shared].defaultEncoding to:content atY:y];
+
+    y -= 8;
+    y = [self addPopup:@"Appearance" key:@"appearanceMode"
+                 items:@[@"Follow the system", @"Light", @"Dark"]
+              selected:[NppPreferences shared].appearanceMode to:content atY:y];
+    NSArray *themes = [StyleCatalog availableThemeNames];
+    y = [self addPopup:@"Light theme" key:@"lightThemeName" items:themes
+              selected:[themes indexOfObject:[NppPreferences shared].lightThemeName ?: @"Default"]
+                    to:content atY:y];
+    y = [self addPopup:@"Dark theme" key:@"darkThemeName" items:themes
+              selected:[themes indexOfObject:[NppPreferences shared].darkThemeName ?: @"DarkModeDefault"]
+                    to:content atY:y];
+
+    y -= 8;
+    y = [self addCheckbox:@"Show the toolbar" key:@"showToolbar"
+                      on:[NppPreferences shared].showToolbar to:content atY:y];
+    y = [self addPopup:@"Toolbar buttons" key:@"toolbarDisplayMode"
+                 items:@[@"Icons only", @"Icons and labels", @"Labels only"]
+              selected:[NppPreferences shared].toolbarDisplayMode to:content atY:y];
+    y = [self addPopup:@"Toolbar size" key:@"toolbarIconSize"
+                 items:@[@"Regular", @"Small"]
+              selected:[NppPreferences shared].toolbarIconSize to:content atY:y];
 
     NSButton *apply = [[NSButton alloc] initWithFrame:NSMakeRect(300, 12, 100, 28)];
     apply.title = @"Apply";
@@ -81,6 +104,20 @@
     return y - 30;
 }
 
+- (CGFloat)addPopup:(NSString *)label key:(NSString *)key items:(NSArray<NSString *> *)items
+           selected:(NSInteger)selected to:(NSView *)content atY:(CGFloat)y {
+    NSTextField *caption = [NSTextField labelWithString:label];
+    caption.frame = NSMakeRect(20, y, 190, 20);
+    [content addSubview:caption];
+
+    NSPopUpButton *popup = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(220, y - 4, 220, 26)];
+    [popup addItemsWithTitles:items];
+    if (selected >= 0 && selected < (NSInteger)items.count) [popup selectItemAtIndex:selected];
+    [content addSubview:popup];
+    self.controls[key] = popup;
+    return y - 32;
+}
+
 - (CGFloat)addCheckbox:(NSString *)label key:(NSString *)key on:(BOOL)on
                     to:(NSView *)content atY:(CGFloat)y {
     NSButton *box = [NSButton checkboxWithTitle:label target:nil action:nil];
@@ -109,7 +146,17 @@
     p.showIndentGuides = [self.controls[@"showIndentGuides"] state] == NSControlStateValueOn;
     p.restoreSession = [self.controls[@"restoreSession"] state] == NSControlStateValueOn;
     p.defaultEncoding = [self.controls[@"defaultEncoding"] stringValue];
+    p.appearanceMode = [self.controls[@"appearanceMode"] indexOfSelectedItem];
+    p.lightThemeName = [self.controls[@"lightThemeName"] titleOfSelectedItem];
+    p.darkThemeName = [self.controls[@"darkThemeName"] titleOfSelectedItem];
+    p.showToolbar = [self.controls[@"showToolbar"] state] == NSControlStateValueOn;
+    p.toolbarDisplayMode = [self.controls[@"toolbarDisplayMode"] indexOfSelectedItem];
+    p.toolbarIconSize = [self.controls[@"toolbarIconSize"] indexOfSelectedItem];
     [p applyToEditor:self.editor];
+    // The toolbar lives on the window, so the delegate applies those three.
+    if ([NSApp.delegate respondsToSelector:@selector(applyToolbarPreferences)]) {
+        [NSApp.delegate performSelector:@selector(applyToolbarPreferences)];
+    }
 }
 
 - (void)resetAll:(id)sender {

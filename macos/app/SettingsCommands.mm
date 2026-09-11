@@ -30,6 +30,12 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"restoreSession"):  @NO,
         Key(@"defaultEOL"):      @(SC_EOL_LF),
         Key(@"defaultEncoding"): @"UTF-8",
+        Key(@"appearanceMode"):  @0,
+        Key(@"showToolbar"):     @YES,
+        Key(@"toolbarDisplayMode"): @0,
+        Key(@"toolbarIconSize"): @1,
+        Key(@"lightThemeName"):  @"Default",
+        Key(@"darkThemeName"):   @"DarkModeDefault",
         Key(@"styleOverrides"):  @{},
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
@@ -58,17 +64,34 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
 
 NPP_PREF_OBJ(fontName, setFontName, NSString, @"fontName")
 NPP_PREF_OBJ(defaultEncoding, setDefaultEncoding, NSString, @"defaultEncoding")
+NPP_PREF_OBJ(lightThemeName, setLightThemeName, NSString, @"lightThemeName")
+NPP_PREF_OBJ(darkThemeName, setDarkThemeName, NSString, @"darkThemeName")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
 NPP_PREF_INT(fontSize, setFontSize, @"fontSize")
 NPP_PREF_INT(tabWidth, setTabWidth, @"tabWidth")
 NPP_PREF_INT(defaultEOL, setDefaultEOL, @"defaultEOL")
+NPP_PREF_INT(appearanceMode, setAppearanceMode, @"appearanceMode")
+NPP_PREF_INT(toolbarDisplayMode, setToolbarDisplayMode, @"toolbarDisplayMode")
+NPP_PREF_INT(toolbarIconSize, setToolbarIconSize, @"toolbarIconSize")
 NPP_PREF_BOOL(useSpaces, setUseSpaces, @"useSpaces")
 NPP_PREF_BOOL(wordWrap, setWordWrap, @"wordWrap")
 NPP_PREF_BOOL(showWhitespace, setShowWhitespace, @"showWhitespace")
 NPP_PREF_BOOL(showIndentGuides, setShowIndentGuides, @"showIndentGuides")
 NPP_PREF_BOOL(restoreSession, setRestoreSession, @"restoreSession")
+NPP_PREF_BOOL(showToolbar, setShowToolbar, @"showToolbar")
+
+- (BOOL)systemIsDark {
+    NSString *match = [NSApp.effectiveAppearance bestMatchFromAppearancesWithNames:
+        @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
+    return [match isEqualToString:NSAppearanceNameDarkAqua];
+}
+
+- (NSString *)effectiveThemeName {
+    BOOL dark = self.appearanceMode == 2 || (self.appearanceMode == 0 && [self systemIsDark]);
+    return dark ? (self.darkThemeName ?: @"DarkModeDefault") : (self.lightThemeName ?: @"Default");
+}
 
 - (void)setStyleOverride:(NSDictionary *)attributes
              forLanguage:(NSString *)language styleID:(int)styleID {
@@ -93,6 +116,12 @@ NPP_PREF_BOOL(restoreSession, setRestoreSession, @"restoreSession")
 }
 
 - (void)applyToEditor:(EditorController *)editor {
+    // The theme decides the colours, so it is loaded before the styles are set.
+    NSString *wanted = [self effectiveThemeName];
+    if (![[StyleCatalog sharedCatalog].themeName isEqualToString:wanted]) {
+        [StyleCatalog loadThemeNamed:wanted];
+        [editor applyLanguage];
+    }
     ScintillaView *sci = editor.sci;
     [sci setStringProperty:SCI_STYLESETFONT parameter:STYLE_DEFAULT value:self.fontName];
     [sci message:SCI_STYLESETSIZE wParam:STYLE_DEFAULT lParam:self.fontSize];

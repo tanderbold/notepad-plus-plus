@@ -19,6 +19,19 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger defaultEOL;              // SC_EOL_*
 @property (nonatomic, copy) NSString *defaultEncoding;   // "UTF-8", "UTF-8-BOM", ...
 
+/// Appearance. 0 follows the system, 1 forces light, 2 forces dark.
+@property (nonatomic) NSInteger appearanceMode;
+@property (nonatomic, copy) NSString *lightThemeName;   // "Default" = stylers.model.xml
+@property (nonatomic, copy) NSString *darkThemeName;    // "DarkModeDefault"
+/// Toolbar. 0 = icon only, 1 = icon and label, 2 = label only; size 0 regular, 1 small.
+@property (nonatomic) BOOL showToolbar;
+@property (nonatomic) NSInteger toolbarDisplayMode;
+@property (nonatomic) NSInteger toolbarIconSize;
+
+/// The theme that should be in effect right now.
+- (NSString *)effectiveThemeName;
+- (BOOL)systemIsDark;
+
 /// Style overrides, keyed "<language>/<styleID>". Each value is a dictionary
 /// carrying any of: fg, bg (hex RGB), bold, italic, underline (booleans),
 /// font (name) and size. A bare string is read as a foreground colour, so
