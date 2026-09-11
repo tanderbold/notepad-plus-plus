@@ -8,6 +8,7 @@
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
+#import "TabBarView.h"
 #import "SettingsCommands.h"
 #include "ILexer.h"
 #include "Lexilla.h"
@@ -32,7 +33,7 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 }
 @end
 
-@interface EditorController () <ScintillaNotificationProtocol, WorkspacePanelDelegate>
+@interface EditorController () <ScintillaNotificationProtocol, WorkspacePanelDelegate, NppTabBarDelegate>
 @property (nonatomic, strong) WorkspacePanel *workspace;
 @property (nonatomic, strong) NSSplitView *split;
 @property (nonatomic, strong) NSView *editorArea;
@@ -47,7 +48,7 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @property (nonatomic) NSInteger activeProject;
 @property (nonatomic, strong) ScintillaView *sciView;
 @property (nonatomic, strong) NSView *container;
-@property (nonatomic, strong) NSSegmentedControl *tabBar;
+@property (nonatomic, strong) NppTabBarView *tabBar;
 @property (nonatomic, strong) NSTextField *statusField;
 @property (nonatomic, strong) NSMutableArray<NppDocument *> *docs;
 @property (nonatomic) NSInteger currentIndex;
@@ -136,13 +137,10 @@ static long SciColor(NSColor *c) {
     _editorArea = [[NSView alloc] initWithFrame:upper];
     _editorArea.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
 
-    _tabBar = [[NSSegmentedControl alloc] initWithFrame:
+    _tabBar = [[NppTabBarView alloc] initWithFrame:
                NSMakeRect(0, NSHeight(upper) - tabH, NSWidth(upper), tabH)];
     _tabBar.autoresizingMask = NSViewWidthSizable | NSViewMinYMargin;
-    _tabBar.segmentStyle = NSSegmentStyleTexturedSquare;
-    _tabBar.segmentCount = 0;
-    _tabBar.target = self;
-    _tabBar.action = @selector(tabClicked:);
+    _tabBar.tabDelegate = self;
     [_editorArea addSubview:_tabBar];
 
     NSRect editorRect = NSMakeRect(0, 0, NSWidth(upper), NSHeight(upper) - tabH);
@@ -346,8 +344,24 @@ static long SciColor(NSColor *c) {
     [self.window makeFirstResponder:self.sciView];
 }
 
-- (void)tabClicked:(NSSegmentedControl *)sender {
-    [self selectDocumentAtIndex:sender.selectedSegment];
+#pragma mark - NppTabBarDelegate
+
+- (void)tabBar:(NppTabBarView *)bar didSelectIndex:(NSInteger)index {
+    [self selectDocumentAtIndex:index];
+}
+
+- (void)tabBar:(NppTabBarView *)bar didRequestCloseIndex:(NSInteger)index {
+    [self selectDocumentAtIndex:index];
+    [self closeCurrentDocument];
+}
+
+- (void)tabBar:(NppTabBarView *)bar didMoveIndex:(NSInteger)from toIndex:(NSInteger)to {
+    NSMutableArray *docs = (NSMutableArray *)self.documents;
+    if (from < 0 || to < 0 || from >= (NSInteger)docs.count || to >= (NSInteger)docs.count) return;
+    NppDocument *moving = docs[(NSUInteger)from];
+    [docs removeObjectAtIndex:(NSUInteger)from];
+    [docs insertObject:moving atIndex:(NSUInteger)to];
+    [self selectDocumentAtIndex:to];
 }
 
 - (BOOL)saveCurrentDocument {
@@ -423,6 +437,10 @@ static long SciColor(NSColor *c) {
     [self.docs removeObjectAtIndex:index];
 
     if (self.docs.count == 0) {
+        if ([NppPreferences shared].exitOnClosingLastTab) {
+            [NSApp terminate:nil];
+            return;
+        }
         self.currentIndex = -1;
         [self newDocument];                       // switches the view off the old doc
     } else {
@@ -1052,23 +1070,20 @@ static long SciColor(NSColor *c) {
 - (void)refreshChrome {
     [[NSNotificationCenter defaultCenter]
         postNotificationName:NppEditorDocumentsDidChangeNotification object:self];
-    self.tabBar.segmentCount = (NSInteger)self.docs.count;
-    for (NSUInteger i = 0; i < self.docs.count; ++i) {
-        NppDocument *d = self.docs[i];
-        NSString *shownName = (d == self.currentDocument)
-            ? [self untitledNameForDocument:d] : d.displayName;
-        NSString *label = d.modified ? [shownName stringByAppendingString:@" •"] : shownName;
-        if (d.pinned) label = [@"📌 " stringByAppendingString:label];
-        if (d.tabColour > 0 && d.tabColour <= 5) {
-            NSArray *dots = @[@"🔴", @"🟠", @"🟡", @"🟢", @"🔵"];
-            label = [NSString stringWithFormat:@"%@ %@", dots[d.tabColour - 1], label];
-        }
-        [self.tabBar setLabel:label forSegment:(NSInteger)i];
-        [self.tabBar setWidth:0 forSegment:(NSInteger)i];
+    NSMutableArray *tabItems = [NSMutableArray arrayWithCapacity:self.docs.count];
+    for (NppDocument *d in self.docs) {
+        NppTabItem *item = [[NppTabItem alloc] init];
+        item.title = (d == self.currentDocument) ? [self untitledNameForDocument:d] : d.displayName;
+        item.modified = d.modified;
+        item.pinned = d.pinned;
+        item.colour = d.tabColour;
+        [tabItems addObject:item];
     }
+    self.tabBar.items = tabItems;
     if (self.currentIndex >= 0 && self.currentIndex < (NSInteger)self.docs.count) {
-        self.tabBar.selectedSegment = self.currentIndex;
+        self.tabBar.selectedIndex = self.currentIndex;
     }
+    [self applyTabBarPreferences];
 
     NppDocument *doc = self.currentDocument;
     ScintillaView *sci = self.sciView;
@@ -1089,6 +1104,18 @@ static long SciColor(NSColor *c) {
                                  : doc.displayName;
     self.window.representedFilename = doc.path ?: @"";
     self.window.documentEdited = doc.modified;
+}
+
+/// The Tab bar page of Preferences drives the bar's layout and behaviour.
+- (void)applyTabBarPreferences {
+    NppPreferences *p = [NppPreferences shared];
+    self.tabBar.showCloseButtons = p.tabShowCloseButton;
+    self.tabBar.closeButtonsOnInactiveTabs = p.tabCloseButtonOnInactive;
+    self.tabBar.doubleClickCloses = p.tabDoubleClickCloses;
+    self.tabBar.locked = p.tabBarLocked;
+    self.tabBar.vertical = p.tabBarVertical;
+    self.tabBar.multiLine = p.tabBarMultiLine;
+    self.tabBar.hidden = p.hideTabBar;
 }
 
 - (void)setChromeVisible:(BOOL)visible {

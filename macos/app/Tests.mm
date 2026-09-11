@@ -19,6 +19,7 @@
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
+#import "TabBarView.h"
 #import "FunctionListPanel.h"
 #import "FunctionListCatalog.h"
 #import "LanguageCatalog.h"
@@ -2479,6 +2480,107 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_SETTING_PREFERENCE (smart highlight rules)",
               @"match case and whole word each narrow the matches",
               loose == 3 && cased == 2 && strict == 1);
+    }
+
+    printf("\n== Tab bar ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+        NSError *err = nil;
+        [ed closeAllDocuments];
+        for (int i = 1; i <= 4; ++i) {
+            [ed openFileAtPath:TempFile([NSString stringWithFormat:@"tb%d.txt", i], @"x\n") error:&err];
+        }
+        NppTabBarView *bar = [ed valueForKey:@"tabBar"];
+        [bar setFrameSize:NSMakeSize(600, 26)];
+        [ed refreshChrome];
+
+        // One row: the tabs sit side by side at the same height.
+        p.tabBarVertical = NO; p.tabBarMultiLine = NO;
+        [ed applyTabBarPreferences];
+        [bar setFrameSize:NSMakeSize(600, 26)];
+        NSRect first = [bar frameOfTabAtIndex:0];
+        NSRect second = [bar frameOfTabAtIndex:1];
+        Check(@"IDM_SETTING_PREFERENCE (tab bar row)",
+              @"tabs lie side by side in one row",
+              NSMinY(first) == NSMinY(second) && NSMinX(second) > NSMinX(first) &&
+              bar.items.count == ed.documents.count);
+
+        // Vertical: stacked instead.
+        p.tabBarVertical = YES;
+        [ed applyTabBarPreferences];
+        [bar setFrameSize:NSMakeSize(140, 400)];
+        NSRect vFirst = [bar frameOfTabAtIndex:0];
+        NSRect vSecond = [bar frameOfTabAtIndex:1];
+        Check(@"IDM_SETTING_PREFERENCE (tab bar vertical)",
+              @"tabs stack down the side",
+              NSMinX(vFirst) == NSMinX(vSecond) && NSMinY(vSecond) > NSMinY(vFirst));
+        p.tabBarVertical = NO;
+
+        // Multi-line: they wrap onto a second row in a narrow bar.
+        p.tabBarMultiLine = YES;
+        [ed applyTabBarPreferences];
+        [bar setFrameSize:NSMakeSize(200, 60)];
+        BOOL wrapped = NO;
+        for (NSInteger i = 1; i < (NSInteger)bar.items.count; ++i) {
+            if (NSMinY([bar frameOfTabAtIndex:i]) > NSMinY([bar frameOfTabAtIndex:0])) wrapped = YES;
+        }
+        Check(@"IDM_SETTING_PREFERENCE (tab bar multi-line)",
+              @"tabs wrap onto another row when the bar is narrow",
+              wrapped && [bar requiredThickness] > 26);
+        p.tabBarMultiLine = NO;
+        [ed applyTabBarPreferences];
+        [bar setFrameSize:NSMakeSize(600, 26)];
+
+        // Close buttons: on the active tab, and on the others only when asked.
+        p.tabShowCloseButton = YES;
+        p.tabCloseButtonOnInactive = NO;
+        [ed applyTabBarPreferences];
+        [ed selectDocumentAtIndex:0];
+        NSRect active = [bar frameOfTabAtIndex:0];
+        NSPoint onActiveClose = NSMakePoint(NSMaxX(active) - 10, NSMidY(active));
+        NSRect other = [bar frameOfTabAtIndex:2];
+        NSPoint onOtherClose = NSMakePoint(NSMaxX(other) - 10, NSMidY(other));
+        BOOL activeOnly = [bar point:onActiveClose isOnCloseButtonOfIndex:0] &&
+                          ![bar point:onOtherClose isOnCloseButtonOfIndex:2];
+        p.tabCloseButtonOnInactive = YES;
+        [ed applyTabBarPreferences];
+        BOOL alsoInactive = [bar point:onOtherClose isOnCloseButtonOfIndex:2];
+        p.tabCloseButtonOnInactive = NO;
+        [ed applyTabBarPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (tab close buttons)",
+              @"the close button follows its setting",
+              activeOnly && alsoInactive);
+
+        // Closing through the bar removes that tab.
+        NSUInteger before = ed.documents.count;
+        [ed tabBar:bar didRequestCloseIndex:1];
+        Check(@"IDM_SETTING_PREFERENCE (tab close)",
+              @"the bar's close button closes that document",
+              ed.documents.count == before - 1);
+
+        // Dragging reorders.
+        NSString *movedName = ed.documents[0].displayName;
+        [ed tabBar:bar didMoveIndex:0 toIndex:2];
+        Check(@"IDM_SETTING_PREFERENCE (tab reorder)",
+              @"a dragged tab lands at its new position",
+              [ed.documents[2].displayName isEqualToString:movedName] &&
+              ed.currentDocument == ed.documents[2]);
+
+        p.hideTabBar = YES;
+        [ed applyTabBarPreferences];
+        BOOL hidden = bar.isHidden;
+        p.hideTabBar = NO;
+        [ed applyTabBarPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (hide tab bar)",
+              @"the bar can be hidden and shown", hidden && !bar.isHidden);
+
+        p.tabBarLocked = YES;
+        [ed applyTabBarPreferences];
+        BOOL locked = bar.locked;
+        p.tabBarLocked = NO;
+        [ed applyTabBarPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (tab bar lock)",
+              @"locking is passed to the bar", locked && !bar.locked);
     }
 
     printf("\n== Language: user defined ==\n");

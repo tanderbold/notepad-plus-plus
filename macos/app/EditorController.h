@@ -1,6 +1,7 @@
 // Multi-document editor built on one ScintillaView, switching Scintilla
 // documents per tab -- the same model Notepad++ uses on Windows.
 #import <Cocoa/Cocoa.h>
+#import "TabBarView.h"
 
 @class ScintillaView;
 @class NppLanguage;
@@ -27,7 +28,7 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 @property (nonatomic) NSInteger tabColour;         // 0 = none, 1..5 as in Notepad++
 @end
 
-@interface EditorController : NSObject
+@interface EditorController : NSObject <NppTabBarDelegate>
 @property (nonatomic, readonly) ScintillaView *sci;
 @property (nonatomic, readonly) NSView *view;           // tab bar + editor + status bar
 @property (nonatomic, readonly) NSArray<NppDocument *> *documents;
@@ -102,6 +103,7 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (void)applyTheme;                               // re-apply npp styles (e.g. on appearance change)
 - (void)applyLanguage;                            // re-attach lexer, keywords and styles
 - (void)rebuildContextMenu;                       // right-click menu from Preferences
+- (void)applyTabBarPreferences;                   // layout and behaviour of the tab bar
 - (void)refreshChrome;                            // tab titles + status bar
 - (void)setChromeVisible:(BOOL)visible;           // hides tab bar + status bar
 - (BOOL)chromeVisible;

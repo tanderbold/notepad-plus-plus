@@ -97,6 +97,8 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
 - Themes: all 20 that Notepad++ ships, plus any imported, chosen separately for
   light and dark and switched by an Appearance setting that can follow macOS.
 - Folder as Workspace: a file tree beside the editor; Document List in a panel.
+- A tab bar with per-tab close buttons, pin markers, colours, drag-to-reorder,
+  and horizontal, multi-row or vertical layout.
 - Tab navigation (go to tab 1-9, first/last/next/previous), reordering and the
   five tab colours; fold and unfold by level 1-8; symbol display; hide lines;
   document summary; always on top, full screen, Post-It and distraction-free
@@ -225,13 +227,17 @@ What it does not cover:
   `HWND` and `SendMessage`. "Open Plugins Folder" works; loading a Notepad++
   plugin binary does not and cannot without a new plugin system.
 - **Depth behind a command varies.** A setting exists here when the behaviour
-  behind it exists, and that rule has driven what was built: the toolbar, the
-  theme engine including dark mode, backup and autosave, print options, the
-  large-file restriction, clickable links, delimiter selection, multi-instance
-  handling and the relocatable settings folder were all added so their settings
-  would mean something. What remains thinner than upstream is depth inside a
-  few features rather than whole pages: the tab bar is a segmented control
-  rather than a bar with per-tab close buttons and vertical layout.
+  behind it exists, and that rule drove what was built: the toolbar, the theme
+  engine including dark mode, backup and autosave, print options, the large-file
+  restriction, clickable links, delimiter selection, multi-instance handling,
+  the relocatable settings folder, the Function List parsers and the tab bar
+  were all added so their settings would mean something.
+
+  What is still thinner than upstream is depth inside features rather than
+  whole pages. Preferences covers this editor's own settings, not upstream's
+  277 controls one for one; the docked panels are a split view and floating
+  panels rather than a layout that can be rearranged and saved; and plugins
+  cannot run at all, which no amount of work here changes.
 - **Some commands are macOS equivalents, not the same thing.** Finder for
   Explorer, Terminal for cmd and PowerShell, Trash for the Recycle Bin, Safari
   for Internet Explorer, POSIX permissions for the Windows read-only attribute.

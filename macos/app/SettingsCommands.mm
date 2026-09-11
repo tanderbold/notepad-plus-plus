@@ -99,6 +99,10 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"exitOnClosingLastTab"): @NO,
         Key(@"tabShowCloseButton"): @NO,
         Key(@"tabPinFeatureEnabled"): @YES,
+        Key(@"tabCloseButtonOnInactive"): @NO,
+        Key(@"tabBarLocked"): @NO,
+        Key(@"tabBarVertical"): @NO,
+        Key(@"tabBarMultiLine"): @NO,
         Key(@"recentFiles"): @[],
         Key(@"recentFilesMax"): @10,
         Key(@"recentFilesShowFullPath"): @NO,
@@ -226,6 +230,10 @@ NPP_PREF_BOOL(tabDoubleClickCloses, setTabDoubleClickCloses, @"tabDoubleClickClo
 NPP_PREF_BOOL(exitOnClosingLastTab, setExitOnClosingLastTab, @"exitOnClosingLastTab")
 NPP_PREF_BOOL(tabShowCloseButton, setTabShowCloseButton, @"tabShowCloseButton")
 NPP_PREF_BOOL(tabPinFeatureEnabled, setTabPinFeatureEnabled, @"tabPinFeatureEnabled")
+NPP_PREF_BOOL(tabCloseButtonOnInactive, setTabCloseButtonOnInactive, @"tabCloseButtonOnInactive")
+NPP_PREF_BOOL(tabBarLocked, setTabBarLocked, @"tabBarLocked")
+NPP_PREF_BOOL(tabBarVertical, setTabBarVertical, @"tabBarVertical")
+NPP_PREF_BOOL(tabBarMultiLine, setTabBarMultiLine, @"tabBarMultiLine")
 NPP_PREF_BOOL(recentFilesShowFullPath, setRecentFilesShowFullPath, @"recentFilesShowFullPath")
 NPP_PREF_BOOL(findFillWithSelection, setFindFillWithSelection, @"findFillWithSelection")
 NPP_PREF_BOOL(findSelectWordUnderCaret, setFindSelectWordUnderCaret, @"findSelectWordUnderCaret")

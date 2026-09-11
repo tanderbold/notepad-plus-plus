@@ -111,6 +111,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL exitOnClosingLastTab;
 @property (nonatomic) BOOL tabShowCloseButton;
 @property (nonatomic) BOOL tabPinFeatureEnabled;
+@property (nonatomic) BOOL tabCloseButtonOnInactive;
+@property (nonatomic) BOOL tabBarLocked;
+@property (nonatomic) BOOL tabBarVertical;
+@property (nonatomic) BOOL tabBarMultiLine;
 
 /// Recent files.
 @property (nonatomic, copy) NSArray<NSString *> *recentFiles;
