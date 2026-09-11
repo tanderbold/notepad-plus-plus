@@ -94,6 +94,36 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setChromeVisible:(BOOL)visible;           // hides tab bar + status bar
 - (BOOL)chromeVisible;
 
+// Second editor pane. Notepad++ calls these "views"; here the primary pane
+// owns the tab bar and the secondary one shows a moved or cloned document.
+@property (nonatomic, readonly) ScintillaView *secondarySci;
+- (BOOL)secondaryViewVisible;
+- (void)setSecondaryViewVisible:(BOOL)visible;
+- (void)focusOtherView;
+- (BOOL)otherViewHasFocus;
+- (BOOL)moveCurrentToOtherView;
+- (BOOL)cloneCurrentToOtherView;
+- (BOOL)syncVerticalScroll;
+- (void)setSyncVerticalScroll:(BOOL)on;
+- (BOOL)syncHorizontalScroll;
+- (void)setSyncHorizontalScroll:(BOOL)on;
+- (BOOL)syncZoom;
+- (void)setSyncZoom:(BOOL)on;
+- (void)mirrorScrollToSecondary;
+- (void)mirrorScrollFromSecondary;
+- (BOOL)openCurrentInNewInstanceMoving:(BOOL)closeHere;
+
+// Document Map: a shrunken read-only view of the same buffer.
+- (BOOL)documentMapVisible;
+- (void)setDocumentMapVisible:(BOOL)visible;
+
+// Project panels 1..3, each keeping its own folder root.
+- (void)showProjectPanel:(NSInteger)index;        // 1..3; same index again hides it
+- (NSInteger)activeProjectPanel;                  // 0 when none is shown
+- (void)setProjectPanel:(NSInteger)index root:(nullable NSString *)path;
+- (nullable NSString *)projectPanelRoot:(NSInteger)index;
+- (NSArray<NSString *> *)projectPanelNames:(NSInteger)index;
+
 @end
 
 NS_ASSUME_NONNULL_END

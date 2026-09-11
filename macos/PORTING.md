@@ -55,7 +55,10 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   inverse. Brace matching and selecting between braces.
 - Find in Files across a folder, with the results in their own tab and
   next/previous result navigation.
-- Change History: jump to the next or previous modified line, clear.
+- Change History in its own margin: jump to the next or previous modified line, clear.
+- A second editor pane: move or clone a document into it, focus between panes,
+  synchronised vertical and horizontal scrolling and zoom.
+- Document Map, Function List and three project panels.
 - Sessions: save and reopen the set of open files.
 - Folder as Workspace: a file tree beside the editor; Document List in a panel.
 - Tab navigation (go to tab 1-9, first/last/next/previous), reordering and the

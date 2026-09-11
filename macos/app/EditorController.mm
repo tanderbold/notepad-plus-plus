@@ -12,10 +12,31 @@
 @implementation NppDocument
 @end
 
+/// ScintillaNotificationProtocol gives no sender, so the secondary pane gets its
+/// own delegate object that tags the callback.
+@interface NppSecondaryPaneDelegate : NSObject <ScintillaNotificationProtocol>
+@property (nonatomic, weak) EditorController *owner;
+@end
+
+@implementation NppSecondaryPaneDelegate
+- (void)notification:(SCNotification *)n {
+    if (n->nmhdr.code == SCN_UPDATEUI) [self.owner mirrorScrollFromSecondary];
+}
+@end
+
 @interface EditorController () <ScintillaNotificationProtocol, WorkspacePanelDelegate>
 @property (nonatomic, strong) WorkspacePanel *workspace;
 @property (nonatomic, strong) NSSplitView *split;
 @property (nonatomic, strong) NSView *editorArea;
+@property (nonatomic, strong) ScintillaView *secondaryView;
+@property (nonatomic, strong) NSSplitView *editorSplit;
+@property (nonatomic, strong) id secondaryDelegate;
+@property (nonatomic) BOOL syncV;
+@property (nonatomic) BOOL syncH;
+@property (nonatomic) BOOL syncZ;
+@property (nonatomic, strong) ScintillaView *docMapView;
+@property (nonatomic, strong) NSMutableArray<WorkspacePanel *> *projects;
+@property (nonatomic) NSInteger activeProject;
 @property (nonatomic, strong) ScintillaView *sciView;
 @property (nonatomic, strong) NSView *container;
 @property (nonatomic, strong) NSSegmentedControl *tabBar;
@@ -116,14 +137,32 @@ static long SciColor(NSColor *c) {
     _tabBar.action = @selector(tabClicked:);
     [_editorArea addSubview:_tabBar];
 
-    _sciView = [[ScintillaView alloc] initWithFrame:
-                NSMakeRect(0, 0, NSWidth(upper), NSHeight(upper) - tabH)];
+    NSRect editorRect = NSMakeRect(0, 0, NSWidth(upper), NSHeight(upper) - tabH);
+    _sciView = [[ScintillaView alloc] initWithFrame:editorRect];
     _sciView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
     _sciView.delegate = self;
-    [_editorArea addSubview:_sciView];
+
+    _secondaryView = [[ScintillaView alloc] initWithFrame:editorRect];
+    _secondaryDelegate = [[NppSecondaryPaneDelegate alloc] init];
+    ((NppSecondaryPaneDelegate *)_secondaryDelegate).owner = self;
+    _secondaryView.delegate = (id<ScintillaNotificationProtocol>)_secondaryDelegate;
+
+    _editorSplit = [[NSSplitView alloc] initWithFrame:editorRect];
+    _editorSplit.vertical = NO;                    // panes stacked, as Notepad++ splits
+    _editorSplit.dividerStyle = NSSplitViewDividerStyleThin;
+    _editorSplit.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    [_editorSplit addSubview:_sciView];
+    [_editorArea addSubview:_editorSplit];
 
     _workspace = [[WorkspacePanel alloc] initWithFrame:NSMakeRect(0, 0, 220, NSHeight(upper))];
     _workspace.delegate = self;
+
+    _projects = [NSMutableArray array];
+    for (int i = 0; i < 3; ++i) {
+        WorkspacePanel *p = [[WorkspacePanel alloc] initWithFrame:NSMakeRect(0, 0, 220, NSHeight(upper))];
+        p.delegate = self;
+        [_projects addObject:p];
+    }
 
     _split = [[NSSplitView alloc] initWithFrame:upper];
     _split.vertical = YES;
@@ -202,6 +241,17 @@ static long SciColor(NSColor *c) {
     [sci message:SCI_SETBACKSPACEUNINDENTS wParam:1 lParam:0];
     [sci message:SCI_SETTABINDENTS wParam:1 lParam:0];
     // Change History powers Search > Change History; it is per document.
+    // Change History must have a margin of its own. A marker that belongs to no
+    // margin is drawn by Scintilla as a whole-line background instead, which
+    // paints every saved line in the "saved" colour.
+    long historyMask = (1 << SC_MARKNUM_HISTORY_REVERTED_TO_ORIGIN) |
+                       (1 << SC_MARKNUM_HISTORY_SAVED) |
+                       (1 << SC_MARKNUM_HISTORY_MODIFIED) |
+                       (1 << SC_MARKNUM_HISTORY_REVERTED_TO_MODIFIED);
+    [sci message:SCI_SETMARGINS wParam:4 lParam:0];
+    [sci message:SCI_SETMARGINTYPEN wParam:3 lParam:SC_MARGIN_SYMBOL];
+    [sci message:SCI_SETMARGINMASKN wParam:3 lParam:historyMask];
+    [sci message:SCI_SETMARGINWIDTHN wParam:3 lParam:6];
     [sci message:SCI_SETCHANGEHISTORY
            wParam:(SC_CHANGE_HISTORY_ENABLED | SC_CHANGE_HISTORY_MARKERS) lParam:0];
 }
@@ -711,6 +761,22 @@ static long SciColor(NSColor *c) {
     if (sel.background) [sci message:SCI_SETSELBACK wParam:1 lParam:SciColor(sel.background)];
     NppStyle *ws = styles.globalStyles[@"White space symbol"];
     if (ws.foreground) [sci message:SCI_SETWHITESPACEFORE wParam:1 lParam:SciColor(ws.foreground)];
+
+    // Change History markers, in the margin configured by applyDocumentSettings.
+    struct { NSString *name; int marker; } history[] = {
+        {@"Change History modified",        SC_MARKNUM_HISTORY_MODIFIED},
+        {@"Change History saved",           SC_MARKNUM_HISTORY_SAVED},
+        {@"Change History revert origin",   SC_MARKNUM_HISTORY_REVERTED_TO_ORIGIN},
+        {@"Change History revert modified", SC_MARKNUM_HISTORY_REVERTED_TO_MODIFIED},
+    };
+    for (size_t i = 0; i < sizeof(history)/sizeof(history[0]); ++i) {
+        NppStyle *hs = styles.globalStyles[history[i].name];
+        [sci message:SCI_MARKERDEFINE wParam:(uptr_t)history[i].marker lParam:SC_MARK_LEFTRECT];
+        if (hs.background) {
+            [sci message:SCI_MARKERSETBACK wParam:(uptr_t)history[i].marker lParam:SciColor(hs.background)];
+            [sci message:SCI_MARKERSETFORE wParam:(uptr_t)history[i].marker lParam:SciColor(hs.background)];
+        }
+    }
 }
 
 #pragma mark - Encoding + EOL
@@ -956,13 +1022,194 @@ static long SciColor(NSColor *c) {
 
 - (BOOL)chromeVisible { return !self.tabBar.hidden; }
 
+#pragma mark - Second editor pane
+
+- (ScintillaView *)secondarySci { return self.secondaryView; }
+
+- (BOOL)secondaryViewVisible { return self.secondaryView.superview != nil; }
+
+- (void)setSecondaryViewVisible:(BOOL)visible {
+    if (visible == [self secondaryViewVisible]) return;
+    if (visible) {
+        [self.editorSplit addSubview:self.secondaryView];
+        [self.editorSplit adjustSubviews];
+        [self.editorSplit setPosition:NSHeight(self.editorSplit.frame) / 2 ofDividerAtIndex:0];
+    } else {
+        [self.secondaryView removeFromSuperview];
+        [self.editorSplit adjustSubviews];
+    }
+}
+
+- (void)focusOtherView {
+    if (![self secondaryViewVisible]) { NSBeep(); return; }
+    NSResponder *first = self.window.firstResponder;
+    BOOL primaryFocused = !(first == self.secondaryView ||
+                            [first isKindOfClass:[NSView class]] &&
+                            [(NSView *)first isDescendantOf:self.secondaryView]);
+    [self.window makeFirstResponder:primaryFocused ? self.secondaryView : self.sciView];
+}
+
+- (BOOL)otherViewHasFocus {
+    NSResponder *first = self.window.firstResponder;
+    if (![first isKindOfClass:[NSView class]]) return NO;
+    return [(NSView *)first isDescendantOf:self.secondaryView];
+}
+
+- (BOOL)cloneCurrentToOtherView {
+    NppDocument *doc = self.currentDocument;
+    if (!doc) return NO;
+    [self setSecondaryViewVisible:YES];
+    // Sharing the document pointer is what makes it a clone: both panes edit
+    // the same buffer, exactly as Notepad++'s Clone to Other View does.
+    [self.secondaryView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    return YES;
+}
+
+- (BOOL)moveCurrentToOtherView {
+    if (self.documents.count < 2) {
+        // Moving the only tab away would leave the primary pane empty.
+        if (![self cloneCurrentToOtherView]) return NO;
+        return YES;
+    }
+    NppDocument *doc = self.currentDocument;
+    if (![self cloneCurrentToOtherView]) return NO;
+    NSInteger idx = [self.documents indexOfObject:doc];
+    if (idx != NSNotFound) [self closeDocumentAtIndex:idx discardChanges:YES];
+    return YES;
+}
+
+- (BOOL)syncVerticalScroll { return self.syncV; }
+- (void)setSyncVerticalScroll:(BOOL)on { self.syncV = on; if (on) [self mirrorScrollToSecondary]; }
+- (BOOL)syncHorizontalScroll { return self.syncH; }
+- (void)setSyncHorizontalScroll:(BOOL)on { self.syncH = on; if (on) [self mirrorScrollToSecondary]; }
+- (BOOL)syncZoom { return self.syncZ; }
+- (void)setSyncZoom:(BOOL)on { self.syncZ = on; if (on) [self mirrorScrollToSecondary]; }
+
+- (void)mirrorScrollToSecondary {
+    if (![self secondaryViewVisible]) return;
+    if (self.syncV) {
+        [self.secondaryView message:SCI_SETFIRSTVISIBLELINE
+                             wParam:(uptr_t)[self.sciView message:SCI_GETFIRSTVISIBLELINE] lParam:0];
+    }
+    if (self.syncH) {
+        [self.secondaryView message:SCI_SETXOFFSET
+                             wParam:(uptr_t)[self.sciView message:SCI_GETXOFFSET] lParam:0];
+    }
+    if (self.syncZ) {
+        [self.secondaryView message:SCI_SETZOOM
+                             wParam:(uptr_t)[self.sciView message:SCI_GETZOOM] lParam:0];
+    }
+}
+
+- (void)mirrorScrollFromSecondary {
+    if (![self secondaryViewVisible]) return;
+    if (self.syncV) {
+        [self.sciView message:SCI_SETFIRSTVISIBLELINE
+                       wParam:(uptr_t)[self.secondaryView message:SCI_GETFIRSTVISIBLELINE] lParam:0];
+    }
+    if (self.syncH) {
+        [self.sciView message:SCI_SETXOFFSET
+                       wParam:(uptr_t)[self.secondaryView message:SCI_GETXOFFSET] lParam:0];
+    }
+    if (self.syncZ) {
+        [self.sciView message:SCI_SETZOOM
+                       wParam:(uptr_t)[self.secondaryView message:SCI_GETZOOM] lParam:0];
+    }
+}
+
+#pragma mark - Document Map
+
+- (BOOL)documentMapVisible { return self.docMapView.superview != nil; }
+
+- (void)setDocumentMapVisible:(BOOL)visible {
+    if (visible == [self documentMapVisible]) return;
+    if (!visible) {
+        [self.docMapView removeFromSuperview];
+        [self.split adjustSubviews];
+        return;
+    }
+    if (!self.docMapView) {
+        self.docMapView = [[ScintillaView alloc] initWithFrame:NSMakeRect(0, 0, 120, 400)];
+        // A shrunken, read-only, chrome-less mirror of the buffer.
+        [self.docMapView message:SCI_SETZOOM wParam:(uptr_t)-8 lParam:0];
+        [self.docMapView message:SCI_SETREADONLY wParam:1 lParam:0];
+        [self.docMapView message:SCI_SETMARGINWIDTHN wParam:0 lParam:0];
+        [self.docMapView message:SCI_SETMARGINWIDTHN wParam:1 lParam:0];
+        [self.docMapView message:SCI_SETMARGINWIDTHN wParam:2 lParam:0];
+        [self.docMapView message:SCI_SETHSCROLLBAR wParam:0 lParam:0];
+        [self.docMapView message:SCI_SETVSCROLLBAR wParam:0 lParam:0];
+    }
+    [self.docMapView message:SCI_SETDOCPOINTER wParam:0
+                      lParam:(sptr_t)self.currentDocument.docPointer];
+    [self.split addSubview:self.docMapView];
+    [self.split adjustSubviews];
+    [self.split setPosition:NSWidth(self.split.frame) - 120
+           ofDividerAtIndex:self.split.subviews.count - 2];
+}
+
+#pragma mark - Project panels
+
+- (NSInteger)activeProjectPanel { return self.activeProject; }
+
+- (void)setProjectPanel:(NSInteger)index root:(NSString *)path {
+    if (index < 1 || index > 3) return;
+    [self.projects[(NSUInteger)(index - 1)] setRootPath:path];
+}
+
+- (NSString *)projectPanelRoot:(NSInteger)index {
+    if (index < 1 || index > 3) return nil;
+    return self.projects[(NSUInteger)(index - 1)].rootPath;
+}
+
+- (NSArray<NSString *> *)projectPanelNames:(NSInteger)index {
+    if (index < 1 || index > 3) return @[];
+    return [self.projects[(NSUInteger)(index - 1)] topLevelNames];
+}
+
+- (void)showProjectPanel:(NSInteger)index {
+    if (index < 1 || index > 3) return;
+    WorkspacePanel *panel = self.projects[(NSUInteger)(index - 1)];
+
+    if (self.activeProject == index) {            // same panel again hides it
+        [panel.view removeFromSuperview];
+        self.activeProject = 0;
+        [self.split adjustSubviews];
+        return;
+    }
+    for (WorkspacePanel *p in self.projects) [p.view removeFromSuperview];
+    if ([self workspaceVisible]) [self openFolderAsWorkspace:nil];
+
+    [self.split addSubview:panel.view positioned:NSWindowBelow relativeTo:self.editorArea];
+    [self.split setPosition:220 ofDividerAtIndex:0];
+    self.activeProject = index;
+    [self.split adjustSubviews];
+}
+
+/// Notepad++ opens a second process; `open -n` is the macOS equivalent.
+- (BOOL)openCurrentInNewInstanceMoving:(BOOL)closeHere {
+    NppDocument *doc = self.currentDocument;
+    if (!doc.path) { NSBeep(); return NO; }
+    NSURL *bundle = [[NSBundle mainBundle] bundleURL];
+    NSWorkspaceOpenConfiguration *config = [NSWorkspaceOpenConfiguration configuration];
+    config.createsNewApplicationInstance = YES;
+    [[NSWorkspace sharedWorkspace] openURLs:@[[NSURL fileURLWithPath:doc.path]]
+                       withApplicationAtURL:bundle
+                              configuration:config
+                          completionHandler:nil];
+    if (closeHere) [self closeDocumentAtIndex:self.currentIndex discardChanges:YES];
+    return YES;
+}
+
 #pragma mark - ScintillaNotificationProtocol
 
 - (void)notification:(SCNotification *)n {
     switch (n->nmhdr.code) {
         case SCN_SAVEPOINTREACHED: self.currentDocument.modified = NO; [self refreshChrome]; break;
         case SCN_SAVEPOINTLEFT:    self.currentDocument.modified = YES; [self refreshChrome]; break;
-        case SCN_UPDATEUI:         [self refreshChrome]; break;
+        case SCN_UPDATEUI:
+            [self refreshChrome];
+            [self mirrorScrollToSecondary];
+            break;
         default: break;
     }
 }

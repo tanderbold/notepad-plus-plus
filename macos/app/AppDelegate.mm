@@ -4,6 +4,7 @@
 #import "SearchCommands.h"
 #import "ViewCommands.h"
 #import "DocumentListPanel.h"
+#import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -15,6 +16,7 @@
 @property (nonatomic, strong) EditorController *editor;
 @property (nonatomic, copy) NSString *lastSearchTerm;
 @property (nonatomic, strong) DocumentListPanel *docList;
+@property (nonatomic, strong) FunctionListPanel *funcList;
 @property (nonatomic) BOOL alwaysOnTop;
 @end
 
@@ -439,6 +441,28 @@
     [viewMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Folder as Workspace" action:@selector(toggleFileBrowser:) key:@"" flags:0 menu:viewMenu];
     [self item:@"Document List" action:@selector(toggleDocumentList:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Document Map" action:@selector(toggleDocumentMap:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Function List" action:@selector(toggleFunctionList:) key:@"" flags:0 menu:viewMenu];
+    NSMenu *projMenu = [[NSMenu alloc] initWithTitle:@"Project Panels"];
+    for (NSInteger i = 1; i <= 3; ++i) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"Project Panel %ld", (long)i]
+                                                    action:@selector(toggleProjectPanel:) keyEquivalent:@""];
+        mi.target = self; mi.tag = i;
+        [projMenu addItem:mi];
+    }
+    [viewMenu addItemWithTitle:@"Project Panels" action:nil keyEquivalent:@""].submenu = projMenu;
+
+    [viewMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Focus on Another View" action:@selector(focusOtherView:) key:@"" flags:0 menu:viewMenu];
+    NSMenu *moveViewMenu = [[NSMenu alloc] initWithTitle:@"Move/Clone Current Document"];
+    [self item:@"Move to Other View" action:@selector(moveToOtherView:) key:@"" flags:0 menu:moveViewMenu];
+    [self item:@"Clone to Other View" action:@selector(cloneToOtherView:) key:@"" flags:0 menu:moveViewMenu];
+    [self item:@"Move to New Instance" action:@selector(moveToNewInstance:) key:@"" flags:0 menu:moveViewMenu];
+    [self item:@"Open in New Instance" action:@selector(openInNewInstance:) key:@"" flags:0 menu:moveViewMenu];
+    [viewMenu addItemWithTitle:@"Move/Clone Current Document" action:nil keyEquivalent:@""].submenu = moveViewMenu;
+    [self item:@"Synchronize Vertical Scrolling" action:@selector(toggleSyncV:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Synchronize Horizontal Scrolling" action:@selector(toggleSyncH:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Synchronize Zoom Across Views" action:@selector(toggleSyncZoom:) key:@"" flags:0 menu:viewMenu];
 
     [viewMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Text Direction RTL" action:@selector(textRTL:) key:@"" flags:0 menu:viewMenu];
@@ -838,6 +862,37 @@
     [self.docList toggle];
 }
 
+- (void)toggleDocumentMap:(id)sender {
+    [self.editor setDocumentMapVisible:![self.editor documentMapVisible]];
+}
+
+- (void)toggleFunctionList:(id)sender {
+    if (!self.funcList) self.funcList = [[FunctionListPanel alloc] initWithEditor:self.editor];
+    [self.funcList toggle];
+}
+
+- (void)toggleProjectPanel:(NSMenuItem *)sender {
+    NSInteger idx = sender.tag;
+    if (![self.editor projectPanelRoot:idx] && [self.editor activeProjectPanel] != idx) {
+        NSOpenPanel *panel = [NSOpenPanel openPanel];
+        panel.canChooseDirectories = YES;
+        panel.canChooseFiles = NO;
+        if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+        [self.editor setProjectPanel:idx root:panel.URL.path];
+    }
+    [self.editor showProjectPanel:idx];
+}
+
+- (void)focusOtherView:(id)sender   { [self.editor focusOtherView]; }
+- (void)moveToOtherView:(id)sender  { [self.editor moveCurrentToOtherView]; }
+- (void)cloneToOtherView:(id)sender { [self.editor cloneCurrentToOtherView]; }
+- (void)moveToNewInstance:(id)sender { [self.editor openCurrentInNewInstanceMoving:YES]; }
+- (void)openInNewInstance:(id)sender { [self.editor openCurrentInNewInstanceMoving:NO]; }
+
+- (void)toggleSyncV:(id)sender    { [self.editor setSyncVerticalScroll:![self.editor syncVerticalScroll]]; }
+- (void)toggleSyncH:(id)sender    { [self.editor setSyncHorizontalScroll:![self.editor syncHorizontalScroll]]; }
+- (void)toggleSyncZoom:(id)sender { [self.editor setSyncZoom:![self.editor syncZoom]]; }
+
 - (void)textRTL:(id)sender { [self.editor setTextDirectionRTL:YES]; }
 - (void)textLTR:(id)sender { [self.editor setTextDirectionRTL:NO]; }
 
@@ -1121,7 +1176,17 @@
             fprintf(stderr, "snapshot: cannot open %s\n", sample.UTF8String);
         }
     }
+    // Optional: show the split panes so a snapshot can demonstrate them.
+    if (getenv("NPPMAC_SNAPSHOT_SPLIT")) {
+        [self.editor cloneCurrentToOtherView];
+        [self.editor setSyncVerticalScroll:YES];
+        [self.editor.secondarySci message:SCI_SETFIRSTVISIBLELINE wParam:40 lParam:0];
+    }
     [self.editor refreshChrome];
+    // Force the whole hierarchy to redraw before capturing; a split pane can
+    // otherwise be cached from a backing store that was never painted.
+    [self.window.contentView setNeedsDisplay:YES];
+    [self.window displayIfNeeded];
     [self.editor.view displayIfNeeded];
 
     NSView *view = self.window.contentView;

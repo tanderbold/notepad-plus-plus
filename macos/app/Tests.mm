@@ -9,6 +9,7 @@
 #import "EditCommands.h"
 #import "SearchCommands.h"
 #import "ViewCommands.h"
+#import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -783,6 +784,22 @@ int NppMacRunTests(AppDelegate *app) {
         [sci message:SCI_GOTOLINE wParam:2 lParam:0];
         Check(@"IDM_SEARCH_CHANGED_PREV", @"finds it going backwards", [ed goToNextChange:NO]);
 
+        // Regression: change-history markers must belong to a margin. Scintilla
+        // draws a marker with no margin as a whole-line background, which turned
+        // every saved line the "saved" colour and made the document look green.
+        long historyMask = (1 << SC_MARKNUM_HISTORY_REVERTED_TO_ORIGIN) |
+                           (1 << SC_MARKNUM_HISTORY_SAVED) |
+                           (1 << SC_MARKNUM_HISTORY_MODIFIED) |
+                           (1 << SC_MARKNUM_HISTORY_REVERTED_TO_MODIFIED);
+        long covered = 0;
+        for (int margin = 0; margin < SC_MAX_MARGIN + 1; ++margin) {
+            if ([sci message:SCI_GETMARGINWIDTHN wParam:(uptr_t)margin] > 0) {
+                covered |= [sci message:SCI_GETMARGINMASKN wParam:(uptr_t)margin];
+            }
+        }
+        Check(@"IDM_SEARCH_CHANGED_NEXT", @"history markers live in a visible margin",
+              (covered & historyMask) == historyMask);
+
         [ed clearChangeHistory];
         [sci message:SCI_GOTOLINE wParam:0 lParam:0];
         Check(@"IDM_SEARCH_CLEAR_CHANGE_HISTORY", @"history is discarded",
@@ -1025,6 +1042,103 @@ int NppMacRunTests(AppDelegate *app) {
         for (size_t i = 0; i < sizeof(browsers)/sizeof(browsers[0]); ++i) {
             Check(browsers[i].cmd, @"declines while the document is unsaved",
                   ![ed openCurrentInBrowserBundleID:browsers[i].bundle]);
+        }
+    }
+
+    printf("\n== View: split panes and panels ==\n");
+    {
+        NSError *err = nil;
+        [ed closeAllDocuments];
+        [ed openFileAtPath:TempFile(@"t_split1.txt", @"one\ntwo\nthree\nfour\nfive\n") error:&err];
+        [ed openFileAtPath:TempFile(@"t_split2.txt", @"other\n") error:&err];
+
+        [ed selectTabNumber:2];
+        void *sharedDoc = ed.currentDocument.docPointer;
+        BOOL cloned = [ed cloneCurrentToOtherView];
+        Check(@"IDM_VIEW_CLONE_TO_ANOTHER_VIEW", @"second pane shows the same buffer",
+              cloned && [ed secondaryViewVisible] &&
+              (void *)[ed.secondarySci message:SCI_GETDOCPOINTER] == sharedDoc);
+
+        NSUInteger before = ed.documents.count;
+        [ed moveCurrentToOtherView];
+        Check(@"IDM_VIEW_GOTO_ANOTHER_VIEW", @"the tab leaves the primary pane",
+              ed.documents.count == before - 1);
+
+        [ed focusOtherView];
+        BOOL onOther = [ed otherViewHasFocus];
+        [ed focusOtherView];
+        Check(@"IDM_VIEW_SWITCHTO_OTHER_VIEW", @"focus moves between panes and back",
+              onOther && ![ed otherViewHasFocus]);
+
+        // Synchronised scrolling and zoom
+        // Long enough that SCI_SETFIRSTVISIBLELINE is not clamped back to 0.
+        NSMutableString *tall = [NSMutableString string];
+        for (int i = 0; i < 300; ++i) [tall appendFormat:@"line %d\n", i];
+        SetDoc(ed, tall);
+        [ed cloneCurrentToOtherView];
+        [ed setSyncVerticalScroll:YES];
+        [sci message:SCI_SETFIRSTVISIBLELINE wParam:40 lParam:0];
+        [ed mirrorScrollToSecondary];
+        long primaryTop = [sci message:SCI_GETFIRSTVISIBLELINE];
+        Check(@"IDM_VIEW_SYNSCROLLV", @"second pane follows vertically",
+              primaryTop > 0 &&
+              [ed.secondarySci message:SCI_GETFIRSTVISIBLELINE] == primaryTop);
+        [ed setSyncVerticalScroll:NO];
+
+        [ed setSyncHorizontalScroll:YES];
+        [sci message:SCI_SETXOFFSET wParam:37 lParam:0];
+        [ed mirrorScrollToSecondary];
+        Check(@"IDM_VIEW_SYNSCROLLH", @"second pane follows horizontally",
+              [ed.secondarySci message:SCI_GETXOFFSET] == 37);
+        [ed setSyncHorizontalScroll:NO];
+        [sci message:SCI_SETXOFFSET wParam:0 lParam:0];
+
+        [ed setSyncZoom:YES];
+        [sci message:SCI_SETZOOM wParam:3 lParam:0];
+        [ed mirrorScrollToSecondary];
+        Check(@"IDM_VIEW_ZOOM_SYNC", @"zoom is mirrored across panes",
+              [ed.secondarySci message:SCI_GETZOOM] == 3);
+        [ed setSyncZoom:NO];
+        [sci message:SCI_SETZOOM wParam:0 lParam:0];
+        [ed setSecondaryViewVisible:NO];
+
+        // Spawning real app instances from a test would litter the session.
+        [ed newDocument];
+        Check(@"IDM_VIEW_GOTO_NEW_INSTANCE", @"declines while the document is unsaved",
+              ![ed openCurrentInNewInstanceMoving:YES]);
+        Check(@"IDM_VIEW_LOAD_IN_NEW_INSTANCE", @"declines while the document is unsaved",
+              ![ed openCurrentInNewInstanceMoving:NO]);
+
+        [ed openFileAtPath:TempFile(@"t_map.txt", @"mapped\n") error:&err];
+        [ed setDocumentMapVisible:YES];
+        BOOL mapOn = [ed documentMapVisible];
+        [ed setDocumentMapVisible:NO];
+        Check(@"IDM_VIEW_DOC_MAP", @"shows and hides the shrunken mirror",
+              mapOn && ![ed documentMapVisible]);
+
+        [ed setLanguageNamed:@"python"];
+        SetDoc(ed, @"def alpha(x):\n    return x\n\ndef beta():\n    pass\n");
+        FunctionListPanel *fl = [[FunctionListPanel alloc] initWithEditor:ed];
+        NSArray *names = [fl functionNames];
+        Check(@"IDM_VIEW_FUNC_LIST", @"lists the declarations in the document",
+              names.count == 2 && [names containsObject:@"alpha"] && [names containsObject:@"beta"]);
+
+        NSString *projDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_proj"];
+        [[NSFileManager defaultManager] removeItemAtPath:projDir error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:projDir
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        [@"x\n" writeToFile:[projDir stringByAppendingPathComponent:@"proj.txt"]
+                  atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        NSArray *projIDs = @[@"IDM_VIEW_PROJECT_PANEL_1", @"IDM_VIEW_PROJECT_PANEL_2", @"IDM_VIEW_PROJECT_PANEL_3"];
+        for (NSInteger i = 1; i <= 3; ++i) {
+            [ed setProjectPanel:i root:projDir];
+            [ed showProjectPanel:i];
+            BOOL shown = [ed activeProjectPanel] == i &&
+                         [[ed projectPanelRoot:i] isEqualToString:projDir] &&
+                         [[ed projectPanelNames:i] containsObject:@"proj.txt"];
+            [ed showProjectPanel:i];               // same panel again hides it
+            Check(projIDs[i - 1], [NSString stringWithFormat:@"panel %ld opens on its own root", (long)i],
+                  shown && [ed activeProjectPanel] == 0);
         }
     }
 
