@@ -754,17 +754,40 @@ static long SciColor(NSColor *c) {
 
     for (NppStyle *s in [styles stylesForLexerName:langName]) applyStyle(s, s.styleID);
 
-    // Colours chosen in the Style Configurator win over the shipped theme.
+    // Anything chosen in the Style Configurator wins over the shipped theme.
+    // Every attribute the upstream Style struct carries is honoured here.
     NSDictionary *overrides = [NppPreferences shared].styleOverrides;
     for (NSString *key in overrides) {
         NSArray *parts = [key componentsSeparatedByString:@"/"];
         if (parts.count != 2 || ![parts[0] isEqualToString:langName]) continue;
-        unsigned int rgb = 0;
-        if (![[NSScanner scannerWithString:overrides[key]] scanHexInt:&rgb]) continue;
-        NSColor *c = [NSColor colorWithSRGBRed:((rgb >> 16) & 0xFF) / 255.0
-                                         green:((rgb >> 8) & 0xFF) / 255.0
-                                          blue:(rgb & 0xFF) / 255.0 alpha:1.0];
-        [sci message:SCI_STYLESETFORE wParam:(uptr_t)[parts[1] intValue] lParam:SciColor(c)];
+        int styleID = [parts[1] intValue];
+        NSDictionary *attrs = [[NppPreferences shared] styleOverrideForLanguage:langName
+                                                                        styleID:styleID];
+        if (!attrs.count) continue;
+
+        NSColor *(^colourFrom)(NSString *) = ^NSColor *(NSString *hex) {
+            unsigned int rgb = 0;
+            if (hex.length != 6 || ![[NSScanner scannerWithString:hex] scanHexInt:&rgb]) return nil;
+            return [NSColor colorWithSRGBRed:((rgb >> 16) & 0xFF) / 255.0
+                                       green:((rgb >> 8) & 0xFF) / 255.0
+                                        blue:(rgb & 0xFF) / 255.0 alpha:1.0];
+        };
+        NSColor *fg = colourFrom(attrs[@"fg"]);
+        NSColor *bg = colourFrom(attrs[@"bg"]);
+        if (fg) [sci message:SCI_STYLESETFORE wParam:(uptr_t)styleID lParam:SciColor(fg)];
+        if (bg) [sci message:SCI_STYLESETBACK wParam:(uptr_t)styleID lParam:SciColor(bg)];
+        if (attrs[@"bold"])      [sci message:SCI_STYLESETBOLD wParam:(uptr_t)styleID
+                                        lParam:[attrs[@"bold"] boolValue] ? 1 : 0];
+        if (attrs[@"italic"])    [sci message:SCI_STYLESETITALIC wParam:(uptr_t)styleID
+                                        lParam:[attrs[@"italic"] boolValue] ? 1 : 0];
+        if (attrs[@"underline"]) [sci message:SCI_STYLESETUNDERLINE wParam:(uptr_t)styleID
+                                        lParam:[attrs[@"underline"] boolValue] ? 1 : 0];
+        if ([attrs[@"font"] length]) {
+            [sci setStringProperty:SCI_STYLESETFONT parameter:styleID value:attrs[@"font"]];
+        }
+        if ([attrs[@"size"] intValue] > 0) {
+            [sci message:SCI_STYLESETSIZE wParam:(uptr_t)styleID lParam:[attrs[@"size"] intValue]];
+        }
     }
 
     NppStyle *lineNo = styles.globalStyles[@"Line number margin"];

@@ -1802,13 +1802,36 @@ int NppMacRunTests(AppDelegate *app) {
         p.tabWidth = 4; p.useSpaces = YES; p.wordWrap = NO; p.showWhitespace = NO;
         [p applyToEditor:ed];
 
+        // Every attribute the upstream Style struct carries must reach Scintilla,
+        // not just the foreground colour.
         [ed setLanguageNamed:@"cpp"];
-        [p setStyleOverride:@"FF0000" forLanguage:@"cpp" styleID:SCE_C_COMMENTLINE];
+        [p setStyleOverride:@{@"fg": @"FF0000", @"bg": @"00FF00", @"bold": @YES,
+                              @"italic": @YES, @"underline": @YES,
+                              @"font": @"Courier", @"size": @19}
+                forLanguage:@"cpp" styleID:SCE_C_COMMENTLINE];
         [ed applyLanguage];
-        long fore = [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE];
-        // Scintilla stores colours as 0xBBGGRR, so pure red reads back as 0x0000FF.
-        Check(@"IDM_LANGSTYLE_CONFIG_DLG", @"a style override reaches the lexer style",
-              fore == 0x0000FF);
+        // Scintilla stores colours as 0xBBGGRR: pure red reads back as 0x0000FF
+        // and pure green as 0x00FF00.
+        BOOL colours = [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE] == 0x0000FF &&
+                       [sci message:SCI_STYLEGETBACK wParam:SCE_C_COMMENTLINE] == 0x00FF00;
+        BOOL faces = [sci message:SCI_STYLEGETBOLD wParam:SCE_C_COMMENTLINE] != 0 &&
+                     [sci message:SCI_STYLEGETITALIC wParam:SCE_C_COMMENTLINE] != 0 &&
+                     [sci message:SCI_STYLEGETUNDERLINE wParam:SCE_C_COMMENTLINE] != 0;
+        BOOL size = [sci message:SCI_STYLEGETSIZE wParam:SCE_C_COMMENTLINE] == 19;
+        Check(@"IDM_LANGSTYLE_CONFIG_DLG",
+              @"foreground, background, bold, italic, underline and size all reach the style",
+              colours && faces && size);
+
+        // A bare hex string is what the foreground-only version stored; it must
+        // still load rather than being dropped.
+        [p setStyleOverride:nil forLanguage:@"cpp" styleID:SCE_C_COMMENTLINE];
+        NSMutableDictionary *legacy = [p.styleOverrides mutableCopy];
+        legacy[[NSString stringWithFormat:@"cpp/%d", SCE_C_COMMENTLINE]] = @"0000FF";
+        p.styleOverrides = legacy;
+        [ed applyLanguage];
+        Check(@"IDM_LANGSTYLE_CONFIG_DLG (legacy)", @"an old foreground-only override still applies",
+              [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE] == 0xFF0000);
+
         [p setStyleOverride:nil forLanguage:@"cpp" styleID:SCE_C_COMMENTLINE];
         [ed applyLanguage];
 

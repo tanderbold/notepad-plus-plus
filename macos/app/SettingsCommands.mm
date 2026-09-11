@@ -70,11 +70,20 @@ NPP_PREF_BOOL(showWhitespace, setShowWhitespace, @"showWhitespace")
 NPP_PREF_BOOL(showIndentGuides, setShowIndentGuides, @"showIndentGuides")
 NPP_PREF_BOOL(restoreSession, setRestoreSession, @"restoreSession")
 
-- (void)setStyleOverride:(NSString *)hexRGB forLanguage:(NSString *)language styleID:(int)styleID {
+- (void)setStyleOverride:(NSDictionary *)attributes
+             forLanguage:(NSString *)language styleID:(int)styleID {
     NSMutableDictionary *all = [self.styleOverrides mutableCopy] ?: [NSMutableDictionary dictionary];
     NSString *key = [NSString stringWithFormat:@"%@/%d", language, styleID];
-    if (hexRGB.length) all[key] = hexRGB; else [all removeObjectForKey:key];
+    if (attributes.count) all[key] = attributes; else [all removeObjectForKey:key];
     self.styleOverrides = all;
+}
+
+- (NSDictionary *)styleOverrideForLanguage:(NSString *)language styleID:(int)styleID {
+    id stored = self.styleOverrides[[NSString stringWithFormat:@"%@/%d", language, styleID]];
+    if ([stored isKindOfClass:[NSDictionary class]]) return stored;
+    // Settings written by the foreground-only version were a bare hex string.
+    if ([stored isKindOfClass:[NSString class]]) return @{@"fg": stored};
+    return nil;
 }
 
 - (void)setShortcutOverride:(NSString *)spec forCommand:(NSString *)title {

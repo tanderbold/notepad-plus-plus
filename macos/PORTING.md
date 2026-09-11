@@ -200,10 +200,15 @@ What it does not cover:
 - **Plugins cannot run.** The plugin ABI is a Windows DLL contract built on
   `HWND` and `SendMessage`. "Open Plugins Folder" works; loading a Notepad++
   plugin binary does not and cannot without a new plugin system.
-- **Depth behind a command varies.** Preferences here covers the settings this
-  editor actually has, not the several hundred on upstream's pages. The Style
-  Configurator edits foreground colours rather than every attribute. Function
-  List uses a per-language pattern table, not upstream's functionList.xml.
+- **Depth behind a command varies, and for one reason only.** A setting exists
+  here when the behaviour behind it exists. Upstream's Preferences has 23 pages
+  and 277 interactive controls; a large share of them configure subsystems this
+  port does not have -- a toolbar, its own dark-mode engine, backup snapshots,
+  multi-instance handling, cloud settings paths, per-page print options. Adding
+  those checkboxes without the features would put controls in the window that
+  change nothing, which is worse than leaving them out. Everything whose
+  behaviour does exist is wired up. Function List likewise uses a per-language
+  pattern table rather than upstream's functionList.xml.
 - **Some commands are macOS equivalents, not the same thing.** Finder for
   Explorer, Terminal for cmd and PowerShell, Trash for the Recycle Bin, Safari
   for Internet Explorer, POSIX permissions for the Windows read-only attribute.

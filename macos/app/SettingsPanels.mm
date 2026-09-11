@@ -122,11 +122,25 @@
 
 #pragma mark - Style Configurator
 
+static NSColor *ColourFromHexString(NSString *hex) {
+    unsigned int rgb = 0;
+    if (hex.length != 6 || ![[NSScanner scannerWithString:hex] scanHexInt:&rgb]) return nil;
+    return [NSColor colorWithSRGBRed:((rgb >> 16) & 0xFF) / 255.0
+                               green:((rgb >> 8) & 0xFF) / 255.0
+                                blue:(rgb & 0xFF) / 255.0 alpha:1.0];
+}
+
 @interface StyleConfiguratorWindow () <NSTableViewDataSource, NSTableViewDelegate>
 @property (nonatomic, strong) NSPanel *panel;
 @property (nonatomic, strong) NSPopUpButton *languagePicker;
 @property (nonatomic, strong) NSTableView *table;
-@property (nonatomic, strong) NSColorWell *well;
+@property (nonatomic, strong) NSColorWell *foregroundWell;
+@property (nonatomic, strong) NSColorWell *backgroundWell;
+@property (nonatomic, strong) NSButton *boldBox;
+@property (nonatomic, strong) NSButton *italicBox;
+@property (nonatomic, strong) NSButton *underlineBox;
+@property (nonatomic, strong) NSTextField *fontField;
+@property (nonatomic, strong) NSTextField *sizeField;
 @property (nonatomic, weak) EditorController *editor;
 @property (nonatomic, strong) NSArray<NppStyle *> *styles;
 @end
@@ -157,12 +171,48 @@
     _languagePicker.action = @selector(languageChanged:);
     [content addSubview:_languagePicker];
 
-    _well = [[NSColorWell alloc] initWithFrame:NSMakeRect(300, NSHeight(frame) - 46, 60, 28)];
-    _well.target = self;
-    _well.action = @selector(colourChanged:);
-    [content addSubview:_well];
+    // Every attribute the upstream Style struct carries, not just the foreground.
+    CGFloat row1 = NSHeight(frame) - 46;
+    NSTextField *fgLabel = [NSTextField labelWithString:@"Text"];
+    fgLabel.frame = NSMakeRect(276, row1 + 4, 34, 18);
+    [content addSubview:fgLabel];
+    _foregroundWell = [[NSColorWell alloc] initWithFrame:NSMakeRect(312, row1, 48, 26)];
+    _foregroundWell.target = self;
+    _foregroundWell.action = @selector(attributesChanged:);
+    [content addSubview:_foregroundWell];
 
-    NSRect tableRect = NSMakeRect(20, 20, NSWidth(frame) - 40, NSHeight(frame) - 80);
+    NSTextField *bgLabel = [NSTextField labelWithString:@"Back"];
+    bgLabel.frame = NSMakeRect(366, row1 + 4, 36, 18);
+    [content addSubview:bgLabel];
+    _backgroundWell = [[NSColorWell alloc] initWithFrame:NSMakeRect(404, row1, 40, 26)];
+    _backgroundWell.target = self;
+    _backgroundWell.action = @selector(attributesChanged:);
+    [content addSubview:_backgroundWell];
+
+    CGFloat row2 = row1 - 32;
+    _boldBox = [NSButton checkboxWithTitle:@"Bold" target:self action:@selector(attributesChanged:)];
+    _boldBox.frame = NSMakeRect(20, row2, 60, 20);
+    [content addSubview:_boldBox];
+    _italicBox = [NSButton checkboxWithTitle:@"Italic" target:self action:@selector(attributesChanged:)];
+    _italicBox.frame = NSMakeRect(84, row2, 64, 20);
+    [content addSubview:_italicBox];
+    _underlineBox = [NSButton checkboxWithTitle:@"Underline" target:self action:@selector(attributesChanged:)];
+    _underlineBox.frame = NSMakeRect(152, row2, 90, 20);
+    [content addSubview:_underlineBox];
+
+    _fontField = [[NSTextField alloc] initWithFrame:NSMakeRect(250, row2 - 2, 130, 22)];
+    _fontField.placeholderString = @"Font";
+    _fontField.target = self;
+    _fontField.action = @selector(attributesChanged:);
+    [content addSubview:_fontField];
+
+    _sizeField = [[NSTextField alloc] initWithFrame:NSMakeRect(388, row2 - 2, 56, 22)];
+    _sizeField.placeholderString = @"Size";
+    _sizeField.target = self;
+    _sizeField.action = @selector(attributesChanged:);
+    [content addSubview:_sizeField];
+
+    NSRect tableRect = NSMakeRect(20, 20, NSWidth(frame) - 40, NSHeight(frame) - 116);
     _table = [[NSTableView alloc] initWithFrame:tableRect];
     NSTableColumn *col = [[NSTableColumn alloc] initWithIdentifier:@"style"];
     col.width = NSWidth(tableRect) - 4;
@@ -199,17 +249,56 @@
 
 - (void)languageChanged:(id)sender { [self loadLanguage:self.languagePicker.titleOfSelectedItem]; }
 
-- (void)colourChanged:(id)sender {
+static NSString *HexOfColour(NSColor *colour) {
+    NSColor *c = [colour colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
+    return [NSString stringWithFormat:@"%02X%02X%02X",
+            (int)(c.redComponent * 255), (int)(c.greenComponent * 255), (int)(c.blueComponent * 255)];
+}
+
+- (void)attributesChanged:(id)sender {
     NSInteger row = self.table.selectedRow;
     if (row < 0 || row >= (NSInteger)self.styles.count) return;
-    NSColor *c = [self.well.color colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
-    NSString *hex = [NSString stringWithFormat:@"%02X%02X%02X",
-                     (int)(c.redComponent * 255), (int)(c.greenComponent * 255),
-                     (int)(c.blueComponent * 255)];
-    [[NppPreferences shared] setStyleOverride:hex
+
+    NSMutableDictionary *attrs = [NSMutableDictionary dictionary];
+    attrs[@"fg"] = HexOfColour(self.foregroundWell.color);
+    attrs[@"bg"] = HexOfColour(self.backgroundWell.color);
+    attrs[@"bold"] = @(self.boldBox.state == NSControlStateValueOn);
+    attrs[@"italic"] = @(self.italicBox.state == NSControlStateValueOn);
+    attrs[@"underline"] = @(self.underlineBox.state == NSControlStateValueOn);
+    if (self.fontField.stringValue.length) attrs[@"font"] = self.fontField.stringValue;
+    if (self.sizeField.stringValue.integerValue > 0) attrs[@"size"] = @(self.sizeField.stringValue.integerValue);
+
+    [[NppPreferences shared] setStyleOverride:attrs
                                   forLanguage:self.languagePicker.titleOfSelectedItem
                                       styleID:self.styles[(NSUInteger)row].styleID];
     [self.editor applyLanguage];
+    [self.table reloadData];
+}
+
+/// Loads the selected row's current values into the controls.
+- (void)tableViewSelectionDidChange:(NSNotification *)note {
+    NSInteger row = self.table.selectedRow;
+    if (row < 0 || row >= (NSInteger)self.styles.count) return;
+    NppStyle *style = self.styles[(NSUInteger)row];
+    NSDictionary *attrs = [[NppPreferences shared]
+        styleOverrideForLanguage:self.languagePicker.titleOfSelectedItem styleID:style.styleID];
+
+    self.foregroundWell.color = style.foreground ?: [NSColor textColor];
+    self.backgroundWell.color = style.background ?: [NSColor textBackgroundColor];
+    self.boldBox.state = (style.fontStyle & 1) ? NSControlStateValueOn : NSControlStateValueOff;
+    self.italicBox.state = (style.fontStyle & 2) ? NSControlStateValueOn : NSControlStateValueOff;
+    self.underlineBox.state = (style.fontStyle & 4) ? NSControlStateValueOn : NSControlStateValueOff;
+    self.fontField.stringValue = style.fontName ?: @"";
+    self.sizeField.stringValue = style.fontSize > 0 ? [@(style.fontSize) stringValue] : @"";
+
+    if (!attrs) return;                       // no override yet: the theme values stand
+    if (attrs[@"fg"]) self.foregroundWell.color = ColourFromHexString(attrs[@"fg"]) ?: self.foregroundWell.color;
+    if (attrs[@"bg"]) self.backgroundWell.color = ColourFromHexString(attrs[@"bg"]) ?: self.backgroundWell.color;
+    if (attrs[@"bold"]) self.boldBox.state = [attrs[@"bold"] boolValue] ? NSControlStateValueOn : NSControlStateValueOff;
+    if (attrs[@"italic"]) self.italicBox.state = [attrs[@"italic"] boolValue] ? NSControlStateValueOn : NSControlStateValueOff;
+    if (attrs[@"underline"]) self.underlineBox.state = [attrs[@"underline"] boolValue] ? NSControlStateValueOn : NSControlStateValueOff;
+    if (attrs[@"font"]) self.fontField.stringValue = attrs[@"font"];
+    if (attrs[@"size"]) self.sizeField.stringValue = [attrs[@"size"] stringValue];
 }
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv { return (NSInteger)self.styles.count; }
@@ -219,9 +308,11 @@
     NppStyle *s = self.styles[(NSUInteger)row];
     NSString *key = [NSString stringWithFormat:@"%@/%d",
                      self.languagePicker.titleOfSelectedItem, s.styleID];
-    NSString *override = [NppPreferences shared].styleOverrides[key];
+    NSDictionary *override = [[NppPreferences shared]
+        styleOverrideForLanguage:self.languagePicker.titleOfSelectedItem styleID:s.styleID];
+    (void)key;
     return [NSString stringWithFormat:@"%@  (style %d)%@", s.name ?: @"style", s.styleID,
-            override ? [@"  overridden #" stringByAppendingString:override] : @""];
+            override.count ? @"   customised" : @""];
 }
 
 @end

@@ -19,9 +19,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger defaultEOL;              // SC_EOL_*
 @property (nonatomic, copy) NSString *defaultEncoding;   // "UTF-8", "UTF-8-BOM", ...
 
-/// Foreground overrides, keyed "<language>/<styleID>" -> hex RGB.
-@property (nonatomic, copy) NSDictionary<NSString *, NSString *> *styleOverrides;
-- (void)setStyleOverride:(nullable NSString *)hexRGB
+/// Style overrides, keyed "<language>/<styleID>". Each value is a dictionary
+/// carrying any of: fg, bg (hex RGB), bold, italic, underline (booleans),
+/// font (name) and size. A bare string is read as a foreground colour, so
+/// settings written by the earlier foreground-only version still load.
+@property (nonatomic, copy) NSDictionary<NSString *, id> *styleOverrides;
+- (nullable NSDictionary *)styleOverrideForLanguage:(NSString *)language styleID:(int)styleID;
+- (void)setStyleOverride:(nullable NSDictionary *)attributes
              forLanguage:(NSString *)language styleID:(int)styleID;
 
 /// Shortcut overrides, keyed by menu title -> "cmd+shift+k" style string.
