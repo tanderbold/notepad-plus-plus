@@ -3,6 +3,7 @@
 #import "EditCommands.h"
 #import "SearchCommands.h"
 #import "ViewCommands.h"
+#import "EncodingCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -538,6 +539,43 @@
     [self item:@"Windows (CR LF)" action:@selector(eolCRLF:) key:@"" flags:0 menu:encMenu];
     [self item:@"Unix (LF)"       action:@selector(eolLF:) key:@"" flags:0 menu:encMenu];
     [self item:@"Classic Mac (CR)" action:@selector(eolCR:) key:@"" flags:0 menu:encMenu];
+
+    [encMenu addItem:[NSMenuItem separatorItem]];
+    // "Encode in": reinterpret the bytes through another charset.
+    NSMenu *charsetMenu = [[NSMenu alloc] initWithTitle:@"Character sets"];
+    NSMutableDictionary *groups = [NSMutableDictionary dictionary];
+    NSMutableArray *groupOrder = [NSMutableArray array];
+    for (int i = 0; i < kNppCharsetCount; ++i) {
+        NSString *group = @(kNppCharsets[i].group);
+        NSMenu *sub = groups[group];
+        if (!sub) {
+            sub = [[NSMenu alloc] initWithTitle:group];
+            groups[group] = sub;
+            [groupOrder addObject:group];
+        }
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:@(kNppCharsets[i].label)
+                                                    action:@selector(encodeInCharset:) keyEquivalent:@""];
+        mi.target = self;
+        mi.tag = i;
+        [sub addItem:mi];
+    }
+    for (NSString *group in groupOrder) {
+        [charsetMenu addItemWithTitle:group action:nil keyEquivalent:@""].submenu = groups[group];
+    }
+    [encMenu addItemWithTitle:@"Character sets" action:nil keyEquivalent:@""].submenu = charsetMenu;
+
+    [encMenu addItem:[NSMenuItem separatorItem]];
+    // "Convert to": re-encode the text itself.
+    struct { NSString *title; SEL sel; } conversions[] = {
+        {@"Convert to ANSI",             @selector(convertToANSI:)},
+        {@"Convert to UTF-8",            @selector(convertToUTF8:)},
+        {@"Convert to UTF-8-BOM",        @selector(convertToUTF8BOM:)},
+        {@"Convert to UTF-16 BE BOM",    @selector(convertToUTF16BE:)},
+        {@"Convert to UTF-16 LE BOM",    @selector(convertToUTF16LE:)},
+    };
+    for (size_t i = 0; i < sizeof(conversions)/sizeof(conversions[0]); ++i) {
+        [self item:conversions[i].title action:conversions[i].sel key:@"" flags:0 menu:encMenu];
+    }
     encItem.submenu = encMenu;
 
     // ---- Language (populated from Notepad++'s langs.model.xml)
@@ -1006,6 +1044,22 @@
     if (i < 0 || i >= (NSInteger)(sizeof(table)/sizeof(table[0]))) return;
     [self.editor setEncoding:table[i].enc withBOM:table[i].bom];
 }
+
+- (void)encodeInCharset:(NSMenuItem *)sender {
+    if (sender.tag < 0 || sender.tag >= kNppCharsetCount) return;
+    if (![self.editor reinterpretAsCodepage:kNppCharsets[sender.tag].codepage]) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = [NSString stringWithFormat:@"Cannot read this document as %@.",
+                             @(kNppCharsets[sender.tag].label)];
+        [alert runModal];
+    }
+}
+
+- (void)convertToANSI:(id)sender    { [self.editor setEncoding:NSISOLatin1StringEncoding withBOM:NO]; }
+- (void)convertToUTF8:(id)sender    { [self.editor setEncoding:NSUTF8StringEncoding withBOM:NO]; }
+- (void)convertToUTF8BOM:(id)sender { [self.editor setEncoding:NSUTF8StringEncoding withBOM:YES]; }
+- (void)convertToUTF16BE:(id)sender { [self.editor setEncoding:NSUTF16BigEndianStringEncoding withBOM:YES]; }
+- (void)convertToUTF16LE:(id)sender { [self.editor setEncoding:NSUTF16LittleEndianStringEncoding withBOM:YES]; }
 
 - (void)eolCRLF:(id)sender { [self.editor convertEOLTo:SC_EOL_CRLF]; }
 - (void)eolLF:(id)sender   { [self.editor convertEOLTo:SC_EOL_LF]; }

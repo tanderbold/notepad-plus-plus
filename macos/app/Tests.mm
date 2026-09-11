@@ -9,6 +9,7 @@
 #import "EditCommands.h"
 #import "SearchCommands.h"
 #import "ViewCommands.h"
+#import "EncodingCommands.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -1180,6 +1181,88 @@ int NppMacRunTests(AppDelegate *app) {
         [ed convertEOLTo:SC_EOL_CR];
         Check(@"IDM_FORMAT_TOMAC", @"becomes bare CR",
               [DocText(ed) containsString:@"\r"] && ![DocText(ed) containsString:@"\n"]);
+    }
+
+    printf("\n== Encoding: character sets ==\n");
+    {
+        // Every charset in the menu must resolve to a usable macOS encoding and
+        // survive a byte round-trip through that charset.
+        int resolved = 0;
+        NSMutableArray *unsupported = [NSMutableArray array];
+        for (int i = 0; i < kNppCharsetCount; ++i) {
+            unsigned int cp = kNppCharsets[i].codepage;
+            NSString *cmd = @(kNppCharsets[i].menuID);
+            if (![EditorController supportsCodepage:cp]) {
+                // macOS ships no converter for this code page. The command must
+                // decline cleanly rather than silently decode as something else.
+                [unsupported addObject:@(kNppCharsets[i].label)];
+                Check([cmd stringByAppendingString:@" (unsupported)"],
+                      [NSString stringWithFormat:@"%@ declines instead of mis-decoding",
+                       @(kNppCharsets[i].label)],
+                      ![ed reinterpretAsCodepage:cp]);
+                continue;
+            }
+            NSStringEncoding enc = [EditorController encodingForCodepage:cp];
+            resolved++;
+            // ASCII is representable in every one of these sets, so a round trip
+            // through the charset must return the original text.
+            NSString *probe = @"probe 123";
+            NSData *bytes = [probe dataUsingEncoding:enc allowLossyConversion:NO];
+            NSString *back = bytes ? [[NSString alloc] initWithData:bytes encoding:enc] : nil;
+            Check(cmd, [NSString stringWithFormat:@"%@ round-trips", @(kNppCharsets[i].label)],
+                  [back isEqualToString:probe]);
+        }
+        printf("  (%d of %d character sets resolved%s)\n", resolved, kNppCharsetCount,
+               unsupported.count ? [[NSString stringWithFormat:@"; missing: %@",
+                                     [unsupported componentsJoinedByString:@", "]] UTF8String] : "");
+
+        // Encode in: the bytes stay, the reading changes. Round-tripping a
+        // Cyrillic byte through Windows-1251 and back must restore the text.
+        // Code page 858 must differ from 850 in exactly the euro byte.
+        NSData *euroByte = [NSData dataWithBytes:(const unsigned char[]){0xD5} length:1];
+        NSString *as858 = [EditorController stringFromData:euroByte codepage:858];
+        NSString *as850 = [EditorController stringFromData:euroByte codepage:850];
+        Check(@"IDM_FORMAT_DOS_858", @"byte 0xD5 is the euro sign, unlike code page 850",
+              [as858 isEqualToString:@"\u20AC"] && ![as850 isEqualToString:as858]);
+
+        NSString *cyr = @"\u0442\u0435\u0441\u0442";                     // "test" in Cyrillic
+        NSStringEncoding win1251 = [EditorController encodingForCodepage:1251];
+        NSData *cyrBytes = [cyr dataUsingEncoding:win1251 allowLossyConversion:NO];
+        NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_cp1251.txt"];
+        [cyrBytes writeToFile:path atomically:YES];
+
+        NSError *err = nil;
+        [ed openFileAtPath:path error:&err];          // opens as Latin-1 (not valid UTF-8)
+        BOOL reinterpreted = [ed reinterpretAsCodepage:1251];
+        Check(@"IDM_FORMAT_WIN_1251", @"Encode in Windows-1251 recovers Cyrillic text",
+              reinterpreted && [DocText(ed) isEqualToString:cyr]);
+    }
+
+    printf("\n== Encoding: convert to ==\n");
+    {
+        struct { NSStringEncoding enc; BOOL bom; NSString *cmd; NSString *name; } convs[] = {
+            {NSISOLatin1StringEncoding,         NO,  @"IDM_FORMAT_CONV2_ANSI",      @"ANSI"},
+            {NSUTF8StringEncoding,              NO,  @"IDM_FORMAT_CONV2_AS_UTF_8",  @"UTF-8"},
+            {NSUTF8StringEncoding,              YES, @"IDM_FORMAT_CONV2_UTF_8",     @"UTF-8-BOM"},
+            {NSUTF16BigEndianStringEncoding,    YES, @"IDM_FORMAT_CONV2_UTF_16BE",  @"UTF-16 BE"},
+            {NSUTF16LittleEndianStringEncoding, YES, @"IDM_FORMAT_CONV2_UTF_16LE",  @"UTF-16 LE"},
+        };
+        for (size_t i = 0; i < sizeof(convs)/sizeof(convs[0]); ++i) {
+            NSString *p = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                           [NSString stringWithFormat:@"t_conv%zu.txt", i]];
+            [[NSFileManager defaultManager] removeItemAtPath:p error:NULL];
+            [@"convert me\n" writeToFile:p atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+
+            NSError *e = nil;
+            [ed openFileAtPath:p error:&e];
+            [ed setEncoding:convs[i].enc withBOM:convs[i].bom];
+            [ed saveCurrentDocument];
+            [ed closeCurrentDocument];
+            [ed openFileAtPath:p error:&e];
+            Check(convs[i].cmd, [NSString stringWithFormat:@"Convert to %@ keeps the text", convs[i].name],
+                  [DocText(ed) isEqualToString:@"convert me\n"] &&
+                  ed.currentDocument.hasBOM == convs[i].bom);
+        }
     }
 
     printf("\n== Language ==\n");

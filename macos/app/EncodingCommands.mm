@@ -1,0 +1,174 @@
+#import "EncodingCommands.h"
+#import "ScintillaView.h"
+
+const NppCharset kNppCharsets[] = {
+    // Arabic
+    {"IDM_FORMAT_ISO_8859_6",     "Arabic",            "ISO 8859-6",            28596},
+    {"IDM_FORMAT_DOS_720",        "Arabic",            "OEM 720",                 720},
+    {"IDM_FORMAT_WIN_1256",       "Arabic",            "Windows-1256",           1256},
+    // Baltic
+    {"IDM_FORMAT_ISO_8859_4",     "Baltic",            "ISO 8859-4",            28594},
+    {"IDM_FORMAT_ISO_8859_13",    "Baltic",            "ISO 8859-13",           28603},
+    {"IDM_FORMAT_DOS_775",        "Baltic",            "OEM 775",                 775},
+    {"IDM_FORMAT_WIN_1257",       "Baltic",            "Windows-1257",           1257},
+    // Celtic
+    {"IDM_FORMAT_ISO_8859_14",    "Celtic",            "ISO 8859-14",           28604},
+    // Central European
+    {"IDM_FORMAT_DOS_852",        "Central European",  "OEM 852",                 852},
+    {"IDM_FORMAT_WIN_1250",       "Central European",  "Windows-1250",           1250},
+    // Chinese
+    {"IDM_FORMAT_BIG5",           "Chinese",           "Big5 (Traditional)",      950},
+    {"IDM_FORMAT_GB2312",         "Chinese",           "GB2312 (Simplified)",     936},
+    // Cyrillic
+    {"IDM_FORMAT_ISO_8859_5",     "Cyrillic",          "ISO 8859-5",            28595},
+    {"IDM_FORMAT_KOI8R_CYRILLIC", "Cyrillic",          "KOI8-R",                20866},
+    {"IDM_FORMAT_KOI8U_CYRILLIC", "Cyrillic",          "KOI8-U",                21866},
+    {"IDM_FORMAT_MAC_CYRILLIC",   "Cyrillic",          "Macintosh",             10007},
+    {"IDM_FORMAT_DOS_855",        "Cyrillic",          "OEM 855",                 855},
+    {"IDM_FORMAT_DOS_866",        "Cyrillic",          "OEM 866",                 866},
+    {"IDM_FORMAT_WIN_1251",       "Cyrillic",          "Windows-1251",           1251},
+    // Eastern European
+    {"IDM_FORMAT_ISO_8859_2",     "Eastern European",  "ISO 8859-2",            28592},
+    // Greek
+    {"IDM_FORMAT_ISO_8859_7",     "Greek",             "ISO 8859-7",            28597},
+    {"IDM_FORMAT_DOS_737",        "Greek",             "OEM 737",                 737},
+    {"IDM_FORMAT_DOS_869",        "Greek",             "OEM 869",                 869},
+    {"IDM_FORMAT_WIN_1253",       "Greek",             "Windows-1253",           1253},
+    // Hebrew
+    {"IDM_FORMAT_ISO_8859_8",     "Hebrew",            "ISO 8859-8",            28598},
+    {"IDM_FORMAT_DOS_862",        "Hebrew",            "OEM 862",                 862},
+    {"IDM_FORMAT_WIN_1255",       "Hebrew",            "Windows-1255",           1255},
+    // Japanese
+    {"IDM_FORMAT_SHIFT_JIS",      "Japanese",          "Shift-JIS",               932},
+    // Korean
+    {"IDM_FORMAT_KOREAN_WIN",     "Korean",            "Windows 949",             949},
+    {"IDM_FORMAT_EUC_KR",         "Korean",            "EUC-KR",                51949},
+    // North European
+    {"IDM_FORMAT_DOS_861",        "North European",    "OEM 861 : Icelandic",     861},
+    {"IDM_FORMAT_DOS_865",        "North European",    "OEM 865 : Nordic",        865},
+    // Thai
+    {"IDM_FORMAT_TIS_620",        "Thai",              "TIS-620",                 874},
+    // Turkish
+    {"IDM_FORMAT_ISO_8859_3",     "Turkish",           "ISO 8859-3",            28593},
+    {"IDM_FORMAT_ISO_8859_9",     "Turkish",           "ISO 8859-9",            28599},
+    {"IDM_FORMAT_DOS_857",        "Turkish",           "OEM 857",                 857},
+    {"IDM_FORMAT_WIN_1254",       "Turkish",           "Windows-1254",           1254},
+    // Vietnamese
+    {"IDM_FORMAT_WIN_1258",       "Vietnamese",        "Windows-1258",           1258},
+    // Western European
+    {"IDM_FORMAT_ISO_8859_1",     "Western European",  "ISO 8859-1",            28591},
+    {"IDM_FORMAT_ISO_8859_15",    "Western European",  "ISO 8859-15",           28605},
+    {"IDM_FORMAT_DOS_850",        "Western European",  "OEM 850",                 850},
+    {"IDM_FORMAT_DOS_858",        "Western European",  "OEM 858",                 858},
+    {"IDM_FORMAT_DOS_860",        "Western European",  "OEM 860 : Portuguese",    860},
+    {"IDM_FORMAT_DOS_863",        "Western European",  "OEM 863 : French",        863},
+    {"IDM_FORMAT_DOS_437",        "Western European",  "OEM-US : CP437",          437},
+    {"IDM_FORMAT_WIN_1252",       "Western European",  "Windows-1252",           1252},
+};
+
+const int kNppCharsetCount = (int)(sizeof(kNppCharsets) / sizeof(kNppCharsets[0]));
+
+@implementation EditorController (EncodingCommands)
+
++ (NSStringEncoding)encodingForCodepage:(unsigned int)codepage {
+    // 858 is 850 with one byte changed; it is handled by the data methods below.
+    if (codepage == 858) codepage = 850;
+    CFStringEncoding cf = CFStringConvertWindowsCodepageToEncoding(codepage);
+    if (cf == kCFStringEncodingInvalidId) {
+        // A few sets have no Windows code page on this platform; name them directly.
+        switch (codepage) {
+            case 28604: cf = kCFStringEncodingISOLatin8; break;    // ISO 8859-14
+            case 28603: cf = kCFStringEncodingISOLatin7; break;    // ISO 8859-13
+            case 51949: cf = kCFStringEncodingEUC_KR;   break;
+            default: return 0;
+        }
+    }
+    NSStringEncoding enc = CFStringConvertEncodingToNSStringEncoding(cf);
+    return enc == kCFStringEncodingInvalidId ? 0 : enc;
+}
+
++ (BOOL)supportsCodepage:(unsigned int)codepage {
+    return [self encodingForCodepage:codepage] != 0;
+}
+
+/// Code page 858 is code page 850 with byte 0xD5 carrying the euro sign instead
+/// of a dotless i. macOS ships 850 but not 858, so the one byte is translated
+/// here rather than substituting a different code page.
+static const unsigned char kCP858EuroByte = 0xD5;
+
++ (NSString *)stringFromData:(NSData *)data codepage:(unsigned int)codepage {
+    NSStringEncoding enc = [self encodingForCodepage:codepage];
+    if (!enc || !data) return nil;
+    if (codepage != 858) return [[NSString alloc] initWithData:data encoding:enc];
+
+    NSMutableData *patched = [data mutableCopy];
+    unsigned char *bytes = (unsigned char *)patched.mutableBytes;
+    NSMutableIndexSet *euroAt = [NSMutableIndexSet indexSet];
+    for (NSUInteger i = 0; i < patched.length; ++i) {
+        if (bytes[i] == kCP858EuroByte) { [euroAt addIndex:i]; bytes[i] = '?'; }
+    }
+    NSMutableString *text = [[[NSString alloc] initWithData:patched encoding:enc] mutableCopy];
+    if (!text) return nil;
+    // The 850 bytes are single-byte, so byte index equals character index here.
+    [euroAt enumerateIndexesUsingBlock:^(NSUInteger i, BOOL *stop) {
+        if (i < text.length) [text replaceCharactersInRange:NSMakeRange(i, 1) withString:@"\u20AC"];
+    }];
+    return text;
+}
+
++ (NSData *)dataFromString:(NSString *)string codepage:(unsigned int)codepage {
+    NSStringEncoding enc = [self encodingForCodepage:codepage];
+    if (!enc || !string) return nil;
+    if (codepage != 858) return [string dataUsingEncoding:enc allowLossyConversion:YES];
+
+    NSString *withPlaceholder = [string stringByReplacingOccurrencesOfString:@"\u20AC" withString:@"?"];
+    NSMutableData *out = [[withPlaceholder dataUsingEncoding:enc allowLossyConversion:YES] mutableCopy];
+    if (!out) return nil;
+    unsigned char *bytes = (unsigned char *)out.mutableBytes;
+    NSUInteger charIndex = 0;
+    for (NSUInteger i = 0; i < out.length && charIndex < string.length; ++i, ++charIndex) {
+        if ([string characterAtIndex:charIndex] == 0x20AC) bytes[i] = kCP858EuroByte;
+    }
+    return out;
+}
+
+- (BOOL)reinterpretAsCodepage:(unsigned int)codepage {
+    NSStringEncoding target = [EditorController encodingForCodepage:codepage];
+    if (!target) { NSBeep(); return NO; }
+
+    NppDocument *doc = self.currentDocument;
+    NSString *text = [self.sci string] ?: @"";
+    // Recover the bytes as they stand, then read them through the new charset.
+    NSData *bytes = [text dataUsingEncoding:doc.encoding ?: NSUTF8StringEncoding
+                       allowLossyConversion:YES];
+    NSString *reread = [EditorController stringFromData:bytes codepage:codepage];
+    (void)target;
+    if (!reread) { NSBeep(); return NO; }
+
+    [self.sci message:SCI_BEGINUNDOACTION];
+    [self.sci setString:reread];
+    [self.sci message:SCI_ENDUNDOACTION];
+    doc.encoding = target;
+    doc.hasBOM = NO;
+    doc.modified = YES;
+    [self refreshChrome];
+    return YES;
+}
+
+- (BOOL)convertToCodepage:(unsigned int)codepage {
+    NSStringEncoding target = [EditorController encodingForCodepage:codepage];
+    if (!target) { NSBeep(); return NO; }
+    // The text is unchanged; only the encoding it will be written in changes.
+    if (![[self.sci string] ?: @"" canBeConvertedToEncoding:target]) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = @"Some characters cannot be represented in this encoding.";
+        alert.informativeText = @"Converting will replace them.";
+        [alert addButtonWithTitle:@"Convert"];
+        [alert addButtonWithTitle:@"Cancel"];
+        if ([alert runModal] != NSAlertFirstButtonReturn) return NO;
+    }
+    [self setEncoding:target withBOM:NO];
+    return YES;
+}
+
+@end
