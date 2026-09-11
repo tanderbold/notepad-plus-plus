@@ -233,6 +233,11 @@ binaries can never load here:
 - **Compare** (what ComparePlus provides): set one file aside, compare, mark
   added, removed and changed lines, step between differences, a summary, and
   the ignore-case, ignore-spaces and ignore-empty-lines options.
+- **XML** (what XML Tools provides): pretty print in three styles, linearize,
+  check syntax, validate against a DTD or an XSD schema, evaluate XPath, report
+  the element path at the caret, escape a selection, and apply an XSL
+  transformation. NSXMLDocument covers everything except XSD, which it cannot
+  do; libxml2, which macOS ships, covers that.
 - **FTP** (what NppFTP provides): saved connections with the password in the
   Keychain, a remote file browser, opening a remote file into a tab and sending
   it back. Foundation dropped ftp:// support, so FTP and FTPS go through

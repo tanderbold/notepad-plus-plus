@@ -17,6 +17,7 @@
 #import "JsonCommands.h"
 #import "CompareCommands.h"
 #import "FtpCommands.h"
+#import "XmlCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -802,6 +803,24 @@
     [self item:@"Clear All Compares" action:@selector(compareClearAll:) key:@"" flags:0 menu:compareMenu];
     [pluginsMenu addItemWithTitle:@"Compare" action:nil keyEquivalent:@""].submenu = compareMenu;
 
+    NSMenu *xmlMenu = [[NSMenu alloc] initWithTitle:@"XML"];
+    [self item:@"Pretty Print" action:@selector(xmlPretty:) key:@"" flags:0 menu:xmlMenu];
+    [self item:@"Pretty Print — Indent Attributes" action:@selector(xmlPrettyAttributes:) key:@"" flags:0 menu:xmlMenu];
+    [self item:@"Linearize" action:@selector(xmlLinearize:) key:@"" flags:0 menu:xmlMenu];
+    [xmlMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Check XML Syntax Now" action:@selector(xmlCheckSyntax:) key:@"" flags:0 menu:xmlMenu];
+    [self item:@"Validate Against Schema…" action:@selector(xmlValidateSchema:) key:@"" flags:0 menu:xmlMenu];
+    [self item:@"Validate Against DTD" action:@selector(xmlValidateDTD:) key:@"" flags:0 menu:xmlMenu];
+    [xmlMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Evaluate XPath Expression…" action:@selector(xmlXPath:) key:@"" flags:0 menu:xmlMenu];
+    [self item:@"Current XML Path" action:@selector(xmlCurrentPath:) key:@"" flags:0 menu:xmlMenu];
+    [self item:@"Current XML Path with Predicates" action:@selector(xmlCurrentPathPredicates:) key:@"" flags:0 menu:xmlMenu];
+    [self item:@"Apply XSL Transformation…" action:@selector(xmlTransform:) key:@"" flags:0 menu:xmlMenu];
+    [xmlMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Escape Characters in Selection" action:@selector(xmlEscape:) key:@"" flags:0 menu:xmlMenu];
+    [self item:@"Unescape Characters in Selection" action:@selector(xmlUnescape:) key:@"" flags:0 menu:xmlMenu];
+    [pluginsMenu addItemWithTitle:@"XML" action:nil keyEquivalent:@""].submenu = xmlMenu;
+
     NSMenu *ftpMenu = [[NSMenu alloc] initWithTitle:@"FTP"];
     [self item:@"Connections…" action:@selector(ftpProfiles:) key:@"" flags:0 menu:ftpMenu];
     [self item:@"Connect…" action:@selector(ftpConnect:) key:@"" flags:0 menu:ftpMenu];
@@ -1013,6 +1032,110 @@
 - (void)compareToggleIgnoreEmpty:(id)sender {
     self.editor.compareIgnoreEmptyLines = !self.editor.compareIgnoreEmptyLines;
 }
+
+#pragma mark - XML
+
+- (void)reportXMLError:(NppXmlError *)error title:(NSString *)title {
+    NSAlert *alert = [[NSAlert alloc] init];
+    if (!error) {
+        alert.messageText = @"The document is valid XML.";
+    } else {
+        alert.messageText = title;
+        alert.informativeText = error.line >= 0
+            ? [NSString stringWithFormat:@"Line %ld, column %ld.\n\n%@",
+               (long)error.line + 1, (long)error.column + 1, error.message]
+            : (error.message ?: @"");
+    }
+    [alert runModal];
+}
+
+- (void)xmlPretty:(id)sender {
+    if (![self.editor prettyPrintXMLDocument:NppXmlPrettyDefault]) {
+        [self reportXMLError:[self.editor checkXMLSyntaxOfDocument] title:@"Cannot format this document."];
+    }
+}
+
+- (void)xmlPrettyAttributes:(id)sender {
+    if (![self.editor prettyPrintXMLDocument:NppXmlPrettyAttributes]) {
+        [self reportXMLError:[self.editor checkXMLSyntaxOfDocument] title:@"Cannot format this document."];
+    }
+}
+
+- (void)xmlLinearize:(id)sender {
+    if (![self.editor linearizeXMLDocument]) {
+        [self reportXMLError:[self.editor checkXMLSyntaxOfDocument] title:@"Cannot linearize this document."];
+    }
+}
+
+- (void)xmlCheckSyntax:(id)sender {
+    [self reportXMLError:[self.editor checkXMLSyntaxOfDocument] title:@"The document is not well formed."];
+}
+
+- (void)xmlValidateDTD:(id)sender {
+    NppXmlError *error = [EditorController validateXMLAgainstInternalDTD:
+                          [self.editor.sci string] ?: @""];
+    [self reportXMLError:error title:@"The document does not match its DTD."];
+}
+
+- (void)xmlValidateSchema:(id)sender {
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseDirectories = NO;
+    panel.title = @"Choose an XSD schema";
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    NSString *schema = [NSString stringWithContentsOfFile:panel.URL.path
+                                                 encoding:NSUTF8StringEncoding error:NULL];
+    if (!schema) { NSBeep(); return; }
+    NppXmlError *error = [EditorController validateXML:([self.editor.sci string] ?: @"")
+                                         againstSchema:schema];
+    [self reportXMLError:error title:@"The document does not match the schema."];
+}
+
+- (void)xmlXPath:(id)sender {
+    NSString *expression = [self promptForString:@"XPath expression" default:@"//*"];
+    if (!expression.length) return;
+    NSString *failure = nil;
+    NSArray *results = [EditorController evaluateXPath:expression
+                                                onText:([self.editor.sci string] ?: @"")
+                                                 error:&failure];
+    if (!results) { [self presentText:failure ?: @"No result." title:@"XPath"]; return; }
+    [self presentText:results.count
+        ? [NSString stringWithFormat:@"%lu result(s):\n\n%@", (unsigned long)results.count,
+           [results componentsJoinedByString:@"\n"]]
+        : @"The expression matched nothing."
+                title:@"XPath"];
+}
+
+- (void)xmlCurrentPath:(id)sender {
+    NSString *path = [self.editor xmlPathAtCaretWithPredicates:NO];
+    [self presentText:path ?: @"The current node cannot be resolved." title:@"Current XML Path"];
+}
+
+- (void)xmlCurrentPathPredicates:(id)sender {
+    NSString *path = [self.editor xmlPathAtCaretWithPredicates:YES];
+    [self presentText:path ?: @"The current node cannot be resolved." title:@"Current XML Path"];
+}
+
+- (void)xmlTransform:(id)sender {
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseDirectories = NO;
+    panel.title = @"Choose an XSL stylesheet";
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    NSString *sheet = [NSString stringWithContentsOfFile:panel.URL.path
+                                                encoding:NSUTF8StringEncoding error:NULL];
+    if (!sheet) { NSBeep(); return; }
+
+    NSString *failure = nil;
+    NSString *result = [EditorController applyXSL:sheet
+                                           toText:([self.editor.sci string] ?: @"") error:&failure];
+    if (!result) { [self presentText:failure ?: @"The transformation failed." title:@"XSL"]; return; }
+    // The result opens as a new document, leaving the source untouched.
+    [self.editor newDocument];
+    [self.editor.sci setString:result];
+    [self.editor refreshChrome];
+}
+
+- (void)xmlEscape:(id)sender   { [self.editor escapeSelectionForXML:YES]; }
+- (void)xmlUnescape:(id)sender { [self.editor escapeSelectionForXML:NO]; }
 
 #pragma mark - FTP
 

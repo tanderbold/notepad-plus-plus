@@ -23,6 +23,7 @@
 #import "JsonCommands.h"
 #import "CompareCommands.h"
 #import "FtpCommands.h"
+#import "XmlCommands.h"
 #import "FunctionListPanel.h"
 #import "FunctionListCatalog.h"
 #import "LanguageCatalog.h"
@@ -2860,6 +2861,113 @@ int NppMacRunTests(AppDelegate *app) {
             [server terminate];
         }
         [ed removeFtpProfileNamed:@"test-server"];
+    }
+
+    printf("\n== XML ==\n");
+    {
+        [ed newDocument];
+        NSString *compact = @"<?xml version=\"1.0\"?><root a=\"1\" b=\"2\"><item>one</item><item>two</item></root>";
+
+        SetDoc(ed, compact);
+        BOOL pretty = [ed prettyPrintXMLDocument:NppXmlPrettyDefault];
+        NSString *formatted = DocText(ed);
+        Check(@"XML pretty print", @"one line becomes an indented document",
+              pretty && [[formatted componentsSeparatedByString:@"\n"] count] > 3 &&
+              [formatted containsString:@"    <item>one</item>"]);
+
+        BOOL flat = [ed linearizeXMLDocument];
+        NSString *linear = DocText(ed);
+        Check(@"XML linearize", @"the indented document becomes one line again",
+              flat && ![[linear substringFromIndex:MIN(40u, linear.length)] containsString:@"\n"] &&
+              [linear containsString:@"<item>one</item><item>two</item>"]);
+
+        // The value must survive both directions.
+        NSArray *items = [EditorController evaluateXPath:@"//item" onText:linear error:NULL];
+        Check(@"XML round trip", @"the content is unchanged by formatting",
+              items.count == 2 && [items[0] containsString:@"one"]);
+
+        SetDoc(ed, compact);
+        [ed prettyPrintXMLDocument:NppXmlPrettyAttributes];
+        NSString *attrs = DocText(ed);
+        Check(@"XML indent attributes", @"each attribute moves onto its own line",
+              [attrs containsString:@"b=\"2\""] &&
+              [[attrs componentsSeparatedByString:@"\n"] count] >
+              [[formatted componentsSeparatedByString:@"\n"] count]);
+
+        // Syntax: a good document passes, a broken one reports where.
+        SetDoc(ed, @"<a><b/></a>");
+        NppXmlError *fine = [ed checkXMLSyntaxOfDocument];
+        SetDoc(ed, @"<a>\n  <b>\n</a>");
+        NppXmlError *broken = [ed checkXMLSyntaxOfDocument];
+        Check(@"XML syntax check", @"valid passes and invalid reports a line",
+              fine == nil && broken != nil && broken.line >= 0 && broken.message.length > 0);
+
+        // A document that is not XML must be refused, not mangled.
+        SetDoc(ed, @"not xml at all");
+        NSString *before = DocText(ed);
+        BOOL refused = ![ed prettyPrintXMLDocument:NppXmlPrettyDefault];
+        Check(@"XML refuses non-XML", @"a non-XML document is left untouched",
+              refused && [DocText(ed) isEqualToString:before]);
+
+        // XPath, including an expression that selects attributes.
+        NSString *doc = @"<catalog><book id=\"a\"><title>First</title></book>"
+                        @"<book id=\"b\"><title>Second</title></book></catalog>";
+        NSArray *titles = [EditorController evaluateXPath:@"//title/text()" onText:doc error:NULL];
+        NSArray *ids = [EditorController evaluateXPath:@"//book/@id" onText:doc error:NULL];
+        NSString *xpathFailure = nil;
+        NSArray *bad = [EditorController evaluateXPath:@"//[[" onText:doc error:&xpathFailure];
+        Check(@"XML XPath", @"nodes and attributes are selected, and a bad expression reports",
+              titles.count == 2 && [titles[1] isEqualToString:@"Second"] &&
+              ids.count == 2 && [ids[0] isEqualToString:@"a"] &&
+              bad == nil && xpathFailure.length > 0);
+
+        // XSL transformation.
+        NSString *sheet =
+            @"<?xml version=\"1.0\"?>"
+            @"<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
+            @"<xsl:output method=\"xml\"/>"
+            @"<xsl:template match=\"/\"><titles><xsl:for-each select=\"//title\">"
+            @"<t><xsl:value-of select=\".\"/></t></xsl:for-each></titles></xsl:template>"
+            @"</xsl:stylesheet>";
+        NSString *xslFailure = nil;
+        NSString *transformed = [EditorController applyXSL:sheet toText:doc error:&xslFailure];
+        Check(@"XML XSL", @"a stylesheet produces the expected output",
+              transformed != nil && [transformed containsString:@"<t>First</t>"] &&
+              [transformed containsString:@"<t>Second</t>"]);
+
+        // XSD validation, which NSXMLDocument cannot do and libxml2 can.
+        NSString *schema =
+            @"<?xml version=\"1.0\"?>"
+            @"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">"
+            @"<xs:element name=\"note\"><xs:complexType><xs:sequence>"
+            @"<xs:element name=\"to\" type=\"xs:string\"/>"
+            @"</xs:sequence></xs:complexType></xs:element></xs:schema>";
+        NppXmlError *matches = [EditorController validateXML:@"<note><to>you</to></note>"
+                                               againstSchema:schema];
+        NppXmlError *mismatch = [EditorController validateXML:@"<note><wrong>x</wrong></note>"
+                                                againstSchema:schema];
+        Check(@"XML schema validation", @"a matching document passes and a wrong one is reported",
+              matches == nil && mismatch != nil && mismatch.message.length > 0);
+
+        // Escaping a selection, and putting it back.
+        SetDoc(ed, @"a <b> & \"c\"");
+        [sci message:SCI_SETSEL wParam:0 lParam:(sptr_t)[sci message:SCI_GETLENGTH]];
+        [ed escapeSelectionForXML:YES];
+        NSString *escaped = DocText(ed);
+        [sci message:SCI_SETSEL wParam:0 lParam:(sptr_t)[sci message:SCI_GETLENGTH]];
+        [ed escapeSelectionForXML:NO];
+        Check(@"XML escaping", @"characters are escaped and restored exactly",
+              [escaped containsString:@"&lt;b&gt;"] && [escaped containsString:@"&amp;"] &&
+              [DocText(ed) isEqualToString:@"a <b> & \"c\""]);
+
+        // The path at the caret, which has to work on a document still being typed.
+        SetDoc(ed, @"<root>\n  <list>\n    <item>one</item>\n    <item>tw");
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        NSString *plainPath = [ed xmlPathAtCaretWithPredicates:NO];
+        NSString *indexedPath = [ed xmlPathAtCaretWithPredicates:YES];
+        Check(@"XML current path", @"the path is reported while the document is incomplete",
+              [plainPath isEqualToString:@"/root/list/item"] &&
+              [indexedPath isEqualToString:@"/root[1]/list[1]/item[2]"]);
     }
 
     // ---- meta-test: nothing may be declared implemented without a test

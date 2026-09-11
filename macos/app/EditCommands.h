@@ -25,6 +25,10 @@ typedef NS_ENUM(NSInteger, NppTrimMode) {
 
 @interface EditorController (EditCommands)
 
+/// Rewrites the selected characters, or the whole document when nothing is
+/// selected. Shared by the case, XML-escaping and similar commands.
+- (void)transformSelectedText:(NSString *(^)(NSString *selected))transform;
+
 - (void)convertCase:(NppCaseMode)mode;
 - (void)sortLines:(NppSortKey)key descending:(BOOL)descending;
 - (void)removeDuplicateLines:(BOOL)consecutiveOnly;
