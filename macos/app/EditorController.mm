@@ -185,12 +185,22 @@ static long SciColor(NSColor *c) {
     [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDEROPENMID lParam:SC_MARK_BOXMINUSCONNECTED];
     [sci message:SCI_MARKERDEFINE wParam:SC_MARKNUM_FOLDERMIDTAIL lParam:SC_MARK_TCORNER];
     [sci message:SCI_SETCARETLINEVISIBLE wParam:1 lParam:0];
-    [sci message:SCI_SETTABWIDTH wParam:4 lParam:0];
-    [sci message:SCI_SETUSETABS wParam:0 lParam:0];
-    [sci message:SCI_SETINDENTATIONGUIDES wParam:SC_IV_LOOKBOTH lParam:0];
+    [self applyDocumentSettings];
     [sci message:SCI_SETSCROLLWIDTHTRACKING wParam:1 lParam:0];
     [sci message:SCI_SETMULTIPLESELECTION wParam:1 lParam:0];
     [sci message:SCI_SETADDITIONALSELECTIONTYPING wParam:1 lParam:0];
+}
+
+/// Scintilla resets these when the document pointer changes, so they are
+/// re-applied on every switch rather than only at startup.
+- (void)applyDocumentSettings {
+    ScintillaView *sci = self.sciView;
+    [sci message:SCI_SETTABWIDTH wParam:4 lParam:0];
+    [sci message:SCI_SETINDENT wParam:4 lParam:0];
+    [sci message:SCI_SETUSETABS wParam:0 lParam:0];
+    [sci message:SCI_SETINDENTATIONGUIDES wParam:SC_IV_LOOKBOTH lParam:0];
+    [sci message:SCI_SETBACKSPACEUNINDENTS wParam:1 lParam:0];
+    [sci message:SCI_SETTABINDENTS wParam:1 lParam:0];
 }
 
 #pragma mark - Documents
@@ -263,6 +273,7 @@ static long SciColor(NSColor *c) {
     self.currentIndex = index;
     NppDocument *doc = self.docs[index];
     [self.sciView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    [self applyDocumentSettings];
     [self applyLanguage];
     [self refreshChrome];
     [self.window makeFirstResponder:self.sciView];

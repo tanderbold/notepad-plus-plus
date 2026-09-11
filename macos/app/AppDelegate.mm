@@ -1,5 +1,6 @@
 #import "AppDelegate.h"
 #import "EditorController.h"
+#import "EditCommands.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -167,9 +168,103 @@
     [self item:@"Toggle Line Comment" action:@selector(toggleLineComment:) key:@"/" flags:NSEventModifierFlagCommand menu:editMenu];
     [self item:@"Block Comment" action:@selector(toggleBlockComment:) key:@"/"
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:editMenu];
+    [self item:@"Delete" action:@selector(deleteSelection:) key:@"" flags:0 menu:editMenu];
     [editMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Complete Word" action:@selector(showAutoComplete:) key:@" "
          flags:NSEventModifierFlagControl menu:editMenu];
+    [editMenu addItem:[NSMenuItem separatorItem]];
+
+    // --- Insert
+    NSMenu *insertMenu = [[NSMenu alloc] initWithTitle:@"Insert"];
+    [self item:@"Date Time (short)" action:@selector(insertDateShort:) key:@"" flags:0 menu:insertMenu];
+    [self item:@"Date Time (long)" action:@selector(insertDateLong:) key:@"" flags:0 menu:insertMenu];
+    [self item:@"Date Time (customized)" action:@selector(insertDateCustom:) key:@"" flags:0 menu:insertMenu];
+    [editMenu addItemWithTitle:@"Insert" action:nil keyEquivalent:@""].submenu = insertMenu;
+
+    // --- Copy to Clipboard
+    NSMenu *clipMenu = [[NSMenu alloc] initWithTitle:@"Copy to Clipboard"];
+    [self item:@"Copy Current Full File path" action:@selector(copyFullPath:) key:@"" flags:0 menu:clipMenu];
+    [self item:@"Copy Current Filename" action:@selector(copyFileName:) key:@"" flags:0 menu:clipMenu];
+    [self item:@"Copy Current Dir. Path" action:@selector(copyDirPath:) key:@"" flags:0 menu:clipMenu];
+    [self item:@"Copy All Filenames" action:@selector(copyAllNames:) key:@"" flags:0 menu:clipMenu];
+    [self item:@"Copy All File Paths" action:@selector(copyAllPaths:) key:@"" flags:0 menu:clipMenu];
+    [editMenu addItemWithTitle:@"Copy to Clipboard" action:nil keyEquivalent:@""].submenu = clipMenu;
+
+    // --- Indent
+    NSMenu *indentMenu = [[NSMenu alloc] initWithTitle:@"Indent"];
+    [self item:@"Increase Line Indent" action:@selector(increaseIndent:) key:@"]" flags:NSEventModifierFlagCommand menu:indentMenu];
+    [self item:@"Decrease Line Indent" action:@selector(decreaseIndent:) key:@"[" flags:NSEventModifierFlagCommand menu:indentMenu];
+    [editMenu addItemWithTitle:@"Indent" action:nil keyEquivalent:@""].submenu = indentMenu;
+
+    // --- Convert Case to
+    NSMenu *caseMenu = [[NSMenu alloc] initWithTitle:@"Convert Case to"];
+    NSArray *caseTitles = @[@"UPPERCASE", @"lowercase", @"Proper Case", @"Proper Case (blend)",
+                            @"Sentence case", @"Sentence case (blend)", @"iNVERT cASE", @"ranDOm CasE"];
+    for (NSUInteger i = 0; i < caseTitles.count; ++i) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:caseTitles[i]
+                                                    action:@selector(convertCase:) keyEquivalent:@""];
+        mi.target = self; mi.tag = (NSInteger)i;
+        [caseMenu addItem:mi];
+    }
+    [editMenu addItemWithTitle:@"Convert Case to" action:nil keyEquivalent:@""].submenu = caseMenu;
+
+    // --- Line Operations
+    NSMenu *lineMenu = [[NSMenu alloc] initWithTitle:@"Line Operations"];
+    [self item:@"Remove Duplicate Lines" action:@selector(removeDupLines:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Remove Consecutive Duplicate Lines" action:@selector(removeConsecutiveDupLines:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Split Lines" action:@selector(splitLines:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Join Lines" action:@selector(joinLines:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Move Up Current Line" action:@selector(moveLineUp:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Move Down Current Line" action:@selector(moveLineDown:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Remove Empty Lines" action:@selector(removeEmptyLines:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Remove Empty Lines (Containing Blank characters)" action:@selector(removeBlankLines:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Insert Blank Line Above Current" action:@selector(blankLineAbove:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Insert Blank Line Below Current" action:@selector(blankLineBelow:) key:@"" flags:0 menu:lineMenu];
+    [lineMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Reverse Line Order" action:@selector(reverseLines:) key:@"" flags:0 menu:lineMenu];
+    [self item:@"Randomize Line Order" action:@selector(randomizeLines:) key:@"" flags:0 menu:lineMenu];
+    NSArray *sortNames = @[@"Lexicographically", @"Lex. Ignoring Case", @"In Locale Order",
+                           @"As Integers", @"As Decimals (Comma)", @"As Decimals (Dot)", @"By Length"];
+    for (NSUInteger i = 0; i < sortNames.count; ++i) {
+        for (int desc = 0; desc < 2; ++desc) {
+            NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:
+                [NSString stringWithFormat:@"Sort Lines %@ %@", sortNames[i], desc ? @"Descending" : @"Ascending"]
+                                                        action:@selector(sortLines:) keyEquivalent:@""];
+            mi.target = self; mi.tag = (NSInteger)(i * 2 + desc);
+            [lineMenu addItem:mi];
+        }
+    }
+    [editMenu addItemWithTitle:@"Line Operations" action:nil keyEquivalent:@""].submenu = lineMenu;
+
+    // --- Comment/Uncomment
+    NSMenu *commentMenu = [[NSMenu alloc] initWithTitle:@"Comment/Uncomment"];
+    [self item:@"Toggle Single Line Comment" action:@selector(toggleLineComment:) key:@"" flags:0 menu:commentMenu];
+    [self item:@"Single Line Uncomment" action:@selector(uncommentLines:) key:@"" flags:0 menu:commentMenu];
+    [self item:@"Block Comment" action:@selector(streamComment:) key:@"" flags:0 menu:commentMenu];
+    [self item:@"Block Uncomment" action:@selector(streamUncomment:) key:@"" flags:0 menu:commentMenu];
+    [editMenu addItemWithTitle:@"Comment/Uncomment" action:nil keyEquivalent:@""].submenu = commentMenu;
+
+    // --- Blank Operations
+    NSMenu *blankMenu = [[NSMenu alloc] initWithTitle:@"Blank Operations"];
+    NSArray *blankTitles = @[@"Trim Trailing Space", @"Trim Leading Space",
+                             @"Trim Leading and Trailing Space", @"EOL to Space",
+                             @"Trim both and EOL to Space", @"TAB to Space",
+                             @"Space to TAB (All)", @"Space to TAB (Leading)"];
+    for (NSUInteger i = 0; i < blankTitles.count; ++i) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:blankTitles[i]
+                                                    action:@selector(applyTrim:) keyEquivalent:@""];
+        mi.target = self; mi.tag = (NSInteger)i;
+        [blankMenu addItem:mi];
+    }
+    [editMenu addItemWithTitle:@"Blank Operations" action:nil keyEquivalent:@""].submenu = blankMenu;
+
+    // --- Read-Only
+    NSMenu *roMenu = [[NSMenu alloc] initWithTitle:@"Read-Only"];
+    [self item:@"Read-Only on Current Document" action:@selector(toggleReadOnly:) key:@"" flags:0 menu:roMenu];
+    [self item:@"Read-Only for All Documents" action:@selector(readOnlyAll:) key:@"" flags:0 menu:roMenu];
+    [self item:@"Clear Read-Only for All Documents" action:@selector(clearReadOnlyAll:) key:@"" flags:0 menu:roMenu];
+    [editMenu addItemWithTitle:@"Read-Only" action:nil keyEquivalent:@""].submenu = roMenu;
+
     editItem.submenu = editMenu;
 
     // ---- Search
@@ -452,6 +547,55 @@
 - (void)toggleLineComment:(id)sender  { [self.editor toggleLineComment]; }
 - (void)toggleBlockComment:(id)sender { [self.editor toggleBlockComment]; }
 - (void)showAutoComplete:(id)sender   { [self.editor showAutoCompletion]; }
+
+#pragma mark - Edit: case, lines, blanks
+
+- (void)convertCase:(NSMenuItem *)sender { [self.editor convertCase:(NppCaseMode)sender.tag]; }
+
+- (void)sortLines:(NSMenuItem *)sender {
+    [self.editor sortLines:(NppSortKey)(sender.tag / 2) descending:(sender.tag % 2) == 1];
+}
+
+- (void)applyTrim:(NSMenuItem *)sender { [self.editor applyTrim:(NppTrimMode)sender.tag]; }
+
+- (void)reverseLines:(id)sender   { [self.editor sortLines:NppSortReverseOrder descending:NO]; }
+- (void)randomizeLines:(id)sender { [self.editor sortLines:NppSortRandom descending:NO]; }
+
+- (void)removeDupLines:(id)sender            { [self.editor removeDuplicateLines:NO]; }
+- (void)removeConsecutiveDupLines:(id)sender { [self.editor removeDuplicateLines:YES]; }
+- (void)splitLines:(id)sender                { [self.editor splitLines]; }
+- (void)joinLines:(id)sender                 { [self.editor joinLines]; }
+- (void)moveLineUp:(id)sender                { [self.editor moveLine:YES]; }
+- (void)moveLineDown:(id)sender              { [self.editor moveLine:NO]; }
+- (void)removeEmptyLines:(id)sender          { [self.editor removeEmptyLines:NO]; }
+- (void)removeBlankLines:(id)sender          { [self.editor removeEmptyLines:YES]; }
+- (void)blankLineAbove:(id)sender            { [self.editor insertBlankLine:YES]; }
+- (void)blankLineBelow:(id)sender            { [self.editor insertBlankLine:NO]; }
+- (void)increaseIndent:(id)sender            { [self.editor changeIndent:YES]; }
+- (void)decreaseIndent:(id)sender            { [self.editor changeIndent:NO]; }
+- (void)deleteSelection:(id)sender           { [self.editor deleteSelection]; }
+- (void)uncommentLines:(id)sender            { [self.editor uncommentLines]; }
+- (void)streamComment:(id)sender             { [self.editor streamComment:YES]; }
+- (void)streamUncomment:(id)sender           { [self.editor streamComment:NO]; }
+
+- (void)toggleReadOnly:(id)sender    { [self.editor setReadOnly:![self.editor isReadOnly]]; }
+- (void)readOnlyAll:(id)sender       { [self.editor setReadOnlyForAllDocuments:YES]; }
+- (void)clearReadOnlyAll:(id)sender  { [self.editor setReadOnlyForAllDocuments:NO]; }
+
+- (void)copyFullPath:(id)sender  { [self.editor copyToClipboard:self.editor.currentDocument.path ?: @""]; }
+- (void)copyFileName:(id)sender  { [self.editor copyToClipboard:self.editor.currentDocument.displayName]; }
+- (void)copyDirPath:(id)sender   { [self.editor copyToClipboard:[self.editor containingFolderURL].path ?: @""]; }
+- (void)copyAllNames:(id)sender  { [self.editor copyToClipboard:[self.editor allDocumentNames]]; }
+- (void)copyAllPaths:(id)sender  { [self.editor copyToClipboard:[self.editor allDocumentPaths]]; }
+
+- (void)insertDateShort:(id)sender { [self.editor insertDateTimeShort:YES]; }
+- (void)insertDateLong:(id)sender  { [self.editor insertDateTimeShort:NO]; }
+
+- (void)insertDateCustom:(id)sender {
+    NSString *fmt = [self promptForString:@"Date/time format" default:@"yyyy-MM-dd HH:mm:ss"];
+    if (!fmt) return;
+    [self.editor insertCustomDateTime:fmt];
+}
 
 #pragma mark - Bookmarks
 

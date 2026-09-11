@@ -42,7 +42,11 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   a status bar with path, line/column, size, language, encoding and EOL.
 - Encodings (UTF-8, UTF-8-BOM, UTF-16 LE/BE, ANSI) sniffed on open and applied
   on save; EOL conversion between CRLF, LF and CR.
-- Comment toggling, bookmarks, code folding, word completion.
+- Comment toggling and uncommenting, bookmarks, code folding, word completion.
+- Case conversion (8 modes), line operations (sorting by 7 keys in both
+  directions, dedup, split/join, move, blank-line handling), whitespace
+  operations (trim, tab/space conversion), indentation, clipboard path copies
+  and date/time insertion.
 - Reload, Save a Copy As, Save All, Rename, Move to Trash, Print, and the whole
   Close All family including pinned tabs.
 - Sessions: save and reopen the set of open files.

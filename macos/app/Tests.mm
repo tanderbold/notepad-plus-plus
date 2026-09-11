@@ -6,6 +6,7 @@
 #import "AppDelegate.h"
 #import "AppDelegate+Testing.h"
 #import "EditorController.h"
+#import "EditCommands.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -282,6 +283,242 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_EDIT_AUTOCOMPLETE", @"offers words from the document",
               [sci message:SCI_AUTOCACTIVE] != 0);
         [sci message:SCI_AUTOCCANCEL];
+    }
+
+    printf("\n== Edit: convert case ==\n");
+    {
+        struct { NppCaseMode mode; NSString *in; NSString *want; NSString *cmd; } cases[] = {
+            {NppCaseUpper,          @"hello world", @"HELLO WORLD", @"IDM_EDIT_UPPERCASE"},
+            {NppCaseLower,          @"HeLLo",       @"hello",       @"IDM_EDIT_LOWERCASE"},
+            {NppCaseProperForce,    @"hELLO wORLD", @"Hello World", @"IDM_EDIT_PROPERCASE_FORCE"},
+            {NppCaseProperBlend,    @"hELLO wORLD", @"HELLO WORLD", @"IDM_EDIT_PROPERCASE_BLEND"},
+            {NppCaseSentenceForce,  @"hi THERE. bye", @"Hi there. Bye", @"IDM_EDIT_SENTENCECASE_FORCE"},
+            {NppCaseSentenceBlend,  @"hi THERE. bye", @"Hi THERE. Bye", @"IDM_EDIT_SENTENCECASE_BLEND"},
+            {NppCaseInvert,         @"AbC",         @"aBc",         @"IDM_EDIT_INVERTCASE"},
+        };
+        for (size_t i = 0; i < sizeof(cases)/sizeof(cases[0]); ++i) {
+            SetDoc(ed, cases[i].in);
+            [sci message:SCI_SETSEL wParam:0 lParam:(sptr_t)[sci message:SCI_GETLENGTH]];
+            [ed convertCase:cases[i].mode];
+            Check(cases[i].cmd, [NSString stringWithFormat:@"%@ -> %@", cases[i].in, cases[i].want],
+                  [DocText(ed) isEqualToString:cases[i].want]);
+        }
+        // Random case is non-deterministic; assert the invariant instead.
+        SetDoc(ed, @"abcdefgh");
+        [sci message:SCI_SETSEL wParam:0 lParam:(sptr_t)[sci message:SCI_GETLENGTH]];
+        [ed convertCase:NppCaseRandom];
+        NSString *r = DocText(ed);
+        Check(@"IDM_EDIT_RANDOMCASE", @"same letters, case scrambled",
+              r.length == 8 && [r.lowercaseString isEqualToString:@"abcdefgh"]);
+    }
+
+    printf("\n== Edit: sorting ==\n");
+    {
+        struct { NppSortKey key; BOOL desc; NSString *in; NSString *want; NSString *cmd; } sorts[] = {
+            {NppSortLexicographic, NO,  @"b\na\nc\n", @"a\nb\nc\n", @"IDM_EDIT_SORTLINES_LEXICOGRAPHIC_ASCENDING"},
+            {NppSortLexicographic, YES, @"b\na\nc\n", @"c\nb\na\n", @"IDM_EDIT_SORTLINES_LEXICOGRAPHIC_DESCENDING"},
+            {NppSortLexicographicCaseInsensitive, NO,  @"B\na\nC\n", @"a\nB\nC\n", @"IDM_EDIT_SORTLINES_LEXICO_CASE_INSENS_ASCENDING"},
+            {NppSortLexicographicCaseInsensitive, YES, @"B\na\nC\n", @"C\nB\na\n", @"IDM_EDIT_SORTLINES_LEXICO_CASE_INSENS_DESCENDING"},
+            {NppSortLocale, NO,  @"b\na\n", @"a\nb\n", @"IDM_EDIT_SORTLINES_LOCALE_ASCENDING"},
+            {NppSortLocale, YES, @"a\nb\n", @"b\na\n", @"IDM_EDIT_SORTLINES_LOCALE_DESCENDING"},
+            {NppSortInteger, NO,  @"10\n9\n2\n", @"2\n9\n10\n", @"IDM_EDIT_SORTLINES_INTEGER_ASCENDING"},
+            {NppSortInteger, YES, @"10\n9\n2\n", @"10\n9\n2\n", @"IDM_EDIT_SORTLINES_INTEGER_DESCENDING"},
+            {NppSortDecimalDot, NO,  @"1.5\n1.25\n", @"1.25\n1.5\n", @"IDM_EDIT_SORTLINES_DECIMALDOT_ASCENDING"},
+            {NppSortDecimalDot, YES, @"1.25\n1.5\n", @"1.5\n1.25\n", @"IDM_EDIT_SORTLINES_DECIMALDOT_DESCENDING"},
+            {NppSortDecimalComma, NO,  @"1,5\n1,25\n", @"1,25\n1,5\n", @"IDM_EDIT_SORTLINES_DECIMALCOMMA_ASCENDING"},
+            {NppSortDecimalComma, YES, @"1,25\n1,5\n", @"1,5\n1,25\n", @"IDM_EDIT_SORTLINES_DECIMALCOMMA_DESCENDING"},
+            {NppSortLength, NO,  @"ccc\na\nbb\n", @"a\nbb\nccc\n", @"IDM_EDIT_SORTLINES_LENGTH_ASCENDING"},
+            {NppSortLength, YES, @"a\nbb\nccc\n", @"ccc\nbb\na\n", @"IDM_EDIT_SORTLINES_LENGTH_DESCENDING"},
+        };
+        for (size_t i = 0; i < sizeof(sorts)/sizeof(sorts[0]); ++i) {
+            SetDoc(ed, sorts[i].in);
+            [ed sortLines:sorts[i].key descending:sorts[i].desc];
+            Check(sorts[i].cmd, @"sorts as expected", [DocText(ed) isEqualToString:sorts[i].want]);
+        }
+
+        SetDoc(ed, @"a\nb\nc\n");
+        [ed sortLines:NppSortReverseOrder descending:NO];
+        Check(@"IDM_EDIT_SORTLINES_REVERSE_ORDER", @"reverses line order",
+              [DocText(ed) isEqualToString:@"c\nb\na\n"]);
+
+        SetDoc(ed, @"a\nb\nc\nd\ne\n");
+        [ed sortLines:NppSortRandom descending:NO];
+        NSString *shuffled = DocText(ed);
+        NSArray *parts = [[shuffled stringByTrimmingCharactersInSet:
+                           [NSCharacterSet newlineCharacterSet]] componentsSeparatedByString:@"\n"];
+        Check(@"IDM_EDIT_SORTLINES_RANDOMLY", @"keeps every line, order scrambled",
+              parts.count == 5 && [[NSSet setWithArray:parts] isEqualToSet:
+                  [NSSet setWithArray:@[@"a", @"b", @"c", @"d", @"e"]]]);
+    }
+
+    printf("\n== Edit: line operations ==\n");
+    {
+        SetDoc(ed, @"a\nb\na\nb\n");
+        [ed removeDuplicateLines:NO];
+        Check(@"IDM_EDIT_REMOVE_ANY_DUP_LINES", @"keeps the first of each",
+              [DocText(ed) isEqualToString:@"a\nb\n"]);
+
+        SetDoc(ed, @"a\na\nb\na\n");
+        [ed removeDuplicateLines:YES];
+        Check(@"IDM_EDIT_REMOVE_CONSECUTIVE_DUP_LINES", @"collapses only neighbours",
+              [DocText(ed) isEqualToString:@"a\nb\na\n"]);
+
+        SetDoc(ed, @"one two three\n");
+        [sci message:SCI_SETEDGECOLUMN wParam:7 lParam:0];
+        [ed splitLines];
+        Check(@"IDM_EDIT_SPLIT_LINES", @"breaks a long line at the edge column",
+              [[DocText(ed) componentsSeparatedByString:@"\n"] count] > 2);
+        [sci message:SCI_SETEDGECOLUMN wParam:0 lParam:0];
+
+        SetDoc(ed, @"a\nb\nc\n");
+        [ed joinLines];
+        Check(@"IDM_EDIT_JOIN_LINES", @"joins with single spaces",
+              [DocText(ed) hasPrefix:@"a b c"]);
+
+        SetDoc(ed, @"one\ntwo\n");
+        [sci message:SCI_GOTOLINE wParam:1 lParam:0];
+        [ed moveLine:YES];
+        Check(@"IDM_EDIT_LINE_UP", @"moves the line up", [DocText(ed) hasPrefix:@"two"]);
+        [ed moveLine:NO];
+        Check(@"IDM_EDIT_LINE_DOWN", @"moves the line back down", [DocText(ed) hasPrefix:@"one"]);
+
+        SetDoc(ed, @"a\n\nb\n");
+        [ed removeEmptyLines:NO];
+        Check(@"IDM_EDIT_REMOVEEMPTYLINES", @"drops empty lines",
+              [DocText(ed) isEqualToString:@"a\nb\n"]);
+
+        SetDoc(ed, @"a\n   \nb\n");
+        [ed removeEmptyLines:YES];
+        Check(@"IDM_EDIT_REMOVEEMPTYLINESWITHBLANK", @"drops whitespace-only lines",
+              [DocText(ed) isEqualToString:@"a\nb\n"]);
+
+        SetDoc(ed, @"a\nb\n");
+        [sci message:SCI_GOTOLINE wParam:1 lParam:0];
+        [ed insertBlankLine:YES];
+        Check(@"IDM_EDIT_BLANKLINEABOVECURRENT", @"inserts above the caret line",
+              [DocText(ed) isEqualToString:@"a\n\nb\n"]);
+
+        SetDoc(ed, @"a\nb\n");
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0];
+        [ed insertBlankLine:NO];
+        Check(@"IDM_EDIT_BLANKLINEBELOWCURRENT", @"inserts below the caret line",
+              [DocText(ed) isEqualToString:@"a\n\nb\n"]);
+    }
+
+    printf("\n== Edit: blank operations ==\n");
+    {
+        struct { NppTrimMode mode; NSString *in; NSString *want; NSString *cmd; } trims[] = {
+            {NppTrimTrailing,       @"a   \nb\t\n", @"a\nb\n",     @"IDM_EDIT_TRIMTRAILING"},
+            {NppTrimLeading,        @"   a\n\tb\n", @"a\nb\n",     @"IDM_EDIT_TRIMLINEHEAD"},
+            {NppTrimBoth,           @"  a  \n",      @"a\n",         @"IDM_EDIT_TRIM_BOTH"},
+            {NppTabToSpace,         @"\ta\n",        @"    a\n",     @"IDM_EDIT_TAB2SW"},
+            {NppSpaceToTabAll,      @"    a    b\n",  @"\ta\tb\n",   @"IDM_EDIT_SW2TAB_ALL"},
+            {NppSpaceToTabLeading,  @"    a    b\n",  @"\ta    b\n",  @"IDM_EDIT_SW2TAB_LEADING"},
+        };
+        for (size_t i = 0; i < sizeof(trims)/sizeof(trims[0]); ++i) {
+            SetDoc(ed, trims[i].in);
+            [ed applyTrim:trims[i].mode];
+            Check(trims[i].cmd, @"transforms whitespace as expected",
+                  [DocText(ed) isEqualToString:trims[i].want]);
+        }
+
+        SetDoc(ed, @"a\nb\n");
+        [ed applyTrim:NppTrimEOLToSpace];
+        Check(@"IDM_EDIT_EOL2WS", @"line endings become spaces",
+              [DocText(ed) hasPrefix:@"a b"] && ![[DocText(ed) substringToIndex:3] containsString:@"\n"]);
+
+        SetDoc(ed, @"  a  \n  b  \n");
+        [ed applyTrim:NppTrimAll];
+        Check(@"IDM_EDIT_TRIMALL", @"trims and joins",
+              [DocText(ed) hasPrefix:@"a b"]);
+    }
+
+    printf("\n== Edit: indent, delete, comments, read-only ==\n");
+    {
+        SetDoc(ed, @"a\n");
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0];
+        [ed changeIndent:YES];
+        BOOL indented = [DocText(ed) isEqualToString:@"    a\n"];
+        [ed changeIndent:NO];
+        Check(@"IDM_EDIT_INS_TAB", @"indents the line by one level", indented);
+        Check(@"IDM_EDIT_RMV_TAB", @"removes that level again",
+              [DocText(ed) isEqualToString:@"a\n"]);
+
+        SetDoc(ed, @"delete me\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:7];
+        [ed deleteSelection];
+        Check(@"IDM_EDIT_DELETE", @"removes the selection",
+              ![DocText(ed) hasPrefix:@"delete"]);
+
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"// x\n// y\n");
+        [ed uncommentLines];
+        Check(@"IDM_EDIT_BLOCK_UNCOMMENT", @"strips the line comment token",
+              [DocText(ed) isEqualToString:@"x\ny\n"]);
+
+        SetDoc(ed, @"body\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:4];
+        [ed streamComment:YES];
+        BOOL wrapped = [DocText(ed) hasPrefix:@"/*body*/"];
+        [sci message:SCI_SETSEL wParam:0 lParam:8];
+        [ed streamComment:NO];
+        Check(@"IDM_EDIT_STREAM_COMMENT", @"wraps the selection", wrapped);
+        Check(@"IDM_EDIT_STREAM_UNCOMMENT", @"unwraps it again",
+              [DocText(ed) hasPrefix:@"body"]);
+
+        [ed setReadOnly:YES];
+        BOOL ro = [ed isReadOnly];
+        [ed setReadOnly:NO];
+        Check(@"IDM_EDIT_TOGGLEREADONLY", @"toggles read-only", ro && ![ed isReadOnly]);
+
+        [ed setReadOnlyForAllDocuments:YES];
+        BOOL allRO = [ed isReadOnly];
+        Check(@"IDM_EDIT_SETREADONLYFORALLDOCS", @"marks every document read-only", allRO);
+        [ed setReadOnlyForAllDocuments:NO];
+        Check(@"IDM_EDIT_CLEARREADONLYFORALLDOCS", @"clears it again", ![ed isReadOnly]);
+    }
+
+    printf("\n== Edit: clipboard and insert ==\n");
+    {
+        NSError *err = nil;
+        NSString *p = TempFile(@"t_clip.txt", @"x\n");
+        [ed openFileAtPath:p error:&err];
+
+        [ed copyToClipboard:ed.currentDocument.path];
+        Check(@"IDM_EDIT_FULLPATHTOCLIP", @"clipboard holds the full path",
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] isEqualToString:p]);
+
+        [ed copyToClipboard:ed.currentDocument.displayName];
+        Check(@"IDM_EDIT_FILENAMETOCLIP", @"clipboard holds the file name",
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
+                  isEqualToString:@"t_clip.txt"]);
+
+        [ed copyToClipboard:[ed containingFolderURL].path];
+        Check(@"IDM_EDIT_CURRENTDIRTOCLIP", @"clipboard holds the directory",
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
+                  isEqualToString:p.stringByDeletingLastPathComponent]);
+
+        [ed copyToClipboard:[ed allDocumentNames]];
+        Check(@"IDM_EDIT_COPY_ALL_NAMES", @"clipboard lists every tab name",
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
+                  containsString:@"t_clip.txt"]);
+
+        [ed copyToClipboard:[ed allDocumentPaths]];
+        Check(@"IDM_EDIT_COPY_ALL_PATHS", @"clipboard lists every tab path",
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] containsString:p]);
+
+        SetDoc(ed, @"");
+        [ed insertDateTimeShort:YES];
+        Check(@"IDM_EDIT_INSERT_DATETIME_SHORT", @"inserts a short timestamp", DocText(ed).length > 4);
+
+        SetDoc(ed, @"");
+        [ed insertDateTimeShort:NO];
+        Check(@"IDM_EDIT_INSERT_DATETIME_LONG", @"inserts a long timestamp", DocText(ed).length > 8);
+
+        SetDoc(ed, @"");
+        [ed insertCustomDateTime:@"yyyy"];
+        Check(@"IDM_EDIT_INSERT_DATETIME_CUSTOMIZED", @"honours a custom format",
+              DocText(ed).length == 4 && [DocText(ed) hasPrefix:@"20"]);
     }
 
     printf("\n== Search ==\n");
