@@ -6,6 +6,7 @@
 #import "EncodingCommands.h"
 #import "ToolsCommands.h"
 #import "BackupAndPrint.h"
+#import "BehaviourCommands.h"
 #import "SettingsCommands.h"
 #include "ILexer.h"
 #include "Lexilla.h"
@@ -316,6 +317,7 @@ static long SciColor(NSColor *c) {
 
     [self.sciView setString:text];
     [self.sciView message:SCI_SETEOLMODE wParam:(uptr_t)doc.eolMode lParam:0];
+    [self applyPerformanceRestrictions];
     [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     [self.sciView message:SCI_GOTOPOS wParam:0 lParam:0];
     [self.sciView message:SCI_EMPTYUNDOBUFFER wParam:0 lParam:0];
@@ -726,6 +728,8 @@ static long SciColor(NSColor *c) {
 
     [self applyTheme];
     [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+    [self applyWordCharacters];
+    [self markClickableLinks];
 }
 
 - (void)applyTheme {
@@ -1285,6 +1289,11 @@ static long SciColor(NSColor *c) {
         case SCN_UPDATEUI:
             [self refreshChrome];
             [self mirrorScrollToSecondary];
+            [self updateBraceMatch];
+            if (n->updated & SC_UPDATE_SELECTION) [self updateSmartHighlight];
+            break;
+        case SCN_INDICATORRELEASE:
+            [self openLinkAtPosition:(long)n->position];
             break;
         case SCN_MACRORECORD:
             [self recordMacroMessage:(int)n->message

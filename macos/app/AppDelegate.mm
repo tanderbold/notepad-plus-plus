@@ -12,11 +12,13 @@
 #import "Toolbar.h"
 #import "StyleCatalog.h"
 #import "BackupAndPrint.h"
+#import "BehaviourCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "BackupAndPrint.h"
+#import "BehaviourCommands.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #import "Tests.h"
@@ -66,6 +68,10 @@
     [self applyToolbarPreferences];
     [self.editor setAutosaveEnabled:[NppPreferences shared].autosaveEnabled
                            interval:[NppPreferences shared].autosaveInterval];
+    [self.editor restorePanelState];
+    if ([NppPreferences shared].restoreSession) {
+        [self.editor loadSessionFrom:[self.editor defaultSessionPath] error:NULL];
+    }
 
     // Follow the system appearance while Preferences is set to do so.
     [NSApp addObserver:self forKeyPath:@"effectiveAppearance"
@@ -91,10 +97,27 @@
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)a { return YES; }
 
 - (BOOL)application:(NSApplication *)app openFile:(NSString *)filename {
+    // "Always in multi-instance mode" hands the file to a second copy of the app
+    // instead of adding a tab here.
+    if ([self.editor shouldOpenFilesInNewInstance] && self.editor.documents.count > 0) {
+        NSWorkspaceOpenConfiguration *config = [NSWorkspaceOpenConfiguration configuration];
+        config.createsNewApplicationInstance = YES;
+        [[NSWorkspace sharedWorkspace] openURLs:@[[NSURL fileURLWithPath:filename]]
+                           withApplicationAtURL:[[NSBundle mainBundle] bundleURL]
+                                  configuration:config completionHandler:nil];
+        return YES;
+    }
     NSError *err = nil;
     if ([self.editor openFileAtPath:filename error:&err]) return YES;
     if (err) [[NSAlert alertWithError:err] runModal];
     return NO;
+}
+
+- (void)applicationWillTerminate:(NSNotification *)note {
+    [self.editor rememberPanelState];
+    if ([NppPreferences shared].multiInstanceMode == 2 || [NppPreferences shared].restoreSession) {
+        [self.editor saveSessionTo:[self.editor defaultSessionPath] error:NULL];
+    }
 }
 
 #pragma mark - Menus

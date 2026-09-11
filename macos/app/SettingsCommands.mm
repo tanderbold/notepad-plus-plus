@@ -54,6 +54,30 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"printHeaderFontSize"): @9,
         Key(@"printHeaderBold"): @NO,
         Key(@"printHeaderItalic"): @NO,
+        Key(@"largeFileRestrictionEnabled"): @YES,
+        Key(@"largeFileThresholdMB"): @200,
+        Key(@"largeFileDeactivateWordWrap"): @YES,
+        Key(@"largeFileAllowAutoCompletion"): @NO,
+        Key(@"largeFileAllowSmartHighlighting"): @NO,
+        Key(@"largeFileAllowBraceMatch"): @NO,
+        Key(@"largeFileAllowClickableLinks"): @NO,
+        Key(@"suppressHugeFileWarning"): @NO,
+        Key(@"linksEnabled"): @YES,
+        Key(@"linksNoUnderline"): @NO,
+        Key(@"linksFullBox"): @NO,
+        Key(@"linkCustomSchemes"): @"",
+        Key(@"braceMatchEnabled"): @YES,
+        Key(@"smartHighlightEnabled"): @YES,
+        Key(@"customWordCharsEnabled"): @NO,
+        Key(@"customWordChars"): @"",
+        Key(@"delimiterOpen"): @"(",
+        Key(@"delimiterClose"): @")",
+        Key(@"delimiterMultiline"): @NO,
+        Key(@"multiInstanceMode"): @0,
+        Key(@"reverseDateTimeOrder"): @NO,
+        Key(@"rememberPanelState"): @NO,
+        Key(@"panelState"): @{},
+        Key(@"settingsDirectory"): @"",
         Key(@"lightThemeName"):  @"Default",
         Key(@"darkThemeName"):   @"DarkModeDefault",
         Key(@"styleOverrides"):  @{},
@@ -94,6 +118,12 @@ NPP_PREF_OBJ(printFooterLeft, setPrintFooterLeft, NSString, @"printFooterLeft")
 NPP_PREF_OBJ(printFooterMiddle, setPrintFooterMiddle, NSString, @"printFooterMiddle")
 NPP_PREF_OBJ(printFooterRight, setPrintFooterRight, NSString, @"printFooterRight")
 NPP_PREF_OBJ(printHeaderFontName, setPrintHeaderFontName, NSString, @"printHeaderFontName")
+NPP_PREF_OBJ(linkCustomSchemes, setLinkCustomSchemes, NSString, @"linkCustomSchemes")
+NPP_PREF_OBJ(customWordChars, setCustomWordChars, NSString, @"customWordChars")
+NPP_PREF_OBJ(delimiterOpen, setDelimiterOpen, NSString, @"delimiterOpen")
+NPP_PREF_OBJ(delimiterClose, setDelimiterClose, NSString, @"delimiterClose")
+NPP_PREF_OBJ(settingsDirectory, setSettingsDirectory, NSString, @"settingsDirectory")
+NPP_PREF_OBJ(panelState, setPanelState, NSDictionary, @"panelState")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
@@ -107,6 +137,8 @@ NPP_PREF_INT(backupMode, setBackupMode, @"backupMode")
 NPP_PREF_INT(autosaveInterval, setAutosaveInterval, @"autosaveInterval")
 NPP_PREF_INT(printColourMode, setPrintColourMode, @"printColourMode")
 NPP_PREF_INT(printHeaderFontSize, setPrintHeaderFontSize, @"printHeaderFontSize")
+NPP_PREF_INT(largeFileThresholdMB, setLargeFileThresholdMB, @"largeFileThresholdMB")
+NPP_PREF_INT(multiInstanceMode, setMultiInstanceMode, @"multiInstanceMode")
 NPP_PREF_BOOL(useSpaces, setUseSpaces, @"useSpaces")
 NPP_PREF_BOOL(wordWrap, setWordWrap, @"wordWrap")
 NPP_PREF_BOOL(showWhitespace, setShowWhitespace, @"showWhitespace")
@@ -117,6 +149,22 @@ NPP_PREF_BOOL(autosaveEnabled, setAutosaveEnabled, @"autosaveEnabled")
 NPP_PREF_BOOL(printLineNumbers, setPrintLineNumbers, @"printLineNumbers")
 NPP_PREF_BOOL(printHeaderBold, setPrintHeaderBold, @"printHeaderBold")
 NPP_PREF_BOOL(printHeaderItalic, setPrintHeaderItalic, @"printHeaderItalic")
+NPP_PREF_BOOL(largeFileRestrictionEnabled, setLargeFileRestrictionEnabled, @"largeFileRestrictionEnabled")
+NPP_PREF_BOOL(largeFileDeactivateWordWrap, setLargeFileDeactivateWordWrap, @"largeFileDeactivateWordWrap")
+NPP_PREF_BOOL(largeFileAllowAutoCompletion, setLargeFileAllowAutoCompletion, @"largeFileAllowAutoCompletion")
+NPP_PREF_BOOL(largeFileAllowSmartHighlighting, setLargeFileAllowSmartHighlighting, @"largeFileAllowSmartHighlighting")
+NPP_PREF_BOOL(largeFileAllowBraceMatch, setLargeFileAllowBraceMatch, @"largeFileAllowBraceMatch")
+NPP_PREF_BOOL(largeFileAllowClickableLinks, setLargeFileAllowClickableLinks, @"largeFileAllowClickableLinks")
+NPP_PREF_BOOL(suppressHugeFileWarning, setSuppressHugeFileWarning, @"suppressHugeFileWarning")
+NPP_PREF_BOOL(linksEnabled, setLinksEnabled, @"linksEnabled")
+NPP_PREF_BOOL(linksNoUnderline, setLinksNoUnderline, @"linksNoUnderline")
+NPP_PREF_BOOL(linksFullBox, setLinksFullBox, @"linksFullBox")
+NPP_PREF_BOOL(braceMatchEnabled, setBraceMatchEnabled, @"braceMatchEnabled")
+NPP_PREF_BOOL(smartHighlightEnabled, setSmartHighlightEnabled, @"smartHighlightEnabled")
+NPP_PREF_BOOL(customWordCharsEnabled, setCustomWordCharsEnabled, @"customWordCharsEnabled")
+NPP_PREF_BOOL(delimiterMultiline, setDelimiterMultiline, @"delimiterMultiline")
+NPP_PREF_BOOL(reverseDateTimeOrder, setReverseDateTimeOrder, @"reverseDateTimeOrder")
+NPP_PREF_BOOL(rememberPanelState, setRememberPanelState, @"rememberPanelState")
 
 #define NPP_PREF_DOUBLE(getter, setter, key)                                      \
 - (double)getter { return [[NSUserDefaults standardUserDefaults] doubleForKey:Key(key)]; } \
@@ -197,7 +245,10 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
 @implementation EditorController (SettingsCommands)
 
 - (NSString *)supportDirectory {
-    NSString *dir = self.defaultSessionPath.stringByDeletingLastPathComponent;
+    NSString *override = [NppPreferences shared].settingsDirectory;
+    NSString *dir = override.length
+        ? override
+        : self.defaultSessionPath.stringByDeletingLastPathComponent;
     [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES
                                                attributes:nil error:NULL];
     return dir;

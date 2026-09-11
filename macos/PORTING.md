@@ -78,6 +78,13 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   a timer, with the text of never-saved documents kept in a snapshot file.
 - Print options: line numbers, four colour modes, page margins, and header and
   footer templates using the same $(...) variables Notepad++ accepts.
+- A large-file restriction that drops highlighting and other work above a size
+  threshold, with each feature individually allowed back.
+- Clickable links with configurable schemes and appearance, matching-brace
+  highlighting, smart highlighting of the selected token, a configurable word
+  character list and delimiter selection.
+- Multi-instance behaviour, reversed date/time insertion, remembered panel
+  state, and a relocatable settings folder.
 - Themes: all 20 that Notepad++ ships, plus any imported, chosen separately for
   light and dark and switched by an Appearance setting that can follow macOS.
 - Folder as Workspace: a file tree beside the editor; Document List in a panel.

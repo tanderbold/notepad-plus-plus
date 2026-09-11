@@ -1,6 +1,7 @@
 #import "EditCommands.h"
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
+#import "SettingsCommands.h"
 
 #pragma mark - Byte/character bridging
 
@@ -466,10 +467,23 @@ static NSComparisonResult CompareNumeric(NSString *a, NSString *b, NSString *dec
 
 - (void)insertDateTimeShort:(BOOL)shortForm {
     NSDateFormatter *f = [[NSDateFormatter alloc] init];
-    f.dateStyle = NSDateFormatterShortStyle;
+    f.dateStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
     f.timeStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
-    if (!shortForm) f.dateStyle = NSDateFormatterLongStyle;
-    [self insertAtCaret:[f stringFromDate:[NSDate date]]];
+    NSString *stamp = [f stringFromDate:[NSDate date]];
+
+    // "Reverse default date time order" puts the time first, as upstream does.
+    if ([NppPreferences shared].reverseDateTimeOrder) {
+        NSDateFormatter *dateOnly = [[NSDateFormatter alloc] init];
+        dateOnly.dateStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
+        dateOnly.timeStyle = NSDateFormatterNoStyle;
+        NSDateFormatter *timeOnly = [[NSDateFormatter alloc] init];
+        timeOnly.dateStyle = NSDateFormatterNoStyle;
+        timeOnly.timeStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
+        NSDate *now = [NSDate date];
+        stamp = [NSString stringWithFormat:@"%@ %@",
+                 [timeOnly stringFromDate:now], [dateOnly stringFromDate:now]];
+    }
+    [self insertAtCaret:stamp];
 }
 
 - (void)insertCustomDateTime:(NSString *)format {

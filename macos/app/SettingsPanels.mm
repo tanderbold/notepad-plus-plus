@@ -6,6 +6,7 @@
 #import "ScintillaView.h"
 #import "Toolbar.h"
 #import "BackupAndPrint.h"
+#import "BehaviourCommands.h"
 
 #pragma mark - Preferences
 
@@ -22,7 +23,7 @@
     _editor = editor;
     _controls = [NSMutableDictionary dictionary];
 
-    NSRect frame = NSMakeRect(0, 0, 470, 800);
+    NSRect frame = NSMakeRect(0, 0, 480, 1020);
     _panel = [[NSPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskUtilityWindow)
@@ -97,6 +98,53 @@
                   value:[NppPreferences shared].printHeaderRight to:content atY:y];
     y = [self addField:@"Footer (middle)" key:@"printFooterMiddle"
                   value:[NppPreferences shared].printFooterMiddle to:content atY:y];
+
+    y -= 8;
+    y = [self addCheckbox:@"Large file restriction (no syntax highlighting)"
+                      key:@"largeFileRestrictionEnabled"
+                       on:[NppPreferences shared].largeFileRestrictionEnabled to:content atY:y];
+    y = [self addField:@"Large file size (MB)" key:@"largeFileThresholdMB"
+                  value:[@([NppPreferences shared].largeFileThresholdMB) stringValue] to:content atY:y];
+    y = [self addCheckbox:@"Allow brace match above that size" key:@"largeFileAllowBraceMatch"
+                       on:[NppPreferences shared].largeFileAllowBraceMatch to:content atY:y];
+    y = [self addCheckbox:@"Allow clickable links above that size" key:@"largeFileAllowClickableLinks"
+                       on:[NppPreferences shared].largeFileAllowClickableLinks to:content atY:y];
+
+    y -= 8;
+    y = [self addCheckbox:@"Clickable links" key:@"linksEnabled"
+                       on:[NppPreferences shared].linksEnabled to:content atY:y];
+    y = [self addCheckbox:@"Links without underline" key:@"linksNoUnderline"
+                       on:[NppPreferences shared].linksNoUnderline to:content atY:y];
+    y = [self addField:@"Extra URI schemes" key:@"linkCustomSchemes"
+                  value:[NppPreferences shared].linkCustomSchemes to:content atY:y];
+    y = [self addCheckbox:@"Highlight matching braces" key:@"braceMatchEnabled"
+                       on:[NppPreferences shared].braceMatchEnabled to:content atY:y];
+    y = [self addCheckbox:@"Smart highlighting" key:@"smartHighlightEnabled"
+                       on:[NppPreferences shared].smartHighlightEnabled to:content atY:y];
+
+    y -= 8;
+    y = [self addCheckbox:@"Add characters to the word list" key:@"customWordCharsEnabled"
+                       on:[NppPreferences shared].customWordCharsEnabled to:content atY:y];
+    y = [self addField:@"Word characters" key:@"customWordChars"
+                  value:[NppPreferences shared].customWordChars to:content atY:y];
+    y = [self addField:@"Delimiter open" key:@"delimiterOpen"
+                  value:[NppPreferences shared].delimiterOpen to:content atY:y];
+    y = [self addField:@"Delimiter close" key:@"delimiterClose"
+                  value:[NppPreferences shared].delimiterClose to:content atY:y];
+    y = [self addCheckbox:@"Delimiter selection over several lines" key:@"delimiterMultiline"
+                       on:[NppPreferences shared].delimiterMultiline to:content atY:y];
+
+    y -= 8;
+    y = [self addPopup:@"Instances" key:@"multiInstanceMode"
+                 items:@[@"Default (one instance)", @"Always a new instance",
+                         @"A session per instance"]
+              selected:[NppPreferences shared].multiInstanceMode to:content atY:y];
+    y = [self addCheckbox:@"Reverse the date and time order" key:@"reverseDateTimeOrder"
+                       on:[NppPreferences shared].reverseDateTimeOrder to:content atY:y];
+    y = [self addCheckbox:@"Remember which panels were open" key:@"rememberPanelState"
+                       on:[NppPreferences shared].rememberPanelState to:content atY:y];
+    y = [self addField:@"Settings folder" key:@"settingsDirectory"
+                  value:[NppPreferences shared].settingsDirectory to:content atY:y];
 
     NSButton *apply = [[NSButton alloc] initWithFrame:NSMakeRect(300, 12, 100, 28)];
     apply.title = @"Apply";
@@ -186,7 +234,28 @@
     p.printHeaderLeft = [self.controls[@"printHeaderLeft"] stringValue];
     p.printHeaderRight = [self.controls[@"printHeaderRight"] stringValue];
     p.printFooterMiddle = [self.controls[@"printFooterMiddle"] stringValue];
+    p.largeFileRestrictionEnabled = [self.controls[@"largeFileRestrictionEnabled"] state] == NSControlStateValueOn;
+    p.largeFileThresholdMB = MAX(1, MIN(2046, [[self.controls[@"largeFileThresholdMB"] stringValue] integerValue]));
+    p.largeFileAllowBraceMatch = [self.controls[@"largeFileAllowBraceMatch"] state] == NSControlStateValueOn;
+    p.largeFileAllowClickableLinks = [self.controls[@"largeFileAllowClickableLinks"] state] == NSControlStateValueOn;
+    p.linksEnabled = [self.controls[@"linksEnabled"] state] == NSControlStateValueOn;
+    p.linksNoUnderline = [self.controls[@"linksNoUnderline"] state] == NSControlStateValueOn;
+    p.linkCustomSchemes = [self.controls[@"linkCustomSchemes"] stringValue];
+    p.braceMatchEnabled = [self.controls[@"braceMatchEnabled"] state] == NSControlStateValueOn;
+    p.smartHighlightEnabled = [self.controls[@"smartHighlightEnabled"] state] == NSControlStateValueOn;
+    p.customWordCharsEnabled = [self.controls[@"customWordCharsEnabled"] state] == NSControlStateValueOn;
+    p.customWordChars = [self.controls[@"customWordChars"] stringValue];
+    p.delimiterOpen = [self.controls[@"delimiterOpen"] stringValue];
+    p.delimiterClose = [self.controls[@"delimiterClose"] stringValue];
+    p.delimiterMultiline = [self.controls[@"delimiterMultiline"] state] == NSControlStateValueOn;
+    p.multiInstanceMode = [self.controls[@"multiInstanceMode"] indexOfSelectedItem];
+    p.reverseDateTimeOrder = [self.controls[@"reverseDateTimeOrder"] state] == NSControlStateValueOn;
+    p.rememberPanelState = [self.controls[@"rememberPanelState"] state] == NSControlStateValueOn;
+    p.settingsDirectory = [self.controls[@"settingsDirectory"] stringValue];
     [self.editor setAutosaveEnabled:p.autosaveEnabled interval:p.autosaveInterval];
+    [self.editor applyWordCharacters];
+    [self.editor applyPerformanceRestrictions];
+    [self.editor markClickableLinks];
     [p applyToEditor:self.editor];
     // The toolbar lives on the window, so the delegate applies those three.
     if ([NSApp.delegate respondsToSelector:@selector(applyToolbarPreferences)]) {

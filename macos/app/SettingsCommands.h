@@ -52,6 +52,42 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL printHeaderBold;
 @property (nonatomic) BOOL printHeaderItalic;
 
+/// Performance: large-file restriction and what stays allowed above it.
+@property (nonatomic) BOOL largeFileRestrictionEnabled;
+@property (nonatomic) NSInteger largeFileThresholdMB;      // 1 - 2046, as upstream
+@property (nonatomic) BOOL largeFileDeactivateWordWrap;
+@property (nonatomic) BOOL largeFileAllowAutoCompletion;
+@property (nonatomic) BOOL largeFileAllowSmartHighlighting;
+@property (nonatomic) BOOL largeFileAllowBraceMatch;
+@property (nonatomic) BOOL largeFileAllowClickableLinks;
+@property (nonatomic) BOOL suppressHugeFileWarning;
+
+/// Clickable links.
+@property (nonatomic) BOOL linksEnabled;
+@property (nonatomic) BOOL linksNoUnderline;
+@property (nonatomic) BOOL linksFullBox;
+@property (nonatomic, copy) NSString *linkCustomSchemes;
+
+/// Editing aids.
+@property (nonatomic) BOOL braceMatchEnabled;
+@property (nonatomic) BOOL smartHighlightEnabled;
+
+/// Word characters and delimiter selection.
+@property (nonatomic) BOOL customWordCharsEnabled;
+@property (nonatomic, copy) NSString *customWordChars;
+@property (nonatomic, copy) NSString *delimiterOpen;
+@property (nonatomic, copy) NSString *delimiterClose;
+@property (nonatomic) BOOL delimiterMultiline;
+
+/// Multi-instance. 0 mono-instance, 1 always multi-instance, 2 session per instance.
+@property (nonatomic) NSInteger multiInstanceMode;
+@property (nonatomic) BOOL reverseDateTimeOrder;
+@property (nonatomic) BOOL rememberPanelState;
+@property (nonatomic, copy) NSDictionary *panelState;
+
+/// Settings folder ("cloud location"); empty means the default support folder.
+@property (nonatomic, copy) NSString *settingsDirectory;
+
 /// The theme that should be in effect right now.
 - (NSString *)effectiveThemeName;
 - (BOOL)systemIsDark;

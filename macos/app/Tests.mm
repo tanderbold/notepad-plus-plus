@@ -17,6 +17,7 @@
 #import "SettingsPanels.h"
 #import "Toolbar.h"
 #import "BackupAndPrint.h"
+#import "BehaviourCommands.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -2082,6 +2083,171 @@ int NppMacRunTests(AppDelegate *app) {
               op != nil && inverted && !plainPage.drawsBackground &&
               [plainPage.textColor isEqual:[NSColor blackColor]]);
         p.printColourMode = 2;
+    }
+
+    printf("\n== Performance, links, delimiters ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+
+        // Large file restriction: a threshold of 0 MB makes any document large.
+        [ed newDocument];
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"// a comment\nint x = 1;\n");
+        p.largeFileRestrictionEnabled = YES;
+        p.largeFileThresholdMB = 200;
+        BOOL normalFile = ![ed largeFileRestrictionActive];
+        p.largeFileThresholdMB = 0;
+        BOOL nowRestricted = [ed largeFileRestrictionActive];
+        [ed applyPerformanceRestrictions];
+        long styledUnderRestriction = [sci message:SCI_GETSTYLEAT wParam:0];
+        p.largeFileThresholdMB = 200;
+        [ed applyPerformanceRestrictions];
+        [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+        long styledNormally = [sci message:SCI_GETSTYLEAT wParam:0];
+        Check(@"IDM_SETTING_PREFERENCE (large files)",
+              @"highlighting is dropped above the threshold and restored below it",
+              normalFile && nowRestricted && styledUnderRestriction == 0 &&
+              styledNormally == SCE_C_COMMENTLINE);
+
+        // Clickable links.
+        p.linksEnabled = YES;
+        p.linkCustomSchemes = @"";
+        SetDoc(ed, @"see https://example.org/page and mailto:a@b.c here\n");
+        NSUInteger links = [ed markClickableLinks];
+        NSString *first = [ed linkAtPosition:6];
+        Check(@"IDM_SETTING_PREFERENCE (links)",
+              @"URLs are marked and readable back",
+              links == 2 && [first isEqualToString:@"https://example.org/page"]);
+
+        p.linkCustomSchemes = @"obsidian";
+        SetDoc(ed, @"obsidian://open?vault=x\n");
+        NSUInteger custom = [ed markClickableLinks];
+        Check(@"IDM_SETTING_PREFERENCE (link schemes)",
+              @"a custom scheme is recognised too",
+              custom == 1 && [[ed linkAtPosition:2] hasPrefix:@"obsidian://"]);
+        p.linkCustomSchemes = @"";
+
+        p.linksEnabled = NO;
+        SetDoc(ed, @"https://example.org/\n");
+        Check(@"IDM_SETTING_PREFERENCE (links off)", @"nothing is marked when links are off",
+              [ed markClickableLinks] == 0 && [ed linkAtPosition:2] == nil);
+        p.linksEnabled = YES;
+
+        // Brace match.
+        p.braceMatchEnabled = YES;
+        SetDoc(ed, @"value = (a + b);\n");
+        [sci message:SCI_GOTOPOS wParam:8 lParam:0];
+        [ed updateBraceMatch];
+        BOOL matched = [sci message:SCI_BRACEMATCH wParam:8 lParam:0] == 14;
+        p.braceMatchEnabled = NO;
+        [ed updateBraceMatch];
+        Check(@"IDM_SETTING_PREFERENCE (brace match)",
+              @"the matching brace is found while the setting is on", matched);
+        p.braceMatchEnabled = YES;
+
+        // Smart highlighting marks the other occurrences of a selected token.
+        p.smartHighlightEnabled = YES;
+        SetDoc(ed, @"total = total + subtotal\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:5];
+        NSUInteger marks = [ed updateSmartHighlight];
+        p.smartHighlightEnabled = NO;
+        NSUInteger none = [ed updateSmartHighlight];
+        Check(@"IDM_SETTING_PREFERENCE (smart highlighting)",
+              @"occurrences are marked only while the setting is on",
+              marks == 3 && none == 0);
+        p.smartHighlightEnabled = YES;
+
+        // Word characters change what counts as a word for selection.
+        SetDoc(ed, @"alpha-beta gamma\n");
+        p.customWordCharsEnabled = NO;
+        [ed applyLanguage];
+        [sci message:SCI_GOTOPOS wParam:2 lParam:0];
+        long plainEnd = [sci message:SCI_WORDENDPOSITION wParam:2 lParam:1];
+        p.customWordCharsEnabled = YES;
+        p.customWordChars = @"-";
+        [ed applyWordCharacters];
+        long extendedEnd = [sci message:SCI_WORDENDPOSITION wParam:2 lParam:1];
+        p.customWordCharsEnabled = NO;
+        [ed applyLanguage];
+        Check(@"IDM_SETTING_PREFERENCE (word characters)",
+              @"adding '-' makes the hyphenated word one word",
+              plainEnd == 5 && extendedEnd == 10);
+
+        // Delimiter selection.
+        p.delimiterOpen = @"("; p.delimiterClose = @")"; p.delimiterMultiline = NO;
+        SetDoc(ed, @"call(inside here) tail\n");
+        BOOL selected = [ed selectBetweenDelimitersAt:8];
+        Check(@"IDM_SETTING_PREFERENCE (delimiters)",
+              @"the text between the delimiters is selected",
+              selected && [sci message:SCI_GETSELECTIONSTART] == 5 &&
+              [sci message:SCI_GETSELECTIONEND] == 16);
+
+        p.delimiterOpen = @"["; p.delimiterClose = @"]";
+        SetDoc(ed, @"arr[42] rest\n");
+        BOOL brackets = [ed selectBetweenDelimitersAt:5];
+        Check(@"IDM_SETTING_PREFERENCE (delimiter choice)",
+              @"the configured delimiters are the ones used",
+              brackets && [sci message:SCI_GETSELECTIONSTART] == 4 &&
+              [sci message:SCI_GETSELECTIONEND] == 6);
+        p.delimiterOpen = @"("; p.delimiterClose = @")";
+    }
+
+    printf("\n== Instances, panels, settings folder ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+
+        p.multiInstanceMode = 0;
+        BOOL mono = ![ed shouldOpenFilesInNewInstance];
+        p.multiInstanceMode = 1;
+        BOOL multi = [ed shouldOpenFilesInNewInstance];
+        p.multiInstanceMode = 0;
+        Check(@"IDM_SETTING_PREFERENCE (instances)",
+              @"the mode decides whether a file starts another instance", mono && multi);
+
+        // Reversing the order puts the time before the date.
+        p.reverseDateTimeOrder = NO;
+        SetDoc(ed, @"");
+        [ed insertDateTimeShort:YES];
+        NSString *normal = DocText(ed);
+        p.reverseDateTimeOrder = YES;
+        SetDoc(ed, @"");
+        [ed insertDateTimeShort:YES];
+        NSString *reversed = DocText(ed);
+        p.reverseDateTimeOrder = NO;
+        Check(@"IDM_SETTING_PREFERENCE (date order)",
+              @"the reversed form differs from the default one",
+              normal.length > 0 && reversed.length > 0 && ![normal isEqualToString:reversed]);
+
+        // Panel state survives a remember/restore round trip.
+        p.rememberPanelState = YES;
+        NSString *dir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_panels"];
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        [ed openFolderAsWorkspace:dir];
+        [ed setDocumentMapVisible:YES];
+        [ed rememberPanelState];
+        NSDictionary *stored = p.panelState;
+        [ed openFolderAsWorkspace:nil];
+        [ed setDocumentMapVisible:NO];
+        [ed restorePanelState];
+        Check(@"IDM_SETTING_PREFERENCE (panel state)",
+              @"the open panels are remembered and reopened",
+              [stored[@"workspace"] boolValue] && [stored[@"documentMap"] boolValue] &&
+              [ed documentMapVisible]);
+        [ed setDocumentMapVisible:NO];
+        [ed openFolderAsWorkspace:nil];
+        p.rememberPanelState = NO;
+
+        // Relocating the settings folder moves everything that lives in it.
+        NSString *custom = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_settings"];
+        NSString *defaultDir = [ed supportDirectory];
+        p.settingsDirectory = custom;
+        NSString *moved = [ed supportDirectory];
+        p.settingsDirectory = @"";
+        Check(@"IDM_SETTING_PREFERENCE (settings folder)",
+              @"the configured folder replaces the default one",
+              [moved isEqualToString:custom] && ![moved isEqualToString:defaultDir] &&
+              [[ed supportDirectory] isEqualToString:defaultDir]);
     }
 
     printf("\n== Language: user defined ==\n");
