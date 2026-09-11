@@ -185,6 +185,7 @@ static const NSInteger kLastCode = 255;
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv { return (NSInteger)self.items.count; }
 
 - (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row {
+    if (row < 0 || row >= (NSInteger)self.items.count) return @"";
     NSString *text = self.items[(NSUInteger)row];
     NSString *oneLine = [[text componentsSeparatedByCharactersInSet:
                           [NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "];

@@ -122,6 +122,7 @@ static NSString *PatternForLanguage(NSString *lang) {
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv { return (NSInteger)self.entries.count; }
 
 - (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row {
+    if (row < 0 || row >= (NSInteger)self.entries.count) return @"";
     NSDictionary *e = self.entries[(NSUInteger)row];
     return [NSString stringWithFormat:@"%@  (line %ld)", e[@"name"], [e[@"line"] longValue] + 1];
 }

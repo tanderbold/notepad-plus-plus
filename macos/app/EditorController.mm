@@ -12,6 +12,8 @@
 /// Marker 1: bookmarks. Fold markers occupy 25-31, so this cannot collide.
 #define NPPMAC_BOOKMARK_MARKER 1
 
+NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDidChange";
+
 @implementation NppDocument
 @end
 
@@ -1016,6 +1018,8 @@ static long SciColor(NSColor *c) {
 #pragma mark - Chrome refresh
 
 - (void)refreshChrome {
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:NppEditorDocumentsDidChangeNotification object:self];
     self.tabBar.segmentCount = (NSInteger)self.docs.count;
     for (NSUInteger i = 0; i < self.docs.count; ++i) {
         NppDocument *d = self.docs[i];

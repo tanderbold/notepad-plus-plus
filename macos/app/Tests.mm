@@ -1250,7 +1250,19 @@ int NppMacRunTests(AppDelegate *app) {
         [app toggleDocumentList:nil];
         BOOL listOn = [app valueForKey:@"docList"] != nil;
         [app toggleDocumentList:nil];
-        Check(@"IDM_VIEW_DOCLIST", @"opens a panel listing the open documents", listOn);
+
+        // Regression: AppKit draws the table from a row count it cached earlier.
+        // Asking for a row after the tabs are gone used to index past the end of
+        // the documents array and raise, which aborted the process the next time
+        // the run loop let the panel redraw.
+        id<NSTableViewDataSource> ds = (id<NSTableViewDataSource>)[app valueForKey:@"docList"];
+        NSTableView *probe = [[NSTableView alloc] initWithFrame:NSMakeRect(0, 0, 10, 10)];
+        NSTableColumn *probeCol = [[NSTableColumn alloc] initWithIdentifier:@"doc"];
+        NSUInteger liveRows = ed.documents.count;
+        id staleValue = [ds tableView:probe objectValueForTableColumn:probeCol
+                                  row:(NSInteger)liveRows + 5];
+        Check(@"IDM_VIEW_DOCLIST", @"lists documents and survives a stale row index",
+              listOn && staleValue != nil);
 
         [ed setMonitoring:YES];
         BOOL monitoring = [ed monitoringEnabled];
@@ -1701,9 +1713,15 @@ int NppMacRunTests(AppDelegate *app) {
 
     printf("\n== Run and Help ==\n");
     {
-        NSString *out = [ed runShellCommand:@"printf ran-ok"];
-        Check(@"IDM_EXECUTE", @"runs a command and returns its output",
-              [out isEqualToString:@"ran-ok"]);
+        // Regression: this used to wait with -waitUntilExit, which spins the run
+        // loop on the main thread and could abort inside AppKit. Repeating the
+        // call makes that crash reproducible rather than occasional.
+        BOOL allOK = YES;
+        for (int i = 0; i < 8 && allOK; ++i) {
+            NSString *out = [ed runShellCommand:@"printf ran-ok"];
+            allOK = [out isEqualToString:@"ran-ok"];
+        }
+        Check(@"IDM_EXECUTE", @"runs a command and returns its output, repeatedly", allOK);
 
         NSString *report = [ed validateShortcutsFile];
         Check(@"IDM_EXECUTE_VALIDATE_SHORTCUTSXML", @"reports on the menu shortcuts",

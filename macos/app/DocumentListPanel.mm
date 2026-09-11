@@ -38,8 +38,13 @@
     scroll.documentView = _table;
     scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
     _panel.contentView = scroll;
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(documentsChanged:)
+                                                 name:NppEditorDocumentsDidChangeNotification
+                                               object:nil];
     return self;
 }
+
+- (void)dealloc { [[NSNotificationCenter defaultCenter] removeObserver:self]; }
 
 - (BOOL)visible { return self.panel.isVisible; }
 - (NSInteger)rowCount { return self.table.numberOfRows; }
@@ -55,14 +60,22 @@
 
 - (void)rowActivated:(id)sender {
     NSInteger row = self.table.clickedRow;
-    if (row >= 0) [self.editor selectDocumentAtIndex:row];
+    if (row >= 0 && row < (NSInteger)self.editor.documents.count) {
+        [self.editor selectDocumentAtIndex:row];
+    }
 }
+
+/// Keeps the table in step with the editor so its row count never goes stale.
+- (void)documentsChanged:(NSNotification *)note { [self.table reloadData]; }
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv {
     return (NSInteger)self.editor.documents.count;
 }
 
 - (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row {
+    // AppKit can ask for a row from a count it cached before tabs were closed,
+    // so the index is checked rather than trusted.
+    if (row < 0 || row >= (NSInteger)self.editor.documents.count) return @"";
     NppDocument *d = self.editor.documents[(NSUInteger)row];
     return d.path ?: d.displayName;
 }

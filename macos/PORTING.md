@@ -101,6 +101,25 @@ launch, which also means a user can edit them exactly as on Windows.
 Keyword-set indices follow Notepad++'s `LANG_INDEX_*`
 (`MISC/Common/NppConstants.h`): `instre1`=0, `instre2`=1, `type1`=2 ... `type7`=8.
 
+### Two crashes found by running the suite repeatedly
+
+A single green run is not evidence of stability. Running it in a loop surfaced a
+crash that appeared on roughly one run in three:
+
+- `-[NSTask waitUntilExit]` spins the run loop. Called on the main thread from
+  Run > Run…, it re-entered AppKit mid-command, which let a panel redraw at a
+  moment the suite had not anticipated. It now waits on a semaphore signalled
+  from the task's termination handler, which blocks without running the run loop.
+- That redraw is what exposed the real defect: the panels listing documents,
+  clipboard entries, styles and shortcuts indexed their backing arrays with the
+  row AppKit asked for, and AppKit asks using a row count it cached earlier. With
+  tabs closed since, the index ran past the end and raised. Every data source now
+  checks the row, and the document list reloads on a notification the editor
+  posts whenever the set of open documents changes.
+
+Both are covered by tests: one calls a data source with a deliberately stale row,
+the other runs a shell command repeatedly in a single pass.
+
 ### Tests
 
 Every command declared implemented has at least one test, and a coverage

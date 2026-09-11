@@ -7,6 +7,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// Posted whenever the set of open documents changes, so panels listing them
+/// can reload instead of drawing from a stale row count.
+extern NSString *const NppEditorDocumentsDidChangeNotification;
+
 @interface NppDocument : NSObject
 @property (nonatomic) void *docPointer;                 // Scintilla document
 @property (nonatomic, copy, nullable) NSString *path;   // nil until saved

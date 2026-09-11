@@ -215,6 +215,7 @@
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv { return (NSInteger)self.styles.count; }
 
 - (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row {
+    if (row < 0 || row >= (NSInteger)self.styles.count) return @"";
     NppStyle *s = self.styles[(NSUInteger)row];
     NSString *key = [NSString stringWithFormat:@"%@/%d",
                      self.languagePicker.titleOfSelectedItem, s.styleID];
@@ -345,6 +346,7 @@ void ApplyShortcutSpec(NSMenuItem *item, NSString *spec) {
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv { return (NSInteger)self.items.count; }
 
 - (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row {
+    if (row < 0 || row >= (NSInteger)self.items.count) return @"";
     NSMenuItem *item = self.items[(NSUInteger)row];
     return [NSString stringWithFormat:@"%-44@ %@", item.title, DescribeShortcut(item)];
 }

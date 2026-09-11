@@ -245,10 +245,18 @@ static const char kPreviousTabKey = 0;
     task.standardOutput = pipe;
     task.standardError = pipe;
 
+    // -waitUntilExit spins the run loop. On the main thread that re-enters
+    // AppKit mid-command, which can raise inside a CATransaction observer and
+    // abort the process, so completion is awaited on a semaphore instead.
+    dispatch_semaphore_t finished = dispatch_semaphore_create(0);
+    task.terminationHandler = ^(NSTask *t) { dispatch_semaphore_signal(finished); };
+
     NSError *err = nil;
     if (![task launchAndReturnError:&err]) return nil;
+
+    // readDataToEndOfFile blocks on the pipe, not on the run loop.
     NSData *out = [pipe.fileHandleForReading readDataToEndOfFile];
-    [task waitUntilExit];
+    dispatch_semaphore_wait(finished, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
     return [[NSString alloc] initWithData:out encoding:NSUTF8StringEncoding] ?: @"";
 }
 
