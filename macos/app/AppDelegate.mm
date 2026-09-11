@@ -6,6 +6,7 @@
 #import "EncodingCommands.h"
 #import "AdvancedEditCommands.h"
 #import "AuxPanels.h"
+#import "ToolsCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -651,6 +652,49 @@
     }
     langItem.submenu = langMenu;
 
+    // ---- Tools
+    NSMenuItem *toolsItem = [[NSMenuItem alloc] init];
+    [bar addItem:toolsItem];
+    NSMenu *toolsMenu = [[NSMenu alloc] initWithTitle:@"Tools"];
+    NSArray *digestNames = @[@"MD5", @"SHA-1", @"SHA-256", @"SHA-512"];
+    for (NSUInteger d = 0; d < digestNames.count; ++d) {
+        NSMenu *sub = [[NSMenu alloc] initWithTitle:digestNames[d]];
+        struct { NSString *title; SEL sel; } rows[] = {
+            {@"Generate…",                            @selector(hashGenerate:)},
+            {@"Generate from files…",                 @selector(hashFromFiles:)},
+            {@"Generate from selection into clipboard", @selector(hashToClipboard:)},
+        };
+        for (size_t r = 0; r < sizeof(rows)/sizeof(rows[0]); ++r) {
+            NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:rows[r].title
+                                                        action:rows[r].sel keyEquivalent:@""];
+            mi.target = self; mi.tag = (NSInteger)d;
+            [sub addItem:mi];
+        }
+        [toolsMenu addItemWithTitle:digestNames[d] action:nil keyEquivalent:@""].submenu = sub;
+    }
+    toolsItem.submenu = toolsMenu;
+
+    // ---- Macro
+    NSMenuItem *macroItem = [[NSMenuItem alloc] init];
+    [bar addItem:macroItem];
+    NSMenu *macroMenu = [[NSMenu alloc] initWithTitle:@"Macro"];
+    [self item:@"Start Recording" action:@selector(macroStart:) key:@"" flags:0 menu:macroMenu];
+    [self item:@"Stop Recording" action:@selector(macroStop:) key:@"" flags:0 menu:macroMenu];
+    [self item:@"Playback" action:@selector(macroPlay:) key:@"" flags:0 menu:macroMenu];
+    [self item:@"Save Current Recorded Macro…" action:@selector(macroSave:) key:@"" flags:0 menu:macroMenu];
+    [self item:@"Run a Macro Multiple Times…" action:@selector(macroRunMultiple:) key:@"" flags:0 menu:macroMenu];
+    macroItem.submenu = macroMenu;
+
+    // ---- Run
+    NSMenuItem *runItem = [[NSMenuItem alloc] init];
+    [bar addItem:runItem];
+    NSMenu *runMenu = [[NSMenu alloc] initWithTitle:@"Run"];
+    [self item:@"Run…" action:@selector(runCommand:) key:@"r"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:runMenu];
+    [self item:@"Validate shortcuts" action:@selector(validateShortcuts:) key:@"" flags:0 menu:runMenu];
+    [self item:@"Open Plugins Folder…" action:@selector(openPluginsFolder:) key:@"" flags:0 menu:runMenu];
+    runItem.submenu = runMenu;
+
     // ---- Window
     NSMenuItem *windowItem = [[NSMenuItem alloc] init];
     [bar addItem:windowItem];
@@ -659,11 +703,164 @@
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:windowMenu];
     [self item:@"Previous Tab" action:@selector(previousTab:) key:@"["
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:windowMenu];
+    [windowMenu addItem:[NSMenuItem separatorItem]];
+
+    NSMenu *sortMenu = [[NSMenu alloc] initWithTitle:@"Sort By"];
+    NSArray *sortTitles = @[@"Name A to Z", @"Name Z to A", @"Path A to Z", @"Path Z to A",
+                            @"Type A to Z", @"Type Z to A",
+                            @"Content Length Ascending", @"Content Length Descending",
+                            @"Modified Time Ascending", @"Modified Time Descending"];
+    for (NSUInteger i = 0; i < sortTitles.count; ++i) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:sortTitles[i]
+                                                    action:@selector(sortTabs:) keyEquivalent:@""];
+        mi.target = self; mi.tag = (NSInteger)i;
+        [sortMenu addItem:mi];
+    }
+    [windowMenu addItemWithTitle:@"Sort By" action:nil keyEquivalent:@""].submenu = sortMenu;
+    [self item:@"Windows…" action:@selector(showWindowsList:) key:@"" flags:0 menu:windowMenu];
+    [self item:@"Recent Window" action:@selector(recentWindow:) key:@"" flags:0 menu:windowMenu];
     windowItem.submenu = windowMenu;
+
+    // ---- Help
+    NSMenuItem *helpItem = [[NSMenuItem alloc] init];
+    [bar addItem:helpItem];
+    NSMenu *helpMenu = [[NSMenu alloc] initWithTitle:@"Help"];
+    NSArray *links = @[@[@"Notepad++ Home", @"https://notepad-plus-plus.org/"],
+                       @[@"Notepad++ Project Page", @"https://github.com/notepad-plus-plus/notepad-plus-plus"],
+                       @[@"Notepad++ Online User Manual", @"https://npp-user-manual.org/"],
+                       @[@"Notepad++ Community (Forum)", @"https://community.notepad-plus-plus.org/"]];
+    for (NSArray *link in links) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:link[0] action:@selector(openHelpLink:) keyEquivalent:@""];
+        mi.target = self; mi.representedObject = link[1];
+        [helpMenu addItem:mi];
+    }
+    [helpMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Command Line Arguments…" action:@selector(showCommandLineArguments:) key:@"" flags:0 menu:helpMenu];
+    [self item:@"Debug Info…" action:@selector(showDebugInfo:) key:@"" flags:0 menu:helpMenu];
+    [self item:@"Check for Updates" action:@selector(checkForUpdates:) key:@"" flags:0 menu:helpMenu];
+    [self item:@"Set Updater Proxy…" action:@selector(setUpdaterProxy:) key:@"" flags:0 menu:helpMenu];
+    [self item:@"About NotepadMac" action:@selector(showAbout:) key:@"" flags:0 menu:helpMenu];
+    helpItem.submenu = helpMenu;
+    NSApp.helpMenu = helpMenu;
     NSApp.windowsMenu = windowMenu;
 
     NSApp.mainMenu = bar;
 }
+
+#pragma mark - Tools: hashes
+
+- (void)presentText:(NSString *)text title:(NSString *)title {
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = title;
+    alert.informativeText = text.length ? text : @"(nothing)";
+    [alert addButtonWithTitle:@"OK"];
+    [alert addButtonWithTitle:@"Copy"];
+    if ([alert runModal] == NSAlertSecondButtonReturn) [self.editor copyToClipboard:text];
+}
+
+- (void)hashGenerate:(NSMenuItem *)sender {
+    NppDigest d = (NppDigest)sender.tag;
+    NSString *input = [self promptForString:
+        [NSString stringWithFormat:@"%@ of text", [EditorController nameOfDigest:d]] default:@""];
+    if (!input) return;
+    NSString *hash = [EditorController hashOfData:[input dataUsingEncoding:NSUTF8StringEncoding] digest:d];
+    [self presentText:hash title:[EditorController nameOfDigest:d]];
+}
+
+- (void)hashFromFiles:(NSMenuItem *)sender {
+    NppDigest d = (NppDigest)sender.tag;
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.allowsMultipleSelection = YES;
+    if ([panel runModal] != NSModalResponseOK) return;
+    NSMutableArray *paths = [NSMutableArray array];
+    for (NSURL *u in panel.URLs) [paths addObject:u.path];
+    [self presentText:[self.editor hashOfFiles:paths digest:d]
+                title:[NSString stringWithFormat:@"%@ of files", [EditorController nameOfDigest:d]]];
+}
+
+- (void)hashToClipboard:(NSMenuItem *)sender {
+    NppDigest d = (NppDigest)sender.tag;
+    NSString *hash = [self.editor hashOfSelection:d];
+    if (!hash) { NSBeep(); return; }
+    [self.editor copyToClipboard:hash];
+}
+
+#pragma mark - Macro
+
+- (void)macroStart:(id)sender { [self.editor startRecordingMacro]; }
+- (void)macroStop:(id)sender  { [self.editor stopRecordingMacro]; }
+- (void)macroPlay:(id)sender  { [self.editor playbackMacro:1]; }
+
+- (void)macroSave:(id)sender {
+    NSString *name = [self promptForString:@"Save macro as" default:@"macro"];
+    if (name.length) [self.editor saveRecordedMacroAs:name];
+}
+
+- (void)macroRunMultiple:(id)sender {
+    NSString *n = [self promptForString:@"Run how many times?" default:@"2"];
+    if (!n.length) return;
+    [self.editor playbackMacro:(NSUInteger)MAX(1, n.integerValue)];
+}
+
+#pragma mark - Window
+
+- (void)sortTabs:(NSMenuItem *)sender {
+    NppTabSort key = (NppTabSort)(sender.tag / 2);
+    [self.editor sortTabsBy:key ascending:(sender.tag % 2) == 0];
+}
+
+- (void)showWindowsList:(id)sender {
+    [self presentText:[[self.editor windowList] componentsJoinedByString:@"\n"] title:@"Windows"];
+}
+
+- (void)recentWindow:(id)sender { [self.editor activateRecentWindow]; }
+
+#pragma mark - Run and Help
+
+- (void)runCommand:(id)sender {
+    NSString *cmd = [self promptForString:@"Run" default:@""];
+    if (!cmd.length) return;
+    [self presentText:[self.editor runShellCommand:cmd] title:cmd];
+}
+
+- (void)validateShortcuts:(id)sender {
+    [self presentText:[self.editor validateShortcutsFile] title:@"Shortcuts"];
+}
+
+- (void)openPluginsFolder:(id)sender {
+    NSString *dir = [self.editor.defaultSessionPath.stringByDeletingLastPathComponent
+                     stringByAppendingPathComponent:@"plugins"];
+    [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES
+                                               attributes:nil error:NULL];
+    [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:dir]]];
+}
+
+- (void)openHelpLink:(NSMenuItem *)sender {
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:sender.representedObject]];
+}
+
+- (void)showCommandLineArguments:(id)sender {
+    [self presentText:[self.editor commandLineArgumentsHelp] title:@"Command Line Arguments"];
+}
+
+- (void)showDebugInfo:(id)sender {
+    [self presentText:[self.editor debugInfo] title:@"Debug Info"];
+}
+
+- (void)checkForUpdates:(id)sender {
+    // This build has no updater; point at where releases live.
+    [[NSWorkspace sharedWorkspace] openURL:
+        [NSURL URLWithString:@"https://github.com/notepad-plus-plus/notepad-plus-plus/releases"]];
+}
+
+- (void)setUpdaterProxy:(id)sender {
+    NSString *proxy = [self promptForString:@"Updater proxy (host:port)"
+                                    default:[[NSUserDefaults standardUserDefaults]
+                                             stringForKey:@"NppMacUpdaterProxy"] ?: @""];
+    if (proxy) [[NSUserDefaults standardUserDefaults] setObject:proxy forKey:@"NppMacUpdaterProxy"];
+}
+
+- (void)showAbout:(id)sender { [NSApp orderFrontStandardAboutPanel:sender]; }
 
 #pragma mark - Menu validation
 

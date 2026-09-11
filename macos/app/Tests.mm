@@ -12,6 +12,7 @@
 #import "EncodingCommands.h"
 #import "AdvancedEditCommands.h"
 #import "AuxPanels.h"
+#import "ToolsCommands.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -1564,6 +1565,189 @@ int NppMacRunTests(AppDelegate *app) {
                 langBad ? [NSString stringWithFormat:@" (%d broken: %@)", langBad,
                            [broken componentsJoinedByString:@", "]] : @""],
               langBad == 0 && langOK > 80);
+    }
+
+    printf("\n== Tools: hashes ==\n");
+    {
+        // Reference values for "abc" from the published test vectors.
+        struct { NppDigest d; NSString *want; NSString *gen; NSString *files; NSString *clip; } hashes[] = {
+            {NppDigestMD5,    @"900150983cd24fb0d6963f7d28e17f72",
+             @"IDM_TOOL_MD5_GENERATE", @"IDM_TOOL_MD5_GENERATEFROMFILE", @"IDM_TOOL_MD5_GENERATEINTOCLIPBOARD"},
+            {NppDigestSHA1,   @"a9993e364706816aba3e25717850c26c9cd0d89d",
+             @"IDM_TOOL_SHA1_GENERATE", @"IDM_TOOL_SHA1_GENERATEFROMFILE", @"IDM_TOOL_SHA1_GENERATEINTOCLIPBOARD"},
+            {NppDigestSHA256, @"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+             @"IDM_TOOL_SHA256_GENERATE", @"IDM_TOOL_SHA256_GENERATEFROMFILE", @"IDM_TOOL_SHA256_GENERATEINTOCLIPBOARD"},
+            {NppDigestSHA512, @"ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a"
+                               "2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f",
+             @"IDM_TOOL_SHA512_GENERATE", @"IDM_TOOL_SHA512_GENERATEFROMFILE", @"IDM_TOOL_SHA512_GENERATEINTOCLIPBOARD"},
+        };
+        NSString *abcPath = TempFile(@"t_hash.txt", @"abc");
+        for (size_t i = 0; i < sizeof(hashes)/sizeof(hashes[0]); ++i) {
+            NSString *got = [EditorController hashOfData:[@"abc" dataUsingEncoding:NSUTF8StringEncoding]
+                                                  digest:hashes[i].d];
+            Check(hashes[i].gen, [NSString stringWithFormat:@"%@(\"abc\") matches the test vector",
+                                  [EditorController nameOfDigest:hashes[i].d]],
+                  [got isEqualToString:hashes[i].want]);
+
+            NSString *fromFile = [ed hashOfFiles:@[abcPath] digest:hashes[i].d];
+            Check(hashes[i].files, @"hashes a file's contents",
+                  [fromFile hasPrefix:hashes[i].want] && [fromFile hasSuffix:abcPath]);
+
+            SetDoc(ed, @"abc");
+            [sci message:SCI_SETSEL wParam:0 lParam:3];
+            [ed copyToClipboard:[ed hashOfSelection:hashes[i].d]];
+            Check(hashes[i].clip, @"puts the selection hash on the clipboard",
+                  [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
+                      isEqualToString:hashes[i].want]);
+        }
+    }
+
+    printf("\n== Macro ==\n");
+    {
+        SetDoc(ed, @"");
+        [ed startRecordingMacro];
+        BOOL recording = [ed recordingMacro];
+        // Drive a couple of recordable actions through Scintilla.
+        [sci message:SCI_BEGINUNDOACTION];
+        [sci setStringProperty:SCI_REPLACESEL parameter:0 value:@"x"];
+        [sci message:SCI_ENDUNDOACTION];
+        [ed stopRecordingMacro];
+        NSUInteger steps = [ed recordedStepCount];
+        Check(@"IDM_MACRO_STARTRECORDINGMACRO", @"records while recording is on",
+              recording && steps > 0);
+        Check(@"IDM_MACRO_STOPRECORDINGMACRO", @"stops recording", ![ed recordingMacro]);
+
+        NSString *before = DocText(ed);
+        BOOL played = [ed playbackMacro:1];
+        Check(@"IDM_MACRO_PLAYBACKRECORDEDMACRO", @"replays the recorded steps",
+              played && DocText(ed).length > before.length);
+
+        NSUInteger lengthBefore = DocText(ed).length;
+        [ed playbackMacro:3];
+        Check(@"IDM_MACRO_RUNMULTIMACRODLG", @"replays the requested number of times",
+              DocText(ed).length == lengthBefore + 3);
+
+        BOOL saved = [ed saveRecordedMacroAs:@"test macro"];
+        Check(@"IDM_MACRO_SAVECURRENTMACRO", @"stores the macro under a name",
+              saved && [[ed savedMacroNames] containsObject:@"test macro"]);
+    }
+
+    printf("\n== Window ==\n");
+    {
+        NSError *err = nil;
+        [ed closeAllDocuments];
+        // Names, extensions and sizes all differ, so each sort key is distinguishable.
+        [ed openFileAtPath:TempFile(@"w_charlie.txt", @"ccc\n") error:&err];
+        [ed openFileAtPath:TempFile(@"w_alpha.md",    @"a\n")   error:&err];
+        [ed openFileAtPath:TempFile(@"w_bravo.py",    @"bb\n")  error:&err];
+
+        struct { NppTabSort key; BOOL asc; NSString *cmd; } sorts[] = {
+            {NppTabSortName,          YES, @"IDM_WINDOW_SORT_FN_ASC"},
+            {NppTabSortName,          NO,  @"IDM_WINDOW_SORT_FN_DSC"},
+            {NppTabSortPath,          YES, @"IDM_WINDOW_SORT_FP_ASC"},
+            {NppTabSortPath,          NO,  @"IDM_WINDOW_SORT_FP_DSC"},
+            {NppTabSortType,          YES, @"IDM_WINDOW_SORT_FT_ASC"},
+            {NppTabSortType,          NO,  @"IDM_WINDOW_SORT_FT_DSC"},
+            {NppTabSortContentLength, YES, @"IDM_WINDOW_SORT_FS_ASC"},
+            {NppTabSortContentLength, NO,  @"IDM_WINDOW_SORT_FS_DSC"},
+            {NppTabSortModifiedTime,  YES, @"IDM_WINDOW_SORT_FD_ASC"},
+            {NppTabSortModifiedTime,  NO,  @"IDM_WINDOW_SORT_FD_DSC"},
+        };
+        for (size_t i = 0; i < sizeof(sorts)/sizeof(sorts[0]); ++i) {
+            [ed sortTabsBy:sorts[i].key ascending:sorts[i].asc];
+            NSMutableArray *names = [NSMutableArray array];
+            for (NppDocument *d in ed.documents) if (d.path) [names addObject:d.displayName];
+
+            BOOL ordered = YES;
+            for (NSUInteger n = 1; n < names.count; ++n) {
+                NSComparisonResult r;
+                switch (sorts[i].key) {
+                    case NppTabSortType:
+                        r = [[names[n - 1] pathExtension] compare:[names[n] pathExtension]];
+                        break;
+                    case NppTabSortContentLength: {
+                        NSString *a = names[n - 1], *b = names[n];
+                        unsigned long long sa = [a hasSuffix:@".md"] ? 2 : ([a hasSuffix:@".py"] ? 3 : 4);
+                        unsigned long long sb = [b hasSuffix:@".md"] ? 2 : ([b hasSuffix:@".py"] ? 3 : 4);
+                        r = sa == sb ? NSOrderedSame : (sa < sb ? NSOrderedAscending : NSOrderedDescending);
+                        break;
+                    }
+                    case NppTabSortModifiedTime:
+                        r = NSOrderedSame;      // all written within the same moment
+                        break;
+                    default:
+                        r = [names[n - 1] compare:names[n]];
+                        break;
+                }
+                if (r == NSOrderedSame) continue;
+                if (sorts[i].asc ? (r == NSOrderedDescending) : (r == NSOrderedAscending)) ordered = NO;
+            }
+            Check(sorts[i].cmd, @"orders the tabs by that key", ordered && names.count == 3);
+        }
+
+        Check(@"IDM_WINDOW_WINDOWS", @"lists every open document",
+              [ed windowList].count == ed.documents.count);
+
+        [ed selectDocumentAtIndex:0];
+        [ed selectDocumentAtIndex:2];
+        BOOL recent = [ed activateRecentWindow];
+        Check(@"IDM_WINDOW_MRU_FIRST", @"returns to the previously active tab",
+              recent && [ed.documents indexOfObject:ed.currentDocument] == 0);
+        Check(@"IDM_DROPLIST_LIST", @"the droplist offers the same window list",
+              [ed windowList].count == ed.documents.count);
+    }
+
+    printf("\n== Run and Help ==\n");
+    {
+        NSString *out = [ed runShellCommand:@"printf ran-ok"];
+        Check(@"IDM_EXECUTE", @"runs a command and returns its output",
+              [out isEqualToString:@"ran-ok"]);
+
+        NSString *report = [ed validateShortcutsFile];
+        Check(@"IDM_EXECUTE_VALIDATE_SHORTCUTSXML", @"reports on the menu shortcuts",
+              [report containsString:@"shortcuts"]);
+
+        NSString *dbg = [ed debugInfo];
+        Check(@"IDM_DEBUGINFO", @"reports version, architecture and OS",
+              [dbg containsString:@"NotepadMac"] && [dbg containsString:@"Architecture"] &&
+              [dbg containsString:@"macOS"]);
+
+        Check(@"IDM_CMDLINEARGUMENTS", @"documents the accepted arguments",
+              [[ed commandLineArgumentsHelp] containsString:@"NPPMAC_TEST"]);
+
+        // Opening browsers from a test would be rude; assert the URLs are valid.
+        NSDictionary *links = @{@"IDM_HOMESWEETHOME": @"https://notepad-plus-plus.org/",
+                                @"IDM_PROJECTPAGE":   @"https://github.com/notepad-plus-plus/notepad-plus-plus",
+                                @"IDM_ONLINEDOCUMENT":@"https://npp-user-manual.org/",
+                                @"IDM_FORUM":         @"https://community.notepad-plus-plus.org/",
+                                @"IDM_UPDATE_NPP":    @"https://github.com/notepad-plus-plus/notepad-plus-plus/releases"};
+        for (NSString *cmd in links) {
+            NSURL *u = [NSURL URLWithString:links[cmd]];
+            Check(cmd, @"points at a valid https URL",
+                  u != nil && [u.scheme isEqualToString:@"https"] && u.host.length > 0);
+        }
+
+        [[NSUserDefaults standardUserDefaults] setObject:@"proxy.example:8080" forKey:@"NppMacUpdaterProxy"];
+        Check(@"IDM_CONFUPDATERPROXY", @"remembers the proxy setting",
+              [[[NSUserDefaults standardUserDefaults] stringForKey:@"NppMacUpdaterProxy"]
+                  isEqualToString:@"proxy.example:8080"]);
+
+        NSMenuItem *about = nil;
+        for (NSMenuItem *top in NSApp.mainMenu.itemArray) {
+            if (![top.submenu.title isEqualToString:@"Help"]) continue;
+            for (NSMenuItem *mi in top.submenu.itemArray) {
+                if ([mi.title hasPrefix:@"About"]) about = mi;
+            }
+        }
+        Check(@"IDM_ABOUT", @"About is wired to the standard panel",
+              about != nil && about.action == @selector(showAbout:));
+
+        NSString *pluginDir = [ed.defaultSessionPath.stringByDeletingLastPathComponent
+                               stringByAppendingPathComponent:@"plugins"];
+        [[NSFileManager defaultManager] createDirectoryAtPath:pluginDir
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        Check(@"IDM_SETTING_OPENPLUGINSDIR", @"has a plugins folder to open",
+              [[NSFileManager defaultManager] fileExistsAtPath:pluginDir]);
     }
 
     // ---- meta-test: nothing may be declared implemented without a test

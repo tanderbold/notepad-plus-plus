@@ -4,6 +4,7 @@
 #import "ScintillaView.h"
 #import "WorkspacePanel.h"
 #import "EncodingCommands.h"
+#import "ToolsCommands.h"
 #include "ILexer.h"
 #include "Lexilla.h"
 
@@ -325,6 +326,9 @@ static long SciColor(NSColor *c) {
 
 - (void)selectDocumentAtIndex:(NSInteger)index {
     if (index < 0 || index >= (NSInteger)self.docs.count) return;
+    if (self.currentIndex >= 0 && self.currentIndex != index) {
+        [self rememberPreviousTab:self.currentIndex];   // backs Window > Recent Window
+    }
     self.currentIndex = index;
     NppDocument *doc = self.docs[index];
     [self.sciView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
@@ -1213,6 +1217,11 @@ static long SciColor(NSColor *c) {
         case SCN_UPDATEUI:
             [self refreshChrome];
             [self mirrorScrollToSecondary];
+            break;
+        case SCN_MACRORECORD:
+            [self recordMacroMessage:(int)n->message
+                              wParam:(unsigned long)n->wParam
+                              lParam:(long)n->lParam];
             break;
         default: break;
     }
