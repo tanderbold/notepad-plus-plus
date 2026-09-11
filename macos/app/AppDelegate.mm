@@ -3,6 +3,7 @@
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
+#include "SciLexer.h"
 
 @interface AppDelegate ()
 @property (nonatomic, strong) NSWindow *window;
@@ -38,6 +39,9 @@
 
     if (getenv("NPPMAC_SELFTEST")) {
         [self performSelector:@selector(runSelfTest) withObject:nil afterDelay:0.8];
+    }
+    if (getenv("NPPMAC_SNAPSHOT")) {
+        [self performSelector:@selector(writeSnapshot) withObject:nil afterDelay:1.2];
     }
 }
 
@@ -376,6 +380,45 @@
     [self.editor refreshChrome];
 }
 
+#pragma mark - Snapshot
+
+/// Renders the window's content view straight to a PNG. This deliberately does
+/// not go through screencapture(1), which needs Screen Recording permission and
+/// silently returns a desktop with no windows when it is not granted.
+///
+/// Caveat: cacheDisplayInRect: captures Scintilla (which draws itself) but not
+/// the text of AppKit controls, so the tab bar and status bar come out blank.
+/// Their contents are covered by the self-test instead.
+- (void)writeSnapshot {
+    const char *dest = getenv("NPPMAC_SNAPSHOT");
+    if (!dest) { [NSApp terminate:nil]; return; }
+
+    // Give the caller something worth looking at rather than an empty buffer.
+    NSString *sample = getenv("NPPMAC_SNAPSHOT_FILE")
+        ? @(getenv("NPPMAC_SNAPSHOT_FILE")) : nil;
+    if (sample.length) {
+        NSError *err = nil;
+        if (![self.editor openFileAtPath:sample error:&err]) {
+            fprintf(stderr, "snapshot: cannot open %s\n", sample.UTF8String);
+        }
+    }
+    [self.editor refreshChrome];
+    [self.editor.view displayIfNeeded];
+
+    NSView *view = self.window.contentView;
+
+    NSBitmapImageRep *rep = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:rep];
+    NSData *png = [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+
+    if ([png writeToFile:@(dest) atomically:YES]) {
+        printf("SNAPSHOT wrote %s (%.0fx%.0f)\n", dest, view.bounds.size.width, view.bounds.size.height);
+    } else {
+        fprintf(stderr, "SNAPSHOT failed to write %s\n", dest);
+    }
+    [NSApp terminate:nil];
+}
+
 #pragma mark - Self-test
 
 - (void)runSelfTest {
@@ -416,6 +459,17 @@
     self.lastSearchTerm = @"return";
     BOOL found = [self searchFrom:0 forward:YES wrap:YES];
     printf("SELFTEST search_found=%s\n", found ? "YES" : "NO");
+
+    // The snapshot cannot capture AppKit control text, so assert the chrome here.
+    for (NSUInteger i = 0; i < self.editor.documents.count; ++i) {
+        printf("SELFTEST tab[%lu]=\"%s\"\n", (unsigned long)i,
+               self.editor.documents[i].displayName.UTF8String);
+    }
+    NSString *status = [self.editor valueForKey:@"statusField"]
+        ? [(NSTextField *)[self.editor valueForKey:@"statusField"] stringValue] : @"";
+    printf("SELFTEST status_nonempty=%s fields=%s\n",
+           status.length ? "YES" : "NO",
+           ([status containsString:@"Ln "] && [status containsString:@"lines"]) ? "OK" : "MISSING");
 
     printf("SELFTEST menus=%ld\n", (long)NSApp.mainMenu.numberOfItems);
     [[NSFileManager defaultManager] removeItemAtPath:tmp error:NULL];

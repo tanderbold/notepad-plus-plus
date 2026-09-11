@@ -1,22 +1,32 @@
 #!/bin/bash
-# Build the portable foundation of Notepad++ on macOS:
-#   Lexilla (all lexers incl. Notepad++'s UDL) + Scintilla core + Scintilla/Cocoa,
-# then link the proof-of-concept editor into a signed .app bundle.
+# Build NotepadMac.app on macOS: Lexilla + Scintilla core + Scintilla/Cocoa,
+# then the editor itself, bundled with Notepad++'s own language and style data.
 #
 # Requires only Xcode Command Line Tools (no full Xcode, no Qt).
+#
+#   ./macos/build.sh              universal (arm64 + x86_64)
+#   NPPMAC_ARCH=native ./macos/build.sh   host architecture only, ~2x faster
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCI="$ROOT/scintilla"
 LEX="$ROOT/lexilla"
+SRC="$ROOT/macos/app"
 OUT="$ROOT/macos/build"
-CXXFLAGS=(-std=c++17 -DNDEBUG -DSCI_LEXER -O2 -fPIC -Wno-deprecated-declarations)
-INCLUDES=(-I"$SCI/include" -I"$SCI/src" -I"$SCI/cocoa" -I"$LEX/include")
+
+if [ "${NPPMAC_ARCH:-universal}" = "native" ]; then
+    ARCHS=()
+else
+    ARCHS=(-arch arm64 -arch x86_64)
+fi
+
+CXXFLAGS=(-std=c++17 -DNDEBUG -DSCI_LEXER -O2 -fPIC -Wno-deprecated-declarations ${ARCHS[@]+"${ARCHS[@]}"})
+INCLUDES=(-I"$SCI/include" -I"$SCI/src" -I"$SCI/cocoa" -I"$LEX/include" -I"$SRC")
 
 mkdir -p "$OUT/obj"
 
 echo "==> Lexilla"
-make -C "$LEX/src" -j"$(sysctl -n hw.ncpu)"
+make -C "$LEX/src" -j"$(sysctl -n hw.ncpu)" >/dev/null
 
 echo "==> Scintilla core"
 for f in "$SCI"/src/*.cxx; do
@@ -31,9 +41,13 @@ done
 echo "==> libscintilla-cocoa.a"
 libtool -static -o "$OUT/libscintilla-cocoa.a" "$OUT"/obj/*.o 2>/dev/null
 
-echo "==> proof-of-concept editor"
-clang++ -std=c++17 -fobjc-arc -O2 "${INCLUDES[@]}" \
-    "$ROOT/macos/proof/main.mm" \
+echo "==> NotepadMac"
+APPOBJ="$OUT/appobj"
+mkdir -p "$APPOBJ"
+for f in LanguageCatalog StyleCatalog EditorController AppDelegate main; do
+    clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
+done
+clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o \
     "$OUT/libscintilla-cocoa.a" "$LEX/bin/liblexilla.a" \
     -framework Cocoa -framework QuartzCore \
     -o "$OUT/NotepadMac"
@@ -43,8 +57,11 @@ APP="$OUT/NotepadMac.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$OUT/NotepadMac" "$APP/Contents/MacOS/NotepadMac"
-cp "$ROOT/macos/proof/Info.plist" "$APP/Contents/Info.plist"
-codesign --force --deep --sign - "$APP"
+cp "$SRC/Info.plist" "$APP/Contents/Info.plist"
+# Notepad++'s own language and colour definitions, read at runtime.
+cp "$ROOT/PowerEditor/src/langs.model.xml"   "$APP/Contents/Resources/"
+cp "$ROOT/PowerEditor/src/stylers.model.xml" "$APP/Contents/Resources/"
+codesign --force --deep --sign - "$APP" 2>/dev/null
 
 echo
 echo "Built: $APP"
