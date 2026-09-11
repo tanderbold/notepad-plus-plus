@@ -4,6 +4,8 @@
 #import "SearchCommands.h"
 #import "ViewCommands.h"
 #import "EncodingCommands.h"
+#import "AdvancedEditCommands.h"
+#import "AuxPanels.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -18,6 +20,8 @@
 @property (nonatomic, copy) NSString *lastSearchTerm;
 @property (nonatomic, strong) DocumentListPanel *docList;
 @property (nonatomic, strong) FunctionListPanel *funcList;
+@property (nonatomic, strong) CharacterPanel *charPanel;
+@property (nonatomic, strong) ClipboardHistoryPanel *clipPanel;
 @property (nonatomic) BOOL alwaysOnTop;
 @end
 
@@ -271,7 +275,59 @@
     [self item:@"Read-Only on Current Document" action:@selector(toggleReadOnly:) key:@"" flags:0 menu:roMenu];
     [self item:@"Read-Only for All Documents" action:@selector(readOnlyAll:) key:@"" flags:0 menu:roMenu];
     [self item:@"Clear Read-Only for All Documents" action:@selector(clearReadOnlyAll:) key:@"" flags:0 menu:roMenu];
+    [self item:@"Read-Only Attribute on Disk" action:@selector(toggleSystemReadOnly:) key:@"" flags:0 menu:roMenu];
     [editMenu addItemWithTitle:@"Read-Only" action:nil keyEquivalent:@""].submenu = roMenu;
+
+    [editMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Begin/End Select" action:@selector(beginEndSelect:) key:@"" flags:0 menu:editMenu];
+    [self item:@"Begin/End Select in Column Mode" action:@selector(beginEndSelectColumn:) key:@"" flags:0 menu:editMenu];
+
+    NSArray *matchTitles = @[@"Ignore Case & Whole Word", @"Match Case Only",
+                             @"Match Whole Word Only", @"Match Case & Whole Word"];
+    NSMenu *msAll = [[NSMenu alloc] initWithTitle:@"Multi-select All"];
+    NSMenu *msNext = [[NSMenu alloc] initWithTitle:@"Multi-select Next"];
+    for (NSUInteger i = 0; i < matchTitles.count; ++i) {
+        NSMenuItem *a1 = [[NSMenuItem alloc] initWithTitle:matchTitles[i]
+                                                    action:@selector(multiSelectAll:) keyEquivalent:@""];
+        a1.target = self; a1.tag = (NSInteger)i; [msAll addItem:a1];
+        NSMenuItem *a2 = [[NSMenuItem alloc] initWithTitle:matchTitles[i]
+                                                    action:@selector(multiSelectNext:) keyEquivalent:@""];
+        a2.target = self; a2.tag = (NSInteger)i; [msNext addItem:a2];
+    }
+    [editMenu addItemWithTitle:@"Multi-select All" action:nil keyEquivalent:@""].submenu = msAll;
+    [editMenu addItemWithTitle:@"Multi-select Next" action:nil keyEquivalent:@""].submenu = msNext;
+    [self item:@"Undo the Latest Added Multi-Select" action:@selector(multiSelectUndo:) key:@"" flags:0 menu:editMenu];
+    [self item:@"Skip Current & Go to Next Multi-select" action:@selector(multiSelectSkip:) key:@"" flags:0 menu:editMenu];
+
+    [editMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Column Mode…" action:@selector(columnModeTip:) key:@"" flags:0 menu:editMenu];
+    [self item:@"Column Editor…" action:@selector(columnEditor:) key:@"" flags:0 menu:editMenu];
+    [self item:@"Character Panel" action:@selector(toggleCharacterPanel:) key:@"" flags:0 menu:editMenu];
+    [self item:@"Clipboard History" action:@selector(toggleClipboardHistory:) key:@"" flags:0 menu:editMenu];
+
+    NSMenu *acMenu = [[NSMenu alloc] initWithTitle:@"Auto-Completion"];
+    [self item:@"Word Completion" action:@selector(showAutoComplete:) key:@"" flags:0 menu:acMenu];
+    [self item:@"Path Completion" action:@selector(pathCompletion:) key:@"" flags:0 menu:acMenu];
+    [self item:@"Function Parameters Hint" action:@selector(callTip:) key:@"" flags:0 menu:acMenu];
+    [self item:@"Function Parameters Next Hint" action:@selector(callTipNext:) key:@"" flags:0 menu:acMenu];
+    [self item:@"Function Parameters Previous Hint" action:@selector(callTipPrev:) key:@"" flags:0 menu:acMenu];
+    [editMenu addItemWithTitle:@"Auto-Completion" action:nil keyEquivalent:@""].submenu = acMenu;
+
+    NSMenu *pasteMenu = [[NSMenu alloc] initWithTitle:@"Paste Special"];
+    [self item:@"Paste HTML Content" action:@selector(pasteHTML:) key:@"" flags:0 menu:pasteMenu];
+    [self item:@"Paste RTF Content" action:@selector(pasteRTF:) key:@"" flags:0 menu:pasteMenu];
+    [self item:@"Copy Binary Content" action:@selector(copyBinary:) key:@"" flags:0 menu:pasteMenu];
+    [self item:@"Cut Binary Content" action:@selector(cutBinary:) key:@"" flags:0 menu:pasteMenu];
+    [self item:@"Paste Binary Content" action:@selector(pasteBinaryContent:) key:@"" flags:0 menu:pasteMenu];
+    [editMenu addItemWithTitle:@"Paste Special" action:nil keyEquivalent:@""].submenu = pasteMenu;
+
+    NSMenu *selMenu = [[NSMenu alloc] initWithTitle:@"On Selection"];
+    [self item:@"Open File" action:@selector(openSelectedFile:) key:@"" flags:0 menu:selMenu];
+    [self item:@"Open Containing Folder in Finder" action:@selector(revealSelectedFile:) key:@"" flags:0 menu:selMenu];
+    [self item:@"Redact Selection" action:@selector(redactSelection:) key:@"" flags:0 menu:selMenu];
+    [self item:@"Search on Internet" action:@selector(searchOnInternet:) key:@"" flags:0 menu:selMenu];
+    [self item:@"Change Search Engine…" action:@selector(changeSearchEngine:) key:@"" flags:0 menu:selMenu];
+    [editMenu addItemWithTitle:@"On Selection" action:nil keyEquivalent:@""].submenu = selMenu;
 
     editItem.submenu = editMenu;
 
@@ -837,6 +893,91 @@
     NSString *fmt = [self promptForString:@"Date/time format" default:@"yyyy-MM-dd HH:mm:ss"];
     if (!fmt) return;
     [self.editor insertCustomDateTime:fmt];
+}
+
+#pragma mark - Edit: multi-select, columns, panels
+
+static NppMatchFlags FlagsForTag(NSInteger tag) {
+    switch (tag) {
+        case 1: return NppMatchCase;
+        case 2: return NppMatchWholeWord;
+        case 3: return NppMatchCase | NppMatchWholeWord;
+        default: return NppMatchNone;
+    }
+}
+
+- (void)multiSelectAll:(NSMenuItem *)s  { [self.editor multiSelectAllOccurrences:FlagsForTag(s.tag)]; }
+- (void)multiSelectNext:(NSMenuItem *)s { [self.editor multiSelectNextOccurrence:FlagsForTag(s.tag)]; }
+- (void)multiSelectUndo:(id)sender      { [self.editor undoLastMultiSelection]; }
+- (void)multiSelectSkip:(id)sender      { [self.editor skipCurrentMultiSelection]; }
+
+- (void)beginEndSelect:(id)sender       { [self.editor beginEndSelectColumnMode:NO]; }
+- (void)beginEndSelectColumn:(id)sender { [self.editor beginEndSelectColumnMode:YES]; }
+
+- (void)columnModeTip:(id)sender {
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"Column mode";
+    alert.informativeText = @"Hold Option and drag to select a rectangle, or use "
+                            @"Begin/End Select in Column Mode. Column Editor then "
+                            @"fills every selected row.";
+    [alert runModal];
+}
+
+- (void)columnEditor:(id)sender {
+    if ([self.editor selectionCount] < 1) { NSBeep(); return; }
+    NSString *mode = [self promptForString:@"Column Editor - \"text\" or \"number\"?" default:@"text"];
+    if (!mode.length) return;
+    if ([mode hasPrefix:@"n"]) {
+        NSString *from = [self promptForString:@"Initial number" default:@"1"];
+        if (!from.length) return;
+        NSString *step = [self promptForString:@"Increase by" default:@"1"];
+        if (!step.length) return;
+        NSString *pad = [self promptForString:@"Leading zeros? yes/no" default:@"no"];
+        [self.editor columnInsertNumbersFrom:from.integerValue increment:step.integerValue
+                                  zeroPadded:[pad hasPrefix:@"y"] base:10];
+    } else {
+        NSString *text = [self promptForString:@"Text to insert" default:@""];
+        if (!text.length) return;
+        [self.editor columnInsertText:text];
+    }
+}
+
+- (void)toggleCharacterPanel:(id)sender {
+    if (!self.charPanel) self.charPanel = [[CharacterPanel alloc] initWithEditor:self.editor];
+    [self.charPanel toggle];
+}
+
+- (void)toggleClipboardHistory:(id)sender {
+    if (!self.clipPanel) self.clipPanel = [[ClipboardHistoryPanel alloc] initWithEditor:self.editor];
+    [self.clipPanel toggle];
+}
+
+- (void)toggleSystemReadOnly:(id)sender { [self.editor toggleSystemReadOnly]; }
+
+- (void)pathCompletion:(id)sender { [self.editor showPathCompletion]; }
+- (void)callTip:(id)sender        { [self.editor showFunctionCallTip]; }
+- (void)callTipNext:(id)sender    { [self.editor cycleFunctionCallTip:YES]; }
+- (void)callTipPrev:(id)sender    { [self.editor cycleFunctionCallTip:NO]; }
+
+- (void)pasteHTML:(id)sender          { [self.editor pasteAsHTML]; }
+- (void)pasteRTF:(id)sender           { [self.editor pasteAsRTF]; }
+- (void)copyBinary:(id)sender         { [self.editor copySelectionAsBinary]; }
+- (void)cutBinary:(id)sender          { [self.editor cutSelectionAsBinary]; }
+- (void)pasteBinaryContent:(id)sender { [self.editor pasteBinary]; }
+
+- (void)openSelectedFile:(id)sender   { [self.editor openSelectedFile]; }
+- (void)revealSelectedFile:(id)sender { [self.editor revealSelectedFile]; }
+- (void)searchOnInternet:(id)sender   { [self.editor searchSelectionOnInternet]; }
+
+- (void)redactSelection:(id)sender {
+    BOOL bullet = ([NSEvent modifierFlags] & NSEventModifierFlagShift) != 0;
+    [self.editor redactSelectionWithBlock:!bullet];
+}
+
+- (void)changeSearchEngine:(id)sender {
+    NSString *t = [self promptForString:@"Search URL (%@ is the query)"
+                                default:self.editor.searchEngineTemplate];
+    if (t.length) self.editor.searchEngineTemplate = t;
 }
 
 #pragma mark - Bookmarks

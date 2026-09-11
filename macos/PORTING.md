@@ -47,7 +47,14 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   code page 858 is 850 plus its one differing byte, and code page 720 has no
   converter anywhere on macOS, so its mapping is embedded from the Unicode
   Consortium table by `macos/gen_cp720.py`.
-- Comment toggling and uncommenting, bookmarks, code folding, word completion.
+- Comment toggling and uncommenting, bookmarks, code folding, word and path
+  completion, function parameter hints.
+- Multi-selection with the four case/whole-word combinations, Begin/End Select
+  in normal and column mode, and a Column Editor that fills a rectangle with
+  text or a number sequence.
+- Paste special (HTML, RTF, binary as hex), actions on the selection (open the
+  file named by it, redact it, search the web), Character Panel and Clipboard
+  History.
 - Case conversion (8 modes), line operations (sorting by 7 keys in both
   directions, dedup, split/join, move, blank-line handling), whitespace
   operations (trim, tab/space conversion), indentation, clipboard path copies

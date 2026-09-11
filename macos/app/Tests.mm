@@ -10,6 +10,8 @@
 #import "SearchCommands.h"
 #import "ViewCommands.h"
 #import "EncodingCommands.h"
+#import "AdvancedEditCommands.h"
+#import "AuxPanels.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -523,6 +525,227 @@ int NppMacRunTests(AppDelegate *app) {
         [ed insertCustomDateTime:@"yyyy"];
         Check(@"IDM_EDIT_INSERT_DATETIME_CUSTOMIZED", @"honours a custom format",
               DocText(ed).length == 4 && [DocText(ed) hasPrefix:@"20"]);
+    }
+
+    printf("\n== Edit: multi-selection ==\n");
+    {
+        // "cat" appears three times with different case and word boundaries, so
+        // each flag combination must produce a different count.
+        struct { NppMatchFlags flags; NSUInteger want; NSString *cmdAll; NSString *cmdNext; } ms[] = {
+            {NppMatchNone,                        3, @"IDM_EDIT_MULTISELECTALL",
+                                                     @"IDM_EDIT_MULTISELECTNEXT"},
+            {NppMatchCase,                        2, @"IDM_EDIT_MULTISELECTALLMATCHCASE",
+                                                     @"IDM_EDIT_MULTISELECTNEXTMATCHCASE"},
+            {NppMatchWholeWord,                   2, @"IDM_EDIT_MULTISELECTALLWHOLEWORD",
+                                                     @"IDM_EDIT_MULTISELECTNEXTWHOLEWORD"},
+            {NppMatchCase | NppMatchWholeWord,    1, @"IDM_EDIT_MULTISELECTALLMATCHCASEWHOLEWORD",
+                                                     @"IDM_EDIT_MULTISELECTNEXTMATCHCASEWHOLEWORD"},
+        };
+        for (size_t i = 0; i < sizeof(ms)/sizeof(ms[0]); ++i) {
+            SetDoc(ed, @"Cat cat catalog\n");
+            [sci message:SCI_SETSEL wParam:4 lParam:7];        // the lowercase whole word "cat"
+            NSUInteger n = [ed multiSelectAllOccurrences:ms[i].flags];
+            Check(ms[i].cmdAll, [NSString stringWithFormat:@"selects %lu occurrence(s)",
+                                 (unsigned long)ms[i].want],
+                  n == ms[i].want && [ed selectionCount] == ms[i].want);
+
+            SetDoc(ed, @"Cat cat catalog\n");
+            [sci message:SCI_SETSEL wParam:4 lParam:7];
+            NSUInteger before = [ed selectionCount];
+            BOOL added = [ed multiSelectNextOccurrence:ms[i].flags];
+            Check(ms[i].cmdNext, @"adds one more selection when another match exists",
+                  ms[i].want > 1 ? (added && [ed selectionCount] == before + 1)
+                                 : (!added && [ed selectionCount] == before));
+        }
+
+        SetDoc(ed, @"aa aa aa\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:2];
+        [ed multiSelectAllOccurrences:NppMatchNone];
+        NSUInteger all = [ed selectionCount];
+        BOOL dropped = [ed undoLastMultiSelection];
+        Check(@"IDM_EDIT_MULTISELECTUNDO", @"drops the most recently added selection",
+              all == 3 && dropped && [ed selectionCount] == 2);
+
+        SetDoc(ed, @"bb bb bb\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:2];
+        [ed multiSelectNextOccurrence:NppMatchNone];
+        NSUInteger beforeSkip = [ed selectionCount];
+        BOOL skipped = [ed skipCurrentMultiSelection];
+        Check(@"IDM_EDIT_MULTISELECTSSKIP", @"replaces the current selection with the next",
+              skipped && [ed selectionCount] == beforeSkip);
+    }
+
+    printf("\n== Edit: begin/end select and column editor ==\n");
+    {
+        SetDoc(ed, @"0123456789\n");
+        [sci message:SCI_GOTOPOS wParam:2 lParam:0];
+        BOOL anchored = ![ed beginEndSelectColumnMode:NO] && [ed beginEndSelectActive];
+        [sci message:SCI_GOTOPOS wParam:6 lParam:0];
+        BOOL made = [ed beginEndSelectColumnMode:NO];
+        Check(@"IDM_EDIT_BEGINENDSELECT", @"anchors, then selects to the caret",
+              anchored && made &&
+              [sci message:SCI_GETSELECTIONSTART] == 2 && [sci message:SCI_GETSELECTIONEND] == 6);
+
+        SetDoc(ed, @"abcd\nabcd\nabcd\n");
+        [sci message:SCI_GOTOPOS wParam:1 lParam:0];
+        [ed beginEndSelectColumnMode:YES];
+        [sci message:SCI_GOTOPOS wParam:12 lParam:0];
+        BOOL columnMade = [ed beginEndSelectColumnMode:YES];
+        Check(@"IDM_EDIT_BEGINENDSELECT_COLUMNMODE", @"builds a rectangular selection",
+              columnMade && [ed selectionCount] >= 3);
+
+        // Column Editor over that rectangular selection.
+        SetDoc(ed, @"a\nb\nc\n");
+        [sci message:SCI_SETRECTANGULARSELECTIONANCHOR wParam:0 lParam:0];
+        [sci message:SCI_SETRECTANGULARSELECTIONCARET wParam:4 lParam:0];
+        BOOL inserted = [ed columnInsertText:@">"];
+        Check(@"IDM_EDIT_COLUMNMODE", @"inserts into every row of the rectangle",
+              inserted && [DocText(ed) isEqualToString:@">a\n>b\n>c\n"]);
+
+        SetDoc(ed, @"x\nx\nx\n");
+        [sci message:SCI_SETRECTANGULARSELECTIONANCHOR wParam:0 lParam:0];
+        [sci message:SCI_SETRECTANGULARSELECTIONCARET wParam:4 lParam:0];
+        [ed columnInsertNumbersFrom:1 increment:1 zeroPadded:NO base:10];
+        Check(@"IDM_EDIT_COLUMNMODETIP", @"numbers each row in sequence",
+              [DocText(ed) isEqualToString:@"1x\n2x\n3x\n"]);
+    }
+
+    printf("\n== Edit: paste special ==\n");
+    {
+        SetDoc(ed, @"AB\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:2];
+        BOOL copied = [ed copySelectionAsBinary];
+        NSString *hex = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
+        Check(@"IDM_EDIT_COPY_BINARY", @"copies the bytes as hex pairs",
+              copied && [hex isEqualToString:@"41 42"]);
+
+        SetDoc(ed, @"");
+        [sci message:SCI_GOTOPOS wParam:0 lParam:0];
+        BOOL pasted = [ed pasteBinary];
+        Check(@"IDM_EDIT_PASTE_BINARY", @"turns hex pairs back into bytes",
+              pasted && [DocText(ed) isEqualToString:@"AB"]);
+
+        SetDoc(ed, @"XY\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:2];
+        BOOL cut = [ed cutSelectionAsBinary];
+        Check(@"IDM_EDIT_CUT_BINARY", @"copies as hex and removes the selection",
+              cut && ![DocText(ed) hasPrefix:@"XY"] &&
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
+                  isEqualToString:@"58 59"]);
+
+        NSPasteboard *pb = [NSPasteboard generalPasteboard];
+        [pb clearContents];
+        [pb setString:@"<b>bold</b>" forType:NSPasteboardTypeHTML];
+        SetDoc(ed, @"");
+        Check(@"IDM_EDIT_PASTE_AS_HTML", @"pastes the HTML source",
+              [ed pasteAsHTML] && [DocText(ed) containsString:@"<b>"]);
+
+        [pb clearContents];
+        NSAttributedString *rich = [[NSAttributedString alloc] initWithString:@"rich"];
+        [pb setData:[rich RTFFromRange:NSMakeRange(0, 4) documentAttributes:@{}]
+            forType:NSPasteboardTypeRTF];
+        SetDoc(ed, @"");
+        Check(@"IDM_EDIT_PASTE_AS_RTF", @"pastes the RTF source",
+              [ed pasteAsRTF] && [DocText(ed) containsString:@"rtf"]);
+    }
+
+    printf("\n== Edit: on selection ==\n");
+    {
+        NSError *err = nil;
+        NSString *target = TempFile(@"t_sel_target.txt", @"opened via selection\n");
+        NSString *holder = TempFile(@"t_sel_holder.txt",
+                                    [NSString stringWithFormat:@"%@\n", target]);
+        [ed openFileAtPath:holder error:&err];
+        [sci message:SCI_SETSEL wParam:0 lParam:(sptr_t)[target lengthOfBytesUsingEncoding:NSUTF8StringEncoding]];
+        NSString *resolved = [ed selectionAsPath];
+        BOOL opened = [ed openSelectedFile];
+        Check(@"IDM_EDIT_OPENSELECTEDFILETOEDIT", @"opens the file named by the selection",
+              [resolved isEqualToString:target] && opened &&
+              [ed.currentDocument.path isEqualToString:target]);
+
+        // Revealing in Finder is not launched here; the resolution is what matters.
+        [ed openFileAtPath:holder error:&err];
+        [sci message:SCI_SETSEL wParam:0 lParam:(sptr_t)[target lengthOfBytesUsingEncoding:NSUTF8StringEncoding]];
+        Check(@"IDM_EDIT_OPENSELECTEDFILEFOLDERINEXPLORER", @"resolves the same path for Finder",
+              [[ed selectionAsPath] isEqualToString:target]);
+
+        SetDoc(ed, @"secret value\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:6];
+        BOOL redacted = [ed redactSelectionWithBlock:YES];
+        Check(@"IDM_EDIT_REDACT_SELECTION", @"replaces the selection with blocks",
+              redacted && [DocText(ed) hasPrefix:@"\u2588\u2588\u2588\u2588\u2588\u2588"]);
+
+        ed.searchEngineTemplate = @"https://example.invalid/?q=%@";
+        Check(@"IDM_EDIT_CHANGESEARCHENGINE", @"remembers the chosen engine",
+              [ed.searchEngineTemplate isEqualToString:@"https://example.invalid/?q=%@"]);
+
+        // Opening a browser from a test would be rude; assert the guard path.
+        SetDoc(ed, @"");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        Check(@"IDM_EDIT_SEARCHONINTERNET", @"declines with nothing selected",
+              ![ed searchSelectionOnInternet]);
+    }
+
+    printf("\n== Edit: completion, panels, file attribute ==\n");
+    {
+        SetDoc(ed, @"alphabet alpine\nalp");
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        [ed showAutoCompletion];
+        Check(@"IDM_EDIT_AUTOCOMPLETE_CURRENTFILE", @"offers words from the document",
+              [sci message:SCI_AUTOCACTIVE] != 0);
+        [sci message:SCI_AUTOCCANCEL];
+
+        NSString *dir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_pathcomp"];
+        [[NSFileManager defaultManager] removeItemAtPath:dir error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        [@"x" writeToFile:[dir stringByAppendingPathComponent:@"target.txt"]
+               atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        SetDoc(ed, [dir stringByAppendingString:@"/tar"]);
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        BOOL pathComp = [ed showPathCompletion];
+        Check(@"IDM_EDIT_AUTOCOMPLETE_PATH", @"offers directory entries",
+              pathComp && [sci message:SCI_AUTOCACTIVE] != 0);
+        [sci message:SCI_AUTOCCANCEL];
+
+        SetDoc(ed, @"int helper(int a);\nint helper(int a, int b);\nhelper\n");
+        [sci message:SCI_GOTOLINE wParam:2 lParam:0];
+        BOOL tip = [ed showFunctionCallTip];
+        Check(@"IDM_EDIT_FUNCCALLTIP", @"shows a hint for the word at the caret",
+              tip && [sci message:SCI_CALLTIPACTIVE] != 0);
+        Check(@"IDM_EDIT_FUNCCALLTIP_NEXT", @"steps to the next overload",
+              [ed cycleFunctionCallTip:YES]);
+        Check(@"IDM_EDIT_FUNCCALLTIP_PREVIOUS", @"steps back to the previous one",
+              [ed cycleFunctionCallTip:NO]);
+        [sci message:SCI_CALLTIPCANCEL];
+
+        CharacterPanel *chars = [[CharacterPanel alloc] initWithEditor:ed];
+        SetDoc(ed, @"");
+        [sci message:SCI_GOTOPOS wParam:0 lParam:0];
+        BOOL insertedChar = [chars insertRow:('A' - 32)];
+        Check(@"IDM_EDIT_CHAR_PANEL", @"inserts the chosen character",
+              insertedChar && [DocText(ed) isEqualToString:@"A"]);
+
+        ClipboardHistoryPanel *clips = [[ClipboardHistoryPanel alloc] initWithEditor:ed];
+        [ed copyToClipboard:@"history one"];
+        [clips capturePasteboard];
+        [ed copyToClipboard:@"history two"];
+        [clips capturePasteboard];
+        SetDoc(ed, @"");
+        [sci message:SCI_GOTOPOS wParam:0 lParam:0];
+        BOOL pastedOld = [clips pasteRow:1];
+        Check(@"IDM_EDIT_CLIPBOARDHISTORY_PANEL", @"keeps earlier entries and pastes them back",
+              clips.entries.count == 2 && pastedOld &&
+              [DocText(ed) isEqualToString:@"history one"]);
+
+        NSString *roFile = TempFile(@"t_readonly.txt", @"locked\n");
+        [ed openFileAtPath:roFile error:NULL];
+        BOOL wasWritable = ![ed systemReadOnly];
+        [ed toggleSystemReadOnly];
+        BOOL nowReadOnly = [ed systemReadOnly];
+        [ed toggleSystemReadOnly];
+        Check(@"IDM_EDIT_TOGGLESYSTEMREADONLY", @"flips the file's write permission",
+              wasWritable && nowReadOnly && ![ed systemReadOnly]);
     }
 
     printf("\n== Search ==\n");
