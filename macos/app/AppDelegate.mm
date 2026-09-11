@@ -1,6 +1,7 @@
 #import "AppDelegate.h"
 #import "EditorController.h"
 #import "EditCommands.h"
+#import "SearchCommands.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -285,7 +286,90 @@
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:searchMenu];
     [self item:@"Previous Bookmark" action:@selector(previousBookmark:) key:@"b"
          flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:searchMenu];
-    [self item:@"Clear All Bookmarks" action:@selector(clearBookmarks:) key:@"" flags:0 menu:searchMenu];
+    [searchMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Find in Files…" action:@selector(findInFiles:) key:@"f"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:searchMenu];
+    [self item:@"Search Results Window" action:@selector(focusSearchResults:) key:@"" flags:0 menu:searchMenu];
+    [self item:@"Next Search Result" action:@selector(nextSearchResult:) key:@"" flags:0 menu:searchMenu];
+    [self item:@"Previous Search Result" action:@selector(prevSearchResult:) key:@"" flags:0 menu:searchMenu];
+    [searchMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Select and Find Next" action:@selector(selectAndFindNext:) key:@"e" flags:NSEventModifierFlagCommand menu:searchMenu];
+    [self item:@"Select and Find Previous" action:@selector(selectAndFindPrev:) key:@"e"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:searchMenu];
+    [self item:@"Find (Volatile) Next" action:@selector(volatileFindNext:) key:@"" flags:0 menu:searchMenu];
+    [self item:@"Find (Volatile) Previous" action:@selector(volatileFindPrev:) key:@"" flags:0 menu:searchMenu];
+    [self item:@"Incremental Search" action:@selector(incrementalSearch:) key:@"i" flags:NSEventModifierFlagCommand menu:searchMenu];
+    [searchMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Go to Matching Brace" action:@selector(goToMatchingBrace:) key:@"m" flags:NSEventModifierFlagCommand menu:searchMenu];
+    [self item:@"Select All In-between {} [] or ()" action:@selector(selectBetweenBraces:) key:@"m"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:searchMenu];
+    [self item:@"Mark…" action:@selector(markTerm:) key:@"" flags:0 menu:searchMenu];
+    [self item:@"Find characters in range…" action:@selector(findCharsInRange:) key:@"" flags:0 menu:searchMenu];
+
+    // --- marker style submenus, five styles plus the Find Mark style
+    NSArray *styleNames = @[@"Using 1st Style", @"Using 2nd Style", @"Using 3rd Style",
+                            @"Using 4th Style", @"Using 5th Style"];
+    NSMenu *markAllMenu = [[NSMenu alloc] initWithTitle:@"Style All Occurrences of Token"];
+    NSMenu *markOneMenu = [[NSMenu alloc] initWithTitle:@"Style One Token"];
+    NSMenu *clearMenu   = [[NSMenu alloc] initWithTitle:@"Clear Style"];
+    NSMenu *upMenu      = [[NSMenu alloc] initWithTitle:@"Jump Up"];
+    NSMenu *downMenu    = [[NSMenu alloc] initWithTitle:@"Jump Down"];
+    NSMenu *copyMenu    = [[NSMenu alloc] initWithTitle:@"Copy Styled Text"];
+    for (NSUInteger i = 0; i < styleNames.count; ++i) {
+        struct { NSMenu *menu; SEL sel; NSString *title; } rows[] = {
+            {markAllMenu, @selector(markAllStyle:), styleNames[i]},
+            {markOneMenu, @selector(markOneStyle:), styleNames[i]},
+            {clearMenu,   @selector(clearStyle:),   [NSString stringWithFormat:@"Clear %luth Style", (unsigned long)i + 1]},
+            {upMenu,      @selector(jumpUpStyle:),  [NSString stringWithFormat:@"%luth Style", (unsigned long)i + 1]},
+            {downMenu,    @selector(jumpDownStyle:),[NSString stringWithFormat:@"%luth Style", (unsigned long)i + 1]},
+            {copyMenu,    @selector(copyStyle:),    [NSString stringWithFormat:@"%luth Style", (unsigned long)i + 1]},
+        };
+        for (size_t r = 0; r < sizeof(rows)/sizeof(rows[0]); ++r) {
+            NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:rows[r].title action:rows[r].sel keyEquivalent:@""];
+            mi.target = self; mi.tag = (NSInteger)i;
+            [rows[r].menu addItem:mi];
+        }
+    }
+    [self item:@"Clear all Styles" action:@selector(clearAllStyles:) key:@"" flags:0 menu:clearMenu];
+    for (NSMenu *menu in @[upMenu, downMenu]) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:@"Find Mark Style"
+                                                    action:(menu == upMenu ? @selector(jumpUpStyle:) : @selector(jumpDownStyle:))
+                                             keyEquivalent:@""];
+        mi.target = self; mi.tag = NPPMAC_STYLE_COUNT;
+        [menu addItem:mi];
+    }
+    NSMenuItem *allStyles = [[NSMenuItem alloc] initWithTitle:@"All Styles" action:@selector(copyAllStyles:) keyEquivalent:@""];
+    allStyles.target = self;
+    [copyMenu addItem:allStyles];
+    NSMenuItem *markedClip = [[NSMenuItem alloc] initWithTitle:@"Find Mark Style" action:@selector(copyStyle:) keyEquivalent:@""];
+    markedClip.target = self; markedClip.tag = NPPMAC_STYLE_COUNT;
+    [copyMenu addItem:markedClip];
+
+    [searchMenu addItem:[NSMenuItem separatorItem]];
+    [searchMenu addItemWithTitle:@"Style All Occurrences of Token" action:nil keyEquivalent:@""].submenu = markAllMenu;
+    [searchMenu addItemWithTitle:@"Style One Token" action:nil keyEquivalent:@""].submenu = markOneMenu;
+    [searchMenu addItemWithTitle:@"Clear Style" action:nil keyEquivalent:@""].submenu = clearMenu;
+    [searchMenu addItemWithTitle:@"Jump Up" action:nil keyEquivalent:@""].submenu = upMenu;
+    [searchMenu addItemWithTitle:@"Jump Down" action:nil keyEquivalent:@""].submenu = downMenu;
+    [searchMenu addItemWithTitle:@"Copy Styled Text" action:nil keyEquivalent:@""].submenu = copyMenu;
+
+    // --- bookmark line operations
+    NSMenu *bmMenu = [[NSMenu alloc] initWithTitle:@"Bookmark"];
+    [self item:@"Cut Bookmarked Lines" action:@selector(cutMarkedLines:) key:@"" flags:0 menu:bmMenu];
+    [self item:@"Copy Bookmarked Lines" action:@selector(copyMarkedLines:) key:@"" flags:0 menu:bmMenu];
+    [self item:@"Paste to (Replace) Bookmarked Lines" action:@selector(pasteMarkedLines:) key:@"" flags:0 menu:bmMenu];
+    [self item:@"Remove Bookmarked Lines" action:@selector(removeMarkedLines:) key:@"" flags:0 menu:bmMenu];
+    [self item:@"Remove Non-Bookmarked Lines" action:@selector(removeUnmarkedLines:) key:@"" flags:0 menu:bmMenu];
+    [self item:@"Inverse Bookmarks" action:@selector(inverseBookmarks:) key:@"" flags:0 menu:bmMenu];
+    [searchMenu addItemWithTitle:@"Bookmark" action:nil keyEquivalent:@""].submenu = bmMenu;
+
+    // --- change history
+    NSMenu *chMenu = [[NSMenu alloc] initWithTitle:@"Change History"];
+    [self item:@"Go to Next Change" action:@selector(nextChange:) key:@"" flags:0 menu:chMenu];
+    [self item:@"Go to Previous Change" action:@selector(prevChange:) key:@"" flags:0 menu:chMenu];
+    [self item:@"Clear Change History" action:@selector(clearChangeHistory:) key:@"" flags:0 menu:chMenu];
+    [searchMenu addItemWithTitle:@"Change History" action:nil keyEquivalent:@""].submenu = chMenu;
+
     searchItem.submenu = searchMenu;
 
     // ---- View
@@ -603,6 +687,81 @@
 - (void)nextBookmark:(id)sender     { [self.editor nextBookmark]; }
 - (void)previousBookmark:(id)sender { [self.editor previousBookmark]; }
 - (void)clearBookmarks:(id)sender   { [self.editor clearBookmarks]; }
+
+#pragma mark - Search: styles, braces, files
+
+- (void)markAllStyle:(NSMenuItem *)s  { [self.editor markAllOccurrencesOfSelection:s.tag]; }
+- (void)markOneStyle:(NSMenuItem *)s  { [self.editor markOneOccurrenceOfSelection:s.tag]; }
+- (void)clearStyle:(NSMenuItem *)s    { [self.editor clearStyle:s.tag]; }
+- (void)clearAllStyles:(id)sender     { [self.editor clearAllStyles]; }
+- (void)jumpUpStyle:(NSMenuItem *)s   { [self.editor jumpToMarker:s.tag forward:NO]; }
+- (void)jumpDownStyle:(NSMenuItem *)s { [self.editor jumpToMarker:s.tag forward:YES]; }
+- (void)copyStyle:(NSMenuItem *)s     { [self.editor copyToClipboard:[self.editor textOfStyle:s.tag]]; }
+- (void)copyAllStyles:(id)sender      { [self.editor copyToClipboard:[self.editor textOfAllStyles]]; }
+
+- (void)goToMatchingBrace:(id)sender   { [self.editor goToMatchingBrace]; }
+- (void)selectBetweenBraces:(id)sender { [self.editor selectBetweenMatchingBraces]; }
+
+- (void)markTerm:(id)sender {
+    NSString *term = [self promptForString:@"Mark" default:self.lastSearchTerm];
+    if (!term.length) return;
+    self.lastSearchTerm = term;
+    [self.editor.sci message:SCI_SETSEL wParam:0 lParam:0];
+    [self searchFrom:0 forward:YES wrap:NO];
+    [self.editor markAllOccurrencesOfSelection:NPPMAC_STYLE_COUNT];
+}
+
+- (void)findCharsInRange:(id)sender {
+    NSString *from = [self promptForString:@"Mark characters from (decimal code point)" default:@"128"];
+    if (!from.length) return;
+    NSString *to = [self promptForString:@"…to (decimal code point)" default:@"65535"];
+    if (!to.length) return;
+    NSUInteger n = [self.editor markCharactersInRangeFrom:(unichar)from.intValue to:(unichar)to.intValue];
+    NSAlert *done = [[NSAlert alloc] init];
+    done.messageText = [NSString stringWithFormat:@"%lu character%@ marked", (unsigned long)n, n == 1 ? @"" : @"s"];
+    [done runModal];
+}
+
+- (void)findInFiles:(id)sender {
+    NSString *term = [self promptForString:@"Find in Files — what?" default:self.lastSearchTerm];
+    if (!term.length) return;
+    self.lastSearchTerm = term;
+    NSString *ext = [self promptForString:@"Extension filter (blank for all)" default:@""];
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseDirectories = YES;
+    panel.canChooseFiles = NO;
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    [self.editor findInFiles:term inFolder:panel.URL.path filter:ext.length ? ext : nil];
+}
+
+- (void)focusSearchResults:(id)sender { [self.editor focusSearchResults]; }
+- (void)nextSearchResult:(id)sender   { [self.editor goToSearchResult:YES]; }
+- (void)prevSearchResult:(id)sender   { [self.editor goToSearchResult:NO]; }
+
+- (void)selectAndFindNext:(id)sender { [self.editor findNextOccurrenceOfSelection:YES extendSelection:NO]; }
+- (void)selectAndFindPrev:(id)sender { [self.editor findNextOccurrenceOfSelection:NO extendSelection:NO]; }
+- (void)volatileFindNext:(id)sender  { [self.editor findNextOccurrenceOfSelection:YES extendSelection:NO]; }
+- (void)volatileFindPrev:(id)sender  { [self.editor findNextOccurrenceOfSelection:NO extendSelection:NO]; }
+
+- (void)incrementalSearch:(id)sender {
+    // macOS already has a first-class incremental find bar; this drives the
+    // same search state so ⌘G continues from it.
+    NSString *term = [self promptForString:@"Incremental search" default:self.lastSearchTerm];
+    if (!term.length) return;
+    self.lastSearchTerm = term;
+    [self searchFrom:[self.editor.sci message:SCI_GETCURRENTPOS] forward:YES wrap:YES];
+}
+
+- (void)cutMarkedLines:(id)sender      { [self.editor cutBookmarkedLines]; }
+- (void)copyMarkedLines:(id)sender     { [self.editor copyBookmarkedLines]; }
+- (void)pasteMarkedLines:(id)sender    { [self.editor pasteOverBookmarkedLines]; }
+- (void)removeMarkedLines:(id)sender   { [self.editor removeBookmarkedLines]; }
+- (void)removeUnmarkedLines:(id)sender { [self.editor removeUnbookmarkedLines]; }
+- (void)inverseBookmarks:(id)sender    { [self.editor inverseBookmarks]; }
+
+- (void)nextChange:(id)sender         { [self.editor goToNextChange:YES]; }
+- (void)prevChange:(id)sender         { [self.editor goToNextChange:NO]; }
+- (void)clearChangeHistory:(id)sender { [self.editor clearChangeHistory]; }
 
 #pragma mark - Folding
 

@@ -201,6 +201,9 @@ static long SciColor(NSColor *c) {
     [sci message:SCI_SETINDENTATIONGUIDES wParam:SC_IV_LOOKBOTH lParam:0];
     [sci message:SCI_SETBACKSPACEUNINDENTS wParam:1 lParam:0];
     [sci message:SCI_SETTABINDENTS wParam:1 lParam:0];
+    // Change History powers Search > Change History; it is per document.
+    [sci message:SCI_SETCHANGEHISTORY
+           wParam:(SC_CHANGE_HISTORY_ENABLED | SC_CHANGE_HISTORY_MARKERS) lParam:0];
 }
 
 #pragma mark - Documents

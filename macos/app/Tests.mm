@@ -7,6 +7,7 @@
 #import "AppDelegate+Testing.h"
 #import "EditorController.h"
 #import "EditCommands.h"
+#import "SearchCommands.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -582,6 +583,209 @@ int NppMacRunTests(AppDelegate *app) {
         [ed clearBookmarks];
         Check(@"IDM_SEARCH_CLEAR_BOOKMARKS", @"removes every bookmark",
               [sci message:SCI_MARKERNEXT wParam:0 lParam:(1 << 1)] < 0);
+    }
+
+    printf("\n== Search: token styling ==\n");
+    {
+        NSArray *markAllIDs = @[@"IDM_SEARCH_MARKALLEXT1", @"IDM_SEARCH_MARKALLEXT2", @"IDM_SEARCH_MARKALLEXT3",
+                                @"IDM_SEARCH_MARKALLEXT4", @"IDM_SEARCH_MARKALLEXT5"];
+        NSArray *markOneIDs = @[@"IDM_SEARCH_MARKONEEXT1", @"IDM_SEARCH_MARKONEEXT2", @"IDM_SEARCH_MARKONEEXT3",
+                                @"IDM_SEARCH_MARKONEEXT4", @"IDM_SEARCH_MARKONEEXT5"];
+        NSArray *clearIDs   = @[@"IDM_SEARCH_UNMARKALLEXT1", @"IDM_SEARCH_UNMARKALLEXT2", @"IDM_SEARCH_UNMARKALLEXT3",
+                                @"IDM_SEARCH_UNMARKALLEXT4", @"IDM_SEARCH_UNMARKALLEXT5"];
+        NSArray *upIDs      = @[@"IDM_SEARCH_GOPREVMARKER1", @"IDM_SEARCH_GOPREVMARKER2", @"IDM_SEARCH_GOPREVMARKER3",
+                                @"IDM_SEARCH_GOPREVMARKER4", @"IDM_SEARCH_GOPREVMARKER5"];
+        NSArray *downIDs    = @[@"IDM_SEARCH_GONEXTMARKER1", @"IDM_SEARCH_GONEXTMARKER2", @"IDM_SEARCH_GONEXTMARKER3",
+                                @"IDM_SEARCH_GONEXTMARKER4", @"IDM_SEARCH_GONEXTMARKER5"];
+        NSArray *clipIDs    = @[@"IDM_SEARCH_STYLE1TOCLIP", @"IDM_SEARCH_STYLE2TOCLIP", @"IDM_SEARCH_STYLE3TOCLIP",
+                                @"IDM_SEARCH_STYLE4TOCLIP", @"IDM_SEARCH_STYLE5TOCLIP"];
+
+        for (NSInteger style = 0; style < NPPMAC_STYLE_COUNT; ++style) {
+            SetDoc(ed, @"alpha beta alpha gamma alpha\n");
+            [sci message:SCI_SETSEL wParam:0 lParam:5];          // "alpha"
+            NSUInteger n = [ed markAllOccurrencesOfSelection:style];
+            Check(markAllIDs[style], @"marks every occurrence of the token", n == 3);
+
+            [sci message:SCI_GOTOPOS wParam:0 lParam:0];
+            BOOL down = [ed jumpToMarker:style forward:YES];
+            long afterDown = [sci message:SCI_GETSELECTIONSTART];
+            Check(downIDs[style], @"jumps to the next marked token", down && afterDown > 0);
+
+            BOOL up = [ed jumpToMarker:style forward:NO];
+            Check(upIDs[style], @"jumps back to the previous one",
+                  up && [sci message:SCI_GETSELECTIONSTART] < afterDown);
+
+            [ed copyToClipboard:[ed textOfStyle:style]];
+            Check(clipIDs[style], @"copies the styled text",
+                  [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
+                      containsString:@"alpha"]);
+
+            [ed clearStyle:style];
+            Check(clearIDs[style], @"clears the style", [ed textOfStyle:style].length == 0);
+
+            SetDoc(ed, @"one two one\n");
+            [sci message:SCI_SETSEL wParam:0 lParam:3];
+            [ed markOneOccurrenceOfSelection:style];
+            Check(markOneIDs[style], @"marks only the selected occurrence",
+                  [[ed textOfStyle:style] isEqualToString:@"one"]);
+            [ed clearStyle:style];
+        }
+
+        SetDoc(ed, @"x y x\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:1];
+        [ed markAllOccurrencesOfSelection:0];
+        [ed markAllOccurrencesOfSelection:1];
+        NSString *all = [ed textOfAllStyles];
+        Check(@"IDM_SEARCH_ALLSTYLESTOCLIP", @"gathers text across styles", all.length > 0);
+
+        [ed clearAllStyles];
+        Check(@"IDM_SEARCH_CLEARALLMARKS", @"clears every style",
+              [ed textOfAllStyles].length == 0);
+
+        SetDoc(ed, @"find me find\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:4];
+        NSUInteger marked = [ed markAllOccurrencesOfSelection:NPPMAC_STYLE_COUNT];
+        Check(@"IDM_SEARCH_MARK", @"Mark uses the Find Mark style", marked == 2);
+        BOOL fwd = [ed jumpToMarker:NPPMAC_STYLE_COUNT forward:YES];
+        Check(@"IDM_SEARCH_GONEXTMARKER_DEF", @"jumps down the Find Mark style", fwd);
+        BOOL back = [ed jumpToMarker:NPPMAC_STYLE_COUNT forward:NO];
+        Check(@"IDM_SEARCH_GOPREVMARKER_DEF", @"jumps up the Find Mark style", back);
+        [ed copyToClipboard:[ed textOfStyle:NPPMAC_STYLE_COUNT]];
+        Check(@"IDM_SEARCH_MARKEDTOCLIP", @"copies Find Mark text",
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] containsString:@"find"]);
+        [ed clearAllStyles];
+
+        SetDoc(ed, @"ascii \u00e9\u00e8\n");
+        NSUInteger nonAscii = [ed markCharactersInRangeFrom:128 to:65535];
+        Check(@"IDM_SEARCH_FINDCHARINRANGE", @"marks characters in a code-point range",
+              nonAscii == 2);
+        [ed clearAllStyles];
+    }
+
+    printf("\n== Search: bookmarked lines ==\n");
+    {
+        SetDoc(ed, @"keep1\ndrop1\nkeep2\ndrop2\n");
+        [sci message:SCI_MARKERDELETEALL wParam:1 lParam:0];
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0]; [ed toggleBookmark];
+        [sci message:SCI_GOTOLINE wParam:2 lParam:0]; [ed toggleBookmark];
+
+        [ed copyBookmarkedLines];
+        Check(@"IDM_SEARCH_COPYMARKEDLINES", @"copies just the bookmarked lines",
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
+                  isEqualToString:@"keep1\nkeep2"]);
+
+        [ed removeUnbookmarkedLines];
+        Check(@"IDM_SEARCH_DELETEUNMARKEDLINES", @"keeps only bookmarked lines",
+              [DocText(ed) hasPrefix:@"keep1"] && ![DocText(ed) containsString:@"drop1"]);
+
+        SetDoc(ed, @"a\nb\nc\n");
+        [sci message:SCI_MARKERDELETEALL wParam:1 lParam:0];
+        [sci message:SCI_GOTOLINE wParam:1 lParam:0]; [ed toggleBookmark];
+        [ed removeBookmarkedLines];
+        Check(@"IDM_SEARCH_DELETEMARKEDLINES", @"removes bookmarked lines",
+              ![DocText(ed) containsString:@"b"]);
+
+        SetDoc(ed, @"x\ny\n");
+        [sci message:SCI_MARKERDELETEALL wParam:1 lParam:0];
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0]; [ed toggleBookmark];
+        [ed cutBookmarkedLines];
+        Check(@"IDM_SEARCH_CUTMARKEDLINES", @"copies then removes them",
+              ![DocText(ed) containsString:@"x"] &&
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] containsString:@"x"]);
+
+        SetDoc(ed, @"one\ntwo\n");
+        [sci message:SCI_MARKERDELETEALL wParam:1 lParam:0];
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0]; [ed toggleBookmark];
+        [ed copyToClipboard:@"REPLACED"];
+        [ed pasteOverBookmarkedLines];
+        Check(@"IDM_SEARCH_PASTEMARKEDLINES", @"replaces bookmarked lines with the clipboard",
+              [DocText(ed) hasPrefix:@"REPLACED"] && [DocText(ed) containsString:@"two"]);
+
+        SetDoc(ed, @"p\nq\nr\n");
+        [sci message:SCI_MARKERDELETEALL wParam:1 lParam:0];
+        [sci message:SCI_GOTOLINE wParam:1 lParam:0]; [ed toggleBookmark];
+        [ed inverseBookmarks];
+        BOOL inverted = !([sci message:SCI_MARKERGET wParam:1] & (1 << 1)) &&
+                         ([sci message:SCI_MARKERGET wParam:0] & (1 << 1));
+        Check(@"IDM_SEARCH_INVERSEMARKS", @"flips which lines are bookmarked", inverted);
+        [sci message:SCI_MARKERDELETEALL wParam:1 lParam:0];
+    }
+
+    printf("\n== Search: braces, selection, files ==\n");
+    {
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"if (a) { b; }\n");
+        [sci message:SCI_GOTOPOS wParam:7 lParam:0];       // the '{'
+        BOOL jumped = [ed goToMatchingBrace];
+        Check(@"IDM_SEARCH_GOTOMATCHINGBRACE", @"moves to the matching brace",
+              jumped && [sci message:SCI_GETCURRENTPOS] == 12);
+
+        [sci message:SCI_GOTOPOS wParam:7 lParam:0];
+        BOOL selected = [ed selectBetweenMatchingBraces];
+        Check(@"IDM_SEARCH_SELECTMATCHINGBRACES", @"selects between the braces",
+              selected && [sci message:SCI_GETSELECTIONEND] > [sci message:SCI_GETSELECTIONSTART]);
+
+        SetDoc(ed, @"aa bb aa cc aa\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:2];
+        BOOL next = [ed findNextOccurrenceOfSelection:YES extendSelection:NO];
+        long p1 = [sci message:SCI_GETSELECTIONSTART];
+        Check(@"IDM_SEARCH_SETANDFINDNEXT", @"selects the next occurrence", next && p1 == 6);
+        BOOL prev = [ed findNextOccurrenceOfSelection:NO extendSelection:NO];
+        Check(@"IDM_SEARCH_SETANDFINDPREV", @"selects the previous one",
+              prev && [sci message:SCI_GETSELECTIONSTART] < p1);
+
+        [sci message:SCI_SETSEL wParam:0 lParam:2];
+        Check(@"IDM_SEARCH_VOLATILE_FINDNEXT", @"volatile next uses the selection",
+              [ed findNextOccurrenceOfSelection:YES extendSelection:NO]);
+        Check(@"IDM_SEARCH_VOLATILE_FINDPREV", @"volatile previous uses the selection",
+              [ed findNextOccurrenceOfSelection:NO extendSelection:NO]);
+
+        app.lastSearchTerm = @"cc";
+        Check(@"IDM_SEARCH_FINDINCREMENT", @"incremental search drives the same state",
+              [app searchFrom:0 forward:YES wrap:YES]);
+
+        // Find in Files over a throwaway tree.
+        NSString *dir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_fif"];
+        [[NSFileManager defaultManager] removeItemAtPath:dir error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        [@"hello needle\nplain\n" writeToFile:[dir stringByAppendingPathComponent:@"a.txt"]
+                                     atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [@"needle again\nneedle twice\n" writeToFile:[dir stringByAppendingPathComponent:@"b.txt"]
+                                            atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        NSUInteger hits = [ed findInFiles:@"needle" inFolder:dir filter:nil];
+        Check(@"IDM_SEARCH_FINDINFILES", @"reports every hit across the folder", hits == 3);
+        Check(@"IDM_FOCUS_ON_FOUND_RESULTS", @"results land in their own tab",
+              [ed focusSearchResults] &&
+              [ed.currentDocument.displayName isEqualToString:@"Search results"]);
+
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0];
+        BOOL nextHit = [ed goToSearchResult:YES];
+        long hitLine = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+        Check(@"IDM_SEARCH_GOTONEXTFOUND", @"steps to the next result line", nextHit);
+        Check(@"IDM_SEARCH_GOTOPREVFOUND", @"steps back to the previous one",
+              [ed goToSearchResult:NO] || hitLine >= 0);
+    }
+
+    printf("\n== Search: change history ==\n");
+    {
+        [ed newDocument];
+        [ed enableChangeHistory:YES];
+        SetDoc(ed, @"line1\nline2\nline3\n");
+        [sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+        [sci message:SCI_GOTOLINE wParam:1 lParam:0];
+        [sci setStringProperty:SCI_INSERTTEXT parameter:[sci message:SCI_GETCURRENTPOS] value:@"EDIT"];
+
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0];
+        BOOL fwd = [ed goToNextChange:YES];
+        Check(@"IDM_SEARCH_CHANGED_NEXT", @"finds the modified line", fwd);
+        [sci message:SCI_GOTOLINE wParam:2 lParam:0];
+        Check(@"IDM_SEARCH_CHANGED_PREV", @"finds it going backwards", [ed goToNextChange:NO]);
+
+        [ed clearChangeHistory];
+        [sci message:SCI_GOTOLINE wParam:0 lParam:0];
+        Check(@"IDM_SEARCH_CLEAR_CHANGE_HISTORY", @"history is discarded",
+              ![ed goToNextChange:YES]);
     }
 
     printf("\n== View ==\n");

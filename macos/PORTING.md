@@ -49,6 +49,13 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   and date/time insertion.
 - Reload, Save a Copy As, Save All, Rename, Move to Trash, Print, and the whole
   Close All family including pinned tabs.
+- Token styling with five marker colours plus the Find Mark style: mark all or
+  one occurrence, jump between marks, copy styled text, clear.
+- Bookmark line operations: cut, copy, paste over, remove marked or unmarked,
+  inverse. Brace matching and selecting between braces.
+- Find in Files across a folder, with the results in their own tab and
+  next/previous result navigation.
+- Change History: jump to the next or previous modified line, clear.
 - Sessions: save and reopen the set of open files.
 - Folder as Workspace: a file tree beside the editor.
 
