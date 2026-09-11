@@ -909,6 +909,10 @@ static long SciColor(NSColor *c) {
         NppDocument *d = self.docs[i];
         NSString *label = d.modified ? [d.displayName stringByAppendingString:@" •"] : d.displayName;
         if (d.pinned) label = [@"📌 " stringByAppendingString:label];
+        if (d.tabColour > 0 && d.tabColour <= 5) {
+            NSArray *dots = @[@"🔴", @"🟠", @"🟡", @"🟢", @"🔵"];
+            label = [NSString stringWithFormat:@"%@ %@", dots[d.tabColour - 1], label];
+        }
         [self.tabBar setLabel:label forSegment:(NSInteger)i];
         [self.tabBar setWidth:0 forSegment:(NSInteger)i];
     }
@@ -936,6 +940,21 @@ static long SciColor(NSColor *c) {
     self.window.representedFilename = doc.path ?: @"";
     self.window.documentEdited = doc.modified;
 }
+
+- (void)setChromeVisible:(BOOL)visible {
+    self.tabBar.hidden = !visible;
+    self.statusField.hidden = !visible;
+    NSRect upper = self.split.frame;
+    CGFloat tabH = visible ? 28 : 0, statusH = visible ? 22 : 0;
+    self.split.frame = NSMakeRect(0, statusH, NSWidth(self.container.frame),
+                                  NSHeight(self.container.frame) - statusH);
+    self.sciView.frame = NSMakeRect(0, 0, NSWidth(self.editorArea.frame),
+                                    NSHeight(self.editorArea.frame) - tabH);
+    (void)upper;
+    [self.container setNeedsDisplay:YES];
+}
+
+- (BOOL)chromeVisible { return !self.tabBar.hidden; }
 
 #pragma mark - ScintillaNotificationProtocol
 

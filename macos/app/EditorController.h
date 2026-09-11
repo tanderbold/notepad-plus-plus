@@ -17,6 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL hasBOM;
 @property (nonatomic) int eolMode;                 // SC_EOL_CRLF / SC_EOL_LF / SC_EOL_CR
 @property (nonatomic) BOOL pinned;                 // survives Close All but Pinned
+@property (nonatomic) NSInteger tabColour;         // 0 = none, 1..5 as in Notepad++
 @end
 
 @interface EditorController : NSObject
@@ -90,6 +91,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)showAutoCompletion;
 - (void)applyTheme;                               // re-apply npp styles (e.g. on appearance change)
 - (void)refreshChrome;                            // tab titles + status bar
+- (void)setChromeVisible:(BOOL)visible;           // hides tab bar + status bar
+- (BOOL)chromeVisible;
 
 @end
 

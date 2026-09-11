@@ -2,6 +2,8 @@
 #import "EditorController.h"
 #import "EditCommands.h"
 #import "SearchCommands.h"
+#import "ViewCommands.h"
+#import "DocumentListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -12,6 +14,8 @@
 @property (nonatomic, strong) NSWindow *window;
 @property (nonatomic, strong) EditorController *editor;
 @property (nonatomic, copy) NSString *lastSearchTerm;
+@property (nonatomic, strong) DocumentListPanel *docList;
+@property (nonatomic) BOOL alwaysOnTop;
 @end
 
 @implementation AppDelegate
@@ -392,6 +396,98 @@
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:viewMenu];
     [self item:@"Fold Current Level" action:@selector(foldCurrent:) key:@"" flags:0 menu:viewMenu];
     [self item:@"Unfold Current Level" action:@selector(unfoldCurrent:) key:@"" flags:0 menu:viewMenu];
+
+    NSMenu *foldLevelMenu = [[NSMenu alloc] initWithTitle:@"Fold Level"];
+    NSMenu *unfoldLevelMenu = [[NSMenu alloc] initWithTitle:@"Unfold Level"];
+    for (NSInteger lvl = 1; lvl <= 8; ++lvl) {
+        NSMenuItem *f = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"%ld", (long)lvl]
+                                                   action:@selector(foldLevel:) keyEquivalent:@""];
+        f.target = self; f.tag = lvl; [foldLevelMenu addItem:f];
+        NSMenuItem *u = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"%ld", (long)lvl]
+                                                   action:@selector(unfoldLevel:) keyEquivalent:@""];
+        u.target = self; u.tag = lvl; [unfoldLevelMenu addItem:u];
+    }
+    [viewMenu addItemWithTitle:@"Fold Level" action:nil keyEquivalent:@""].submenu = foldLevelMenu;
+    [viewMenu addItemWithTitle:@"Unfold Level" action:nil keyEquivalent:@""].submenu = unfoldLevelMenu;
+
+    [viewMenu addItem:[NSMenuItem separatorItem]];
+    NSMenu *symbolMenu = [[NSMenu alloc] initWithTitle:@"Show Symbol"];
+    NSArray *symbolTitles = @[@"Show Space and Tab", @"Show End of Line",
+                              @"Show Non-Printing Characters", @"Show Control Characters & Unicode EOL",
+                              @"Show Indent Guide", @"Show Wrap Symbol"];
+    for (NSUInteger i = 0; i < symbolTitles.count; ++i) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:symbolTitles[i]
+                                                    action:@selector(toggleSymbol:) keyEquivalent:@""];
+        mi.target = self; mi.tag = (NSInteger)i;
+        [symbolMenu addItem:mi];
+    }
+    [viewMenu addItemWithTitle:@"Show Symbol" action:nil keyEquivalent:@""].submenu = symbolMenu;
+
+    [viewMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Hide Lines" action:@selector(hideLines:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Show All Hidden Lines" action:@selector(showHiddenLines:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Summary…" action:@selector(showSummary:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Monitoring (tail -f)" action:@selector(toggleMonitoring:) key:@"" flags:0 menu:viewMenu];
+
+    [viewMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Always on Top" action:@selector(toggleAlwaysOnTop:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Toggle Full Screen Mode" action:@selector(toggleFullScreenMode:) key:@"f"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagControl menu:viewMenu];
+    [self item:@"Post-It" action:@selector(togglePostIt:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Distraction Free Mode" action:@selector(toggleDistractionFree:) key:@"" flags:0 menu:viewMenu];
+
+    [viewMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Folder as Workspace" action:@selector(toggleFileBrowser:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Document List" action:@selector(toggleDocumentList:) key:@"" flags:0 menu:viewMenu];
+
+    [viewMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Text Direction RTL" action:@selector(textRTL:) key:@"" flags:0 menu:viewMenu];
+    [self item:@"Text Direction LTR" action:@selector(textLTR:) key:@"" flags:0 menu:viewMenu];
+
+    NSMenu *browserMenu = [[NSMenu alloc] initWithTitle:@"View Current File in"];
+    NSArray *browsers = @[@[@"Firefox", @"org.mozilla.firefox"],
+                          @[@"Chrome", @"com.google.Chrome"],
+                          @[@"Edge", @"com.microsoft.edgemac"],
+                          @[@"Safari", @"com.apple.Safari"]];
+    for (NSArray *b in browsers) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:b[0] action:@selector(viewInBrowser:) keyEquivalent:@""];
+        mi.target = self; mi.representedObject = b[1];
+        [browserMenu addItem:mi];
+    }
+    [viewMenu addItemWithTitle:@"View Current File in" action:nil keyEquivalent:@""].submenu = browserMenu;
+
+    // --- Tab navigation and colouring
+    NSMenu *tabMenu = [[NSMenu alloc] initWithTitle:@"Tab"];
+    for (NSInteger i = 1; i <= 9; ++i) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"%ldth Tab", (long)i]
+                                                    action:@selector(goToTabNumber:)
+                                             keyEquivalent:[NSString stringWithFormat:@"%ld", (long)i]];
+        mi.target = self; mi.tag = i;
+        mi.keyEquivalentModifierMask = NSEventModifierFlagCommand;
+        [tabMenu addItem:mi];
+    }
+    [tabMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"First Tab" action:@selector(firstTab:) key:@"" flags:0 menu:tabMenu];
+    [self item:@"Last Tab" action:@selector(lastTab:) key:@"" flags:0 menu:tabMenu];
+    [self item:@"Next Tab" action:@selector(nextTab:) key:@"" flags:0 menu:tabMenu];
+    [self item:@"Previous Tab" action:@selector(previousTab:) key:@"" flags:0 menu:tabMenu];
+    [self item:@"Move Tab Forward" action:@selector(moveTabForward:) key:@"" flags:0 menu:tabMenu];
+    [self item:@"Move Tab Backward" action:@selector(moveTabBackward:) key:@"" flags:0 menu:tabMenu];
+    [self item:@"Move to Start" action:@selector(moveTabToStart:) key:@"" flags:0 menu:tabMenu];
+    [self item:@"Move to End" action:@selector(moveTabToEnd:) key:@"" flags:0 menu:tabMenu];
+    [tabMenu addItem:[NSMenuItem separatorItem]];
+    for (NSInteger c = 1; c <= 5; ++c) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"Apply Color %ld", (long)c]
+                                                    action:@selector(applyTabColour:) keyEquivalent:@""];
+        mi.target = self; mi.tag = c;
+        [tabMenu addItem:mi];
+    }
+    NSMenuItem *noColour = [[NSMenuItem alloc] initWithTitle:@"Remove Color"
+                                                      action:@selector(applyTabColour:) keyEquivalent:@""];
+    noColour.target = self; noColour.tag = 0;
+    [tabMenu addItem:noColour];
+    [viewMenu addItemWithTitle:@"Tab" action:nil keyEquivalent:@""].submenu = tabMenu;
+
     viewItem.submenu = viewMenu;
 
     // ---- Encoding
@@ -687,6 +783,76 @@
 - (void)nextBookmark:(id)sender     { [self.editor nextBookmark]; }
 - (void)previousBookmark:(id)sender { [self.editor previousBookmark]; }
 - (void)clearBookmarks:(id)sender   { [self.editor clearBookmarks]; }
+
+#pragma mark - View: folds, symbols, window modes, tabs
+
+- (void)foldLevel:(NSMenuItem *)s   { [self.editor foldToLevel:s.tag]; }
+- (void)unfoldLevel:(NSMenuItem *)s { [self.editor unfoldToLevel:s.tag]; }
+- (void)toggleSymbol:(NSMenuItem *)s { [self.editor toggleSymbol:(NppSymbol)s.tag]; }
+
+- (void)hideLines:(id)sender        { [self.editor hideSelectedLines]; }
+- (void)showHiddenLines:(id)sender  { [self.editor showAllHiddenLines]; }
+
+- (void)showSummary:(id)sender {
+    NSDictionary *s = [self.editor documentSummary];
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"Summary";
+    alert.informativeText = [NSString stringWithFormat:
+        @"Characters: %@\nBytes: %@\nWords: %@\nLines: %@\nSelected bytes: %@",
+        s[@"characters"], s[@"bytes"], s[@"words"], s[@"lines"], s[@"selected"]];
+    [alert runModal];
+}
+
+- (void)toggleMonitoring:(id)sender {
+    [self.editor setMonitoring:![self.editor monitoringEnabled]];
+}
+
+- (void)toggleAlwaysOnTop:(id)sender {
+    self.alwaysOnTop = !self.alwaysOnTop;
+    self.window.level = self.alwaysOnTop ? NSFloatingWindowLevel : NSNormalWindowLevel;
+}
+
+- (void)toggleFullScreenMode:(id)sender { [self.window toggleFullScreen:nil]; }
+
+- (void)togglePostIt:(id)sender {
+    // Notepad++'s Post-It is a chrome-less always-on-top window.
+    BOOL entering = [self.editor chromeVisible];
+    [self.editor setChromeVisible:!entering];
+    self.window.level = entering ? NSFloatingWindowLevel : NSNormalWindowLevel;
+    self.alwaysOnTop = entering;
+}
+
+- (void)toggleDistractionFree:(id)sender {
+    [self.editor setChromeVisible:![self.editor chromeVisible]];
+}
+
+- (void)toggleFileBrowser:(id)sender {
+    if ([self.editor workspaceVisible]) { [self.editor openFolderAsWorkspace:nil]; return; }
+    NSURL *folder = [self.editor containingFolderURL];
+    if (folder) { [self.editor openFolderAsWorkspace:folder.path]; return; }
+    [self openFolderAsWorkspace:sender];
+}
+
+- (void)toggleDocumentList:(id)sender {
+    if (!self.docList) self.docList = [[DocumentListPanel alloc] initWithEditor:self.editor];
+    [self.docList toggle];
+}
+
+- (void)textRTL:(id)sender { [self.editor setTextDirectionRTL:YES]; }
+- (void)textLTR:(id)sender { [self.editor setTextDirectionRTL:NO]; }
+
+- (void)viewInBrowser:(NSMenuItem *)sender {
+    if (![self.editor openCurrentInBrowserBundleID:sender.representedObject]) NSBeep();
+}
+
+- (void)goToTabNumber:(NSMenuItem *)s { [self.editor selectTabNumber:s.tag]; }
+- (void)firstTab:(id)sender           { [self.editor goToFirstTab]; }
+- (void)lastTab:(id)sender            { [self.editor goToLastTab]; }
+- (void)moveTabForward:(id)sender     { [self.editor moveCurrentTab:YES]; }
+- (void)moveTabBackward:(id)sender    { [self.editor moveCurrentTab:NO]; }
+- (void)moveTabToStart:(id)sender     { [self.editor moveCurrentTabToEnd:NO]; }
+- (void)moveTabToEnd:(id)sender       { [self.editor moveCurrentTabToEnd:YES]; }
+- (void)applyTabColour:(NSMenuItem *)s { [self.editor setTabColour:s.tag]; }
 
 #pragma mark - Search: styles, braces, files
 

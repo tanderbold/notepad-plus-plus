@@ -21,6 +21,13 @@
 - (void)pasteText:(id)sender;
 - (void)selectAllText:(id)sender;
 - (void)duplicateLine:(id)sender;
+// Window / view modes
+@property (nonatomic, strong) NSWindow *window;
+- (void)toggleDistractionFree:(id)sender;
+- (void)togglePostIt:(id)sender;
+- (void)toggleAlwaysOnTop:(id)sender;
+- (void)toggleFileBrowser:(id)sender;
+- (void)toggleDocumentList:(id)sender;
 // View
 - (void)zoomIn:(id)sender;
 - (void)zoomOut:(id)sender;

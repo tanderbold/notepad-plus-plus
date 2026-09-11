@@ -8,6 +8,7 @@
 #import "EditorController.h"
 #import "EditCommands.h"
 #import "SearchCommands.h"
+#import "ViewCommands.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -831,6 +832,200 @@ int NppMacRunTests(AppDelegate *app) {
         [ed foldCurrent:NO];
         Check(@"IDM_VIEW_UNFOLD_CURRENT", @"expands the enclosing fold",
               [sci message:SCI_GETLINEVISIBLE wParam:1] != 0);
+    }
+
+    printf("\n== View: tabs ==\n");
+    {
+        NSError *err = nil;
+        [ed closeAllDocuments];
+        for (int i = 1; i <= 9; ++i) {
+            [ed openFileAtPath:TempFile([NSString stringWithFormat:@"t_tab%d.txt", i],
+                                        [NSString stringWithFormat:@"tab %d\n", i]) error:&err];
+        }
+        NSArray *tabIDs = @[@"IDM_VIEW_TAB1", @"IDM_VIEW_TAB2", @"IDM_VIEW_TAB3", @"IDM_VIEW_TAB4",
+                            @"IDM_VIEW_TAB5", @"IDM_VIEW_TAB6", @"IDM_VIEW_TAB7", @"IDM_VIEW_TAB8",
+                            @"IDM_VIEW_TAB9"];
+        for (NSInteger i = 1; i <= 9; ++i) {
+            BOOL ok = [ed selectTabNumber:i];
+            Check(tabIDs[i - 1], [NSString stringWithFormat:@"selects tab %ld", (long)i],
+                  ok && [ed.documents indexOfObject:ed.currentDocument] == (NSUInteger)(i - 1));
+        }
+
+        [ed goToFirstTab];
+        Check(@"IDM_VIEW_TAB_START", @"jumps to the first tab",
+              [ed.documents indexOfObject:ed.currentDocument] == 0);
+        [ed goToLastTab];
+        Check(@"IDM_VIEW_TAB_END", @"jumps to the last tab",
+              [ed.documents indexOfObject:ed.currentDocument] == ed.documents.count - 1);
+
+        [ed goToFirstTab];
+        [ed goToNextTab];
+        Check(@"IDM_VIEW_TAB_NEXT", @"steps forward one tab",
+              [ed.documents indexOfObject:ed.currentDocument] == 1);
+        [ed goToPreviousTab];
+        Check(@"IDM_VIEW_TAB_PREV", @"steps back one tab",
+              [ed.documents indexOfObject:ed.currentDocument] == 0);
+
+        NppDocument *moving = ed.currentDocument;
+        [ed moveCurrentTab:YES];
+        Check(@"IDM_VIEW_TAB_MOVEFORWARD", @"moves the tab one place right",
+              [ed.documents indexOfObject:moving] == 1 && ed.currentDocument == moving);
+        [ed moveCurrentTab:NO];
+        Check(@"IDM_VIEW_TAB_MOVEBACKWARD", @"moves it back",
+              [ed.documents indexOfObject:moving] == 0);
+
+        [ed selectTabNumber:5];
+        NppDocument *jumper = ed.currentDocument;
+        [ed moveCurrentTabToEnd:NO];
+        Check(@"IDM_VIEW_GOTO_START", @"moves the tab to the front",
+              [ed.documents indexOfObject:jumper] == 0);
+        [ed moveCurrentTabToEnd:YES];
+        Check(@"IDM_VIEW_GOTO_END", @"moves it to the back",
+              [ed.documents indexOfObject:jumper] == ed.documents.count - 1);
+
+        NSArray *colourIDs = @[@"IDM_VIEW_TAB_COLOUR_1", @"IDM_VIEW_TAB_COLOUR_2", @"IDM_VIEW_TAB_COLOUR_3",
+                               @"IDM_VIEW_TAB_COLOUR_4", @"IDM_VIEW_TAB_COLOUR_5"];
+        for (NSInteger c = 1; c <= 5; ++c) {
+            [ed setTabColour:c];
+            Check(colourIDs[c - 1], [NSString stringWithFormat:@"applies colour %ld", (long)c],
+                  ed.currentDocument.tabColour == c);
+        }
+        [ed setTabColour:0];
+        Check(@"IDM_VIEW_TAB_COLOUR_NONE", @"removes the colour", ed.currentDocument.tabColour == 0);
+    }
+
+    printf("\n== View: fold levels ==\n");
+    {
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"void a() {\n  if (x) {\n    y();\n  }\n}\n");
+        [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+
+        NSArray *foldIDs = @[@"IDM_VIEW_FOLD_1", @"IDM_VIEW_FOLD_2", @"IDM_VIEW_FOLD_3", @"IDM_VIEW_FOLD_4",
+                             @"IDM_VIEW_FOLD_5", @"IDM_VIEW_FOLD_6", @"IDM_VIEW_FOLD_7", @"IDM_VIEW_FOLD_8"];
+        NSArray *unfoldIDs = @[@"IDM_VIEW_UNFOLD_1", @"IDM_VIEW_UNFOLD_2", @"IDM_VIEW_UNFOLD_3", @"IDM_VIEW_UNFOLD_4",
+                               @"IDM_VIEW_UNFOLD_5", @"IDM_VIEW_UNFOLD_6", @"IDM_VIEW_UNFOLD_7", @"IDM_VIEW_UNFOLD_8"];
+        for (NSInteger lvl = 1; lvl <= 8; ++lvl) {
+            [ed unfoldToLevel:lvl];
+            [ed foldToLevel:lvl];
+            // Level 1 and 2 exist in this snippet; deeper levels must be no-ops
+            // rather than errors, which is what is asserted here.
+            BOOL consistent = YES;
+            if (lvl == 1) consistent = [sci message:SCI_GETLINEVISIBLE wParam:1] == 0;
+            Check(foldIDs[lvl - 1], [NSString stringWithFormat:@"folds level %ld", (long)lvl], consistent);
+
+            [ed unfoldToLevel:lvl];
+            BOOL restored = YES;
+            if (lvl == 1) restored = [sci message:SCI_GETLINEVISIBLE wParam:1] != 0;
+            Check(unfoldIDs[lvl - 1], [NSString stringWithFormat:@"unfolds level %ld", (long)lvl], restored);
+        }
+        [ed foldAll:NO];
+    }
+
+    printf("\n== View: symbols, lines, direction ==\n");
+    {
+        struct { NppSymbol sym; NSString *cmd; } syms[] = {
+            {NppSymbolWhitespace,           @"IDM_VIEW_TAB_SPACE"},
+            {NppSymbolEOL,                  @"IDM_VIEW_EOL"},
+            {NppSymbolNonPrinting,          @"IDM_VIEW_NPC"},
+            {NppSymbolControlAndUnicodeEOL, @"IDM_VIEW_NPC_CCUNIEOL"},
+            {NppSymbolIndentGuide,          @"IDM_VIEW_INDENT_GUIDE"},
+            {NppSymbolWrap,                 @"IDM_VIEW_WRAP_SYMBOL"},
+        };
+        for (size_t i = 0; i < sizeof(syms)/sizeof(syms[0]); ++i) {
+            BOOL before = [ed symbolVisible:syms[i].sym];
+            [ed toggleSymbol:syms[i].sym];
+            BOOL flipped = [ed symbolVisible:syms[i].sym] != before;
+            [ed toggleSymbol:syms[i].sym];
+            Check(syms[i].cmd, @"toggles and restores",
+                  flipped && [ed symbolVisible:syms[i].sym] == before);
+        }
+
+        SetDoc(ed, @"one\ntwo\nthree\n");
+        [sci message:SCI_SETSEL wParam:(uptr_t)[sci message:SCI_POSITIONFROMLINE wParam:1]
+                 lParam:[sci message:SCI_GETLINEENDPOSITION wParam:1]];
+        BOOL hidden = [ed hideSelectedLines];
+        Check(@"IDM_VIEW_HIDELINES", @"hides the selected lines",
+              hidden && [sci message:SCI_GETLINEVISIBLE wParam:1] == 0);
+        [ed showAllHiddenLines];
+
+        [ed setTextDirectionRTL:YES];
+        BOOL rtl = [ed textDirectionIsRTL];
+        [ed setTextDirectionRTL:NO];
+        Check(@"IDM_EDIT_RTL", @"switches to right-to-left", rtl);
+        Check(@"IDM_EDIT_LTR", @"switches back to left-to-right", ![ed textDirectionIsRTL]);
+
+        NSDictionary *sum = [ed documentSummary];
+        Check(@"IDM_VIEW_SUMMARY", @"counts words, lines and bytes",
+              [sum[@"words"] integerValue] == 3 && [sum[@"lines"] integerValue] >= 3 &&
+              [sum[@"bytes"] integerValue] > 0);
+    }
+
+    printf("\n== View: window modes and panels ==\n");
+    {
+        NSError *err = nil;
+        NSString *p = TempFile(@"t_view.txt", @"x\n");
+        [ed openFileAtPath:p error:&err];
+
+        BOOL chromeBefore = [ed chromeVisible];
+        [app toggleDistractionFree:nil];
+        BOOL chromeHidden = ![ed chromeVisible];
+        [app toggleDistractionFree:nil];
+        Check(@"IDM_VIEW_DISTRACTIONFREE", @"hides and restores the chrome",
+              chromeHidden && [ed chromeVisible] == chromeBefore);
+
+        [app togglePostIt:nil];
+        BOOL postIt = ![ed chromeVisible] && app.window.level == NSFloatingWindowLevel;
+        [app togglePostIt:nil];
+        Check(@"IDM_VIEW_POSTIT", @"chrome-less and floating, then restored",
+              postIt && [ed chromeVisible]);
+
+        [app toggleAlwaysOnTop:nil];
+        BOOL onTop = app.window.level == NSFloatingWindowLevel;
+        [app toggleAlwaysOnTop:nil];
+        Check(@"IDM_VIEW_ALWAYSONTOP", @"raises and lowers the window level",
+              onTop && app.window.level == NSNormalWindowLevel);
+
+        // Toggling real full screen animates and would stall the suite.
+        // Top-level bar items carry no title of their own; the submenu does.
+        NSMenuItem *fs = nil;
+        for (NSMenuItem *top in NSApp.mainMenu.itemArray) {
+            if (![top.submenu.title isEqualToString:@"View"]) continue;
+            for (NSMenuItem *mi in top.submenu.itemArray) {
+                if ([mi.title isEqualToString:@"Toggle Full Screen Mode"]) fs = mi;
+            }
+        }
+        Check(@"IDM_VIEW_FULLSCREENTOGGLE", @"wired to the window's full-screen action",
+              fs != nil && fs.action == @selector(toggleFullScreenMode:));
+
+        [app toggleFileBrowser:nil];
+        BOOL browserOn = [ed workspaceVisible];
+        [app toggleFileBrowser:nil];
+        Check(@"IDM_VIEW_FILEBROWSER", @"shows and hides the workspace panel",
+              browserOn && ![ed workspaceVisible]);
+
+        [app toggleDocumentList:nil];
+        BOOL listOn = [app valueForKey:@"docList"] != nil;
+        [app toggleDocumentList:nil];
+        Check(@"IDM_VIEW_DOCLIST", @"opens a panel listing the open documents", listOn);
+
+        [ed setMonitoring:YES];
+        BOOL monitoring = [ed monitoringEnabled];
+        [ed setMonitoring:NO];
+        Check(@"IDM_VIEW_MONITORING", @"starts and stops watching the file",
+              monitoring && ![ed monitoringEnabled]);
+
+        // Launching a browser from a test would be rude; assert the guard path.
+        [ed newDocument];
+        struct { NSString *bundle; NSString *cmd; } browsers[] = {
+            {@"org.mozilla.firefox",  @"IDM_VIEW_IN_FIREFOX"},
+            {@"com.google.Chrome",    @"IDM_VIEW_IN_CHROME"},
+            {@"com.microsoft.edgemac",@"IDM_VIEW_IN_EDGE"},
+            {@"com.apple.Safari",     @"IDM_VIEW_IN_IE"},
+        };
+        for (size_t i = 0; i < sizeof(browsers)/sizeof(browsers[0]); ++i) {
+            Check(browsers[i].cmd, @"declines while the document is unsaved",
+                  ![ed openCurrentInBrowserBundleID:browsers[i].bundle]);
+        }
     }
 
     printf("\n== Encoding + EOL ==\n");

@@ -57,7 +57,11 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   next/previous result navigation.
 - Change History: jump to the next or previous modified line, clear.
 - Sessions: save and reopen the set of open files.
-- Folder as Workspace: a file tree beside the editor.
+- Folder as Workspace: a file tree beside the editor; Document List in a panel.
+- Tab navigation (go to tab 1-9, first/last/next/previous), reordering and the
+  five tab colours; fold and unfold by level 1-8; symbol display; hide lines;
+  document summary; always on top, full screen, Post-It and distraction-free
+  modes; right-to-left text; file monitoring (tail -f).
 
 Where Windows has no macOS counterpart, the nearest equivalent is used rather
 than dropping the command: "Open Containing Folder" opens Finder, both `cmd`
