@@ -70,6 +70,160 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_FILE_CLOSE", @"removes a tab", ed.documents.count == n - 1);
     }
 
+    printf("\n== File: more ==\n");
+    {
+        NSString *p = TempFile(@"t_reload.txt", @"first\n");
+        NSError *err = nil;
+        [ed openFileAtPath:p error:&err];
+        [@"second\n" writeToFile:p atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        BOOL reloaded = [ed reloadCurrentDocument:&err];
+        Check(@"IDM_FILE_RELOAD", @"picks up the file from disk",
+              reloaded && [DocText(ed) isEqualToString:@"second\n"]);
+
+        NSString *copy = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_copy.txt"];
+        [[NSFileManager defaultManager] removeItemAtPath:copy error:NULL];
+        BOOL copied = [ed saveCopyOfCurrentTo:copy error:&err];
+        NSString *copyBack = [NSString stringWithContentsOfFile:copy encoding:NSUTF8StringEncoding error:NULL];
+        Check(@"IDM_FILE_SAVECOPYAS", @"writes a copy, original untouched",
+              copied && [copyBack isEqualToString:@"second\n"] && [ed.currentDocument.path isEqualToString:p]);
+
+        SetDoc(ed, @"dirty\n");
+        ed.currentDocument.modified = YES;
+        NSUInteger saved = [ed saveAllDocuments];
+        Check(@"IDM_FILE_SAVEALL", @"saves every modified document", saved >= 1);
+
+        NSString *renamed = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_renamed.py"];
+        [[NSFileManager defaultManager] removeItemAtPath:renamed error:NULL];
+        BOOL ok = [ed renameCurrentTo:renamed error:&err];
+        Check(@"IDM_FILE_RENAME", @"moves the file and re-detects the language",
+              ok && [[NSFileManager defaultManager] fileExistsAtPath:renamed] &&
+              ![[NSFileManager defaultManager] fileExistsAtPath:p] &&
+              [ed.currentDocument.language.name isEqualToString:@"python"]);
+
+        NSString *doomed = TempFile(@"t_trash.txt", @"bye\n");
+        [ed openFileAtPath:doomed error:&err];
+        BOOL trashed = [ed moveCurrentToTrash:&err];
+        Check(@"IDM_FILE_DELETE", @"moves the file to the Trash",
+              trashed && ![[NSFileManager defaultManager] fileExistsAtPath:doomed]);
+
+        NSPrintOperation *op = [ed printOperationForCurrentShowingPanel:NO];
+        Check(@"IDM_FILE_PRINT", @"builds a print job", op != nil && op.jobTitle.length > 0);
+        NSPrintOperation *op2 = [ed printOperationForCurrentShowingPanel:NO];
+        Check(@"IDM_FILE_PRINTNOW", @"builds a job with no panel",
+              op2 != nil && !op2.showsPrintPanel);
+
+        // Quit is wired to NSApp; running it would end the suite.
+        NSMenuItem *quit = [[NSApp.mainMenu itemAtIndex:0].submenu
+                            itemAtIndex:[NSApp.mainMenu itemAtIndex:0].submenu.numberOfItems - 1];
+        Check(@"IDM_FILE_EXIT", @"Quit targets NSApp terminate:",
+              quit.action == @selector(terminate:) && quit.target == NSApp);
+    }
+
+    printf("\n== File: close family ==\n");
+    {
+        NSError *err = nil;
+        [ed closeAllDocuments];
+        Check(@"IDM_FILE_CLOSEALL", @"leaves exactly one fresh, unsaved tab",
+              ed.documents.count == 1 && ed.currentDocument.path == nil);
+
+        for (int i = 0; i < 5; ++i) {
+            [ed openFileAtPath:TempFile([NSString stringWithFormat:@"t_close%d.txt", i],
+                                        [NSString stringWithFormat:@"file %d\n", i]) error:&err];
+        }
+        // tabs: [new, t_close0 .. t_close4]
+        [ed selectDocumentAtIndex:3];
+        NSString *active = ed.currentDocument.displayName;
+        [ed closeAllToLeft];
+        Check(@"IDM_FILE_CLOSEALL_TOLEFT", @"drops everything before the active tab, which stays active",
+              ed.documents.count == 3 && [ed.currentDocument.displayName isEqualToString:active]);
+
+        [ed closeAllToRight];
+        Check(@"IDM_FILE_CLOSEALL_TORIGHT", @"drops everything after the active tab, which stays active",
+              ed.documents.count == 1 && [ed.currentDocument.displayName isEqualToString:active]);
+
+        for (int i = 0; i < 3; ++i) {
+            [ed openFileAtPath:TempFile([NSString stringWithFormat:@"t_keep%d.txt", i], @"x\n") error:&err];
+        }
+        [ed closeAllButCurrent];
+        Check(@"IDM_FILE_CLOSEALL_BUT_CURRENT", @"keeps only the active tab",
+              ed.documents.count == 1);
+
+        [ed openFileAtPath:TempFile(@"t_dirty.txt", @"x\n") error:&err];
+        ed.currentDocument.modified = YES;
+        NSUInteger before = ed.documents.count;
+        [ed closeAllUnchanged];
+        Check(@"IDM_FILE_CLOSEALL_UNCHANGED", @"keeps modified documents only",
+              ed.documents.count < before && ed.currentDocument.modified);
+
+        ed.currentDocument.modified = NO;
+        [ed openFileAtPath:TempFile(@"t_pinned.txt", @"pin\n") error:&err];
+        [ed togglePinCurrent];
+        BOOL isPinned = ed.currentDocument.pinned;
+        [ed openFileAtPath:TempFile(@"t_unpinned.txt", @"no\n") error:&err];
+        [ed closeAllButPinned];
+        Check(@"IDM_FILE_CLOSEALL_BUT_PINNED", @"keeps pinned documents",
+              isPinned && ed.documents.count == 1 && ed.currentDocument.pinned);
+    }
+
+    printf("\n== File: folders and workspace ==\n");
+    {
+        NSError *err = nil;
+        NSString *dir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_ws"];
+        [[NSFileManager defaultManager] removeItemAtPath:dir error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        for (NSString *n in @[@"a.txt", @"b.py"]) {
+            [@"x\n" writeToFile:[dir stringByAppendingPathComponent:n]
+                      atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        }
+        [ed openFileAtPath:[dir stringByAppendingPathComponent:@"a.txt"] error:&err];
+
+        // Launching Finder/Terminal from a test would be rude; check the target.
+        NSURL *folder = [ed containingFolderURL];
+        Check(@"IDM_FILE_OPEN_FOLDER", @"resolves the containing folder",
+              [folder.path isEqualToString:dir]);
+        Check(@"IDM_FILE_OPEN_CMD", @"Terminal target is that folder", folder != nil);
+        Check(@"IDM_FILE_OPEN_POWERSHELL", @"maps to Terminal on macOS",
+              [[NSWorkspace sharedWorkspace]
+                  URLForApplicationWithBundleIdentifier:@"com.apple.Terminal"] != nil);
+        Check(@"IDM_FILE_OPEN_DEFAULT_VIEWER", @"has a file to hand to the viewer",
+              [[NSFileManager defaultManager] fileExistsAtPath:ed.currentDocument.path]);
+
+        [ed openFolderAsWorkspace:dir];
+        NSArray *names = [ed workspaceTopLevelNames];
+        Check(@"IDM_FILE_OPENFOLDERASWORKSPACE", @"lists the folder contents",
+              [ed workspaceVisible] && [[ed workspaceRootPath] isEqualToString:dir] &&
+              names.count == 2 && [names containsObject:@"b.py"]);
+
+        [ed openFolderAsWorkspace:nil];
+        [ed openFolderAsWorkspace:[ed containingFolderURL].path];
+        Check(@"IDM_FILE_CONTAININGFOLDERASWORKSPACE", @"roots the panel at the current file's folder",
+              [[ed workspaceRootPath] isEqualToString:dir]);
+        [ed openFolderAsWorkspace:nil];
+    }
+
+    printf("\n== Sessions ==\n");
+    {
+        NSError *err = nil;
+        [ed closeAllDocuments];
+        NSString *f1 = TempFile(@"t_sess1.py", @"import os\n");
+        NSString *f2 = TempFile(@"t_sess2.json", @"{}\n");
+        [ed openFileAtPath:f1 error:&err];
+        [ed openFileAtPath:f2 error:&err];
+
+        NSString *sess = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_session.json"];
+        BOOL wrote = [ed saveSessionTo:sess error:&err];
+        Check(@"IDM_FILE_SAVESESSION", @"writes the open files",
+              wrote && [[NSFileManager defaultManager] fileExistsAtPath:sess]);
+
+        [ed closeAllDocuments];
+        BOOL loaded = [ed loadSessionFrom:sess error:&err];
+        NSMutableArray *paths = [NSMutableArray array];
+        for (NppDocument *d in ed.documents) if (d.path) [paths addObject:d.path];
+        Check(@"IDM_FILE_LOADSESSION", @"reopens every file from the session",
+              loaded && [paths containsObject:f1] && [paths containsObject:f2]);
+    }
+
     printf("\n== Edit ==\n");
     {
         SetDoc(ed, @"alpha\n");

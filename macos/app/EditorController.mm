@@ -2,6 +2,7 @@
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
+#import "WorkspacePanel.h"
 #include "ILexer.h"
 #include "Lexilla.h"
 
@@ -11,7 +12,10 @@
 @implementation NppDocument
 @end
 
-@interface EditorController () <ScintillaNotificationProtocol>
+@interface EditorController () <ScintillaNotificationProtocol, WorkspacePanelDelegate>
+@property (nonatomic, strong) WorkspacePanel *workspace;
+@property (nonatomic, strong) NSSplitView *split;
+@property (nonatomic, strong) NSView *editorArea;
 @property (nonatomic, strong) ScintillaView *sciView;
 @property (nonatomic, strong) NSView *container;
 @property (nonatomic, strong) NSSegmentedControl *tabBar;
@@ -98,20 +102,35 @@ static long SciColor(NSColor *c) {
 
     CGFloat tabH = 28, statusH = 22;
 
+    NSRect upper = NSMakeRect(0, statusH, NSWidth(frame), NSHeight(frame) - statusH);
+
+    _editorArea = [[NSView alloc] initWithFrame:upper];
+    _editorArea.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+
     _tabBar = [[NSSegmentedControl alloc] initWithFrame:
-               NSMakeRect(0, NSHeight(frame) - tabH, NSWidth(frame), tabH)];
+               NSMakeRect(0, NSHeight(upper) - tabH, NSWidth(upper), tabH)];
     _tabBar.autoresizingMask = NSViewWidthSizable | NSViewMinYMargin;
     _tabBar.segmentStyle = NSSegmentStyleTexturedSquare;
     _tabBar.segmentCount = 0;
     _tabBar.target = self;
     _tabBar.action = @selector(tabClicked:);
-    [_container addSubview:_tabBar];
+    [_editorArea addSubview:_tabBar];
 
     _sciView = [[ScintillaView alloc] initWithFrame:
-                NSMakeRect(0, statusH, NSWidth(frame), NSHeight(frame) - tabH - statusH)];
+                NSMakeRect(0, 0, NSWidth(upper), NSHeight(upper) - tabH)];
     _sciView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
     _sciView.delegate = self;
-    [_container addSubview:_sciView];
+    [_editorArea addSubview:_sciView];
+
+    _workspace = [[WorkspacePanel alloc] initWithFrame:NSMakeRect(0, 0, 220, NSHeight(upper))];
+    _workspace.delegate = self;
+
+    _split = [[NSSplitView alloc] initWithFrame:upper];
+    _split.vertical = YES;
+    _split.dividerStyle = NSSplitViewDividerStyleThin;
+    _split.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    [_split addSubview:_editorArea];              // workspace is inserted when opened
+    [_container addSubview:_split];
 
     _statusField = [[NSTextField alloc] initWithFrame:NSMakeRect(6, 2, NSWidth(frame) - 12, statusH - 4)];
     _statusField.autoresizingMask = NSViewWidthSizable | NSViewMaxYMargin;
@@ -311,17 +330,295 @@ static long SciColor(NSColor *c) {
         if (r == NSAlertFirstButtonReturn && ![self saveCurrentDocument]) return;
     }
 
-    NSInteger idx = self.currentIndex;
-    [self.docs removeObjectAtIndex:idx];
+    [self closeDocumentAtIndex:self.currentIndex discardChanges:YES];
+}
+
+- (void)closeDocumentAtIndex:(NSInteger)index discardChanges:(BOOL)discard {
+    if (index < 0 || index >= (NSInteger)self.docs.count) return;
+    NppDocument *doc = self.docs[index];
+    if (!discard && doc.modified) return;
+
+    [self.docs removeObjectAtIndex:index];
 
     if (self.docs.count == 0) {
         self.currentIndex = -1;
         [self newDocument];                       // switches the view off the old doc
     } else {
-        [self selectDocumentAtIndex:MIN(idx, (NSInteger)self.docs.count - 1)];
+        [self selectDocumentAtIndex:MIN(index, (NSInteger)self.docs.count - 1)];
     }
     // Safe only once the view no longer points at it.
     [self.sciView message:SCI_RELEASEDOCUMENT wParam:0 lParam:(sptr_t)doc.docPointer];
+}
+
+#pragma mark - File commands
+
+- (BOOL)reloadCurrentDocument:(NSError **)error {
+    NppDocument *doc = self.currentDocument;
+    if (!doc.path) {
+        if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileNoSuchFileError
+                                            userInfo:@{NSLocalizedDescriptionKey: @"This document has never been saved."}];
+        return NO;
+    }
+    NSData *data = [NSData dataWithContentsOfFile:doc.path options:0 error:error];
+    if (!data) return NO;
+
+    NSStringEncoding enc = NSUTF8StringEncoding; BOOL bom = NO;
+    NSString *text = DecodeText(data, &enc, &bom);
+    if (!text) return NO;
+
+    long caret = [self.sciView message:SCI_GETCURRENTPOS];
+    [self.sciView setString:text];
+    doc.encoding = enc;
+    doc.hasBOM = bom;
+    doc.eolMode = DetectEOL(text);
+    [self.sciView message:SCI_SETEOLMODE wParam:(uptr_t)doc.eolMode lParam:0];
+    [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+    [self.sciView message:SCI_EMPTYUNDOBUFFER wParam:0 lParam:0];
+    [self.sciView message:SCI_GOTOPOS
+                   wParam:(uptr_t)MIN(caret, [self.sciView message:SCI_GETLENGTH]) lParam:0];
+    doc.modified = NO;
+    [self refreshChrome];
+    return YES;
+}
+
+- (BOOL)saveCopyOfCurrentTo:(NSString *)path error:(NSError **)error {
+    NppDocument *doc = self.currentDocument;
+    if (!doc) return NO;
+    NSData *data = EncodeText([self.sciView string] ?: @"", doc.encoding ?: NSUTF8StringEncoding, doc.hasBOM);
+    if (!data) return NO;
+    return [data writeToFile:path options:NSDataWritingAtomic error:error];
+}
+
+- (NSUInteger)saveAllDocuments {
+    NSInteger restore = self.currentIndex;
+    NSUInteger saved = 0;
+    for (NSInteger i = 0; i < (NSInteger)self.docs.count; ++i) {
+        NppDocument *d = self.docs[i];
+        if (!d.path || !d.modified) continue;      // Save As prompts; skip unsaved ones
+        [self selectDocumentAtIndex:i];
+        if ([self writeCurrentToPath:d.path]) saved++;
+    }
+    [self selectDocumentAtIndex:restore];
+    return saved;
+}
+
+- (BOOL)renameCurrentTo:(NSString *)newPath error:(NSError **)error {
+    NppDocument *doc = self.currentDocument;
+    if (!doc.path) return [self saveCopyOfCurrentTo:newPath error:error] &&
+                           ({ doc.path = newPath; doc.displayName = newPath.lastPathComponent; YES; });
+    if (![[NSFileManager defaultManager] moveItemAtPath:doc.path toPath:newPath error:error]) return NO;
+    doc.path = newPath;
+    doc.displayName = newPath.lastPathComponent;
+    doc.language = [[LanguageCatalog sharedCatalog] languageForFileName:newPath];
+    [self applyLanguage];
+    [self refreshChrome];
+    return YES;
+}
+
+/// macOS equivalent of Notepad++'s "Move to Recycle Bin".
+- (BOOL)moveCurrentToTrash:(NSError **)error {
+    NppDocument *doc = self.currentDocument;
+    if (!doc.path) {
+        if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileNoSuchFileError
+                                            userInfo:@{NSLocalizedDescriptionKey: @"This document has never been saved."}];
+        return NO;
+    }
+    if (![[NSFileManager defaultManager] trashItemAtURL:[NSURL fileURLWithPath:doc.path]
+                                       resultingItemURL:nil error:error]) return NO;
+    [self closeDocumentAtIndex:self.currentIndex discardChanges:YES];
+    return YES;
+}
+
+- (void)closeAllDocuments {
+    while (self.docs.count > 1) [self closeDocumentAtIndex:0 discardChanges:YES];
+    [self closeDocumentAtIndex:0 discardChanges:YES];   // last one is replaced by a fresh tab
+}
+
+- (void)closeAllButCurrent {
+    NppDocument *keep = self.currentDocument;
+    for (NSInteger i = (NSInteger)self.docs.count - 1; i >= 0; --i) {
+        if (self.docs[i] != keep) [self closeDocumentAtIndex:i discardChanges:YES];
+    }
+    [self reselectDocument:keep];
+}
+
+- (void)closeAllToLeft {
+    NppDocument *keep = self.currentDocument;
+    for (NSInteger i = self.currentIndex - 1; i >= 0; --i) {
+        [self closeDocumentAtIndex:i discardChanges:YES];
+    }
+    [self reselectDocument:keep];
+}
+
+- (void)closeAllToRight {
+    NppDocument *keep = self.currentDocument;
+    // closeDocumentAtIndex: moves currentIndex, so the bound is captured first.
+    NSInteger from = self.currentIndex;
+    for (NSInteger i = (NSInteger)self.docs.count - 1; i > from; --i) {
+        [self closeDocumentAtIndex:i discardChanges:YES];
+    }
+    [self reselectDocument:keep];
+}
+
+/// closeDocumentAtIndex: re-selects a tab as a side effect, so the document the
+/// caller meant to keep has to be put back in front afterwards.
+- (void)reselectDocument:(NppDocument *)doc {
+    NSUInteger idx = [self.docs indexOfObject:doc];
+    if (idx != NSNotFound) [self selectDocumentAtIndex:(NSInteger)idx];
+}
+
+- (void)closeAllButPinned {
+    for (NSInteger i = (NSInteger)self.docs.count - 1; i >= 0; --i) {
+        if (!self.docs[i].pinned) [self closeDocumentAtIndex:i discardChanges:YES];
+    }
+}
+
+- (void)togglePinCurrent {
+    NppDocument *doc = self.currentDocument;
+    if (!doc) return;
+    doc.pinned = !doc.pinned;
+    [self refreshChrome];
+}
+
+- (void)closeAllUnchanged {
+    for (NSInteger i = (NSInteger)self.docs.count - 1; i >= 0; --i) {
+        if (!self.docs[i].modified) [self closeDocumentAtIndex:i discardChanges:NO];
+    }
+}
+
+- (NSPrintOperation *)printOperationForCurrentShowingPanel:(BOOL)showPanel {
+    NppDocument *doc = self.currentDocument;
+    if (!doc) return nil;
+    NSTextView *page = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, 540, 720)];
+    page.string = [self.sciView string] ?: @"";
+    page.font = [NSFont fontWithName:@"Menlo" size:10] ?: [NSFont userFixedPitchFontOfSize:10];
+
+    NSPrintInfo *info = [NSPrintInfo sharedPrintInfo];
+    info.horizontalPagination = NSPrintingPaginationModeFit;
+    NSPrintOperation *op = [NSPrintOperation printOperationWithView:page printInfo:info];
+    op.showsPrintPanel = showPanel;
+    op.showsProgressPanel = showPanel;
+    op.jobTitle = doc.displayName;
+    return op;
+}
+
+- (BOOL)printCurrentShowingPanel:(BOOL)showPanel {
+    NSPrintOperation *op = [self printOperationForCurrentShowingPanel:showPanel];
+    return op ? [op runOperation] : NO;
+}
+
+#pragma mark - Folder as Workspace
+
+- (void)openFolderAsWorkspace:(NSString *)path {
+    if (!path.length) {
+        if (self.workspace.view.superview) [self.workspace.view removeFromSuperview];
+        [self.workspace setRootPath:nil];
+        [self.split adjustSubviews];
+        return;
+    }
+    [self.workspace setRootPath:path];
+    if (!self.workspace.view.superview) {
+        [self.split addSubview:self.workspace.view positioned:NSWindowBelow relativeTo:self.editorArea];
+        [self.split setPosition:220 ofDividerAtIndex:0];
+    }
+    [self.split adjustSubviews];
+}
+
+- (BOOL)workspaceVisible { return self.workspace.view.superview != nil; }
+- (NSString *)workspaceRootPath { return self.workspace.rootPath; }
+- (NSArray<NSString *> *)workspaceTopLevelNames { return [self.workspace topLevelNames]; }
+
+- (void)workspaceDidActivateFile:(NSString *)path {
+    NSError *err = nil;
+    if (![self openFileAtPath:path error:&err] && err) [[NSAlert alertWithError:err] runModal];
+}
+
+#pragma mark - Open Containing Folder
+
+- (NSURL *)containingFolderURL {
+    NSString *path = self.currentDocument.path;
+    if (!path.length) return nil;
+    return [NSURL fileURLWithPath:path.stringByDeletingLastPathComponent isDirectory:YES];
+}
+
+- (BOOL)revealInFinder {
+    NSString *path = self.currentDocument.path;
+    if (!path.length) return NO;
+    [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:path]]];
+    return YES;
+}
+
+/// Notepad++ offers "cmd" and "PowerShell" here; on macOS both mean Terminal.
+- (BOOL)openContainingFolderInTerminal {
+    NSURL *folder = self.containingFolderURL;
+    if (!folder) return NO;
+    NSURL *terminal = [[NSWorkspace sharedWorkspace]
+        URLForApplicationWithBundleIdentifier:@"com.apple.Terminal"];
+    if (!terminal) return NO;
+    [[NSWorkspace sharedWorkspace] openURLs:@[folder]
+                       withApplicationAtURL:terminal
+                              configuration:[NSWorkspaceOpenConfiguration configuration]
+                          completionHandler:nil];
+    return YES;
+}
+
+- (BOOL)openInDefaultViewer {
+    NSString *path = self.currentDocument.path;
+    if (!path.length) return NO;
+    return [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:path]];
+}
+
+#pragma mark - Sessions
+
+- (NSString *)defaultSessionPath {
+    NSString *dir = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject
+                     stringByAppendingPathComponent:@"NotepadMac"];
+    [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES
+                                               attributes:nil error:NULL];
+    return [dir stringByAppendingPathComponent:@"session.json"];
+}
+
+- (BOOL)saveSessionTo:(NSString *)path error:(NSError **)error {
+    NSMutableArray *files = [NSMutableArray array];
+    for (NppDocument *d in self.docs) {
+        if (!d.path) continue;                      // unsaved tabs have nothing to restore
+        [files addObject:@{@"path": d.path,
+                           @"language": d.language.name ?: @"normal"}];
+    }
+    NSDictionary *session = @{@"version": @1,
+                              @"current": @(MAX(0, self.currentIndex)),
+                              @"files": files};
+    NSData *json = [NSJSONSerialization dataWithJSONObject:session
+                                                   options:NSJSONWritingPrettyPrinted error:error];
+    if (!json) return NO;
+    return [json writeToFile:path options:NSDataWritingAtomic error:error];
+}
+
+- (BOOL)loadSessionFrom:(NSString *)path error:(NSError **)error {
+    NSData *json = [NSData dataWithContentsOfFile:path options:0 error:error];
+    if (!json) return NO;
+    NSDictionary *session = [NSJSONSerialization JSONObjectWithData:json options:0 error:error];
+    if (![session isKindOfClass:[NSDictionary class]]) return NO;
+
+    NSArray *files = session[@"files"];
+    if (![files isKindOfClass:[NSArray class]]) return NO;
+
+    NSUInteger opened = 0;
+    for (NSDictionary *f in files) {
+        NSString *p = f[@"path"];
+        if (![p isKindOfClass:[NSString class]]) continue;
+        if (![[NSFileManager defaultManager] fileExistsAtPath:p]) continue;   // deleted since
+        if ([self openFileAtPath:p error:NULL]) {
+            opened++;
+            NSString *lang = f[@"language"];
+            if ([lang isKindOfClass:[NSString class]] && lang.length) [self setLanguageNamed:lang];
+        }
+    }
+    NSNumber *cur = session[@"current"];
+    if ([cur isKindOfClass:[NSNumber class]]) {
+        [self selectDocumentAtIndex:MIN(cur.integerValue, (NSInteger)self.docs.count - 1)];
+    }
+    return opened > 0 || files.count == 0;
 }
 
 #pragma mark - Language + theme
@@ -597,6 +894,7 @@ static long SciColor(NSColor *c) {
     for (NSUInteger i = 0; i < self.docs.count; ++i) {
         NppDocument *d = self.docs[i];
         NSString *label = d.modified ? [d.displayName stringByAppendingString:@" •"] : d.displayName;
+        if (d.pinned) label = [@"📌 " stringByAppendingString:label];
         [self.tabBar setLabel:label forSegment:(NSInteger)i];
         [self.tabBar setWidth:0 forSegment:(NSInteger)i];
     }

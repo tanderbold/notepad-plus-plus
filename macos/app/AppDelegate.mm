@@ -100,6 +100,17 @@
     [self item:@"New"      action:@selector(newDocument:) key:@"n" flags:NSEventModifierFlagCommand menu:fileMenu];
     [self item:@"Open…"    action:@selector(openDocument:) key:@"o" flags:NSEventModifierFlagCommand menu:fileMenu];
 
+    NSMenu *revealMenu = [[NSMenu alloc] initWithTitle:@"Open Containing Folder"];
+    [self item:@"Finder" action:@selector(revealInFinder:) key:@"" flags:0 menu:revealMenu];
+    [self item:@"Terminal" action:@selector(openInTerminal:) key:@"" flags:0 menu:revealMenu];
+    [self item:@"Folder as Workspace" action:@selector(containingFolderAsWorkspace:) key:@"" flags:0 menu:revealMenu];
+    NSMenuItem *revealItem = [fileMenu addItemWithTitle:@"Open Containing Folder" action:nil keyEquivalent:@""];
+    revealItem.submenu = revealMenu;
+    [self item:@"Open in Default Viewer" action:@selector(openInDefaultViewer:) key:@"" flags:0 menu:fileMenu];
+    [self item:@"Open Folder as Workspace…" action:@selector(openFolderAsWorkspace:) key:@"" flags:0 menu:fileMenu];
+    [self item:@"Pin Tab" action:@selector(togglePin:) key:@"" flags:0 menu:fileMenu];
+    [self item:@"Reload from Disk" action:@selector(reloadDocument:) key:@"r" flags:NSEventModifierFlagCommand menu:fileMenu];
+
     NSMenuItem *recentItem = [fileMenu addItemWithTitle:@"Open Recent" action:nil keyEquivalent:@""];
     NSMenu *recentMenu = [[NSMenu alloc] initWithTitle:@"Open Recent"];
     [recentMenu addItemWithTitle:@"Clear Menu" action:@selector(clearRecentDocuments:) keyEquivalent:@""];
@@ -109,8 +120,32 @@
     [self item:@"Save"     action:@selector(saveDocument:) key:@"s" flags:NSEventModifierFlagCommand menu:fileMenu];
     [self item:@"Save As…" action:@selector(saveDocumentAs:) key:@"s"
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:fileMenu];
+    [self item:@"Save a Copy As…" action:@selector(saveCopyAs:) key:@"" flags:0 menu:fileMenu];
+    [self item:@"Save All" action:@selector(saveAll:) key:@"s"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:fileMenu];
+    [self item:@"Rename…" action:@selector(renameDocument:) key:@"" flags:0 menu:fileMenu];
     [fileMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Close Tab" action:@selector(closeTab:) key:@"w" flags:NSEventModifierFlagCommand menu:fileMenu];
+    [self item:@"Close All" action:@selector(closeAll:) key:@"w"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:fileMenu];
+
+    NSMenu *closeMulti = [[NSMenu alloc] initWithTitle:@"Close Multiple Documents"];
+    [self item:@"Close All but Active Document" action:@selector(closeAllButCurrent:) key:@"" flags:0 menu:closeMulti];
+    [self item:@"Close All to the Left" action:@selector(closeAllToLeft:) key:@"" flags:0 menu:closeMulti];
+    [self item:@"Close All to the Right" action:@selector(closeAllToRight:) key:@"" flags:0 menu:closeMulti];
+    [self item:@"Close All Unchanged" action:@selector(closeAllUnchanged:) key:@"" flags:0 menu:closeMulti];
+    [self item:@"Close All but Pinned Documents" action:@selector(closeAllButPinned:) key:@"" flags:0 menu:closeMulti];
+    NSMenuItem *closeMultiItem = [fileMenu addItemWithTitle:@"Close Multiple Documents" action:nil keyEquivalent:@""];
+    closeMultiItem.submenu = closeMulti;
+
+    [self item:@"Move to Trash" action:@selector(moveToTrash:) key:@"" flags:0 menu:fileMenu];
+    [fileMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Load Session…" action:@selector(loadSession:) key:@"" flags:0 menu:fileMenu];
+    [self item:@"Save Session…" action:@selector(saveSession:) key:@"" flags:0 menu:fileMenu];
+    [fileMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Print…" action:@selector(printDocument:) key:@"p" flags:NSEventModifierFlagCommand menu:fileMenu];
+    [self item:@"Print Now" action:@selector(printNow:) key:@"p"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:fileMenu];
     fileItem.submenu = fileMenu;
 
     // ---- Edit
@@ -286,6 +321,97 @@
 
 - (void)clearRecentDocuments:(id)sender {
     [[NSDocumentController sharedDocumentController] clearRecentDocuments:sender];
+}
+
+- (void)revealInFinder:(id)sender      { if (![self.editor revealInFinder]) NSBeep(); }
+- (void)openInTerminal:(id)sender      { if (![self.editor openContainingFolderInTerminal]) NSBeep(); }
+- (void)openInDefaultViewer:(id)sender { if (![self.editor openInDefaultViewer]) NSBeep(); }
+
+- (void)reloadDocument:(id)sender {
+    NSError *err = nil;
+    if (![self.editor reloadCurrentDocument:&err] && err) [[NSAlert alertWithError:err] runModal];
+}
+
+- (void)saveCopyAs:(id)sender {
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.nameFieldStringValue = self.editor.currentDocument.displayName;
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    NSError *err = nil;
+    if (![self.editor saveCopyOfCurrentTo:panel.URL.path error:&err] && err) {
+        [[NSAlert alertWithError:err] runModal];
+    }
+}
+
+- (void)saveAll:(id)sender { [self.editor saveAllDocuments]; }
+
+- (void)renameDocument:(id)sender {
+    NSString *current = self.editor.currentDocument.path;
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.title = @"Rename";
+    panel.nameFieldStringValue = self.editor.currentDocument.displayName;
+    if (current) panel.directoryURL = [NSURL fileURLWithPath:current.stringByDeletingLastPathComponent];
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    NSError *err = nil;
+    if (![self.editor renameCurrentTo:panel.URL.path error:&err] && err) {
+        [[NSAlert alertWithError:err] runModal];
+    }
+}
+
+- (void)closeAll:(id)sender           { [self.editor closeAllDocuments]; }
+- (void)closeAllButCurrent:(id)sender { [self.editor closeAllButCurrent]; }
+- (void)closeAllToLeft:(id)sender     { [self.editor closeAllToLeft]; }
+- (void)closeAllToRight:(id)sender    { [self.editor closeAllToRight]; }
+- (void)closeAllUnchanged:(id)sender  { [self.editor closeAllUnchanged]; }
+- (void)closeAllButPinned:(id)sender  { [self.editor closeAllButPinned]; }
+- (void)togglePin:(id)sender          { [self.editor togglePinCurrent]; }
+
+- (void)openFolderAsWorkspace:(id)sender {
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseDirectories = YES;
+    panel.canChooseFiles = NO;
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    [self.editor openFolderAsWorkspace:panel.URL.path];
+}
+
+- (void)containingFolderAsWorkspace:(id)sender {
+    NSURL *folder = [self.editor containingFolderURL];
+    if (!folder) { NSBeep(); return; }
+    [self.editor openFolderAsWorkspace:folder.path];
+}
+
+- (void)moveToTrash:(id)sender {
+    NppDocument *doc = self.editor.currentDocument;
+    if (!doc.path) { NSBeep(); return; }
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = [NSString stringWithFormat:@"Move %@ to the Trash?", doc.displayName];
+    [alert addButtonWithTitle:@"Move to Trash"];
+    [alert addButtonWithTitle:@"Cancel"];
+    if ([alert runModal] != NSAlertFirstButtonReturn) return;
+    NSError *err = nil;
+    if (![self.editor moveCurrentToTrash:&err] && err) [[NSAlert alertWithError:err] runModal];
+}
+
+- (void)printDocument:(id)sender { [self.editor printCurrentShowingPanel:YES]; }
+- (void)printNow:(id)sender      { [self.editor printCurrentShowingPanel:NO]; }
+
+- (void)loadSession:(id)sender {
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.allowedFileTypes = @[@"json"];
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    NSError *err = nil;
+    if (![self.editor loadSessionFrom:panel.URL.path error:&err] && err) {
+        [[NSAlert alertWithError:err] runModal];
+    }
+}
+
+- (void)saveSession:(id)sender {
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.nameFieldStringValue = @"session.json";
+    if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
+    NSError *err = nil;
+    if (![self.editor saveSessionTo:panel.URL.path error:&err] && err) {
+        [[NSAlert alertWithError:err] runModal];
+    }
 }
 
 #pragma mark - Edit actions (routed straight to Scintilla)

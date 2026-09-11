@@ -16,6 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSStringEncoding encoding;   // encoding the file was read with / will be written with
 @property (nonatomic) BOOL hasBOM;
 @property (nonatomic) int eolMode;                 // SC_EOL_CRLF / SC_EOL_LF / SC_EOL_CR
+@property (nonatomic) BOOL pinned;                 // survives Close All but Pinned
 @end
 
 @interface EditorController : NSObject
@@ -32,6 +33,43 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)saveCurrentDocument;          // prompts if unsaved
 - (BOOL)saveCurrentDocumentAs;
 - (void)closeCurrentDocument;
+/// Non-interactive close used by the Close All family and by tests.
+- (void)closeDocumentAtIndex:(NSInteger)index discardChanges:(BOOL)discard;
+
+// File commands
+- (BOOL)reloadCurrentDocument:(NSError **)error;
+- (BOOL)saveCopyOfCurrentTo:(NSString *)path error:(NSError **)error;
+- (NSUInteger)saveAllDocuments;
+- (BOOL)renameCurrentTo:(NSString *)newPath error:(NSError **)error;
+- (BOOL)moveCurrentToTrash:(NSError **)error;
+- (void)closeAllDocuments;
+- (void)closeAllButCurrent;
+- (void)closeAllToLeft;
+- (void)closeAllToRight;
+- (void)closeAllUnchanged;
+- (void)closeAllButPinned;
+- (void)togglePinCurrent;
+- (BOOL)printCurrentShowingPanel:(BOOL)showPanel;
+/// The print job, built but not run -- lets tests check it without printing.
+- (nullable NSPrintOperation *)printOperationForCurrentShowingPanel:(BOOL)showPanel;
+
+// "Open Containing Folder" family. The target is resolved separately from the
+// launch so tests can check it without opening Finder or Terminal.
+- (nullable NSURL *)containingFolderURL;
+- (BOOL)revealInFinder;
+- (BOOL)openContainingFolderInTerminal;   // macOS stand-in for both cmd and PowerShell
+- (BOOL)openInDefaultViewer;
+
+// Folder as Workspace
+- (void)openFolderAsWorkspace:(nullable NSString *)path;   // nil hides the panel
+- (BOOL)workspaceVisible;
+- (nullable NSString *)workspaceRootPath;
+- (NSArray<NSString *> *)workspaceTopLevelNames;
+
+// Sessions
+- (BOOL)saveSessionTo:(NSString *)path error:(NSError **)error;
+- (BOOL)loadSessionFrom:(NSString *)path error:(NSError **)error;
+- (NSString *)defaultSessionPath;
 - (void)selectDocumentAtIndex:(NSInteger)index;
 
 - (void)setLanguageNamed:(NSString *)langName;   // manual override

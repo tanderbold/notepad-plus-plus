@@ -39,7 +39,18 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   all, go to line, zoom, word wrap, show whitespace, a Language menu listing all
   95 languages, and tab switching.
 - Line numbers, current-line highlight, indentation guides, multiple selections,
-  a status bar with path, line/column, size and detected language.
+  a status bar with path, line/column, size, language, encoding and EOL.
+- Encodings (UTF-8, UTF-8-BOM, UTF-16 LE/BE, ANSI) sniffed on open and applied
+  on save; EOL conversion between CRLF, LF and CR.
+- Comment toggling, bookmarks, code folding, word completion.
+- Reload, Save a Copy As, Save All, Rename, Move to Trash, Print, and the whole
+  Close All family including pinned tabs.
+- Sessions: save and reopen the set of open files.
+- Folder as Workspace: a file tree beside the editor.
+
+Where Windows has no macOS counterpart, the nearest equivalent is used rather
+than dropping the command: "Open Containing Folder" opens Finder, both `cmd`
+and PowerShell map to Terminal, and "Move to Recycle Bin" moves to the Trash.
 
 ### Reusing Notepad++'s own data rather than reinventing it
 
