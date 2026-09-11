@@ -85,6 +85,54 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL rememberPanelState;
 @property (nonatomic, copy) NSDictionary *panelState;
 
+/// Auto-completion.
+@property (nonatomic) BOOL autoCompleteOnInput;
+@property (nonatomic) NSInteger autoCompleteSource;      // 0 functions, 1 words, 2 both
+@property (nonatomic) NSInteger autoCompleteThreshold;   // characters before it opens
+@property (nonatomic) BOOL autoCompleteBriefList;
+@property (nonatomic) BOOL autoCompleteIgnoreNumbers;
+@property (nonatomic) BOOL autoCompleteUseTab;           // NO means Enter accepts
+@property (nonatomic) BOOL functionHintOnInput;
+@property (nonatomic) BOOL autoInsertParenthesis;
+@property (nonatomic) BOOL autoInsertBracket;
+@property (nonatomic) BOOL autoInsertBrace;
+@property (nonatomic) BOOL autoInsertSingleQuote;
+@property (nonatomic) BOOL autoInsertDoubleQuote;
+@property (nonatomic) BOOL autoInsertCloseTag;
+
+/// New documents.
+@property (nonatomic, copy) NSString *defaultLanguage;
+@property (nonatomic) BOOL openNewDocumentAtStartup;
+@property (nonatomic) BOOL untitledFromFirstLine;
+
+/// Tab bar.
+@property (nonatomic) BOOL hideTabBar;
+@property (nonatomic) BOOL tabDoubleClickCloses;
+@property (nonatomic) BOOL exitOnClosingLastTab;
+@property (nonatomic) BOOL tabShowCloseButton;
+@property (nonatomic) BOOL tabPinFeatureEnabled;
+
+/// Recent files.
+@property (nonatomic, copy) NSArray<NSString *> *recentFiles;
+@property (nonatomic) NSInteger recentFilesMax;
+@property (nonatomic) BOOL recentFilesShowFullPath;
+@property (nonatomic) NSInteger recentFilesMaxLength;
+
+/// Default directory. 0 follow the document, 1 remember the last, 2 a fixed one.
+@property (nonatomic) NSInteger defaultDirectoryMode;
+@property (nonatomic, copy) NSString *lastUsedDirectory;
+@property (nonatomic, copy) NSString *fixedDirectory;
+
+/// Searching.
+@property (nonatomic) BOOL findFillWithSelection;
+@property (nonatomic) BOOL findSelectWordUnderCaret;
+@property (nonatomic) BOOL replaceStaysOnOccurrence;
+@property (nonatomic) BOOL confirmReplaceAll;
+
+/// Smart highlighting refinements.
+@property (nonatomic) BOOL smartHighlightMatchCase;
+@property (nonatomic) BOOL smartHighlightWholeWord;
+
 /// Settings folder ("cloud location"); empty means the default support folder.
 @property (nonatomic, copy) NSString *settingsDirectory;
 

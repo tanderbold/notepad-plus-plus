@@ -78,6 +78,40 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"rememberPanelState"): @NO,
         Key(@"panelState"): @{},
         Key(@"settingsDirectory"): @"",
+        Key(@"autoCompleteOnInput"): @NO,
+        Key(@"autoCompleteSource"): @2,
+        Key(@"autoCompleteThreshold"): @3,
+        Key(@"autoCompleteBriefList"): @NO,
+        Key(@"autoCompleteIgnoreNumbers"): @YES,
+        Key(@"autoCompleteUseTab"): @YES,
+        Key(@"functionHintOnInput"): @NO,
+        Key(@"autoInsertParenthesis"): @NO,
+        Key(@"autoInsertBracket"): @NO,
+        Key(@"autoInsertBrace"): @NO,
+        Key(@"autoInsertSingleQuote"): @NO,
+        Key(@"autoInsertDoubleQuote"): @NO,
+        Key(@"autoInsertCloseTag"): @NO,
+        Key(@"defaultLanguage"): @"",
+        Key(@"openNewDocumentAtStartup"): @YES,
+        Key(@"untitledFromFirstLine"): @NO,
+        Key(@"hideTabBar"): @NO,
+        Key(@"tabDoubleClickCloses"): @NO,
+        Key(@"exitOnClosingLastTab"): @NO,
+        Key(@"tabShowCloseButton"): @NO,
+        Key(@"tabPinFeatureEnabled"): @YES,
+        Key(@"recentFiles"): @[],
+        Key(@"recentFilesMax"): @10,
+        Key(@"recentFilesShowFullPath"): @NO,
+        Key(@"recentFilesMaxLength"): @60,
+        Key(@"defaultDirectoryMode"): @0,
+        Key(@"lastUsedDirectory"): @"",
+        Key(@"fixedDirectory"): @"",
+        Key(@"findFillWithSelection"): @YES,
+        Key(@"findSelectWordUnderCaret"): @YES,
+        Key(@"replaceStaysOnOccurrence"): @NO,
+        Key(@"confirmReplaceAll"): @YES,
+        Key(@"smartHighlightMatchCase"): @NO,
+        Key(@"smartHighlightWholeWord"): @NO,
         Key(@"lightThemeName"):  @"Default",
         Key(@"darkThemeName"):   @"DarkModeDefault",
         Key(@"styleOverrides"):  @{},
@@ -124,6 +158,10 @@ NPP_PREF_OBJ(delimiterOpen, setDelimiterOpen, NSString, @"delimiterOpen")
 NPP_PREF_OBJ(delimiterClose, setDelimiterClose, NSString, @"delimiterClose")
 NPP_PREF_OBJ(settingsDirectory, setSettingsDirectory, NSString, @"settingsDirectory")
 NPP_PREF_OBJ(panelState, setPanelState, NSDictionary, @"panelState")
+NPP_PREF_OBJ(defaultLanguage, setDefaultLanguage, NSString, @"defaultLanguage")
+NPP_PREF_OBJ(recentFiles, setRecentFiles, NSArray, @"recentFiles")
+NPP_PREF_OBJ(lastUsedDirectory, setLastUsedDirectory, NSString, @"lastUsedDirectory")
+NPP_PREF_OBJ(fixedDirectory, setFixedDirectory, NSString, @"fixedDirectory")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
@@ -139,6 +177,11 @@ NPP_PREF_INT(printColourMode, setPrintColourMode, @"printColourMode")
 NPP_PREF_INT(printHeaderFontSize, setPrintHeaderFontSize, @"printHeaderFontSize")
 NPP_PREF_INT(largeFileThresholdMB, setLargeFileThresholdMB, @"largeFileThresholdMB")
 NPP_PREF_INT(multiInstanceMode, setMultiInstanceMode, @"multiInstanceMode")
+NPP_PREF_INT(autoCompleteSource, setAutoCompleteSource, @"autoCompleteSource")
+NPP_PREF_INT(autoCompleteThreshold, setAutoCompleteThreshold, @"autoCompleteThreshold")
+NPP_PREF_INT(recentFilesMax, setRecentFilesMax, @"recentFilesMax")
+NPP_PREF_INT(recentFilesMaxLength, setRecentFilesMaxLength, @"recentFilesMaxLength")
+NPP_PREF_INT(defaultDirectoryMode, setDefaultDirectoryMode, @"defaultDirectoryMode")
 NPP_PREF_BOOL(useSpaces, setUseSpaces, @"useSpaces")
 NPP_PREF_BOOL(wordWrap, setWordWrap, @"wordWrap")
 NPP_PREF_BOOL(showWhitespace, setShowWhitespace, @"showWhitespace")
@@ -165,6 +208,31 @@ NPP_PREF_BOOL(customWordCharsEnabled, setCustomWordCharsEnabled, @"customWordCha
 NPP_PREF_BOOL(delimiterMultiline, setDelimiterMultiline, @"delimiterMultiline")
 NPP_PREF_BOOL(reverseDateTimeOrder, setReverseDateTimeOrder, @"reverseDateTimeOrder")
 NPP_PREF_BOOL(rememberPanelState, setRememberPanelState, @"rememberPanelState")
+NPP_PREF_BOOL(autoCompleteOnInput, setAutoCompleteOnInput, @"autoCompleteOnInput")
+NPP_PREF_BOOL(autoCompleteBriefList, setAutoCompleteBriefList, @"autoCompleteBriefList")
+NPP_PREF_BOOL(autoCompleteIgnoreNumbers, setAutoCompleteIgnoreNumbers, @"autoCompleteIgnoreNumbers")
+NPP_PREF_BOOL(autoCompleteUseTab, setAutoCompleteUseTab, @"autoCompleteUseTab")
+NPP_PREF_BOOL(functionHintOnInput, setFunctionHintOnInput, @"functionHintOnInput")
+NPP_PREF_BOOL(autoInsertParenthesis, setAutoInsertParenthesis, @"autoInsertParenthesis")
+NPP_PREF_BOOL(autoInsertBracket, setAutoInsertBracket, @"autoInsertBracket")
+NPP_PREF_BOOL(autoInsertBrace, setAutoInsertBrace, @"autoInsertBrace")
+NPP_PREF_BOOL(autoInsertSingleQuote, setAutoInsertSingleQuote, @"autoInsertSingleQuote")
+NPP_PREF_BOOL(autoInsertDoubleQuote, setAutoInsertDoubleQuote, @"autoInsertDoubleQuote")
+NPP_PREF_BOOL(autoInsertCloseTag, setAutoInsertCloseTag, @"autoInsertCloseTag")
+NPP_PREF_BOOL(openNewDocumentAtStartup, setOpenNewDocumentAtStartup, @"openNewDocumentAtStartup")
+NPP_PREF_BOOL(untitledFromFirstLine, setUntitledFromFirstLine, @"untitledFromFirstLine")
+NPP_PREF_BOOL(hideTabBar, setHideTabBar, @"hideTabBar")
+NPP_PREF_BOOL(tabDoubleClickCloses, setTabDoubleClickCloses, @"tabDoubleClickCloses")
+NPP_PREF_BOOL(exitOnClosingLastTab, setExitOnClosingLastTab, @"exitOnClosingLastTab")
+NPP_PREF_BOOL(tabShowCloseButton, setTabShowCloseButton, @"tabShowCloseButton")
+NPP_PREF_BOOL(tabPinFeatureEnabled, setTabPinFeatureEnabled, @"tabPinFeatureEnabled")
+NPP_PREF_BOOL(recentFilesShowFullPath, setRecentFilesShowFullPath, @"recentFilesShowFullPath")
+NPP_PREF_BOOL(findFillWithSelection, setFindFillWithSelection, @"findFillWithSelection")
+NPP_PREF_BOOL(findSelectWordUnderCaret, setFindSelectWordUnderCaret, @"findSelectWordUnderCaret")
+NPP_PREF_BOOL(replaceStaysOnOccurrence, setReplaceStaysOnOccurrence, @"replaceStaysOnOccurrence")
+NPP_PREF_BOOL(confirmReplaceAll, setConfirmReplaceAll, @"confirmReplaceAll")
+NPP_PREF_BOOL(smartHighlightMatchCase, setSmartHighlightMatchCase, @"smartHighlightMatchCase")
+NPP_PREF_BOOL(smartHighlightWholeWord, setSmartHighlightWholeWord, @"smartHighlightWholeWord")
 
 #define NPP_PREF_DOUBLE(getter, setter, key)                                      \
 - (double)getter { return [[NSUserDefaults standardUserDefaults] doubleForKey:Key(key)]; } \

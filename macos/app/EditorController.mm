@@ -7,6 +7,7 @@
 #import "ToolsCommands.h"
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
+#import "TypingCommands.h"
 #import "SettingsCommands.h"
 #include "ILexer.h"
 #include "Lexilla.h"
@@ -280,6 +281,7 @@ static long SciColor(NSColor *c) {
 
     [self.docs addObject:doc];
     [self selectDocumentAtIndex:(NSInteger)self.docs.count - 1];
+    [self applyNewDocumentDefaults];
 }
 
 - (BOOL)openFileAtPath:(NSString *)path error:(NSError **)error {
@@ -325,8 +327,8 @@ static long SciColor(NSColor *c) {
 
     [self applyLanguage];
     [self refreshChrome];
-    [[NSDocumentController sharedDocumentController]
-        noteNewRecentDocumentURL:[NSURL fileURLWithPath:path]];
+    [self noteRecentFile:path];
+    [self rememberOpenDirectory:path];
     return YES;
 }
 
@@ -1053,7 +1055,9 @@ static long SciColor(NSColor *c) {
     self.tabBar.segmentCount = (NSInteger)self.docs.count;
     for (NSUInteger i = 0; i < self.docs.count; ++i) {
         NppDocument *d = self.docs[i];
-        NSString *label = d.modified ? [d.displayName stringByAppendingString:@" •"] : d.displayName;
+        NSString *shownName = (d == self.currentDocument)
+            ? [self untitledNameForDocument:d] : d.displayName;
+        NSString *label = d.modified ? [shownName stringByAppendingString:@" •"] : shownName;
         if (d.pinned) label = [@"📌 " stringByAppendingString:label];
         if (d.tabColour > 0 && d.tabColour <= 5) {
             NSArray *dots = @[@"🔴", @"🟠", @"🟡", @"🟢", @"🔵"];
@@ -1291,6 +1295,9 @@ static long SciColor(NSColor *c) {
             [self mirrorScrollToSecondary];
             [self updateBraceMatch];
             if (n->updated & SC_UPDATE_SELECTION) [self updateSmartHighlight];
+            break;
+        case SCN_CHARADDED:
+            [self handleCharacterAdded:n->ch];
             break;
         case SCN_INDICATORRELEASE:
             [self openLinkAtPosition:(long)n->position];

@@ -85,6 +85,14 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
   character list and delimiter selection.
 - Multi-instance behaviour, reversed date/time insertion, remembered panel
   state, and a relocatable settings folder.
+- Auto-completion as you type, from document words, language keywords or both,
+  with a length threshold, a brief list, numbers ignored and Tab or Enter to
+  accept; auto-insertion of brackets, quotes and XML close tags; function
+  parameter hints on typing.
+- New-document defaults (line ending, encoding, language), untitled tabs named
+  from their first line, a recent-files list with its own cap and display rules,
+  the Open panel's starting folder, and Find seeded from the selection or the
+  word under the caret.
 - Themes: all 20 that Notepad++ ships, plus any imported, chosen separately for
   light and dark and switched by an Appearance setting that can follow macOS.
 - Folder as Workspace: a file tree beside the editor; Document List in a panel.
@@ -215,15 +223,15 @@ What it does not cover:
 - **Plugins cannot run.** The plugin ABI is a Windows DLL contract built on
   `HWND` and `SendMessage`. "Open Plugins Folder" works; loading a Notepad++
   plugin binary does not and cannot without a new plugin system.
-- **Depth behind a command varies, and for one reason only.** A setting exists
-  here when the behaviour behind it exists. Upstream's Preferences has 23 pages
-  and 277 interactive controls; a large share of them configure subsystems this
-  port does not have -- a toolbar, its own dark-mode engine, backup snapshots,
-  multi-instance handling, cloud settings paths, per-page print options. Adding
-  those checkboxes without the features would put controls in the window that
-  change nothing, which is worse than leaving them out. Everything whose
-  behaviour does exist is wired up. Function List likewise uses a per-language
-  pattern table rather than upstream's functionList.xml.
+- **Depth behind a command varies.** A setting exists here when the behaviour
+  behind it exists, and that rule has driven what was built: the toolbar, the
+  theme engine including dark mode, backup and autosave, print options, the
+  large-file restriction, clickable links, delimiter selection, multi-instance
+  handling and the relocatable settings folder were all added so their settings
+  would mean something. What remains thinner than upstream is depth inside a
+  few features rather than whole pages: Function List uses a per-language
+  pattern table rather than functionList.xml, and the tab bar is a segmented
+  control rather than a bar with per-tab close buttons and vertical layout.
 - **Some commands are macOS equivalents, not the same thing.** Finder for
   Explorer, Terminal for cmd and PowerShell, Trash for the Recycle Bin, Safari
   for Internet Explorer, POSIX permissions for the Windows read-only attribute.

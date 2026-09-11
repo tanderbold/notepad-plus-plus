@@ -18,6 +18,7 @@
 #import "Toolbar.h"
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
+#import "TypingCommands.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -2248,6 +2249,203 @@ int NppMacRunTests(AppDelegate *app) {
               @"the configured folder replaces the default one",
               [moved isEqualToString:custom] && ![moved isEqualToString:defaultDir] &&
               [[ed supportDirectory] isEqualToString:defaultDir]);
+    }
+
+    printf("\n== Auto-completion and typing ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+        [ed newDocument];
+        [ed setLanguageNamed:@"cpp"];
+
+        // Candidate sources: words from the document, keywords, or both.
+        SetDoc(ed, @"retrieval retrospect\n");
+        p.autoCompleteSource = NppCompletionWords;
+        NSArray *words = [ed completionCandidatesForPrefix:@"retr"];
+        p.autoCompleteSource = NppCompletionFunctions;
+        NSArray *keywords = [ed completionCandidatesForPrefix:@"ret"];
+        p.autoCompleteSource = NppCompletionBoth;
+        NSArray *both = [ed completionCandidatesForPrefix:@"ret"];
+        Check(@"IDM_SETTING_PREFERENCE (completion sources)",
+              @"words, keywords and both give different candidate sets",
+              words.count == 2 && [keywords containsObject:@"return"] &&
+              ![words containsObject:@"return"] && both.count > keywords.count);
+
+        p.autoCompleteBriefList = YES;
+        NSArray *brief = [ed completionCandidatesForPrefix:@"r"];
+        p.autoCompleteBriefList = NO;
+        NSArray *full = [ed completionCandidatesForPrefix:@"r"];
+        Check(@"IDM_SETTING_PREFERENCE (brief list)",
+              @"the brief list is capped and the full one is not",
+              brief.count <= 12 && full.count >= brief.count);
+
+        p.autoCompleteIgnoreNumbers = YES;
+        NSArray *numeric = [ed completionCandidatesForPrefix:@"12"];
+        p.autoCompleteIgnoreNumbers = NO;
+        Check(@"IDM_SETTING_PREFERENCE (ignore numbers)",
+              @"a numeric prefix offers nothing while that is on", numeric.count == 0);
+        p.autoCompleteIgnoreNumbers = YES;
+
+        // Auto-insertion of the matching character.
+        struct { int ch; NSString *want; NSString *flag; } pairs[] = {
+            {'(', @")", @"autoInsertParenthesis"},
+            {'[', @"]", @"autoInsertBracket"},
+            {'{', @"}", @"autoInsertBrace"},
+            {'\'', @"'", @"autoInsertSingleQuote"},
+            {'"', @"\"", @"autoInsertDoubleQuote"},
+        };
+        BOOL allPairs = YES;
+        for (size_t i = 0; i < sizeof(pairs)/sizeof(pairs[0]); ++i) {
+            [p setValue:@NO forKey:pairs[i].flag];
+            if ([ed autoInsertionForCharacter:pairs[i].ch] != nil) allPairs = NO;
+            [p setValue:@YES forKey:pairs[i].flag];
+            if (![[ed autoInsertionForCharacter:pairs[i].ch] isEqualToString:pairs[i].want]) allPairs = NO;
+            [p setValue:@NO forKey:pairs[i].flag];
+        }
+        Check(@"IDM_SETTING_PREFERENCE (auto-insert)",
+              @"each pair is inserted only while its own setting is on", allPairs);
+
+        // The close tag follows the element that was just opened.
+        p.autoInsertCloseTag = YES;
+        [ed setLanguageNamed:@"html"];
+        SetDoc(ed, @"<div>");
+        [sci message:SCI_GOTOPOS wParam:5 lParam:0];
+        NSString *closeTag = [ed closeTagAtCaret];
+        SetDoc(ed, @"<img src=\"a.png\"/>");
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        NSString *selfClosing = [ed closeTagAtCaret];
+        p.autoInsertCloseTag = NO;
+        Check(@"IDM_SETTING_PREFERENCE (close tag)",
+              @"an opened element is closed and a self-closing one is not",
+              [closeTag isEqualToString:@"</div>"] && selfClosing == nil);
+
+        // Typing drives both: the pair is inserted and the caret stays inside.
+        p.autoInsertParenthesis = YES;
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"");
+        [sci setStringProperty:SCI_INSERTTEXT parameter:0 value:@"("];
+        [sci message:SCI_GOTOPOS wParam:1 lParam:0];
+        [ed handleCharacterAdded:'('];
+        Check(@"IDM_SETTING_PREFERENCE (typing)",
+              @"typing an opening bracket closes it and leaves the caret between",
+              [DocText(ed) isEqualToString:@"()"] && [sci message:SCI_GETCURRENTPOS] == 1);
+        p.autoInsertParenthesis = NO;
+    }
+
+    printf("\n== New documents, recent files, directories ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+
+        p.defaultEOL = SC_EOL_CR;
+        p.defaultEncoding = @"UTF-16 LE BOM";
+        p.defaultLanguage = @"python";
+        [ed newDocument];
+        NppDocument *fresh = ed.currentDocument;
+        Check(@"IDM_SETTING_PREFERENCE (new document)",
+              @"a new document takes the configured EOL, encoding and language",
+              fresh.eolMode == SC_EOL_CR && fresh.hasBOM &&
+              fresh.encoding == NSUTF16LittleEndianStringEncoding &&
+              [fresh.language.name isEqualToString:@"python"]);
+        p.defaultEOL = SC_EOL_LF;
+        p.defaultEncoding = @"UTF-8";
+        p.defaultLanguage = @"";
+
+        p.untitledFromFirstLine = YES;
+        SetDoc(ed, @"a title line\nbody\n");
+        NSString *derived = [ed untitledNameForDocument:ed.currentDocument];
+        p.untitledFromFirstLine = NO;
+        NSString *plain = [ed untitledNameForDocument:ed.currentDocument];
+        Check(@"IDM_SETTING_PREFERENCE (untitled name)",
+              @"the tab can take its name from the first line",
+              [derived isEqualToString:@"a title line"] && [plain hasPrefix:@"new"]);
+
+        // Recent files: order, cap and display.
+        [ed clearRecentFiles];
+        p.recentFilesMax = 3;
+        for (NSString *name in @[@"one.txt", @"two.txt", @"three.txt", @"four.txt"]) {
+            [ed noteRecentFile:[@"/tmp/recent" stringByAppendingPathComponent:name]];
+        }
+        NSArray *recent = [ed recentFiles];
+        p.recentFilesShowFullPath = NO;
+        NSString *shortName = [ed displayNameForRecentFile:recent.firstObject];
+        p.recentFilesShowFullPath = YES;
+        p.recentFilesMaxLength = 60;
+        NSString *fullName = [ed displayNameForRecentFile:recent.firstObject];
+        p.recentFilesMaxLength = 12;
+        NSString *clipped = [ed displayNameForRecentFile:recent.firstObject];
+        p.recentFilesShowFullPath = NO;
+        Check(@"IDM_SETTING_PREFERENCE (recent files)",
+              @"newest first, capped, and shown per the display settings",
+              recent.count == 3 && [recent.firstObject hasSuffix:@"four.txt"] &&
+              [shortName isEqualToString:@"four.txt"] &&
+              [fullName hasPrefix:@"/tmp/recent"] && clipped.length <= 12 &&
+              [clipped hasPrefix:@"…"]);
+
+        [ed clearRecentFiles];
+        Check(@"IDM_SETTING_PREFERENCE (clear recent)", @"the list can be emptied",
+              [ed recentFiles].count == 0);
+
+        // Default directory for the Open panel.
+        NSError *err = nil;
+        NSString *file = TempFile(@"t_dir.txt", @"x\n");
+        [ed openFileAtPath:file error:&err];
+        p.defaultDirectoryMode = 0;
+        NSString *followsDoc = [ed defaultOpenDirectory];
+        p.defaultDirectoryMode = 2;
+        p.fixedDirectory = @"/usr/share";
+        NSString *fixed = [ed defaultOpenDirectory];
+        p.defaultDirectoryMode = 1;
+        p.lastUsedDirectory = @"";
+        [ed rememberOpenDirectory:file];
+        NSString *remembered = [ed defaultOpenDirectory];
+        p.defaultDirectoryMode = 0;
+        Check(@"IDM_SETTING_PREFERENCE (default directory)",
+              @"following the document, a fixed folder and the last used one all work",
+              [followsDoc isEqualToString:file.stringByDeletingLastPathComponent] &&
+              [fixed isEqualToString:@"/usr/share"] &&
+              [remembered isEqualToString:file.stringByDeletingLastPathComponent]);
+    }
+
+    printf("\n== Searching and highlighting settings ==\n");
+    {
+        NppPreferences *p = [NppPreferences shared];
+        SetDoc(ed, @"alpha beta alpha\n");
+
+        [sci message:SCI_SETSEL wParam:0 lParam:5];
+        p.findFillWithSelection = YES;
+        NSString *fromSelection = [ed initialFindTerm];
+        p.findFillWithSelection = NO;
+        NSString *ignored = [ed initialFindTerm];
+        Check(@"IDM_SETTING_PREFERENCE (find from selection)",
+              @"the Find field is seeded from the selection only when asked",
+              [fromSelection isEqualToString:@"alpha"] && ignored.length == 0);
+        p.findFillWithSelection = YES;
+
+        [sci message:SCI_GOTOPOS wParam:7 lParam:0];
+        p.findSelectWordUnderCaret = YES;
+        NSString *fromCaret = [ed initialFindTerm];
+        p.findSelectWordUnderCaret = NO;
+        NSString *none = [ed initialFindTerm];
+        p.findSelectWordUnderCaret = YES;
+        Check(@"IDM_SETTING_PREFERENCE (word under caret)",
+              @"with nothing selected the word under the caret is used",
+              [fromCaret isEqualToString:@"beta"] && none.length == 0);
+
+        // Smart highlighting refinements change what counts as a match.
+        SetDoc(ed, @"Cat cat catalog\n");
+        p.smartHighlightEnabled = YES;
+        [sci message:SCI_SETSEL wParam:4 lParam:7];
+        p.smartHighlightMatchCase = NO;  p.smartHighlightWholeWord = NO;
+        NSUInteger loose = [ed updateSmartHighlight];
+        [sci message:SCI_SETSEL wParam:4 lParam:7];
+        p.smartHighlightMatchCase = YES;
+        NSUInteger cased = [ed updateSmartHighlight];
+        [sci message:SCI_SETSEL wParam:4 lParam:7];
+        p.smartHighlightWholeWord = YES;
+        NSUInteger strict = [ed updateSmartHighlight];
+        p.smartHighlightMatchCase = NO;  p.smartHighlightWholeWord = NO;
+        Check(@"IDM_SETTING_PREFERENCE (smart highlight rules)",
+              @"match case and whole word each narrow the matches",
+              loose == 3 && cased == 2 && strict == 1);
     }
 
     printf("\n== Language: user defined ==\n");

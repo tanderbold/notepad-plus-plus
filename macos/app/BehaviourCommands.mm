@@ -1,6 +1,7 @@
 #import "BehaviourCommands.h"
 #import "SettingsCommands.h"
 #import "SearchCommands.h"
+#import "AdvancedEditCommands.h"
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
 #import <objc/runtime.h>
@@ -166,7 +167,19 @@ static long Utf8Len(NSString *s) {
     long a = [sci message:SCI_GETSELECTIONSTART], b = [sci message:SCI_GETSELECTIONEND];
     if (b <= a) return 0;                       // only a real selection highlights
     if (b - a > 100) return 0;                  // a whole-paragraph selection is not a token
-    return [self markAllOccurrencesOfSelection:style];
+
+    NppMatchFlags flags = NppMatchNone;
+    if ([NppPreferences shared].smartHighlightMatchCase) flags |= NppMatchCase;
+    if ([NppPreferences shared].smartHighlightWholeWord) flags |= NppMatchWholeWord;
+    if (flags == NppMatchNone) return [self markAllOccurrencesOfSelection:style];
+
+    // With either refinement on, the match rules come from AdvancedEditCommands.
+    ScintillaView *view = self.sci;
+    NSUInteger before = (NSUInteger)[view message:SCI_GETSELECTIONS];
+    NSUInteger n = [self multiSelectAllOccurrences:flags];
+    [view message:SCI_SETSELECTION wParam:(uptr_t)a lParam:b];
+    (void)before;
+    return n;
 }
 
 #pragma mark - Word characters and delimiters

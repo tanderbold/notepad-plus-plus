@@ -13,12 +13,14 @@
 #import "StyleCatalog.h"
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
+#import "TypingCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
+#import "TypingCommands.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #import "Tests.h"
@@ -35,6 +37,7 @@
 @property (nonatomic, strong) StyleConfiguratorWindow *styleWindow;
 @property (nonatomic, strong) ShortcutMapperWindow *shortcutWindow;
 @property (nonatomic, strong) NppToolbar *toolbar;
+@property (nonatomic, strong) NSMenu *recentMenu;
 @property (nonatomic) BOOL alwaysOnTop;
 @end
 
@@ -173,10 +176,10 @@
     [self item:@"Pin Tab" action:@selector(togglePin:) key:@"" flags:0 menu:fileMenu];
     [self item:@"Reload from Disk" action:@selector(reloadDocument:) key:@"r" flags:NSEventModifierFlagCommand menu:fileMenu];
 
+    self.recentMenu = [[NSMenu alloc] initWithTitle:@"Open Recent"];
     NSMenuItem *recentItem = [fileMenu addItemWithTitle:@"Open Recent" action:nil keyEquivalent:@""];
-    NSMenu *recentMenu = [[NSMenu alloc] initWithTitle:@"Open Recent"];
-    [recentMenu addItemWithTitle:@"Clear Menu" action:@selector(clearRecentDocuments:) keyEquivalent:@""];
-    recentItem.submenu = recentMenu;
+    recentItem.submenu = self.recentMenu;
+    [self rebuildRecentMenu];
 
     [fileMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Save"     action:@selector(saveDocument:) key:@"s" flags:NSEventModifierFlagCommand menu:fileMenu];
@@ -1063,6 +1066,7 @@
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     panel.allowsMultipleSelection = YES;
     panel.canChooseDirectories = NO;
+    panel.directoryURL = [NSURL fileURLWithPath:[self.editor defaultOpenDirectory] isDirectory:YES];
     if ([panel runModal] != NSModalResponseOK) return;
     for (NSURL *url in panel.URLs) {
         NSError *err = nil;
@@ -1077,7 +1081,31 @@
 - (void)closeTab:(id)sender       { [self.editor closeCurrentDocument]; }
 
 - (void)clearRecentDocuments:(id)sender {
-    [[NSDocumentController sharedDocumentController] clearRecentDocuments:sender];
+    [self.editor clearRecentFiles];
+    [self rebuildRecentMenu];
+}
+
+/// Rebuilt from the stored list so the display settings take effect at once.
+- (void)rebuildRecentMenu {
+    [self.recentMenu removeAllItems];
+    for (NSString *path in [self.editor recentFiles]) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:[self.editor displayNameForRecentFile:path]
+                                                    action:@selector(openRecentFile:) keyEquivalent:@""];
+        mi.target = self;
+        mi.representedObject = path;
+        mi.toolTip = path;
+        [self.recentMenu addItem:mi];
+    }
+    if (self.recentMenu.numberOfItems) [self.recentMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Clear Menu" action:@selector(clearRecentDocuments:) key:@"" flags:0 menu:self.recentMenu];
+}
+
+- (void)openRecentFile:(NSMenuItem *)sender {
+    NSError *err = nil;
+    if (![self.editor openFileAtPath:sender.representedObject error:&err] && err) {
+        [[NSAlert alertWithError:err] runModal];
+    }
+    [self rebuildRecentMenu];
 }
 
 - (void)revealInFinder:(id)sender      { if (![self.editor revealInFinder]) NSBeep(); }
@@ -1602,7 +1630,9 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 }
 
 - (void)showFind:(id)sender {
-    NSString *term = [self promptForString:@"Find" default:self.lastSearchTerm];
+    NSString *seed = [self.editor initialFindTerm];
+    NSString *term = [self promptForString:@"Find"
+                                   default:seed.length ? seed : self.lastSearchTerm];
     if (!term.length) return;
     self.lastSearchTerm = term;
     [self searchFrom:[self.editor.sci message:SCI_GETCURRENTPOS] forward:YES wrap:YES];
