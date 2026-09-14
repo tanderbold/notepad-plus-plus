@@ -27,6 +27,7 @@
 #import "RunCommands.h"
 #import "FunctionListPanel.h"
 #import "FunctionListCatalog.h"
+#import "NppRegex.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -1405,13 +1406,45 @@ int NppMacRunTests(AppDelegate *app) {
               [cat parserIDForLanguage:@"python" extension:@"py"] != nil &&
               [cat parserIDForLanguage:@"cpp" extension:@"cpp"] != nil);
 
-        // \K is PCRE-only; ICU needs the part after it captured instead.
-        NSString *translated = [FunctionListCatalog icuPatternFrom:@"^class\\x20\\K.*?(?=\\n)"];
-        NSRegularExpression *check = translated
-            ? [NSRegularExpression regularExpressionWithPattern:translated options:0 error:NULL] : nil;
-        Check(@"IDM_VIEW_FUNC_LIST (pattern translation)",
-              @"a \\K pattern becomes a capturing one ICU accepts",
-              [translated containsString:@"("] && ![translated containsString:@"\\K"] && check != nil);
+        // The patterns are PCRE and are now run as PCRE, through libpcre2,
+        // rather than being translated into something ICU accepts.
+        Check(@"IDM_VIEW_FUNC_LIST (regex engine)",
+              @"the PCRE engine the patterns are written for is available",
+              NppRegex.available);
+
+        // The option values are declared by hand, because the SDK ships no
+        // pcre2.h. Checking them against the library's behaviour is the only
+        // thing that makes them trustworthy.
+        NSData *twoLines = [@"a\nb" dataUsingEncoding:NSUTF8StringEncoding];
+        NppRegex *anchored = [NppRegex regexWithPattern:@"^b"];
+        NppRegex *dotted = [NppRegex regexWithPattern:@"a.b"];
+        Check(@"IDM_VIEW_FUNC_LIST (regex options)",
+              @"'^' anchors per line and '.' spans them, as upstream searches",
+              [anchored firstMatchInData:twoLines range:NSMakeRange(0, twoLines.length)].location != NSNotFound &&
+              [dotted firstMatchInData:twoLines range:NSMakeRange(0, twoLines.length)].location != NSNotFound);
+
+        // These four are what ICU could not do at all. c.xml uses the first
+        // two, and without them fifteen of the parsers were unusable.
+        NSData *pcreSample = [@"foobar aaab xy" dataUsingEncoding:NSUTF8StringEncoding];
+        NSRange full = NSMakeRange(0, pcreSample.length);
+        NppRegex *subroutine = [NppRegex regexWithPattern:@"(?'W'[a-z]+) (?&W)"];
+        NppRegex *atomic = [NppRegex regexWithPattern:@"(?>a+)b"];
+        NppRegex *keep = [NppRegex regexWithPattern:@"foo\\Kbar"];
+        NSRange keptRange = [keep firstMatchInData:pcreSample range:full];
+        Check(@"IDM_VIEW_FUNC_LIST (PCRE features)",
+              @"subroutine calls, named groups, atomic groups and \\K all work",
+              subroutine && atomic && keep &&
+              [subroutine firstMatchInData:pcreSample range:full].location != NSNotFound &&
+              [atomic firstMatchInData:pcreSample range:full].location != NSNotFound &&
+              keptRange.location == 3 && keptRange.length == 3);
+
+        // A pattern that cannot compile is reported rather than silently
+        // matching nothing; upstream ships one such file.
+        Check(@"IDM_VIEW_FUNC_LIST (bad pattern)",
+              @"a pattern that will not compile is refused, with a reason",
+              [NppRegex regexWithPattern:@"(unclosed"] == nil &&
+              [NppRegex compileErrorForPattern:@"(unclosed"].length > 0 &&
+              [NppRegex compileErrorForPattern:@"\\w+"] == nil);
 
         // A Python class with methods, through the upstream parser.
         NSArray<NppFunctionEntry *> *entries = [cat entriesInText:
@@ -1469,6 +1502,60 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_VIEW_FUNC_LIST (comments)",
               @"a declaration inside a comment is not listed",
               ![[csNames componentsJoinedByString:@" "] containsString:@"Ghost"]);
+
+        // Breadth: one snippet per language, checked against the declarations
+        // Notepad++'s own parser is meant to find in it. This is what says the
+        // catalogue works as a whole rather than for the one language that
+        // happened to be tested.
+        NSArray *battery = @[
+            // c.xml shows the parameters on purpose: the node that would strip
+            // them is commented out in the file itself.
+            @[@"c",          @"c",    @"int add(int a, int b)\n{\n    return 0;\n}\n",              @"add(int a, int b)"],
+            @[@"cpp",        @"cpp",  @"class Thing {\npublic:\n    void run() {}\n};\n",           @"Thing::run"],
+            @[@"cs",         @"cs",   @"class Store\n{\n    public void Clear() { }\n}\n",          @"Store::Clear"],
+            @[@"java",       @"java", @"public class G {\n  public void hello(String w) { }\n}\n",  @"G::hello"],
+            @[@"php",        @"php",  @"<?php\nfunction helper($x) { return $x; }\n",               @"helper($x)"],
+            @[@"python",     @"py",   @"def alpha(x):\n    pass\n",                                 @"alpha(x)"],
+            @[@"ruby",       @"rb",   @"def alpha(x)\n  x\nend\n",                                  @"alpha"],
+            @[@"perl",       @"pl",   @"sub alpha {\n  1;\n}\n",                                    @"alpha"],
+            @[@"lua",        @"lua",  @"function alpha(x)\n  return x\nend\n",                      @"alpha"],
+            @[@"bash",       @"sh",   @"alpha() {\n  echo hi\n}\n",                                 @"alpha"],
+            @[@"pascal",     @"pas",  @"procedure Alpha(x: Integer);\nbegin\nend;\n",               @"Alpha"],
+            @[@"vb",         @"vb",   @"Public Sub Alpha(x As Integer)\nEnd Sub\n",                 @"Alpha"],
+            @[@"rust",       @"rs",   @"fn alpha(x: i32) -> i32 {\n    x\n}\n",                     @"alpha"],
+            @[@"javascript", @"js",   @"function alpha(x) { return x; }\n",                         @"alpha"],
+            @[@"typescript", @"ts",   @"function alpha(x) {\n  return x;\n}\n",                     @"alpha"],
+            @[@"powershell", @"ps1",  @"function Get-Thing {\n    param($x)\n}\n",                  @"Get-Thing"],
+            @[@"haskell",    @"hs",   @"alpha :: Int -> Int\nalpha x = x\n",                        @"alpha"],
+            @[@"nim",        @"nim",  @"proc alpha(x: int): int =\n  x\n",                          @"alpha(x: int): int"],
+            @[@"css",        @"css",  @".alpha { color: red; }\n",                                  @".alpha"],
+            @[@"makefile",   @"mak",  @"alpha:\n\techo hi\n",                                       @"alpha"],
+            @[@"batch",      @"bat",  @":alpha\necho hi\n",                                         @"alpha"],
+            @[@"ini",        @"ini",  @"[Section]\nkey=1\n",                                        @"Section"],
+            @[@"fortran",    @"f90",  @"      SUBROUTINE ALPHA(X)\n      END\n",                    @"ALPHA"],
+            @[@"d",          @"d",    @"int add(int a, int b)\n{\n    return 0;\n}\n",              @"add"],
+            // sql.xml is an Oracle parser and wants the named END its own
+            // comment calls best practice.
+            @[@"sql",        @"sql",  @"CREATE OR REPLACE PROCEDURE alpha IS\nBEGIN\nNULL;\nEND alpha;\n", @"PROCEDURE alpha"],
+        ];
+        NSMutableArray *missing = [NSMutableArray array];
+        for (NSArray *row in battery) {
+            NSArray<NppFunctionEntry *> *got = [cat entriesInText:row[2]
+                                                      forLanguage:row[0] extension:row[1]];
+            NSMutableArray *shown = [NSMutableArray array];
+            for (NppFunctionEntry *e in got) {
+                [shown addObject:e.container.length
+                    ? [NSString stringWithFormat:@"%@::%@", e.container, e.name] : e.name];
+            }
+            if (![shown containsObject:row[3]]) {
+                [missing addObject:[NSString stringWithFormat:@"%@ (wanted %@, got %@)",
+                                    row[0], row[3], [shown componentsJoinedByString:@","]]];
+            }
+        }
+        Check(@"IDM_VIEW_FUNC_LIST (every language)",
+              @"each language finds what its own Notepad++ parser is meant to find",
+              missing.count == 0);
+        if (missing.count) printf("       %s\n", [[missing componentsJoinedByString:@"; "] UTF8String]);
 
         // XML folds a newline inside an attribute value into a space. Most of
         // upstream's patterns use (?x), where a # comment runs to end of line,

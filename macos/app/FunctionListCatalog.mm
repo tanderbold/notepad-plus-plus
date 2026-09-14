@@ -1,4 +1,5 @@
 #import "FunctionListCatalog.h"
+#import "NppRegex.h"
 
 @implementation NppFunctionEntry
 @end
@@ -112,53 +113,6 @@
     return [self.parsers.allKeys sortedArrayUsingSelector:@selector(compare:)];
 }
 
-#pragma mark - Pattern translation
-
-/// Upstream's patterns are PCRE. ICU, which NSRegularExpression uses, accepts
-/// almost all of it; the exception that matters is \K, which resets the start of
-/// the match. Everything after \K is what upstream reports, so the pattern is
-/// rewritten to capture exactly that into group 1.
-+ (NSString *)icuPatternFrom:(NSString *)pcre {
-    if (!pcre.length) return nil;
-    NSString *out = pcre;
-
-    NSRange keep = [out rangeOfString:@"\\K" options:NSBackwardsSearch];
-    if (keep.location != NSNotFound) {
-        // A named group, because these patterns often already contain groups of
-        // their own -- python's "(async )?" among them -- so group 1 would be
-        // the wrong one to read back.
-        out = [NSString stringWithFormat:@"%@(?<nppkeep>%@)",
-               [out substringToIndex:keep.location],
-               [out substringFromIndex:keep.location + keep.length]];
-    }
-    // ICU rejects a possessive quantifier on a group in some builds; PCRE's
-    // atomic groups are equivalent to plain groups for extraction purposes.
-    out = [out stringByReplacingOccurrencesOfString:@"(?>" withString:@"(?:"];
-    return out;
-}
-
-+ (NSRegularExpression *)expressionFrom:(NSString *)pcre {
-    NSString *icu = [self icuPatternFrom:pcre];
-    if (!icu.length) return nil;
-    // Upstream searches with SCFIND_REGEXP | SCFIND_POSIX | SCFIND_REGEXP_DOTMATCHESNL
-    // (functionParser.cpp), so '.' matches newlines everywhere -- python's
-    // classRange spans a whole class body that way -- and '^' anchors per line.
-    return [NSRegularExpression regularExpressionWithPattern:icu
-                                                     options:(NSRegularExpressionAnchorsMatchLines |
-                                                              NSRegularExpressionDotMatchesLineSeparators)
-                                                       error:NULL];
-}
-
-/// What a pattern reports: the \K group when it had one, otherwise the match.
-static NSRange ReportedRange(NSTextCheckingResult *m) {
-    NSRange named = [m rangeWithName:@"nppkeep"];
-    return named.location != NSNotFound ? named : m.range;
-}
-
-static NSString *ReportedText(NSTextCheckingResult *m, NSString *subject) {
-    return [subject substringWithRange:ReportedRange(m)];
-}
-
 #pragma mark - NSXMLParserDelegate
 
 - (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)element
@@ -267,82 +221,93 @@ static NSString *ReportedText(NSTextCheckingResult *m, NSString *subject) {
     return nil;
 }
 
-/// Narrows `body` down to a name. The patterns are applied one after another,
-/// each searching inside what the one before it found -- not as alternatives.
-/// That is how upstream reaches "Thing" from "class Thing" in three steps.
-static NSString *NarrowToName(NSString *body, NSArray<NSString *> *exprs);
+/// Narrows a run of bytes down to a name. The patterns are applied one after
+/// another, each searching inside what the one before it found -- not as
+/// alternatives. That is how upstream reaches "Thing" from "class Thing".
+static NSRange NarrowToName(NSData *data, NSRange body, NSArray<NSString *> *exprs);
 
 /// Blanks out whatever `commentExpr` matches, keeping the length the same so
-/// every offset -- and therefore every line number -- still refers to the same
-/// place in the original text.
-static NSString *TextWithoutComments(NSString *text, NSString *commentExpr);
+/// every offset -- and so every line number -- still points where it did.
+static NSData *DataWithoutComments(NSData *data, NSString *commentExpr);
+
+/// The line a byte offset falls on, counting from zero.
+static NSUInteger LineAtByte(NSData *data, NSUInteger offset) {
+    const uint8_t *bytes = (const uint8_t *)data.bytes;
+    NSUInteger line = 0;
+    for (NSUInteger i = 0; i < offset && i < data.length; ++i) {
+        if (bytes[i] == '\n') line++;
+    }
+    return line;
+}
+
+static NSString *StringFromBytes(NSData *data, NSRange range) {
+    if (range.location == NSNotFound || !range.length) return @"";
+    if (NSMaxRange(range) > data.length) return @"";
+    return [[NSString alloc] initWithData:[data subdataWithRange:range]
+                                 encoding:NSUTF8StringEncoding] ?: @"";
+}
 
 - (NSArray<NppFunctionEntry *> *)entriesInText:(NSString *)text
                                    forLanguage:(NSString *)language
                                      extension:(NSString *)ext {
     NSString *parserID = [self parserIDForLanguage:language extension:ext];
     NppFunctionParser *p = parserID ? self.parsers[parserID] : nil;
-    if (!p || !text.length) return @[];
+    if (!p || !text.length || !NppRegex.available) return @[];
 
-    // Matching happens against a copy with the comments blanked out, so a
-    // function mentioned in a comment is not reported. Line numbers still come
-    // from the same offsets because the blanking preserves length.
-    NSString *subject = TextWithoutComments(text, p.commentExpr);
+    // Everything below works in UTF-8 bytes, which is what PCRE2 matches in and
+    // what Scintilla stores, so no offset ever has to be translated.
+    NSData *whole = [text dataUsingEncoding:NSUTF8StringEncoding];
+    if (!whole.length) return @[];
 
+    // Matching runs against a copy with the comments blanked out, so a function
+    // mentioned in a comment is not reported.
+    NSData *subject = DataWithoutComments(whole, p.commentExpr);
+    NSRange all = NSMakeRange(0, subject.length);
     NSMutableArray *entries = [NSMutableArray array];
-    NSRange whole = NSMakeRange(0, subject.length);
-
-    NSUInteger (^lineOf)(NSUInteger) = ^NSUInteger(NSUInteger index) {
-        return [[subject substringToIndex:index] componentsSeparatedByString:@"\n"].count - 1;
-    };
 
     void (^collect)(NSString *, NSArray<NSString *> *, NSRange, NSString *) =
         ^(NSString *mainExpr, NSArray<NSString *> *nameExprs, NSRange range, NSString *container) {
-        NSRegularExpression *re = [FunctionListCatalog expressionFrom:mainExpr];
+        NppRegex *re = [NppRegex regexWithPattern:mainExpr];
         if (!re) return;
-        [re enumerateMatchesInString:subject options:0 range:range
-                          usingBlock:^(NSTextCheckingResult *m, NSMatchingFlags f, BOOL *stop) {
-            NSString *body = ReportedText(m, subject);
-            NSString *name = NarrowToName(body, nameExprs) ?: body;
-            name = [name stringByTrimmingCharactersInSet:
-                    [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        [re enumerateMatchesInData:subject range:range usingBlock:^(NSRange m, BOOL *stop) {
+            NSRange named = NarrowToName(subject, m, nameExprs);
+            NSString *name = [StringFromBytes(subject, named)
+                              stringByTrimmingCharactersInSet:
+                                  [NSCharacterSet whitespaceAndNewlineCharacterSet]];
             if (!name.length) return;
 
             NppFunctionEntry *entry = [[NppFunctionEntry alloc] init];
             entry.name = name;
             entry.container = container;
-            entry.line = lineOf(ReportedRange(m).location);
+            entry.line = LineAtByte(subject, m.location);
             [entries addObject:entry];
         }];
     };
 
-    // Classes first, so their methods are attributed to them and are not then
+    // Classes first, so their members are attributed to them and are not then
     // reported a second time by the plain function pass.
     NSMutableArray<NSValue *> *classBodies = [NSMutableArray array];
     if (p.classRangeExpr.length) {
-        NSRegularExpression *re = [FunctionListCatalog expressionFrom:p.classRangeExpr];
+        NppRegex *re = [NppRegex regexWithPattern:p.classRangeExpr];
         if (re) {
-            [re enumerateMatchesInString:subject options:0 range:whole
-                              usingBlock:^(NSTextCheckingResult *m, NSMatchingFlags f, BOOL *stop) {
-                NSRange header = ReportedRange(m);
-                NSString *className = NarrowToName([subject substringWithRange:header],
-                                                   p.classNameExprs)
-                                      ?: [subject substringWithRange:header];
-                className = [className stringByTrimmingCharactersInSet:
-                             [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            [re enumerateMatchesInData:subject range:all usingBlock:^(NSRange header, BOOL *stop) {
+                NSRange named = NarrowToName(subject, header, p.classNameExprs);
+                NSString *className = [StringFromBytes(subject, named)
+                                       stringByTrimmingCharactersInSet:
+                                           [NSCharacterSet whitespaceAndNewlineCharacterSet]];
                 if (!className.length) return;
 
-                // The pattern only matches as far as the opening brace. The body
-                // runs to the brace that closes it, which has to be found by
-                // counting -- that is what openSymbole/closeSymbole are for.
+                // The pattern stops at the opening brace. The body runs to the
+                // brace that closes it, which has to be found by counting --
+                // that is what openSymbole and closeSymbole are for.
                 NSRange body = [FunctionListCatalog bodyRangeFrom:header
-                                                          inText:subject
-                                                            open:p.classOpenSymbol
-                                                           close:p.classCloseSymbol];
+                                                           inData:subject
+                                                             open:p.classOpenSymbol
+                                                            close:p.classCloseSymbol];
 
                 NppFunctionEntry *entry = [[NppFunctionEntry alloc] init];
                 entry.name = className;
-                entry.line = lineOf(header.location);
+                entry.line = LineAtByte(subject, header.location);
                 [entries addObject:entry];
                 [classBodies addObject:[NSValue valueWithRange:body]];
                 if (p.classFunctionExpr.length) {
@@ -353,8 +318,8 @@ static NSString *TextWithoutComments(NSString *text, NSString *commentExpr);
     }
 
     if (p.functionExpr.length) {
-        // Anything already covered by a class body has been reported under its
-        // class, so the plain pass runs over the gaps between them.
+        // What a class body already covered has been reported under its class,
+        // so the plain pass runs over the gaps between them.
         NSUInteger cursor = 0;
         NSMutableArray<NSValue *> *gaps = [NSMutableArray array];
         for (NSValue *v in classBodies) {
@@ -380,29 +345,29 @@ static NSString *TextWithoutComments(NSString *text, NSString *commentExpr);
 
 /// Where a class body ends: from the opening symbol the pattern stopped at,
 /// forward until the symbols balance.
-+ (NSRange)bodyRangeFrom:(NSRange)header inText:(NSString *)text
++ (NSRange)bodyRangeFrom:(NSRange)header inData:(NSData *)data
                     open:(NSString *)openExpr close:(NSString *)closeExpr {
-    NSRegularExpression *open = openExpr.length ? [self expressionFrom:openExpr] : nil;
-    NSRegularExpression *close = closeExpr.length ? [self expressionFrom:closeExpr] : nil;
+    NppRegex *open = openExpr.length ? [NppRegex regexWithPattern:openExpr] : nil;
+    NppRegex *close = closeExpr.length ? [NppRegex regexWithPattern:closeExpr] : nil;
     if (!open || !close) return header;
 
     NSUInteger from = NSMaxRange(header);
-    NSRange rest = NSMakeRange(from, text.length - from);
+    if (from >= data.length) return header;
+    NSRange rest = NSMakeRange(from, data.length - from);
+
     NSMutableArray<NSValue *> *opens = [NSMutableArray array];
     NSMutableArray<NSValue *> *closes = [NSMutableArray array];
-    [open enumerateMatchesInString:text options:0 range:rest
-                        usingBlock:^(NSTextCheckingResult *m, NSMatchingFlags f, BOOL *s) {
-        [opens addObject:[NSValue valueWithRange:m.range]];
+    [open enumerateMatchesInData:data range:rest usingBlock:^(NSRange m, BOOL *s) {
+        [opens addObject:[NSValue valueWithRange:m]];
     }];
-    [close enumerateMatchesInString:text options:0 range:rest
-                         usingBlock:^(NSTextCheckingResult *m, NSMatchingFlags f, BOOL *s) {
-        [closes addObject:[NSValue valueWithRange:m.range]];
+    [close enumerateMatchesInData:data range:rest usingBlock:^(NSRange m, BOOL *s) {
+        [closes addObject:[NSValue valueWithRange:m]];
     }];
 
     // The header already consumed one opening symbol, so the count starts at 1.
     NSInteger depth = 1;
-    NSUInteger oi = 0, ci = 0;
-    while (ci < closes.count) {
+    NSUInteger oi = 0;
+    for (NSUInteger ci = 0; ci < closes.count; ++ci) {
         NSUInteger closeAt = closes[ci].rangeValue.location;
         while (oi < opens.count && opens[oi].rangeValue.location < closeAt) { depth++; oi++; }
         depth--;
@@ -410,45 +375,42 @@ static NSString *TextWithoutComments(NSString *text, NSString *commentExpr);
             NSUInteger end = NSMaxRange(closes[ci].rangeValue);
             return NSMakeRange(header.location, end - header.location);
         }
-        ci++;
     }
     // Unbalanced, which a document being edited often is: take the rest.
-    return NSMakeRange(header.location, text.length - header.location);
+    return NSMakeRange(header.location, data.length - header.location);
 }
 
-static NSString *NarrowToName(NSString *body, NSArray<NSString *> *exprs) {
-    if (!exprs.count) return nil;
-    NSString *current = body;
+static NSRange NarrowToName(NSData *data, NSRange body, NSArray<NSString *> *exprs) {
+    NSRange current = body;
     for (NSString *expr in exprs) {
-        NSRegularExpression *re = [FunctionListCatalog expressionFrom:expr];
+        NppRegex *re = [NppRegex regexWithPattern:expr];
         if (!re) continue;
-        NSTextCheckingResult *m = [re firstMatchInString:current options:0
-                                                   range:NSMakeRange(0, current.length)];
+        // An empty match is no use as a name, and taking it would drop the
+        // entry altogether; what is wanted is the first real one.
+        NSRange found = [re firstNonEmptyMatchInData:data range:current];
         // A step that matches nothing leaves the result where it was, rather
-        // than throwing away what the earlier steps had already narrowed to.
-        if (m) current = ReportedText(m, current);
+        // than throwing away what the earlier steps had narrowed to.
+        if (found.location != NSNotFound) current = found;
     }
     return current;
 }
 
-static NSString *TextWithoutComments(NSString *text, NSString *commentExpr) {
-    if (!commentExpr.length) return text;
-    NSRegularExpression *re = [FunctionListCatalog expressionFrom:commentExpr];
-    if (!re) return text;
+static NSData *DataWithoutComments(NSData *data, NSString *commentExpr) {
+    if (!commentExpr.length) return data;
+    NppRegex *re = [NppRegex regexWithPattern:commentExpr];
+    // Upstream ships at least one commentExpr that does not compile at all
+    // (fortran77's is cut off mid-pattern); that is not a reason to give up on
+    // the rest of the parser.
+    if (!re) return data;
 
-    NSMutableString *out = [text mutableCopy];
-    [re enumerateMatchesInString:text options:0 range:NSMakeRange(0, text.length)
-                     usingBlock:^(NSTextCheckingResult *m, NSMatchingFlags f, BOOL *stop) {
-        NSRange r = m.range;
-        if (!r.length) return;
-        // Newlines are kept so line numbers do not shift; everything else in the
-        // comment becomes a space.
-        NSMutableString *blank = [NSMutableString stringWithCapacity:r.length];
-        for (NSUInteger i = 0; i < r.length; ++i) {
-            unichar c = [text characterAtIndex:r.location + i];
-            [blank appendString:(c == '\n' || c == '\r') ? [NSString stringWithCharacters:&c length:1] : @" "];
+    NSMutableData *out = [data mutableCopy];
+    uint8_t *bytes = (uint8_t *)out.mutableBytes;
+    [re enumerateMatchesInData:data range:NSMakeRange(0, data.length)
+                    usingBlock:^(NSRange m, BOOL *stop) {
+        for (NSUInteger i = m.location; i < NSMaxRange(m); ++i) {
+            // Newlines stay, so line numbers do not shift.
+            if (bytes[i] != '\n' && bytes[i] != '\r') bytes[i] = ' ';
         }
-        [out replaceCharactersInRange:r withString:blank];
     }];
     return out;
 }

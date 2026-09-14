@@ -233,17 +233,27 @@ binaries can never load here:
 - **Compare** (what ComparePlus provides): set one file aside, compare, mark
   added, removed and changed lines, step between differences, a summary, and
   the ignore-case, ignore-spaces and ignore-empty-lines options.
-The Function List reads Notepad++'s own functionList definitions. Three things
-about those files are easy to get wrong and are worth writing down: the several
+The Function List reads Notepad++'s own functionList definitions and runs their
+patterns as what they are: PCRE. macOS ships libpcre2, which is loaded at run
+time, so subroutine calls like `(?&VALID_ID)`, named groups written
+`(?'NAME'...)`, atomic groups and `\K` all work as written. NSRegularExpression
+is ICU and has no equivalent for the first two; fifteen of the parsers, C's among
+them, were unusable on it. There is no pcre2.h in the SDK, so the handful of
+entry points are declared by hand and the option values are checked against the
+library's own behaviour by a test rather than trusted from memory.
+
+Four things about the definition files are easy to get wrong: the several
 `nameExpr` entries are applied one after another, each narrowing what the last
-one found, rather than being alternatives; `classRange` matches only as far as
-the opening brace, and the body has to be found by counting `openSymbole` and
-`closeSymbole`; and the patterns must keep the newlines they were written with,
-because XML would otherwise fold them into spaces and the `#` comments in a
-`(?x)` pattern would then swallow everything after the first one. Of the 45
-parsers, 25 work as written on ICU; the rest use PCRE subroutine calls
-(`(?&NAME)`) and named groups, which ICU has no equivalent for, and fall back to
-the built-in patterns.
+one found, rather than being alternatives; an empty match is no use as a name, so
+narrowing takes the first non-empty one (ini's pattern matches nothing at all
+before it reaches the word); `classRange` matches only as far as the opening
+brace, and the body has to be found by counting `openSymbole` and `closeSymbole`;
+and the patterns must keep the newlines they were written with, because XML would
+otherwise fold them into spaces and the `#` comments in a `(?x)` pattern would
+then swallow everything after the first one.
+
+Matching runs over UTF-8 bytes, which is what PCRE2 works in and what Scintilla
+stores, so no offset is ever translated.
 
 The toolbar carries Notepad++'s own icons. They are not redrawn: the images are
 extracted from the .ico files in the Notepad++ sources, which are containers
