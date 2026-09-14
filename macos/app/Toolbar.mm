@@ -1,36 +1,80 @@
 #import "Toolbar.h"
 
-/// One button: identifier, label, SF Symbol and the menu selector it drives.
+/// One button. The command is the Notepad++ menu id, which is what order.txt
+/// names; the label and the selector are what macOS needs to build the item.
 typedef struct {
-    __unsafe_unretained NSString *identifier;
+    __unsafe_unretained NSString *command;       // IDM_... , as in order.txt
     __unsafe_unretained NSString *label;
-    __unsafe_unretained NSString *symbol;
     __unsafe_unretained NSString *selectorName;
+    NSInteger tag;                               // for the commands that carry one
 } NppToolbarSpec;
 
+/// Every button Notepad++ puts on its toolbar, with the command each one sends
+/// here. Which of them appear, and in what order, is decided by order.txt,
+/// which is generated from the Notepad++ sources.
 static NppToolbarSpec gSpecs[] = {
-    {@"npp.new",        @"New",        @"doc",                    @"newDocument:"},
-    {@"npp.open",       @"Open",       @"folder",                 @"openDocument:"},
-    {@"npp.save",       @"Save",       @"square.and.arrow.down",  @"saveDocument:"},
-    {@"npp.saveAll",    @"Save All",   @"square.and.arrow.down.on.square", @"saveAll:"},
-    {@"npp.close",      @"Close",      @"xmark.square",           @"closeTab:"},
-    {@"npp.cut",        @"Cut",        @"scissors",               @"cutText:"},
-    {@"npp.copy",       @"Copy",       @"doc.on.doc",             @"copyText:"},
-    {@"npp.paste",      @"Paste",      @"doc.on.clipboard",       @"pasteText:"},
-    {@"npp.undo",       @"Undo",       @"arrow.uturn.backward",   @"undo:"},
-    {@"npp.redo",       @"Redo",       @"arrow.uturn.forward",    @"redo:"},
-    {@"npp.find",       @"Find",       @"magnifyingglass",        @"showFind:"},
-    {@"npp.replace",    @"Replace",    @"arrow.2.squarepath",     @"showReplace:"},
-    {@"npp.zoomIn",     @"Zoom In",    @"plus.magnifyingglass",   @"zoomIn:"},
-    {@"npp.zoomOut",    @"Zoom Out",   @"minus.magnifyingglass",  @"zoomOut:"},
-    {@"npp.wrap",       @"Word Wrap",  @"text.append",            @"toggleWordWrap:"},
-    {@"npp.whitespace", @"Whitespace", @"paragraphsign",          @"toggleWhitespace:"},
-    {@"npp.macroRec",   @"Record",     @"record.circle",          @"macroStart:"},
-    {@"npp.macroStop",  @"Stop",       @"stop.circle",            @"macroStop:"},
-    {@"npp.macroPlay",  @"Play",       @"play.circle",            @"macroPlay:"},
+    {@"IDM_FILE_NEW",                    @"New",          @"newDocument:",           0},
+    {@"IDM_FILE_OPEN",                   @"Open",         @"openDocument:",          0},
+    {@"IDM_FILE_SAVE",                   @"Save",         @"saveDocument:",          0},
+    {@"IDM_FILE_SAVEALL",                @"Save All",     @"saveAll:",               0},
+    {@"IDM_FILE_CLOSE",                  @"Close",        @"closeTab:",              0},
+    {@"IDM_FILE_CLOSEALL",               @"Close All",    @"closeAll:",              0},
+    {@"IDM_FILE_PRINT",                  @"Print",        @"printDocument:",         0},
+    {@"IDM_EDIT_CUT",                    @"Cut",          @"cutText:",               0},
+    {@"IDM_EDIT_COPY",                   @"Copy",         @"copyText:",              0},
+    {@"IDM_EDIT_PASTE",                  @"Paste",        @"pasteText:",             0},
+    {@"IDM_EDIT_UNDO",                   @"Undo",         @"undo:",                  0},
+    {@"IDM_EDIT_REDO",                   @"Redo",         @"redo:",                  0},
+    {@"IDM_SEARCH_FIND",                 @"Find",         @"showFind:",              0},
+    {@"IDM_SEARCH_REPLACE",              @"Replace",      @"showReplace:",           0},
+    {@"IDM_VIEW_ZOOMIN",                 @"Zoom In",      @"zoomIn:",                0},
+    {@"IDM_VIEW_ZOOMOUT",                @"Zoom Out",     @"zoomOut:",               0},
+    {@"IDM_VIEW_SYNSCROLLV",             @"Sync Vertical",   @"toggleSyncV:",        0},
+    {@"IDM_VIEW_SYNSCROLLH",             @"Sync Horizontal", @"toggleSyncH:",        0},
+    {@"IDM_VIEW_WRAP",                   @"Word Wrap",    @"toggleWordWrap:",        0},
+    {@"IDM_VIEW_ALL_CHARACTERS",         @"All Characters", @"toggleWhitespace:",    0},
+    // Indent guide is one of the Show Symbol entries, which are told apart by
+    // their tag rather than by having a selector each.
+    {@"IDM_VIEW_INDENT_GUIDE",           @"Indent Guide", @"toggleSymbol:",          4},
+    {@"IDM_LANG_USER_DLG",               @"User Language", @"defineUserLanguage:",   0},
+    {@"IDM_VIEW_DOC_MAP",                @"Document Map", @"toggleDocumentMap:",     0},
+    {@"IDM_VIEW_DOCLIST",                @"Document List", @"toggleDocumentList:",   0},
+    {@"IDM_VIEW_FUNC_LIST",              @"Function List", @"toggleFunctionList:",   0},
+    {@"IDM_VIEW_FILEBROWSER",            @"Folder as Workspace", @"toggleFileBrowser:", 0},
+    {@"IDM_VIEW_MONITORING",             @"Monitoring",   @"toggleMonitoring:",      0},
+    {@"IDM_MACRO_STARTRECORDINGMACRO",   @"Start Recording", @"macroStart:",         0},
+    {@"IDM_MACRO_STOPRECORDINGMACRO",    @"Stop Recording",  @"macroStop:",          0},
+    {@"IDM_MACRO_PLAYBACKRECORDEDMACRO", @"Play",         @"macroPlay:",             0},
+    {@"IDM_MACRO_RUNMULTIMACRODLG",      @"Run Multiple", @"macroRunMultiple:",      0},
+    {@"IDM_MACRO_SAVECURRENTMACRO",      @"Save Macro",   @"macroSave:",             0},
 };
 
 static const NSUInteger kSpecCount = sizeof(gSpecs) / sizeof(gSpecs[0]);
+
+static NSString *IdentifierForCommand(NSString *command) {
+    return [@"npp." stringByAppendingString:command];
+}
+
+#pragma mark - Item
+
+/// Notepad++ ships a separate image for a button that is switched off, so the
+/// item keeps both and picks between them when AppKit validates it.
+@interface NppToolbarItem : NSToolbarItem
+@property (nonatomic, strong) NSImage *enabledImage;
+@property (nonatomic, strong) NSImage *disabledImage;
+@end
+
+@implementation NppToolbarItem
+
+- (void)validate {
+    [super validate];
+    NSImage *wanted = self.isEnabled ? self.enabledImage : self.disabledImage;
+    if (wanted && self.image != wanted) self.image = wanted;
+}
+
+@end
+
+#pragma mark - Toolbar
 
 @interface NppToolbar ()
 @property (nonatomic, weak) NSWindow *window;
@@ -38,14 +82,44 @@ static const NSUInteger kSpecCount = sizeof(gSpecs) / sizeof(gSpecs[0]);
 @property (nonatomic, strong) NSToolbar *toolbar;
 @property (nonatomic) NSInteger requestedDisplayMode;
 @property (nonatomic) NSInteger requestedIconSize;
+/// Buttons in the order Notepad++ arranges them; a separator is an empty entry.
+@property (nonatomic, strong) NSArray<NSDictionary *> *order;
 @end
 
 @implementation NppToolbar
+
+/// Reads order.txt: the buttons, in order, with the icon each one uses. Falls
+/// back to the built-in list if the file is missing, so a stripped bundle still
+/// has a toolbar.
+- (NSArray<NSDictionary *> *)loadOrder {
+    NSMutableArray *rows = [NSMutableArray array];
+    NSString *path = [[NSBundle mainBundle] pathForResource:@"order" ofType:@"txt"
+                                                inDirectory:@"toolbar"];
+    NSString *text = path ? [NSString stringWithContentsOfFile:path
+                                                      encoding:NSUTF8StringEncoding error:NULL] : nil;
+    for (NSString *raw in [text componentsSeparatedByString:@"\n"]) {
+        NSString *line = [raw stringByTrimmingCharactersInSet:
+                          [NSCharacterSet whitespaceCharacterSet]];
+        if (!line.length || [line hasPrefix:@"#"]) continue;
+        if ([line isEqualToString:@"-"]) { [rows addObject:@{}]; continue; }
+        NSArray *parts = [line componentsSeparatedByString:@"\t"];
+        if (parts.count < 3) continue;
+        [rows addObject:@{ @"command": parts[0], @"icon": parts[1], @"disabled": parts[2] }];
+    }
+
+    if (!rows.count) {
+        for (NSUInteger i = 0; i < kSpecCount; ++i) {
+            [rows addObject:@{ @"command": gSpecs[i].command }];
+        }
+    }
+    return rows;
+}
 
 - (instancetype)initWithWindow:(NSWindow *)window target:(id)target {
     if (!(self = [super init])) return nil;
     _window = window;
     _actionTarget = target;
+    _order = [self loadOrder];
 
     _toolbar = [[NSToolbar alloc] initWithIdentifier:@"NppMacToolbar"];
     _toolbar.delegate = self;
@@ -99,53 +173,102 @@ static const NSUInteger kSpecCount = sizeof(gSpecs) / sizeof(gSpecs[0]);
 
 - (SEL)actionForIdentifier:(NSString *)identifier {
     for (NSUInteger i = 0; i < kSpecCount; ++i) {
-        if ([gSpecs[i].identifier isEqualToString:identifier]) {
+        if ([IdentifierForCommand(gSpecs[i].command) isEqualToString:identifier]) {
             return NSSelectorFromString(gSpecs[i].selectorName);
         }
     }
     return NULL;
 }
 
+#pragma mark - Images
+
+/// Notepad++ has a light and a dark version of every icon. Rather than watching
+/// for the appearance to change, the image decides which one to draw each time
+/// it is drawn, which is also correct for a window that is not the active one.
+- (NSImage *)imageNamed:(NSString *)name label:(NSString *)label {
+    NSBundle *bundle = [NSBundle mainBundle];
+    NSString *light = [bundle pathForResource:name ofType:@"png" inDirectory:@"toolbar/light"];
+    NSString *dark  = [bundle pathForResource:name ofType:@"png" inDirectory:@"toolbar/dark"];
+    if (!light && !dark) return nil;
+
+    NSImage *lightImage = light ? [[NSImage alloc] initWithContentsOfFile:light] : nil;
+    NSImage *darkImage  = dark  ? [[NSImage alloc] initWithContentsOfFile:dark]  : nil;
+    if (!lightImage && !darkImage) return nil;
+
+    // The files hold the largest size Notepad++ ships, so drawing them into a
+    // 24-point image keeps them sharp on a Retina display.
+    NSImage *image = [NSImage imageWithSize:NSMakeSize(24, 24) flipped:NO
+                             drawingHandler:^BOOL(NSRect rect) {
+        NSAppearance *appearance = NSAppearance.currentDrawingAppearance ?: NSAppearance.currentAppearance;
+        NSAppearanceName match = [appearance bestMatchFromAppearancesWithNames:
+                                  @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
+        BOOL isDark = [match isEqualToString:NSAppearanceNameDarkAqua];
+        NSImage *chosen = (isDark ? darkImage : lightImage) ?: (lightImage ?: darkImage);
+        [chosen drawInRect:rect fromRect:NSZeroRect operation:NSCompositingOperationSourceOver
+                  fraction:1.0];
+        return YES;
+    }];
+    image.accessibilityDescription = label;
+    return image;
+}
+
 #pragma mark - NSToolbarDelegate
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar {
     NSMutableArray *ids = [NSMutableArray array];
-    for (NSUInteger i = 0; i < kSpecCount; ++i) {
-        [ids addObject:gSpecs[i].identifier];
-        // Group the buttons the way the Windows toolbar groups them.
-        if ([gSpecs[i].identifier isEqualToString:@"npp.close"] ||
-            [gSpecs[i].identifier isEqualToString:@"npp.paste"] ||
-            [gSpecs[i].identifier isEqualToString:@"npp.redo"] ||
-            [gSpecs[i].identifier isEqualToString:@"npp.replace"] ||
-            [gSpecs[i].identifier isEqualToString:@"npp.whitespace"]) {
-            [ids addObject:NSToolbarSpaceItemIdentifier];
-        }
+    for (NSDictionary *row in self.order) {
+        NSString *command = row[@"command"];
+        if (!command) { [ids addObject:NSToolbarSpaceItemIdentifier]; continue; }
+        if ([self specIndexForCommand:command] == NSNotFound) continue;
+        [ids addObject:IdentifierForCommand(command)];
     }
     return ids;
 }
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar {
     NSMutableArray *ids = [NSMutableArray array];
-    for (NSUInteger i = 0; i < kSpecCount; ++i) [ids addObject:gSpecs[i].identifier];
+    for (NSUInteger i = 0; i < kSpecCount; ++i) {
+        [ids addObject:IdentifierForCommand(gSpecs[i].command)];
+    }
     [ids addObjectsFromArray:@[NSToolbarSpaceItemIdentifier,
                                NSToolbarFlexibleSpaceItemIdentifier,
                                NSToolbarSeparatorItemIdentifier]];
     return ids;
 }
 
+- (NSUInteger)specIndexForCommand:(NSString *)command {
+    for (NSUInteger i = 0; i < kSpecCount; ++i) {
+        if ([gSpecs[i].command isEqualToString:command]) return i;
+    }
+    return NSNotFound;
+}
+
+- (NSDictionary *)orderRowForCommand:(NSString *)command {
+    for (NSDictionary *row in self.order) {
+        if ([row[@"command"] isEqualToString:command]) return row;
+    }
+    return nil;
+}
+
 - (NSToolbarItem *)toolbar:(NSToolbar *)toolbar
      itemForItemIdentifier:(NSToolbarItemIdentifier)identifier
  willBeInsertedIntoToolbar:(BOOL)flag {
     for (NSUInteger i = 0; i < kSpecCount; ++i) {
-        if (![gSpecs[i].identifier isEqualToString:identifier]) continue;
-        NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:identifier];
+        if (![IdentifierForCommand(gSpecs[i].command) isEqualToString:identifier]) continue;
+
+        NppToolbarItem *item = [[NppToolbarItem alloc] initWithItemIdentifier:identifier];
         item.label = gSpecs[i].label;
         item.paletteLabel = gSpecs[i].label;
         item.toolTip = gSpecs[i].label;
-        item.image = [NSImage imageWithSystemSymbolName:gSpecs[i].symbol
-                               accessibilityDescription:gSpecs[i].label];
+        item.tag = gSpecs[i].tag;
         item.target = self.actionTarget;
         item.action = NSSelectorFromString(gSpecs[i].selectorName);
+
+        NSDictionary *row = [self orderRowForCommand:gSpecs[i].command];
+        item.enabledImage = [self imageNamed:row[@"icon"] ?: @"" label:gSpecs[i].label];
+        item.disabledImage = [self imageNamed:row[@"disabled"] ?: @"" label:gSpecs[i].label]
+                             ?: item.enabledImage;
+        item.image = item.enabledImage ?: item.disabledImage;
         return item;
     }
     return nil;

@@ -233,6 +233,14 @@ binaries can never load here:
 - **Compare** (what ComparePlus provides): set one file aside, compare, mark
   added, removed and changed lines, step between differences, a summary, and
   the ignore-case, ignore-spaces and ignore-empty-lines options.
+The toolbar carries Notepad++'s own icons. They are not redrawn: the images are
+extracted from the .ico files in the Notepad++ sources, which are containers
+holding one PNG per size, and the order of the buttons is read out of the
+toolBarIcons[] array in Notepad_plus.cpp. `gen_toolbar_icons.py` does both and
+writes resources/toolbar/, so the set can be regenerated when upstream changes
+it. Light and dark variants are both kept, and the disabled art Notepad++ ships
+is used when a button is switched off.
+
 - **Run** (the part of NppExec that carries over): the eleven variables
   Notepad++ substitutes into a command line, output streaming into a console
   panel instead of a dialog, and commands saved under a name, each of which

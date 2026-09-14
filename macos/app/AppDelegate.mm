@@ -1896,7 +1896,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 
 - (void)foldLevel:(NSMenuItem *)s   { [self.editor foldToLevel:s.tag]; }
 - (void)unfoldLevel:(NSMenuItem *)s { [self.editor unfoldToLevel:s.tag]; }
-- (void)toggleSymbol:(NSMenuItem *)s { [self.editor toggleSymbol:(NppSymbol)s.tag]; }
+- (void)toggleSymbol:(id)sender { [self.editor toggleSymbol:(NppSymbol)[sender tag]]; }
 
 - (void)hideLines:(id)sender        { [self.editor hideSelectedLines]; }
 - (void)showHiddenLines:(id)sender  { [self.editor showAllHiddenLines]; }

@@ -1971,14 +1971,65 @@ int NppMacRunTests(AppDelegate *app) {
         NSArray *ids = [tb itemIdentifiers];
         Check(@"IDM_SETTING_PREFERENCE (toolbar buttons)",
               @"the bar carries the editing commands",
-              ids.count > 10 && [ids containsObject:@"npp.save"] &&
-              [ids containsObject:@"npp.find"]);
+              ids.count > 10 && [ids containsObject:@"npp.IDM_FILE_SAVE"] &&
+              [ids containsObject:@"npp.IDM_SEARCH_FIND"]);
 
         Check(@"IDM_SETTING_PREFERENCE (toolbar actions)",
               @"each button drives the matching menu command",
-              [tb actionForIdentifier:@"npp.save"] == @selector(saveDocument:) &&
-              [tb actionForIdentifier:@"npp.find"] == @selector(showFind:) &&
-              [tb actionForIdentifier:@"npp.undo"] == @selector(undo:));
+              [tb actionForIdentifier:@"npp.IDM_FILE_SAVE"] == @selector(saveDocument:) &&
+              [tb actionForIdentifier:@"npp.IDM_SEARCH_FIND"] == @selector(showFind:) &&
+              [tb actionForIdentifier:@"npp.IDM_EDIT_UNDO"] == @selector(undo:));
+
+        // The buttons, and their order, are generated from the Notepad++
+        // sources rather than written out here, so the test reads the same
+        // file and checks the bar agrees with it.
+        NSString *orderPath = [[NSBundle mainBundle] pathForResource:@"order" ofType:@"txt"
+                                                         inDirectory:@"toolbar"];
+        NSMutableArray *expected = [NSMutableArray array];
+        for (NSString *raw in [[NSString stringWithContentsOfFile:orderPath
+                                                         encoding:NSUTF8StringEncoding error:NULL]
+                               componentsSeparatedByString:@"\n"]) {
+            NSString *line = [raw stringByTrimmingCharactersInSet:
+                              [NSCharacterSet whitespaceCharacterSet]];
+            if (!line.length || [line hasPrefix:@"#"] || [line isEqualToString:@"-"]) continue;
+            [expected addObject:[@"npp." stringByAppendingString:
+                                 [line componentsSeparatedByString:@"\t"].firstObject]];
+        }
+        NSMutableArray *actual = [NSMutableArray array];
+        for (NSString *identifier in ids) {
+            if ([identifier hasPrefix:@"npp."]) [actual addObject:identifier];
+        }
+        Check(@"IDM_SETTING_PREFERENCE (toolbar order)",
+              @"the bar holds the same buttons, in the same order, as Notepad++",
+              expected.count == 32 && [actual isEqualToArray:expected]);
+
+        // Every button must actually carry its Notepad++ icon. An SF Symbol
+        // standing in for a missing file would look plausible and be wrong, so
+        // the test insists the image came from the bundled set.
+        NSInteger withIcons = 0, distinct = 0;
+        NSMutableSet *seen = [NSMutableSet set];
+        for (NSToolbarItem *item in [app.window.toolbar items]) {
+            if (![item.itemIdentifier hasPrefix:@"npp."]) continue;
+            if (!item.image) continue;
+            withIcons++;
+            NSData *rendered = [item.image TIFFRepresentation];
+            if (rendered && ![seen containsObject:rendered]) { [seen addObject:rendered]; distinct++; }
+        }
+        Check(@"IDM_SETTING_PREFERENCE (toolbar icons)",
+              @"every button carries its own icon taken from the Notepad++ sources",
+              withIcons == 32 && distinct >= 30);
+
+        // The icons come in a light and a dark set; both have to be present,
+        // and they have to differ, or one theme is silently using the other's.
+        NSString *lightPath = [[NSBundle mainBundle] pathForResource:@"save_off" ofType:@"png"
+                                                         inDirectory:@"toolbar/light"];
+        NSString *darkPath = [[NSBundle mainBundle] pathForResource:@"save_off" ofType:@"png"
+                                                        inDirectory:@"toolbar/dark"];
+        NSData *lightData = lightPath ? [NSData dataWithContentsOfFile:lightPath] : nil;
+        NSData *darkData = darkPath ? [NSData dataWithContentsOfFile:darkPath] : nil;
+        Check(@"IDM_SETTING_PREFERENCE (toolbar themes)",
+              @"a light and a dark icon are bundled for each button, and they differ",
+              lightData.length > 0 && darkData.length > 0 && ![lightData isEqualToData:darkData]);
 
         NppPreferences *p = [NppPreferences shared];
         p.showToolbar = NO;  [app applyToolbarPreferences];

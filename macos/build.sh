@@ -70,6 +70,11 @@ cp "$ROOT/macos/test-ftp-server.py"         "$APP/Contents/Resources/"
 mkdir -p "$APP/Contents/Resources/themes"
 cp "$ROOT"/PowerEditor/installer/themes/*.xml "$APP/Contents/Resources/themes/"
 # Notepad++'s own function-list parsers, read by the Function List panel.
+mkdir -p "$APP/Contents/Resources/toolbar/light" "$APP/Contents/Resources/toolbar/dark"
+cp "$ROOT"/macos/resources/toolbar/order.txt        "$APP/Contents/Resources/toolbar/"
+cp "$ROOT"/macos/resources/toolbar/light/*.png      "$APP/Contents/Resources/toolbar/light/"
+cp "$ROOT"/macos/resources/toolbar/dark/*.png       "$APP/Contents/Resources/toolbar/dark/"
+
 mkdir -p "$APP/Contents/Resources/functionList"
 cp "$ROOT"/PowerEditor/installer/functionList/*.xml "$APP/Contents/Resources/functionList/"
 codesign --force --deep --sign - "$APP" 2>/dev/null
