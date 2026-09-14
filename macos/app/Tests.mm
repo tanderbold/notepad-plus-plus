@@ -1534,6 +1534,15 @@ int NppMacRunTests(AppDelegate *app) {
             @[@"ini",        @"ini",  @"[Section]\nkey=1\n",                                        @"Section"],
             @[@"fortran",    @"f90",  @"      SUBROUTINE ALPHA(X)\n      END\n",                    @"ALPHA"],
             @[@"d",          @"d",    @"int add(int a, int b)\n{\n    return 0;\n}\n",              @"add"],
+
+            // Corrected parsers: things upstream's own patterns do not find.
+            // Each is covered by a file in functionList-corrections, which says
+            // at its top what it changes and what the original did.
+            @[@"rust",       @"rs",   @"pub fn alpha(x: i32) -> i32 { x }\n",                      @"alpha"],
+            @[@"rust",       @"rs",   @"impl Thing {\n    pub fn delta(&self) {}\n}\n",            @"Thing::delta"],
+            @[@"javascript", @"js",   @"const beta = (x) => x;\n",                                 @"beta"],
+            @[@"typescript", @"ts",   @"export function beta(x: number): number { return x; }\n",  @"beta"],
+            @[@"typescript", @"ts",   @"class Thing {\n    gamma(): void { }\n}\n",                @"Thing::gamma"],
             // sql.xml is an Oracle parser and wants the named END its own
             // comment calls best practice.
             @[@"sql",        @"sql",  @"CREATE OR REPLACE PROCEDURE alpha IS\nBEGIN\nNULL;\nEND alpha;\n", @"PROCEDURE alpha"],
@@ -1556,6 +1565,28 @@ int NppMacRunTests(AppDelegate *app) {
               @"each language finds what its own Notepad++ parser is meant to find",
               missing.count == 0);
         if (missing.count) printf("       %s\n", [[missing componentsJoinedByString:@"; "] UTF8String]);
+
+        // A corrections file that is not well formed is simply skipped, and the
+        // language then quietly behaves as it did before -- which is how three
+        // of them were written with a double hyphen inside an XML comment and
+        // appeared to do nothing. Each one has to parse and register its parser.
+        NSString *fixDir = [[NSBundle mainBundle] pathForResource:@"functionListCorrections"
+                                                           ofType:nil];
+        NSMutableArray *brokenFixes = [NSMutableArray array];
+        for (NSString *file in [[NSFileManager defaultManager]
+                                contentsOfDirectoryAtPath:fixDir ?: @"" error:NULL]) {
+            if (![file.pathExtension.lowercaseString isEqualToString:@"xml"]) continue;
+            NSData *data = [NSData dataWithContentsOfFile:
+                            [fixDir stringByAppendingPathComponent:file]];
+            NSXMLParser *check = [[NSXMLParser alloc] initWithData:data ?: [NSData data]];
+            NppAttributeReader *reader = [[NppAttributeReader alloc] init];
+            check.delegate = reader;
+            if (![check parse]) [brokenFixes addObject:file];
+        }
+        Check(@"IDM_VIEW_FUNC_LIST (corrections load)",
+              @"every corrections file is well formed and reaches the catalogue",
+              fixDir.length > 0 && brokenFixes.count == 0 &&
+              [cat parserIDForLanguage:@"rust" extension:@"rs"] != nil);
 
         // XML folds a newline inside an attribute value into a space. Most of
         // upstream's patterns use (?x), where a # comment runs to end of line,

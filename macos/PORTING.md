@@ -255,6 +255,16 @@ then swallow everything after the first one.
 Matching runs over UTF-8 bytes, which is what PCRE2 works in and what Scintilla
 stores, so no offset is ever translated.
 
+A few of upstream's parsers do not find declarations they plainly should, and
+`macos/resources/functionList-corrections/` replaces those. The files are in the
+same format and are loaded after the originals, so one of them replaces the
+parser with the same id; each says at its top what it changes and what the
+original did. There are three: Rust, whose list of modifiers before `fn` has no
+`pub` and which has no `impl` ranges; TypeScript, which finds only a bare
+`function` and so misses methods, return-type annotations and arrow functions;
+and JavaScript, which misses arrow functions bound to a name. A language whose
+upstream parser is right has no file there.
+
 The toolbar carries Notepad++'s own icons. They are not redrawn: the images are
 extracted from the .ico files in the Notepad++ sources, which are containers
 holding one PNG per size, and the order of the buttons is read out of the

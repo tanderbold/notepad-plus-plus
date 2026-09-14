@@ -60,17 +60,24 @@
     _associations = [NSMutableDictionary dictionary];
     _parserIDByFile = [NSMutableDictionary dictionary];
 
-    NSString *dir = [[NSBundle mainBundle] pathForResource:@"functionList" ofType:nil];
-    if (!dir) return self;
-    for (NSString *file in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:NULL]) {
-        if (![file.pathExtension.lowercaseString isEqualToString:@"xml"]) continue;
-        NSData *data = [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:file]];
-        if (!data) continue;
-        data = [FunctionListCatalog dataPreservingAttributeNewlines:data];
-        self.currentFileBase = file.stringByDeletingPathExtension.lowercaseString;
-        NSXMLParser *parser = [[NSXMLParser alloc] initWithData:data];
-        parser.delegate = self;
-        [parser parse];
+    // Upstream's definitions first, then the corrections, which replace a
+    // parser of the same id. What each correction changes, and why, is written
+    // at the top of its file.
+    for (NSString *folder in @[@"functionList", @"functionListCorrections"]) {
+        NSString *dir = [[NSBundle mainBundle] pathForResource:folder ofType:nil];
+        if (!dir) continue;
+        NSArray *files = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:NULL]
+                          sortedArrayUsingSelector:@selector(compare:)];
+        for (NSString *file in files) {
+            if (![file.pathExtension.lowercaseString isEqualToString:@"xml"]) continue;
+            NSData *data = [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:file]];
+            if (!data) continue;
+            data = [FunctionListCatalog dataPreservingAttributeNewlines:data];
+            self.currentFileBase = file.stringByDeletingPathExtension.lowercaseString;
+            NSXMLParser *parser = [[NSXMLParser alloc] initWithData:data];
+            parser.delegate = self;
+            [parser parse];
+        }
     }
     return self;
 }
