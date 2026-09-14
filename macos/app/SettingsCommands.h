@@ -146,6 +146,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// Saved FTP connections. Passwords are kept in the Keychain, not here.
 @property (nonatomic, copy) NSArray<NSDictionary *> *ftpProfiles;
 
+/// Commands saved under a name, each of which gets its own Run-menu entry.
+@property (nonatomic, copy) NSArray<NSDictionary *> *savedRunCommands;
+
 /// Settings folder ("cloud location"); empty means the default support folder.
 @property (nonatomic, copy) NSString *settingsDirectory;
 

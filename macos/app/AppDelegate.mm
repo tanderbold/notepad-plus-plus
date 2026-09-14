@@ -18,6 +18,7 @@
 #import "CompareCommands.h"
 #import "FtpCommands.h"
 #import "XmlCommands.h"
+#import "RunCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -51,6 +52,8 @@
 @property (nonatomic, strong) NSTableView *ftpTable;
 @property (nonatomic, strong) NSArray *ftpEntries;
 @property (nonatomic) BOOL alwaysOnTop;
+@property (nonatomic, strong) NSMenu *runMenu;
+@property (nonatomic) NSInteger fixedRunItemCount;
 @end
 
 @implementation AppDelegate
@@ -764,9 +767,18 @@
     NSMenu *runMenu = [[NSMenu alloc] initWithTitle:@"Run"];
     [self item:@"Run…" action:@selector(runCommand:) key:@"r"
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:runMenu];
+    [self item:@"Save Current Command…" action:@selector(saveRunCommand:) key:@"" flags:0 menu:runMenu];
+    [self item:@"Manage Saved Commands…" action:@selector(manageRunCommands:) key:@"" flags:0 menu:runMenu];
+    [self item:@"Show Console" action:@selector(toggleConsole:) key:@"" flags:0 menu:runMenu];
+    [runMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Validate shortcuts" action:@selector(validateShortcuts:) key:@"" flags:0 menu:runMenu];
     [self item:@"Open Plugins Folder…" action:@selector(openPluginsFolder:) key:@"" flags:0 menu:runMenu];
     runItem.submenu = runMenu;
+    self.runMenu = runMenu;
+    // The saved commands sit below a separator that is added with them, so the
+    // menu can be rebuilt without disturbing the fixed entries above it.
+    self.fixedRunItemCount = runMenu.numberOfItems;
+    [self rebuildRunMenu];
 
     // ---- Plugins: the functionality Notepad++ gets from its popular plugins,
     // built in rather than loaded, since its plugin ABI is Windows-only.
@@ -1426,9 +1438,66 @@
 #pragma mark - Run and Help
 
 - (void)runCommand:(id)sender {
-    NSString *cmd = [self promptForString:@"Run" default:@""];
+    NSString *cmd = [self promptForString:@"Run (variables such as $(FULL_CURRENT_PATH) are substituted)"
+                                  default:[[NSUserDefaults standardUserDefaults]
+                                           stringForKey:@"NppMacLastRunCommand"] ?: @""];
     if (!cmd.length) return;
-    [self presentText:[self.editor runShellCommand:cmd] title:cmd];
+    [[NSUserDefaults standardUserDefaults] setObject:cmd forKey:@"NppMacLastRunCommand"];
+    [self runSavedCommandLine:cmd];
+}
+
+/// Runs a command with its output going to the console rather than a dialog, so
+/// that something slow can be watched instead of waited on.
+- (void)runSavedCommandLine:(NSString *)command {
+    [self.editor.console show];
+    [self.editor runCommandLineInBackground:command completion:nil];
+}
+
+- (void)runSavedCommand:(NSMenuItem *)sender {
+    [self runSavedCommandLine:sender.representedObject];
+}
+
+- (void)toggleConsole:(id)sender { [self.editor.console toggle]; }
+
+- (void)saveRunCommand:(id)sender {
+    NSString *cmd = [self promptForString:@"Command to save"
+                                  default:[[NSUserDefaults standardUserDefaults]
+                                           stringForKey:@"NppMacLastRunCommand"] ?: @""];
+    if (!cmd.length) return;
+    NSString *name = [self promptForString:@"Name it" default:@""];
+    if (!name.length) return;
+    [self.editor saveCommand:[NppSavedCommand commandWithName:name command:cmd]];
+    [self rebuildRunMenu];
+}
+
+- (void)manageRunCommands:(id)sender {
+    NSArray<NppSavedCommand *> *saved = [self.editor savedCommands];
+    if (!saved.count) { [self presentText:@"No commands have been saved." title:@"Saved Commands"]; return; }
+
+    NSMutableString *listing = [NSMutableString string];
+    for (NppSavedCommand *c in saved) [listing appendFormat:@"%@\t%@\n", c.name, c.command];
+    [self presentText:listing title:@"Saved Commands"];
+
+    NSString *remove = [self promptForString:@"Remove which (leave empty to keep all)" default:@""];
+    if (!remove.length) return;
+    [self.editor removeSavedCommandNamed:remove];
+    [self rebuildRunMenu];
+}
+
+- (void)rebuildRunMenu {
+    NSMenu *menu = self.runMenu;
+    if (!menu) return;
+    while (menu.numberOfItems > self.fixedRunItemCount)
+        [menu removeItemAtIndex:menu.numberOfItems - 1];
+
+    NSArray<NppSavedCommand *> *saved = [self.editor savedCommands];
+    if (!saved.count) return;
+    [menu addItem:[NSMenuItem separatorItem]];
+    for (NppSavedCommand *c in saved) {
+        NSMenuItem *entry = [self item:c.name action:@selector(runSavedCommand:) key:@"" flags:0 menu:menu];
+        entry.representedObject = c.command;
+        entry.toolTip = c.command;
+    }
 }
 
 - (void)validateShortcuts:(id)sender {

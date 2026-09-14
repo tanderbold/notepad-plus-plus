@@ -233,6 +233,11 @@ binaries can never load here:
 - **Compare** (what ComparePlus provides): set one file aside, compare, mark
   added, removed and changed lines, step between differences, a summary, and
   the ignore-case, ignore-spaces and ignore-empty-lines options.
+- **Run** (the part of NppExec that carries over): the eleven variables
+  Notepad++ substitutes into a command line, output streaming into a console
+  panel instead of a dialog, and commands saved under a name, each of which
+  appears in the Run menu. What does not carry over is NppExec's own scripting
+  language and its Windows process handling.
 - **XML** (what XML Tools provides): pretty print in three styles, linearize,
   check syntax, validate against a DTD or an XSD schema, evaluate XPath, report
   the element path at the caret, escape a selection, and apply an XSL

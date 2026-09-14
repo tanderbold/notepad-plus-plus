@@ -24,6 +24,7 @@
 #import "CompareCommands.h"
 #import "FtpCommands.h"
 #import "XmlCommands.h"
+#import "RunCommands.h"
 #import "FunctionListPanel.h"
 #import "FunctionListCatalog.h"
 #import "LanguageCatalog.h"
@@ -2968,6 +2969,113 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"XML current path", @"the path is reported while the document is incomplete",
               [plainPath isEqualToString:@"/root/list/item"] &&
               [indexedPath isEqualToString:@"/root[1]/list[1]/item[2]"]);
+    }
+
+    printf("\n== Run ==\n");
+    {
+        // The variables are read off a real document, so the test exercises the
+        // same path the menu command does.
+        NSString *runPath = TempFile(@"npp_run_test.txt", @"alpha beta\nsecond line\n");
+        [ed openFileAtPath:runPath error:NULL];
+        ScintillaView *sci = ed.sci;
+        [sci message:SCI_GOTOPOS wParam:6 lParam:0];    // inside "beta" on line 0
+
+        NSString *dir = runPath.stringByDeletingLastPathComponent;
+        BOOL paths =
+            [[ed expandRunVariables:@"$(FULL_CURRENT_PATH)"] isEqualToString:runPath] &&
+            [[ed expandRunVariables:@"$(CURRENT_DIRECTORY)"] isEqualToString:dir] &&
+            [[ed expandRunVariables:@"$(FILE_NAME)"] isEqualToString:@"npp_run_test.txt"] &&
+            [[ed expandRunVariables:@"$(NAME_PART)"] isEqualToString:@"npp_run_test"];
+        BOOL caret =
+            [[ed expandRunVariables:@"$(CURRENT_WORD)"] isEqualToString:@"beta"] &&
+            [[ed expandRunVariables:@"$(CURRENT_LINESTR)"] isEqualToString:@"alpha beta"] &&
+            [[ed expandRunVariables:@"$(CURRENT_LINE)"] isEqualToString:@"0"] &&
+            [[ed expandRunVariables:@"$(CURRENT_COLUMN)"] isEqualToString:@"6"];
+        BOOL npp =
+            [[ed expandRunVariables:@"$(NPP_FULL_FILE_PATH)"] containsString:@"NotepadMac"] &&
+            [ed expandRunVariables:@"$(NPP_DIRECTORY)"].length > 0;
+        Check(@"Run variables", @"every substitution Notepad++ makes is made here too",
+              paths && caret && npp);
+
+        // Windows keeps the dot on the extension, and gives nothing when there
+        // is none; both halves of that are easy to get wrong.
+        NSString *withExt = [ed expandRunVariables:@"$(EXT_PART)"];
+        NSString *plainPath = TempFile(@"npp_run_plain", @"x\n");
+        [ed openFileAtPath:plainPath error:NULL];
+        NSString *withoutExt = [ed expandRunVariables:@"$(EXT_PART)"];
+        Check(@"Run extension part", @"the extension keeps its dot, and is empty when absent",
+              [withExt isEqualToString:@".txt"] && withoutExt.length == 0);
+
+        // A name that is not a variable belongs to the shell, so it must come
+        // out untouched rather than being swallowed.
+        [ed openFileAtPath:runPath error:NULL];
+        Check(@"Run leaves unknown names", @"an unknown or unclosed variable is left as written",
+              [[ed expandRunVariables:@"$(NOT_A_VARIABLE) $(FILE_NAME)"]
+                  isEqualToString:@"$(NOT_A_VARIABLE) npp_run_test.txt"] &&
+              [[ed expandRunVariables:@"$(unclosed"] isEqualToString:@"$(unclosed"] &&
+              [[ed expandRunVariables:@"cost is $5"] isEqualToString:@"cost is $5"]);
+
+        NppRunResult *echoed = [ed runCommandLine:@"echo $(NAME_PART)" intoConsole:NO];
+        Check(@"Run command", @"the command runs with its variables already substituted",
+              echoed.exitStatus == 0 &&
+              [echoed.output isEqualToString:@"npp_run_test\n"]);
+
+        // Failure has to be visible: the status and whatever went to stderr.
+        NppRunResult *failed = [ed runCommandLine:@"echo oops >&2; exit 3" intoConsole:NO];
+        Check(@"Run reports failure", @"a non-zero status and stderr both come back",
+              failed.exitStatus == 3 && [failed.output containsString:@"oops"]);
+
+        // A command is nearly always meant relative to the file being edited.
+        NppRunResult *where = [ed runCommandLine:@"pwd" intoConsole:NO];
+        Check(@"Run working directory", @"the command runs in the document's own directory",
+              [[where.output stringByTrimmingCharactersInSet:
+                   [NSCharacterSet whitespaceAndNewlineCharacterSet]].stringByResolvingSymlinksInPath
+                  isEqualToString:dir.stringByResolvingSymlinksInPath]);
+
+        [ed.console clear];
+        NppRunResult *shown = [ed runCommandLine:@"echo visible" intoConsole:YES];
+        NSString *console = ed.console.text;
+        Check(@"Run console", @"the command and its output both reach the console",
+              shown.exitStatus == 0 && [console containsString:@"> echo visible"] &&
+              [console containsString:@"visible\n"]);
+
+        [ed.console clear];
+        [ed runCommandLine:@"exit 7" intoConsole:YES];
+        Check(@"Run console reports status", @"a failure is written to the console, not just returned",
+              [ed.console.text containsString:@"exit status 7"]);
+
+        // The background path expands on the main thread and hands the result
+        // to the worker; expanding a second time there would corrupt a command
+        // whose own text happens to look like a variable.
+        SetDoc(ed, @"$(FILE_NAME)\n");
+        [sci message:SCI_GOTOPOS wParam:0 lParam:0];
+        __block NppRunResult *async = nil;
+        [ed runCommandLineInBackground:@"echo '$(CURRENT_LINESTR)'"
+                            completion:^(NppRunResult *r) { async = r; }];
+        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:10];
+        while (!async && [deadline timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                     beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+        }
+        Check(@"Run in background", @"it completes, and substitution happens exactly once",
+              async != nil && async.exitStatus == 0 &&
+              [async.output isEqualToString:@"$(FILE_NAME)\n"]);
+
+        // Saved commands are keyed by name, so saving the same name again
+        // replaces it rather than adding a duplicate.
+        NSUInteger before = [ed savedCommands].count;
+        [ed saveCommand:[NppSavedCommand commandWithName:@"Build" command:@"make"]];
+        [ed saveCommand:[NppSavedCommand commandWithName:@"Build" command:@"make -j8"]];
+        NSArray<NppSavedCommand *> *saved = [ed savedCommands];
+        NppSavedCommand *build = nil;
+        for (NppSavedCommand *c in saved) if ([c.name isEqualToString:@"Build"]) build = c;
+        BOOL replaced = saved.count == before + 1 && [build.command isEqualToString:@"make -j8"];
+        [ed removeSavedCommandNamed:@"Build"];
+        Check(@"Run saved commands", @"saving by name replaces, and removing takes it away",
+              replaced && [ed savedCommands].count == before);
+
+        [[NSFileManager defaultManager] removeItemAtPath:runPath error:NULL];
+        [[NSFileManager defaultManager] removeItemAtPath:plainPath error:NULL];
     }
 
     // ---- meta-test: nothing may be declared implemented without a test
