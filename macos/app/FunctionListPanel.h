@@ -1,6 +1,7 @@
 // "Function List": the declarations found in the current document, in a panel.
-// Notepad++ drives this from functionList.xml regexes; the same idea is used
-// here with a per-language pattern table.
+// The patterns are Notepad++'s own, read from the bundled functionList files.
+// A small built-in table covers the languages whose upstream pattern uses PCRE
+// features ICU has no equivalent for.
 #import <Cocoa/Cocoa.h>
 @class EditorController;
 

@@ -26,6 +26,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// Translates one of upstream's PCRE patterns into something ICU accepts.
 /// Exposed so the translation itself can be tested.
 + (nullable NSString *)icuPatternFrom:(NSString *)pcre;
+
+/// Rewrites literal newlines inside attribute values as character references,
+/// so a conformant XML parser does not fold them into spaces. Most of these
+/// patterns are written with (?x), where losing the newlines would let the
+/// first # comment swallow the rest of the pattern. Exposed to be tested.
++ (NSData *)dataPreservingAttributeNewlines:(NSData *)data;
 @end
 
 NS_ASSUME_NONNULL_END

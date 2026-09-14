@@ -57,6 +57,18 @@ static NSString *TempFile(NSString *name, NSString *contents) {
     return p;
 }
 
+/// Reads back one attribute value, for the newline-preservation test.
+@interface NppAttributeReader : NSObject <NSXMLParserDelegate>
+@property (nonatomic, copy) NSString *value;
+@end
+@implementation NppAttributeReader
+- (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)element
+  namespaceURI:(NSString *)ns qualifiedName:(NSString *)qn
+    attributes:(NSDictionary<NSString *, NSString *> *)attrs {
+    if (!self.value) self.value = attrs[@"b"];
+}
+@end
+
 int NppMacRunTests(AppDelegate *app) {
     gPass = gFail = 0;
     gCovered = [NSMutableSet set];
@@ -1414,6 +1426,68 @@ int NppMacRunTests(AppDelegate *app) {
               entries.count == 3 && [found containsObject:@"Alpha"] &&
               [found containsObject:@"one(self)"] && [found containsObject:@"two(self)"] &&
               ![[found componentsJoinedByString:@" "] containsString:@"def "]);
+
+        // C# exercises what Python does not: a class whose body has to be found
+        // by counting braces, names that several patterns narrow down in turn,
+        // and a comment that must not be searched.
+        NSString *csharp =
+            @"static HttpClient Build(int a)\n"
+            @"{\n"
+            @"    return null;\n"
+            @"}\n"
+            @"/*\n"
+            @"static void Ghost()\n"
+            @"{\n"
+            @"}\n"
+            @"*/\n"
+            @"class Store\n"
+            @"{\n"
+            @"    public void Clear() { }\n"
+            @"}\n";
+        NSArray<NppFunctionEntry *> *cs = [cat entriesInText:csharp forLanguage:@"cs" extension:@"cs"];
+        NSMutableArray *csNames = [NSMutableArray array];
+        for (NppFunctionEntry *e in cs) {
+            [csNames addObject:e.container.length
+                ? [NSString stringWithFormat:@"%@::%@", e.container, e.name] : e.name];
+        }
+
+        // Upstream lists several name patterns and applies them one after
+        // another, each searching inside what the last one found. Taking only
+        // the first, or only the last, leaves "class Store" or the whole
+        // matched line instead of "Store".
+        Check(@"IDM_VIEW_FUNC_LIST (name narrowing)",
+              @"chained name patterns reduce a declaration to just its name",
+              [csNames containsObject:@"Build"] && [csNames containsObject:@"Store"]);
+
+        // The class body runs to its closing brace, which the pattern itself
+        // does not cover -- it stops at the opening one.
+        Check(@"IDM_VIEW_FUNC_LIST (class body)",
+              @"a member is attributed to the class whose braces enclose it",
+              [csNames containsObject:@"Store::Clear"]);
+
+        // commentExpr exists so that code inside a comment is not reported.
+        Check(@"IDM_VIEW_FUNC_LIST (comments)",
+              @"a declaration inside a comment is not listed",
+              ![[csNames componentsJoinedByString:@" "] containsString:@"Ghost"]);
+
+        // XML folds a newline inside an attribute value into a space. Most of
+        // upstream's patterns use (?x), where a # comment runs to end of line,
+        // so losing the newlines lets the first comment eat the whole pattern.
+        NSString *sample = @"<a b=\"one #c\ntwo\" />";
+        NSData *restored = [FunctionListCatalog dataPreservingAttributeNewlines:
+                            [sample dataUsingEncoding:NSUTF8StringEncoding]];
+        NSString *restoredText = [[NSString alloc] initWithData:restored
+                                                       encoding:NSUTF8StringEncoding];
+        __block NSString *readBack = nil;
+        NppAttributeReader *reader = [[NppAttributeReader alloc] init];
+        NSXMLParser *xp = [[NSXMLParser alloc] initWithData:restored];
+        xp.delegate = reader;
+        [xp parse];
+        readBack = reader.value;
+        Check(@"IDM_VIEW_FUNC_LIST (pattern newlines)",
+              @"a newline inside an attribute survives being parsed",
+              [restoredText containsString:@"&#10;"] &&
+              [readBack containsString:@"\n"]);
 
         NSString *projDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_proj"];
         [[NSFileManager defaultManager] removeItemAtPath:projDir error:NULL];

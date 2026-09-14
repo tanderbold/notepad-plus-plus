@@ -233,6 +233,18 @@ binaries can never load here:
 - **Compare** (what ComparePlus provides): set one file aside, compare, mark
   added, removed and changed lines, step between differences, a summary, and
   the ignore-case, ignore-spaces and ignore-empty-lines options.
+The Function List reads Notepad++'s own functionList definitions. Three things
+about those files are easy to get wrong and are worth writing down: the several
+`nameExpr` entries are applied one after another, each narrowing what the last
+one found, rather than being alternatives; `classRange` matches only as far as
+the opening brace, and the body has to be found by counting `openSymbole` and
+`closeSymbole`; and the patterns must keep the newlines they were written with,
+because XML would otherwise fold them into spaces and the `#` comments in a
+`(?x)` pattern would then swallow everything after the first one. Of the 45
+parsers, 25 work as written on ICU; the rest use PCRE subroutine calls
+(`(?&NAME)`) and named groups, which ICU has no equivalent for, and fall back to
+the built-in patterns.
+
 The toolbar carries Notepad++'s own icons. They are not redrawn: the images are
 extracted from the .ico files in the Notepad++ sources, which are containers
 holding one PNG per size, and the order of the buttons is read out of the
