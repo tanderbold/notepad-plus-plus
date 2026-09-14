@@ -259,10 +259,12 @@ A few of upstream's parsers do not find declarations they plainly should, and
 `macos/resources/functionList-corrections/` replaces those. The files are in the
 same format and are loaded after the originals, so one of them replaces the
 parser with the same id; each says at its top what it changes and what the
-original did. There are three: Rust, whose list of modifiers before `fn` has no
+original did. There are four: Rust, whose list of modifiers before `fn` has no
 `pub` and which has no `impl` ranges; TypeScript, which finds only a bare
 `function` and so misses methods, return-type annotations and arrow functions;
-and JavaScript, which misses arrow functions bound to a name. A language whose
+JavaScript, which misses arrow functions bound to a name; and C#, which reads a
+return type as a bare word with an optional `[\w,\s<>]+` generic list, leaving
+no room for `Task<string?>`, `byte[]?` or a tuple. A language whose
 upstream parser is right has no file there.
 
 The toolbar carries Notepad++'s own icons. They are not redrawn: the images are

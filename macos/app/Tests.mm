@@ -1543,6 +1543,10 @@ int NppMacRunTests(AppDelegate *app) {
             @[@"javascript", @"js",   @"const beta = (x) => x;\n",                                 @"beta"],
             @[@"typescript", @"ts",   @"export function beta(x: number): number { return x; }\n",  @"beta"],
             @[@"typescript", @"ts",   @"class Thing {\n    gamma(): void { }\n}\n",                @"Thing::gamma"],
+            @[@"cs",         @"cs",   @"static async Task<string?> TryGet(int a)\n{\n    return null;\n}\n", @"TryGet"],
+            @[@"cs",         @"cs",   @"static async Task<(int, string)> Setup()\n{\n    return (1, null);\n}\n", @"Setup"],
+            @[@"cs",         @"cs",   @"class S\n{\n    public async Task<List<int>> Get() { return null; }\n}\n", @"S::Get"],
+            @[@"cs",         @"cs",   @"class S\n{\n    public byte[]? Raw() => null;\n}\n",   @"S::Raw"],
             // sql.xml is an Oracle parser and wants the named END its own
             // comment calls best practice.
             @[@"sql",        @"sql",  @"CREATE OR REPLACE PROCEDURE alpha IS\nBEGIN\nNULL;\nEND alpha;\n", @"PROCEDURE alpha"],
@@ -1565,6 +1569,30 @@ int NppMacRunTests(AppDelegate *app) {
               @"each language finds what its own Notepad++ parser is meant to find",
               missing.count == 0);
         if (missing.count) printf("       %s\n", [[missing componentsJoinedByString:@"; "] UTF8String]);
+
+        // The C# correction reads a return type loosely enough to cover tuples
+        // and nullable generics, which is exactly the kind of pattern that
+        // starts matching statements as well. None of these is a declaration.
+        NSString *notDeclarations =
+            @"var builder = WebApplication.CreateBuilder(args);\n"
+            @"Console.Write(\"hi\");\n"
+            @"var (cert, _) = await SetupCertificateAsync();\n"
+            @"using var rsa = RSA.Create(2048);\n"
+            @"foreach (var src in sources)\n{\n}\n"
+            @"if (File.Exists(path))\n{\n}\n"
+            @"while (true)\n{\n}\n"
+            @"lock (sync)\n{\n}\n"
+            @"req.Extensions.Add(new KeyUsage(a, true));\n"
+            @"return Results.NotFound();\n";
+        NSArray<NppFunctionEntry *> *spurious =
+            [cat entriesInText:notDeclarations forLanguage:@"cs" extension:@"cs"];
+        NSMutableArray *spuriousNames = [NSMutableArray array];
+        for (NppFunctionEntry *e in spurious) [spuriousNames addObject:e.name];
+        Check(@"IDM_VIEW_FUNC_LIST (no false declarations)",
+              @"statements that merely look like declarations are not listed",
+              spurious.count == 0);
+        if (spurious.count) printf("       %s\n",
+            [[spuriousNames componentsJoinedByString:@","] UTF8String]);
 
         // A corrections file that is not well formed is simply skipped, and the
         // language then quietly behaves as it did before -- which is how three
