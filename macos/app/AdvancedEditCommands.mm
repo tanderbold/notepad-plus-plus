@@ -1,4 +1,5 @@
 #import "AdvancedEditCommands.h"
+#import "ApiCatalog.h"
 #import "EditCommands.h"
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
@@ -420,10 +421,18 @@ static const char kSearchEngineKey = 0;
     return YES;
 }
 
-/// The call tip lists the lines where the word under the caret is declared.
+/// What to show for the word under the caret: the signatures Notepad++ ships for
+/// this language, and failing that the lines in this file that look like a
+/// declaration of it.
 - (NSArray<NSString *> *)callTipCandidates {
     NSString *word = [self currentSelectionOrWord];
     if (!word.length) return @[];
+
+    NSArray<NSString *> *fromApi =
+        [[ApiCatalog sharedCatalog] callTipsForLanguage:self.currentDocument.language.name ?: @""
+                                               function:word];
+    if (fromApi.count) return fromApi;
+
     NSMutableArray *tips = [NSMutableArray array];
     for (NSString *line in [([self.sci string] ?: @"") componentsSeparatedByString:@"\n"]) {
         if ([line rangeOfString:word].location == NSNotFound) continue;

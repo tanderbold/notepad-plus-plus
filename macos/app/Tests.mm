@@ -28,6 +28,7 @@
 #import "FunctionListPanel.h"
 #import "FunctionListCatalog.h"
 #import "NppRegex.h"
+#import "ApiCatalog.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -326,6 +327,33 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_EDIT_AUTOCOMPLETE", @"offers words from the document",
               [sci message:SCI_AUTOCACTIVE] != 0);
         [sci message:SCI_AUTOCCANCEL];
+
+        // Asking only whether the list appeared says nothing about what is in
+        // it. Function completion means the functions Notepad++ ships for the
+        // language, not the words that happen to be in this file.
+        NppPreferences *acPrefs = [NppPreferences shared];
+        NSInteger previousSource = acPrefs.autoCompleteSource;
+        acPrefs.autoCompleteSource = 0;                    // functions only
+        NSString *cFile = TempFile(@"t_api.c", @"int main(void) { return 0; }\n");
+        [ed openFileAtPath:cFile error:NULL];
+        NSArray *fromApi = [ed completionCandidatesForPrefix:@"prin"];
+        Check(@"IDM_EDIT_AUTOCOMPLETE (function list)",
+              @"completion offers the language's own functions, not just words in the file",
+              [fromApi containsObject:@"printf"] &&
+              ![[ed.sci string] containsString:@"printf"]);
+
+        // A language Notepad++ ships no list for still has to complete from its
+        // lexer keywords rather than going silent.
+        NSString *iniFile = TempFile(@"t_api.ini", @"[Section]\n");
+        [ed openFileAtPath:iniFile error:NULL];
+        NSArray *noApi = [ed completionCandidatesForPrefix:@"Sec"];
+        acPrefs.autoCompleteSource = previousSource;
+        Check(@"IDM_EDIT_AUTOCOMPLETE (no list shipped)",
+              @"a language with no shipped list still completes from its keywords",
+              [[ApiCatalog sharedCatalog] entriesForLanguage:@"ini"].count == 0 &&
+              noApi != nil);
+        [[NSFileManager defaultManager] removeItemAtPath:cFile error:NULL];
+        [[NSFileManager defaultManager] removeItemAtPath:iniFile error:NULL];
     }
 
     printf("\n== Edit: convert case ==\n");
@@ -750,11 +778,54 @@ int NppMacRunTests(AppDelegate *app) {
         BOOL tip = [ed showFunctionCallTip];
         Check(@"IDM_EDIT_FUNCCALLTIP", @"shows a hint for the word at the caret",
               tip && [sci message:SCI_CALLTIPACTIVE] != 0);
+
+        // A tip that appears but says nothing useful is no better than none.
+        // Notepad++ builds it from the shipped signature: return value, name,
+        // parameters, and the description on a line of its own.
+        NSString *tipFile = TempFile(@"t_tip.c", @"x = abs(1);\n");
+        [ed openFileAtPath:tipFile error:NULL];
+        [ed.sci message:SCI_GOTOPOS wParam:5 lParam:0];    // inside "abs"
+        NSArray<NSString *> *tips = [ed callTipCandidates];
+        Check(@"IDM_EDIT_FUNCCALLTIP (signature)",
+              @"the hint is the shipped signature, not a line copied from the file",
+              tips.count > 0 && [tips[0] isEqualToString:@"int abs (int i)"]);
+        [[NSFileManager defaultManager] removeItemAtPath:tipFile error:NULL];
+
+        // Stepping between overloads has to step between real ones. Perl's abs
+        // is shipped with two, so the document is Perl for this.
+        NSString *plFile = TempFile(@"t_tip.pl", @"$x = abs($y);\n");
+        [ed openFileAtPath:plFile error:NULL];
+        [ed.sci message:SCI_GOTOPOS wParam:7 lParam:0];    // inside "abs"
+        NSArray<NSString *> *overloads = [ed callTipCandidates];
+        [ed showFunctionCallTip];
         Check(@"IDM_EDIT_FUNCCALLTIP_NEXT", @"steps to the next overload",
-              [ed cycleFunctionCallTip:YES]);
+              overloads.count > 1 && [ed cycleFunctionCallTip:YES]);
         Check(@"IDM_EDIT_FUNCCALLTIP_PREVIOUS", @"steps back to the previous one",
               [ed cycleFunctionCallTip:NO]);
+        [[NSFileManager defaultManager] removeItemAtPath:plFile error:NULL];
         [sci message:SCI_CALLTIPCANCEL];
+
+        // Breadth: every list Notepad++ ships has to load. Bundling none of
+        // them at all, which is how this started, looked exactly like success
+        // as long as only the popup was checked.
+        ApiCatalog *apis = [ApiCatalog sharedCatalog];
+        NSMutableArray *emptyApis = [NSMutableArray array];
+        for (NSString *language in apis.languages) {
+            if (![apis entriesForLanguage:language].count) [emptyApis addObject:language];
+        }
+        Check(@"IDM_EDIT_FUNCCALLTIP (shipped lists)",
+              @"every function list Notepad++ ships is bundled and loads",
+              apis.languages.count == 34 && emptyApis.count == 0);
+        if (emptyApis.count) printf("       %s\n",
+            [[emptyApis componentsJoinedByString:@","] UTF8String]);
+
+        // The file says whether its list is matched regardless of case, and C's
+        // says it is not.
+        Check(@"IDM_EDIT_FUNCCALLTIP (case)",
+              @"the list honours the case setting its own file carries",
+              ![apis ignoreCaseForLanguage:@"c"] &&
+              [[apis callTipsForLanguage:@"c" function:@"ABS"] count] == 0 &&
+              [[apis callTipsForLanguage:@"c" function:@"abs"] count] == 1);
 
         CharacterPanel *chars = [[CharacterPanel alloc] initWithEditor:ed];
         SetDoc(ed, @"");

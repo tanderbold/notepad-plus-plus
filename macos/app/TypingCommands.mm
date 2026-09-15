@@ -1,4 +1,5 @@
 #import "TypingCommands.h"
+#import "ApiCatalog.h"
 #import "SettingsCommands.h"
 #import "AdvancedEditCommands.h"
 #import "LanguageCatalog.h"
@@ -43,10 +44,21 @@ static long Utf8Len(NSString *s) {
         }
     }
     if (p.autoCompleteSource == NppCompletionFunctions || p.autoCompleteSource == NppCompletionBoth) {
-        // The language's own keywords stand in for Notepad++'s function lists.
-        for (NSString *set in self.currentDocument.language.keywordSets.allValues) {
-            for (NSString *w in [set componentsSeparatedByString:@" "]) {
-                if (w.length > prefix.length && [w hasPrefix:prefix]) [found addObject:w];
+        // Notepad++'s own list for this language, which is what "function
+        // completion" means: the functions the language has, not the words that
+        // happen to be in this file.
+        NSString *language = self.currentDocument.language.name ?: @"";
+        NSArray *fromApi = [[ApiCatalog sharedCatalog] completionsForLanguage:language
+                                                                       prefix:prefix];
+        [found addObjectsFromArray:fromApi];
+
+        // A language Notepad++ ships no list for still gets its lexer keywords,
+        // which is better than nothing.
+        if (!fromApi.count) {
+            for (NSString *set in self.currentDocument.language.keywordSets.allValues) {
+                for (NSString *w in [set componentsSeparatedByString:@" "]) {
+                    if (w.length > prefix.length && [w hasPrefix:prefix]) [found addObject:w];
+                }
             }
         }
     }

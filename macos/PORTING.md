@@ -267,6 +267,14 @@ return type as a bare word with an optional `[\w,\s<>]+` generic list, leaving
 no room for `Task<string?>`, `byte[]?` or a tuple. A language whose
 upstream parser is right has no file there.
 
+Auto-completion and call tips use the function lists Notepad++ ships in
+`PowerEditor/installer/APIs` -- thirty-four files, one per language, carrying the
+names to complete and, for a function, its return value, parameters and
+description. Before, completion offered the lexer's keywords and a call tip was
+built by scanning the open file for lines that mentioned the word, which is not
+the same thing at all. A language with no file shipped still completes from its
+keywords.
+
 The toolbar carries Notepad++'s own icons. They are not redrawn: the images are
 extracted from the .ico files in the Notepad++ sources, which are containers
 holding one PNG per size, and the order of the buttons is read out of the

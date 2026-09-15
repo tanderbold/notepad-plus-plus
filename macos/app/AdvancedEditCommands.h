@@ -45,6 +45,9 @@ typedef NS_OPTIONS(NSInteger, NppMatchFlags) {
 
 // Auto-completion helpers
 - (BOOL)showPathCompletion;
+/// What the call tip would show, one entry per overload; exposed so a test can
+/// check the text rather than only that a tip appeared.
+- (NSArray<NSString *> *)callTipCandidates;
 - (BOOL)showFunctionCallTip;
 - (BOOL)cycleFunctionCallTip:(BOOL)forward;
 

@@ -45,7 +45,7 @@ libtool -static -o "$OUT/libscintilla-cocoa.a" "$OUT"/obj/*.o 2>/dev/null
 echo "==> NotepadMac"
 APPOBJ="$OUT/appobj"
 mkdir -p "$APPOBJ"
-for f in NppRegex LanguageCatalog StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
+for f in NppRegex ApiCatalog LanguageCatalog StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
 done
 clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o \
@@ -74,6 +74,9 @@ mkdir -p "$APP/Contents/Resources/toolbar/light" "$APP/Contents/Resources/toolba
 cp "$ROOT"/macos/resources/toolbar/order.txt        "$APP/Contents/Resources/toolbar/"
 cp "$ROOT"/macos/resources/toolbar/light/*.png      "$APP/Contents/Resources/toolbar/light/"
 cp "$ROOT"/macos/resources/toolbar/dark/*.png       "$APP/Contents/Resources/toolbar/dark/"
+
+mkdir -p "$APP/Contents/Resources/APIs"
+cp "$ROOT"/PowerEditor/installer/APIs/*.xml "$APP/Contents/Resources/APIs/"
 
 mkdir -p "$APP/Contents/Resources/functionList"
 cp "$ROOT"/PowerEditor/installer/functionList/*.xml "$APP/Contents/Resources/functionList/"
