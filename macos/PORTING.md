@@ -249,6 +249,14 @@ the trailing punctuation a sentence leaves behind -- a closing bracket only coun
 when an opening one inside the URL answers it. Notepad++'s own corpus for this is
 bundled and all 148 of its cases are checked.
 
+Which Scintilla messages Notepad++ sends and which this port sends can be
+compared directly, and doing so is a good way to find a setting that was never
+carried over. It turned up five: the typing mode (INS/OVR, which Notepad++ shows
+in the status bar), the vertical edge in all three of its forms, the caret's
+width and blink rate, scrolling past the last line, and virtual space. Most of
+what remains in that difference is Scintilla's own key commands, which the Cocoa
+port binds itself, and Windows rendering settings that have no counterpart.
+
 `macos/test-upstream.sh` runs the suites that come with the projects this port is
 built on -- Lexilla's lexers against its 208 example files, Lexilla's and
 Scintilla's unit tests -- and validates the function-list files this port adds

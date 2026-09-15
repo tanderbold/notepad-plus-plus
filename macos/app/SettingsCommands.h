@@ -146,6 +146,20 @@ NS_ASSUME_NONNULL_BEGIN
 /// Saved FTP connections. Passwords are kept in the Keychain, not here.
 @property (nonatomic, copy) NSArray<NSDictionary *> *ftpProfiles;
 
+/// Vertical edge: 0 none, 1 a line, 2 the background beyond the column changes.
+/// Notepad++ takes a list of columns, so more than one edge can be shown.
+@property (nonatomic) NSInteger edgeMode;
+@property (nonatomic, copy) NSString *edgeColumns;      // "80" or "80 120"
+
+/// Caret: width in pixels (0 hides it), blink rate in milliseconds (0 steady).
+@property (nonatomic) NSInteger caretWidth;
+@property (nonatomic) NSInteger caretBlinkRate;
+
+/// Whether the view may scroll past the last line, and whether the caret may
+/// sit past the end of a line.
+@property (nonatomic) BOOL scrollBeyondLastLine;
+@property (nonatomic) BOOL virtualSpace;
+
 /// Commands saved under a name, each of which gets its own Run-menu entry.
 @property (nonatomic, copy) NSArray<NSDictionary *> *savedRunCommands;
 

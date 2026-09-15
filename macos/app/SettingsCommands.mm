@@ -84,6 +84,12 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"jsonIndent"): @4,
         Key(@"ftpProfiles"): @[],
         Key(@"savedRunCommands"): @[],
+        Key(@"edgeMode"): @0,
+        Key(@"edgeColumns"): @"80",
+        Key(@"caretWidth"): @1,
+        Key(@"caretBlinkRate"): @530,          // the Windows default
+        Key(@"scrollBeyondLastLine"): @YES,
+        Key(@"virtualSpace"): @NO,
         Key(@"autoCompleteOnInput"): @NO,
         Key(@"autoCompleteSource"): @2,
         Key(@"autoCompleteThreshold"): @3,
@@ -174,6 +180,12 @@ NPP_PREF_OBJ(lastUsedDirectory, setLastUsedDirectory, NSString, @"lastUsedDirect
 NPP_PREF_OBJ(fixedDirectory, setFixedDirectory, NSString, @"fixedDirectory")
 NPP_PREF_OBJ(ftpProfiles, setFtpProfiles, NSArray, @"ftpProfiles")
 NPP_PREF_OBJ(savedRunCommands, setSavedRunCommands, NSArray, @"savedRunCommands")
+NPP_PREF_INT(edgeMode, setEdgeMode, @"edgeMode")
+NPP_PREF_OBJ(edgeColumns, setEdgeColumns, NSString, @"edgeColumns")
+NPP_PREF_INT(caretWidth, setCaretWidth, @"caretWidth")
+NPP_PREF_INT(caretBlinkRate, setCaretBlinkRate, @"caretBlinkRate")
+NPP_PREF_BOOL(scrollBeyondLastLine, setScrollBeyondLastLine, @"scrollBeyondLastLine")
+NPP_PREF_BOOL(virtualSpace, setVirtualSpace, @"virtualSpace")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")

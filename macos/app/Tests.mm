@@ -415,6 +415,80 @@ int NppMacRunTests(AppDelegate *app) {
                                             options:NppFindNone]] == 1);
     }
 
+    printf("\n== Editor settings Notepad++ has ==\n");
+    {
+        [ed newDocument];
+        NppPreferences *p = [NppPreferences shared];
+        ScintillaView *sv = ed.sci;
+
+        // Typing mode. Notepad++ shows it in the status bar and the Insert key
+        // switches it; nothing here had it at all.
+        // Whether a typed character overwrites is Scintilla's own doing; what
+        // was missing here is the mode itself and any way to see or change it.
+        NSTextField *status = [ed valueForKey:@"statusField"];
+        BOOL startsInsert = ![ed overtype];
+        [ed refreshChrome];
+        BOOL showsIns = [status.stringValue hasSuffix:@"INS"];
+        [ed toggleOvertype];
+        BOOL nowOvertype = [ed overtype] && [status.stringValue hasSuffix:@"OVR"];
+        [ed toggleOvertype];
+        Check(@"IDM_VIEW_SUMMARY (typing mode)",
+              @"the typing mode can be switched and the status bar says which it is",
+              startsInsert && showsIns && nowOvertype &&
+              ![ed overtype] && [status.stringValue hasSuffix:@"INS"]);
+
+        // A vertical edge, which Notepad++ can show as a line, as several
+        // lines, or as a change of background.
+        p.edgeMode = 1; p.edgeColumns = @"80";
+        [ed applyEditorPreferences];
+        BOOL single = [sv message:SCI_GETEDGEMODE] == EDGE_LINE &&
+                      [sv message:SCI_GETEDGECOLUMN] == 80;
+
+        p.edgeColumns = @"80 100 120";
+        [ed applyEditorPreferences];
+        BOOL several = [sv message:SCI_GETEDGEMODE] == EDGE_MULTILINE &&
+                       [sv message:SCI_GETMULTIEDGECOLUMN wParam:1] == 100;
+
+        p.edgeMode = 2; p.edgeColumns = @"72";
+        [ed applyEditorPreferences];
+        BOOL background = [sv message:SCI_GETEDGEMODE] == EDGE_BACKGROUND;
+
+        p.edgeMode = 0;
+        [ed applyEditorPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (vertical edge)",
+              @"one edge, several edges and the background form all reach Scintilla",
+              single && several && background &&
+              [sv message:SCI_GETEDGEMODE] == EDGE_NONE);
+
+        // Caret width and blink rate.
+        p.caretWidth = 3; p.caretBlinkRate = 0;
+        [ed applyEditorPreferences];
+        BOOL wide = [sv message:SCI_GETCARETWIDTH] == 3 &&
+                    [sv message:SCI_GETCARETPERIOD] == 0;
+        p.caretWidth = 1; p.caretBlinkRate = 530;
+        [ed applyEditorPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (caret)",
+              @"the caret's width and blink rate are settings, as they are in Notepad++",
+              wide && [sv message:SCI_GETCARETWIDTH] == 1 &&
+              [sv message:SCI_GETCARETPERIOD] == 530);
+
+        // Scrolling past the end, and the caret past the end of a line. The
+        // Scintilla message for the first is the other way round from the
+        // setting, which is easy to get backwards.
+        p.scrollBeyondLastLine = NO; p.virtualSpace = NO;
+        [ed applyEditorPreferences];
+        BOOL stops = [sv message:SCI_GETENDATLASTLINE] != 0 &&
+                     ([sv message:SCI_GETVIRTUALSPACEOPTIONS] & SCVS_USERACCESSIBLE) == 0;
+        p.scrollBeyondLastLine = YES; p.virtualSpace = YES;
+        [ed applyEditorPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (scrolling and virtual space)",
+              @"scrolling past the last line and the caret past a line's end each follow their setting",
+              stops && [sv message:SCI_GETENDATLASTLINE] == 0 &&
+              ([sv message:SCI_GETVIRTUALSPACEOPTIONS] & SCVS_USERACCESSIBLE) != 0);
+        p.virtualSpace = NO;
+        [ed applyEditorPreferences];
+    }
+
     printf("\n== Sorting: the way Notepad++ sorts ==\n");
     {
         [ed newDocument];

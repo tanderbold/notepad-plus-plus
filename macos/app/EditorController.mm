@@ -260,6 +260,68 @@ static long SciColor(NSColor *c) {
     [sci message:SCI_SETMARGINWIDTHN wParam:3 lParam:6];
     [sci message:SCI_SETCHANGEHISTORY
            wParam:(SC_CHANGE_HISTORY_ENABLED | SC_CHANGE_HISTORY_MARKERS) lParam:0];
+
+    [self applyEditorPreferences];
+}
+
+/// The editor settings Notepad++ keeps outside a document: the vertical edge,
+/// the caret, and how far the view and the caret may go past the text.
+- (void)applyEditorPreferences {
+    ScintillaView *sci = self.sciView;
+    NppPreferences *prefs = [NppPreferences shared];
+
+    // A vertical edge can be a line or a change of background, and Notepad++
+    // takes a list of columns rather than one.
+    NSMutableArray<NSNumber *> *columns = [NSMutableArray array];
+    for (NSString *piece in [(prefs.edgeColumns ?: @"") componentsSeparatedByCharactersInSet:
+                             [NSCharacterSet characterSetWithCharactersInString:@" ,;\t"]]) {
+        NSInteger column = piece.integerValue;
+        if (column > 0) [columns addObject:@(column)];
+    }
+
+    [sci message:SCI_MULTIEDGECLEARALL wParam:0 lParam:0];
+    if (prefs.edgeMode == 0 || !columns.count) {
+        [sci message:SCI_SETEDGEMODE wParam:EDGE_NONE lParam:0];
+    } else if (prefs.edgeMode == 2) {
+        // Background mode marks everything past the column and takes one column.
+        [sci message:SCI_SETEDGEMODE wParam:EDGE_BACKGROUND lParam:0];
+        [sci message:SCI_SETEDGECOLUMN wParam:(uptr_t)columns.firstObject.integerValue lParam:0];
+    } else if (columns.count == 1) {
+        [sci message:SCI_SETEDGEMODE wParam:EDGE_LINE lParam:0];
+        [sci message:SCI_SETEDGECOLUMN wParam:(uptr_t)columns.firstObject.integerValue lParam:0];
+    } else {
+        [sci message:SCI_SETEDGEMODE wParam:EDGE_MULTILINE lParam:0];
+        long colour = [sci message:SCI_GETEDGECOLOUR];
+        for (NSNumber *column in columns) {
+            [sci message:SCI_MULTIEDGEADDLINE wParam:(uptr_t)column.integerValue lParam:colour];
+        }
+    }
+
+    [sci message:SCI_SETCARETWIDTH wParam:(uptr_t)MAX((NSInteger)0, prefs.caretWidth) lParam:0];
+    [sci message:SCI_SETCARETPERIOD wParam:(uptr_t)MAX((NSInteger)0, prefs.caretBlinkRate) lParam:0];
+
+    // SCI_SETENDATLASTLINE is the other way round: setting it stops the view
+    // scrolling past the end.
+    [sci message:SCI_SETENDATLASTLINE wParam:prefs.scrollBeyondLastLine ? 0 : 1 lParam:0];
+    [sci message:SCI_SETVIRTUALSPACEOPTIONS
+           wParam:prefs.virtualSpace ? (SCVS_RECTANGULARSELECTION | SCVS_USERACCESSIBLE)
+                                     : SCVS_RECTANGULARSELECTION
+           lParam:0];
+}
+
+#pragma mark - Typing mode
+
+- (BOOL)overtype {
+    return [self.sciView message:SCI_GETOVERTYPE] != 0;
+}
+
+- (void)setOvertype:(BOOL)on {
+    [self.sciView message:SCI_SETOVERTYPE wParam:on ? 1 : 0 lParam:0];
+    [self refreshChrome];
+}
+
+- (void)toggleOvertype {
+    [self setOvertype:![self overtype]];
 }
 
 #pragma mark - Documents
@@ -1094,10 +1156,13 @@ static long SciColor(NSColor *c) {
     long lines = [sci message:SCI_GETLINECOUNT];
 
     NSString *eol = doc.eolMode == SC_EOL_CRLF ? @"CRLF" : doc.eolMode == SC_EOL_CR ? @"CR" : @"LF";
+    // Notepad++ shows the typing mode in the status bar, and this is the only
+    // place it is visible.
+    NSString *typing = [self overtype] ? @"OVR" : @"INS";
     self.statusField.stringValue = [NSString stringWithFormat:
-        @"%@    Ln %ld, Col %ld    %ld lines, %ld bytes    %@    %@    %@",
+        @"%@    Ln %ld, Col %ld    %ld lines, %ld bytes    %@    %@    %@    %@",
         doc.path ?: @"(unsaved)", line, col, lines, len,
-        doc.language.name ?: @"normal", [self encodingDisplayName], eol];
+        doc.language.name ?: @"normal", [self encodingDisplayName], eol, typing];
 
     self.window.title = doc.path ? [NSString stringWithFormat:@"%@ — %@", doc.displayName,
                                     doc.path.stringByDeletingLastPathComponent]

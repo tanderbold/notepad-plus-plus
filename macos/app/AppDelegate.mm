@@ -524,6 +524,8 @@
     [viewMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Word Wrap" action:@selector(toggleWordWrap:) key:@"w"
          flags:NSEventModifierFlagCommand | NSEventModifierFlagOption menu:viewMenu];
+    [self item:@"Toggle Insert/Overtype" action:@selector(toggleOvertype:) key:@"" flags:0
+          menu:viewMenu];
     [self item:@"Show Whitespace" action:@selector(toggleWhitespace:) key:@"i"
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:viewMenu];
     [viewMenu addItem:[NSMenuItem separatorItem]];
@@ -1746,6 +1748,8 @@
     BOOL on = [sci message:SCI_GETWRAPMODE] != SC_WRAP_NONE;
     [sci message:SCI_SETWRAPMODE wParam:(on ? SC_WRAP_NONE : SC_WRAP_WORD) lParam:0];
 }
+
+- (void)toggleOvertype:(id)sender { [self.editor toggleOvertype]; }
 
 - (void)toggleWhitespace:(id)sender {
     ScintillaView *sci = self.editor.sci;

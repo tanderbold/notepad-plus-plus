@@ -104,6 +104,13 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (void)applyLanguage;                            // re-attach lexer, keywords and styles
 - (void)rebuildContextMenu;                       // right-click menu from Preferences
 - (void)applyTabBarPreferences;                   // layout and behaviour of the tab bar
+/// Overtype: what the status bar shows as INS or OVR, and what the Insert key
+/// switches between.
+@property (nonatomic) BOOL overtype;
+- (void)toggleOvertype;
+/// Pushes the editor settings that are not per document into Scintilla.
+- (void)applyEditorPreferences;
+
 - (void)refreshChrome;                            // tab titles + status bar
 - (void)setChromeVisible:(BOOL)visible;           // hides tab bar + status bar
 - (BOOL)chromeVisible;
