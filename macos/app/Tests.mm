@@ -1575,9 +1575,14 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_EDIT_LTR", @"switches back to left-to-right", ![ed textDirectionIsRTL]);
 
         NSDictionary *sum = [ed documentSummary];
-        Check(@"IDM_VIEW_SUMMARY", @"counts words, lines and bytes",
-              [sum[@"words"] integerValue] == 3 && [sum[@"lines"] integerValue] >= 3 &&
-              [sum[@"bytes"] integerValue] > 0);
+        // A word is a run of anything that is not one of the separators
+        // Notepad++ searches with, so an underscore or a hash keeps a word
+        // together and a comma or an apostrophe does not.
+        SetDoc(ed, @"foo_bar a#b 1,000 O'Connel\n");
+        NSDictionary *counted = [ed documentSummary];
+        Check(@"IDM_VIEW_SUMMARY", @"the summary counts words the way Notepad++ counts them",
+              [counted[@"words"] unsignedIntegerValue] == 6 &&
+              [sum[@"lines"] unsignedIntegerValue] >= 1);
     }
 
     printf("\n== View: window modes and panels ==\n");

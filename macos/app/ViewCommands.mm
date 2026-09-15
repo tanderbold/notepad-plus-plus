@@ -159,9 +159,13 @@
 - (NSDictionary<NSString *, NSNumber *> *)documentSummary {
     ScintillaView *sci = self.sci;
     NSString *text = [sci string] ?: @"";
+    // A word is a run of anything that is not one of these, which is the set
+    // Notepad_plus::wordCount searches with. Splitting on every non-alphanumeric
+    // instead, as this did, counts foo_bar as two words and a_b#c as three.
     NSUInteger words = 0;
     NSScanner *scanner = [NSScanner scannerWithString:text];
-    NSCharacterSet *sep = [[NSCharacterSet alphanumericCharacterSet] invertedSet];
+    NSCharacterSet *sep = [NSCharacterSet characterSetWithCharactersInString:
+                           @" \t\\.,;:!?()+\r\n-*/=][{}&~\"'`|@$%<>^"];
     while (!scanner.isAtEnd) {
         if ([scanner scanUpToCharactersFromSet:sep intoString:NULL]) words++;
         [scanner scanCharactersFromSet:sep intoString:NULL];
