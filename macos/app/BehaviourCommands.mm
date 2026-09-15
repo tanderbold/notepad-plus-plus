@@ -209,6 +209,14 @@ static BOOL TrimOneTrailingUrlChar(NSString *text, NSUInteger start, NSUInteger 
     NSRange which = [closers rangeOfString:[NSString stringWithCharacters:&c length:1]];
     if (which.location == NSNotFound) return NO;
     unichar opener = [openers characterAtIndex:which.location];
+    // Walk back looking for the bracket this one would close. If one is found,
+    // the pair belongs to the URL and nothing is trimmed.
+    //
+    // A count that does not come out at zero also stops the trim, so one
+    // unmatched bracket is dropped and two are kept. That reads oddly, and it is
+    // what an open issue complains about, but the corpus states it as a decision
+    // -- "arbitrary parentheses in path: keep last closing parenthesis" -- so it
+    // stays as upstream has it.
     NSInteger count = 0;
     for (NSInteger j = (NSInteger)last - 1; j >= (NSInteger)start; --j) {
         unichar d = [text characterAtIndex:(NSUInteger)j];
