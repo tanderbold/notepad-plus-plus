@@ -1923,6 +1923,54 @@ int NppMacRunTests(AppDelegate *app) {
                 langBad ? [NSString stringWithFormat:@" (%d broken: %@)", langBad,
                            [broken componentsJoinedByString:@", "]] : @""],
               langBad == 0 && langOK > 80);
+
+        // Creating a lexer object is not the same as the buffer being coloured.
+        // For each language, its own first keyword is put in the document and
+        // the styles that come back are examined: if every byte is style 0, the
+        // lexer is attached in name only.
+        int lexed = 0;
+        NSMutableArray *unstyled = [NSMutableArray array];
+        NSDictionary *languageProbes = @{
+            @"html": @"<a href=\"x\">text</a>\n",
+            @"xml":  @"<root attr=\"1\">text</root>\n",
+            @"asp":  @"<% Response.Write \"hi\" %>\n",
+            @"jsp":  @"<% out.print(\"hi\"); %>\n",
+            @"kix":  @"; comment\n$a = 1\n",
+            @"inno": @"[Setup]\nAppName=Test\n",
+            @"yaml": @"key: value\n# comment\n",
+        };
+        for (int i = 0; i < kNppLangLexerCount; ++i) {
+            NSString *name = @(kNppLangLexers[i].langName);
+            NppLanguage *language = [cat languageNamed:name];
+            if (!language) continue;
+            NSString *keywords = language.keywordSets[@0] ?: language.keywordSets.allValues.firstObject;
+            NSString *word = [keywords componentsSeparatedByString:@" "].firstObject;
+
+            // A keyword on a line of its own is a fair probe for a programming
+            // language. For markup and for configuration files it is not: HTML's
+            // keywords are tag names, which are only tags inside angle brackets,
+            // so those languages get a line that is actually something in them.
+            NSString *probe = languageProbes[name]
+                            ?: (word.length ? [word stringByAppendingString:@"\n"] : nil);
+            if (!probe.length) continue;
+            word = probe;
+
+            [ed setLanguageNamed:name];
+            SetDoc(ed, probe);
+            [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+            BOOL styled = NO;
+            long probeLength = [sci message:SCI_GETLENGTH];
+            for (long at = 0; at < probeLength; ++at) {
+                if ([sci message:SCI_GETSTYLEAT wParam:(uptr_t)at] != 0) { styled = YES; break; }
+            }
+            if (styled) lexed++; else [unstyled addObject:name];
+        }
+        Check(@"IDM_LANG_USER (colouring)",
+              [NSString stringWithFormat:@"%d languages colour their own keyword%@", lexed,
+               unstyled.count ? [NSString stringWithFormat:@" (%lu do not: %@)",
+                                 (unsigned long)unstyled.count,
+                                 [unstyled componentsJoinedByString:@", "]] : @""],
+              unstyled.count == 0);
     }
 
     printf("\n== Tools: hashes ==\n");
@@ -2251,6 +2299,27 @@ int NppMacRunTests(AppDelegate *app) {
                         [sci message:SCI_STYLEGETFORE wParam:STYLE_DEFAULT] == 0xEFCDAB;
         Check(@"IDM_SETTING_IMPORTSTYLETHEMES (usable)",
               @"an imported theme is listed and can be applied", imported);
+
+        // Breadth: only two of the twenty-two bundled themes were ever loaded
+        // here, so a theme that failed to parse would have gone unnoticed. Each
+        // one has to give a default background and styles for a common lexer.
+        NSMutableArray *badThemes = [NSMutableArray array];
+        for (NSString *name in [StyleCatalog availableThemeNames]) {
+            // The two synthetic themes other tests import are not Notepad++ themes.
+            if ([name hasPrefix:@"TestTheme"] || [name hasPrefix:@"t_theme"]) continue;
+            [StyleCatalog loadThemeNamed:name];
+            [ed applyLanguage];
+            NppStyle *defaultStyle = [StyleCatalog sharedCatalog].globalStyles[@"Default Style"];
+            NSUInteger cppStyles = [[StyleCatalog sharedCatalog] stylesForLexerName:@"cpp"].count;
+            if (!defaultStyle.background || !defaultStyle.foreground || cppStyles < 5) {
+                [badThemes addObject:name];
+            }
+        }
+        Check(@"IDM_SETTING_PREFERENCE (every theme)",
+              @"each bundled theme parses and carries colours the editor can use",
+              [StyleCatalog availableThemeNames].count >= 22 && badThemes.count == 0);
+        if (badThemes.count) printf("       %s\n",
+            [[badThemes componentsJoinedByString:@","] UTF8String]);
 
         [StyleCatalog loadThemeNamed:@"Default"];
         [ed applyLanguage];
