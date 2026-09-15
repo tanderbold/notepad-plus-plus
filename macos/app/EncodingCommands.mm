@@ -71,6 +71,15 @@ const int kNppCharsetCount = (int)(sizeof(kNppCharsets) / sizeof(kNppCharsets[0]
 
 @implementation EditorController (EncodingCommands)
 
+/// The table for a code page, or NULL when there is none and the system
+/// converter has to be used instead.
+static const uint16_t *TableForCodepage(unsigned int codepage) {
+    for (int i = 0; i < kNppCodePageTableCount; ++i) {
+        if (kNppCodePageTables[i].codepage == codepage) return kNppCodePageTables[i].high;
+    }
+    return NULL;
+}
+
 + (NSStringEncoding)encodingForCodepage:(unsigned int)codepage {
     CFStringEncoding cf = CFStringConvertWindowsCodepageToEncoding(codepage);
     if (cf == kCFStringEncodingInvalidId) {
@@ -89,15 +98,6 @@ const int kNppCharsetCount = (int)(sizeof(kNppCharsets) / sizeof(kNppCharsets[0]
 + (BOOL)supportsCodepage:(unsigned int)codepage {
     if (TableForCodepage(codepage)) return YES;
     return [self encodingForCodepage:codepage] != 0;
-}
-
-/// The table for a code page, or NULL when there is none and the system
-/// converter has to be used instead.
-static const uint16_t *TableForCodepage(unsigned int codepage) {
-    for (int i = 0; i < kNppCodePageTableCount; ++i) {
-        if (kNppCodePageTables[i].codepage == codepage) return kNppCodePageTables[i].high;
-    }
-    return NULL;
 }
 
 /// macOS has converters for most of these code pages, but they do not always
