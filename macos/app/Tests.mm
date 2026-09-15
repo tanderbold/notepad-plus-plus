@@ -29,6 +29,7 @@
 #import "FunctionListCatalog.h"
 #import "NppRegex.h"
 #import "ApiCatalog.h"
+#import "FindCommands.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -354,6 +355,155 @@ int NppMacRunTests(AppDelegate *app) {
               noApi != nil);
         [[NSFileManager defaultManager] removeItemAtPath:cFile error:NULL];
         [[NSFileManager defaultManager] removeItemAtPath:iniFile error:NULL];
+    }
+
+    printf("\n== Search: modes and options ==\n");
+    {
+        // Find was a literal search and nothing else: no case option, no whole
+        // word, no extended escapes, no regular expressions. All of those are
+        // what the Find dialog in Notepad++ is mostly made of.
+        [ed newDocument];
+
+        // Extended mode, with the escapes upstream defines and the digit counts
+        // it fixes for each.
+        BOOL escapes =
+            [[EditorController convertExtendedToString:@"a\\tb"] isEqualToString:@"a\tb"] &&
+            [[EditorController convertExtendedToString:@"a\\nb"] isEqualToString:@"a\nb"] &&
+            [[EditorController convertExtendedToString:@"\\x41"] isEqualToString:@"A"] &&
+            [[EditorController convertExtendedToString:@"\\d065"] isEqualToString:@"A"] &&
+            [[EditorController convertExtendedToString:@"\\o101"] isEqualToString:@"A"] &&
+            [[EditorController convertExtendedToString:@"\\u0041"] isEqualToString:@"A"] &&
+            [[EditorController convertExtendedToString:@"\\b01000001"] isEqualToString:@"A"] &&
+            // An escape that is not one keeps its backslash, as upstream leaves it.
+            [[EditorController convertExtendedToString:@"\\q"] isEqualToString:@"\\q"] &&
+            [[EditorController convertExtendedToString:@"\\xZZ"] isEqualToString:@"\\xZZ"];
+        Check(@"IDM_SEARCH_FIND (extended)", @"the escapes Extended mode defines all convert",
+              escapes);
+
+        SetDoc(ed, @"alpha Alpha alphabet\nbeta\n");
+        NppFindSpec *plain = [NppFindSpec specFor:@"alpha" mode:NppSearchNormal options:NppFindNone];
+        NppFindSpec *cased = [NppFindSpec specFor:@"alpha" mode:NppSearchNormal
+                                          options:NppFindMatchCase];
+        NppFindSpec *whole = [NppFindSpec specFor:@"alpha" mode:NppSearchNormal
+                                          options:NppFindMatchCase | NppFindWholeWord];
+        Check(@"IDM_SEARCH_FIND (case and whole word)",
+              @"matching by case and by whole word each narrow the result",
+              [ed countMatches:plain] == 3 &&      // alpha, Alpha, alphabet
+              [ed countMatches:cased] == 2 &&      // alpha, alphabet
+              [ed countMatches:whole] == 1);       // alpha
+
+        // A literal search must not be read as a pattern.
+        SetDoc(ed, @"a.c abc\n");
+        Check(@"IDM_SEARCH_FIND (literal)",
+              @"a dot in Normal mode is a dot, not any character",
+              [ed countMatches:[NppFindSpec specFor:@"a.c" mode:NppSearchNormal
+                                            options:NppFindMatchCase]] == 1 &&
+              [ed countMatches:[NppFindSpec specFor:@"a.c" mode:NppSearchRegex
+                                            options:NppFindMatchCase]] == 2);
+
+        SetDoc(ed, @"one 11 two 22 three 333\n");
+        Check(@"IDM_SEARCH_FIND (regex)",
+              @"a regular expression matches what it should",
+              [ed countMatches:[NppFindSpec specFor:@"\\d+" mode:NppSearchRegex
+                                            options:NppFindNone]] == 3 &&
+              [ed countMatches:[NppFindSpec specFor:@"\\d{3}" mode:NppSearchRegex
+                                            options:NppFindNone]] == 1);
+
+        // Searching forward, then backward, then wrapping.
+        SetDoc(ed, @"x x x\n");
+        [sci message:SCI_GOTOPOS wParam:0 lParam:0];
+        NppFindSpec *forward = [NppFindSpec specFor:@"x" mode:NppSearchNormal options:NppFindNone];
+        [ed findNext:forward];
+        long first = [sci message:SCI_GETSELECTIONSTART];
+        [ed findNext:forward];
+        long second = [sci message:SCI_GETSELECTIONSTART];
+        NppFindSpec *back = [NppFindSpec specFor:@"x" mode:NppSearchNormal
+                                         options:NppFindBackward];
+        [ed findNext:back];
+        long backTo = [sci message:SCI_GETSELECTIONSTART];
+        // At the end with no wrap there is nowhere to go; with wrap there is.
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        BOOL stops = ![ed findNext:forward];
+        NppFindSpec *wrapping = [NppFindSpec specFor:@"x" mode:NppSearchNormal
+                                             options:NppFindWrap];
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        BOOL wraps = [ed findNext:wrapping] && [sci message:SCI_GETSELECTIONSTART] == 0;
+        Check(@"IDM_SEARCH_FINDNEXT (direction and wrap)",
+              @"forward, backward and wrapping each land where they should",
+              first == 0 && second == 2 && backTo == 0 && stops && wraps);
+
+        // Replacement with back-references.
+        SetDoc(ed, @"John Smith\nAda Lovelace\n");
+        NppFindSpec *swap = [NppFindSpec specFor:@"(\\w+) (\\w+)" mode:NppSearchRegex
+                                         options:NppFindNone];
+        swap.replacement = @"\\2, \\1";
+        NSUInteger swapped = [ed replaceAll:swap];
+        Check(@"IDM_SEARCH_REPLACE (back-references)",
+              @"a replacement can put the captured groups back",
+              swapped == 2 &&
+              [DocText(ed) isEqualToString:@"Smith, John\nLovelace, Ada\n"]);
+
+        // The dollar form has to work too, and a group that matched nothing
+        // must contribute nothing rather than the text "\\3".
+        SetDoc(ed, @"ab\n");
+        NppFindSpec *dollars = [NppFindSpec specFor:@"(a)(b)(c)?" mode:NppSearchRegex
+                                            options:NppFindNone];
+        dollars.replacement = @"$2$1$3";
+        [ed replaceAll:dollars];
+        Check(@"IDM_SEARCH_REPLACE (dollar form)",
+              @"$1 names a group as \\1 does, and an empty one adds nothing",
+              [DocText(ed) isEqualToString:@"ba\n"]);
+
+        // Replace All must not trip over its own output.
+        SetDoc(ed, @"aaa\n");
+        NppFindSpec *grow = [NppFindSpec specFor:@"a" mode:NppSearchNormal options:NppFindNone];
+        grow.replacement = @"aa";
+        NSUInteger grown = [ed replaceAll:grow];
+        Check(@"IDM_SEARCH_REPLACE (replacement is not re-searched)",
+              @"replacing a with aa three times gives six, not an endless run",
+              grown == 3 && [DocText(ed) isEqualToString:@"aaaaaa\n"]);
+
+        // Only the selection, when that is what was asked for.
+        SetDoc(ed, @"q q q q\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:3];
+        NppFindSpec *inSel = [NppFindSpec specFor:@"q" mode:NppSearchNormal
+                                          options:NppFindInSelection];
+        NppFindSpec *everywhere = [NppFindSpec specFor:@"q" mode:NppSearchNormal
+                                               options:NppFindNone];
+        Check(@"IDM_SEARCH_REPLACE (in selection)",
+              @"a search confined to the selection sees only what is inside it",
+              [ed countMatches:inSel] == 2 && [ed countMatches:everywhere] == 4);
+
+        // The panel has to carry these modes and options, or none of the above
+        // is reachable from the Find dialog. Its controls are set here and the
+        // search it describes is read back.
+        [app buildFindPanel];
+        NSTextField *findField = [app valueForKey:@"findField"];
+        NSMatrix *modes = [app valueForKey:@"modeRadios"];
+        NSButton *caseBox = [app valueForKey:@"matchCaseBox"];
+        NSButton *wordBox = [app valueForKey:@"wholeWordBox"];
+        NSButton *selBox = [app valueForKey:@"inSelectionBox"];
+        findField.stringValue = @"\\d+";
+        [modes selectCellAtRow:2 column:0];             // Regular expression
+        caseBox.state = NSControlStateValueOn;
+        wordBox.state = NSControlStateValueOff;
+        selBox.state = NSControlStateValueOff;
+        NppFindSpec *fromPanel = (NppFindSpec *)[app currentFindSpec];
+
+        SetDoc(ed, @"a1 b22 c333\n");
+        Check(@"IDM_SEARCH_FIND (dialog)",
+              @"the dialog's mode and options are what the search actually uses",
+              fromPanel.mode == NppSearchRegex &&
+              (fromPanel.options & NppFindMatchCase) != 0 &&
+              (fromPanel.options & NppFindWholeWord) == 0 &&
+              [ed countMatches:fromPanel] == 3 &&
+              modes.numberOfRows == 3);
+
+        SetDoc(ed, @"cat bat cat\n");
+        NSUInteger marked = [ed markAll:[NppFindSpec specFor:@"cat" mode:NppSearchNormal
+                                                     options:NppFindMatchCase]];
+        Check(@"IDM_SEARCH_MARK (find mark)", @"every match is marked",
+              marked == 2);
     }
 
     printf("\n== Edit: convert case ==\n");

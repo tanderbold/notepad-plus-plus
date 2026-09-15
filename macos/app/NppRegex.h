@@ -26,6 +26,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)enumerateMatchesInData:(NSData *)data range:(NSRange)range
                     usingBlock:(void (^)(NSRange match, BOOL *stop))block;
 
+/// The same, with the capture groups: element 0 is the whole match, element n
+/// the nth group. A group that did not take part has location NSNotFound.
+/// Replacement needs these, for \1 and $1.
+- (void)enumerateMatchesWithGroupsInData:(NSData *)data range:(NSRange)range
+                              usingBlock:(void (^)(NSArray<NSValue *> *groups, BOOL *stop))block;
+
 /// The first match, or a range with location NSNotFound.
 - (NSRange)firstMatchInData:(NSData *)data range:(NSRange)range;
 

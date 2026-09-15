@@ -267,6 +267,13 @@ return type as a bare word with an optional `[\w,\s<>]+` generic list, leaving
 no room for `Task<string?>`, `byte[]?` or a tuple. A language whose
 upstream parser is right has no file there.
 
+Find and Replace carry Notepad++'s three search modes -- the text as typed,
+Extended with its `\n`, `\xHH` and the rest, and regular expressions -- together
+with match case, whole word, wrap, direction and in-selection, and replacement
+that understands `\1` and `$1`. All three modes are compiled to one PCRE
+pattern, so there is a single path through the engine. Before this, Find looked
+for a literal string and had no options at all.
+
 Single-byte code pages are decoded from generated tables rather than from the
 system converters. macOS has converters for nearly all of them, but they do not
 always agree with Windows, and Notepad++ is Windows: its Icelandic (DOS) table is

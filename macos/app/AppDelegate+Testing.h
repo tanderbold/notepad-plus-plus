@@ -10,6 +10,10 @@
 - (EditorController *)editor;
 - (BOOL)searchFrom:(long)start forward:(BOOL)forward wrap:(BOOL)wrap;
 
+// Find panel: the controls the Find dialog carries, and what they add up to.
+- (void)buildFindPanel;
+- (id)currentFindSpec;
+
 // File
 - (void)newDocument:(id)sender;
 - (void)closeTab:(id)sender;

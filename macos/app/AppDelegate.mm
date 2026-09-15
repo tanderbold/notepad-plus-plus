@@ -19,6 +19,7 @@
 #import "FtpCommands.h"
 #import "XmlCommands.h"
 #import "RunCommands.h"
+#import "FindCommands.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -54,6 +55,17 @@
 @property (nonatomic) BOOL alwaysOnTop;
 @property (nonatomic, strong) NSMenu *runMenu;
 @property (nonatomic) NSInteger fixedRunItemCount;
+@property (nonatomic, strong) NSPanel *findPanel;
+@property (nonatomic, strong) NSTextField *findField;
+@property (nonatomic, strong) NSTextField *replaceField;
+@property (nonatomic, strong) NSMatrix *modeRadios;
+@property (nonatomic, strong) NSButton *matchCaseBox;
+@property (nonatomic, strong) NSButton *wholeWordBox;
+@property (nonatomic, strong) NSButton *wrapBox;
+@property (nonatomic, strong) NSButton *backwardBox;
+@property (nonatomic, strong) NSButton *inSelectionBox;
+@property (nonatomic, strong) NSTextField *findStatus;
+@property (nonatomic, strong) NppFindSpec *lastFindSpec;
 @end
 
 @implementation AppDelegate
@@ -2142,23 +2154,154 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     return field.stringValue;
 }
 
-- (void)showFind:(id)sender {
+- (void)showFind:(id)sender  { [self openFindPanelReplacing:NO]; }
+- (void)showReplace:(id)sender { [self openFindPanelReplacing:YES]; }
+
+/// Notepad++'s Find dialog is mostly its modes and options; this carries the
+/// same ones rather than asking for a string and searching for it literally.
+- (void)openFindPanelReplacing:(BOOL)replacing {
+    if (!self.findPanel) [self buildFindPanel];
     NSString *seed = [self.editor initialFindTerm];
-    NSString *term = [self promptForString:@"Find"
-                                   default:seed.length ? seed : self.lastSearchTerm];
-    if (!term.length) return;
-    self.lastSearchTerm = term;
-    [self searchFrom:[self.editor.sci message:SCI_GETCURRENTPOS] forward:YES wrap:YES];
+    if (seed.length) self.findField.stringValue = seed;
+    self.replaceField.enabled = YES;
+    self.findStatus.stringValue = @"";
+    [self.findPanel makeKeyAndOrderFront:nil];
+    [self.findPanel makeFirstResponder:replacing ? self.replaceField : self.findField];
+}
+
+- (NSButton *)findCheckbox:(NSString *)title at:(NSPoint)origin in:(NSView *)parent {
+    NSButton *box = [[NSButton alloc] initWithFrame:NSMakeRect(origin.x, origin.y, 190, 18)];
+    [box setButtonType:NSButtonTypeSwitch];
+    box.title = title;
+    [parent addSubview:box];
+    return box;
+}
+
+- (NSButton *)findButton:(NSString *)title action:(SEL)action at:(NSPoint)origin in:(NSView *)parent {
+    NSButton *button = [[NSButton alloc] initWithFrame:NSMakeRect(origin.x, origin.y, 110, 26)];
+    button.title = title;
+    button.bezelStyle = NSBezelStyleRounded;
+    button.target = self;
+    button.action = action;
+    [parent addSubview:button];
+    return button;
+}
+
+- (void)buildFindPanel {
+    NSRect frame = NSMakeRect(0, 0, 520, 250);
+    self.findPanel = [[NSPanel alloc] initWithContentRect:frame
+                                                styleMask:(NSWindowStyleMaskTitled |
+                                                           NSWindowStyleMaskClosable |
+                                                           NSWindowStyleMaskUtilityWindow)
+                                                  backing:NSBackingStoreBuffered defer:YES];
+    self.findPanel.title = @"Find";
+    self.findPanel.releasedWhenClosed = NO;
+    NSView *content = self.findPanel.contentView;
+
+    NSTextField *findLabel = [NSTextField labelWithString:@"Find what:"];
+    findLabel.frame = NSMakeRect(16, 212, 90, 18);
+    [content addSubview:findLabel];
+    self.findField = [[NSTextField alloc] initWithFrame:NSMakeRect(110, 209, 390, 24)];
+    [content addSubview:self.findField];
+
+    NSTextField *replaceLabel = [NSTextField labelWithString:@"Replace with:"];
+    replaceLabel.frame = NSMakeRect(16, 182, 90, 18);
+    [content addSubview:replaceLabel];
+    self.replaceField = [[NSTextField alloc] initWithFrame:NSMakeRect(110, 179, 390, 24)];
+    [content addSubview:self.replaceField];
+
+    NSButtonCell *prototype = [[NSButtonCell alloc] init];
+    [prototype setButtonType:NSButtonTypeRadio];
+    self.modeRadios = [[NSMatrix alloc] initWithFrame:NSMakeRect(16, 96, 200, 66)
+                                                 mode:NSRadioModeMatrix
+                                            prototype:prototype
+                                         numberOfRows:3 numberOfColumns:1];
+    NSArray *modeTitles = @[@"Normal", @"Extended (\\n, \\t, \\xHH)", @"Regular expression"];
+    for (NSUInteger i = 0; i < modeTitles.count; ++i) {
+        [[self.modeRadios cellAtRow:(NSInteger)i column:0] setTitle:modeTitles[i]];
+    }
+    [self.modeRadios selectCellAtRow:0 column:0];
+    [content addSubview:self.modeRadios];
+
+    self.matchCaseBox   = [self findCheckbox:@"Match case"        at:NSMakePoint(240, 144) in:content];
+    self.wholeWordBox   = [self findCheckbox:@"Whole word only"   at:NSMakePoint(240, 122) in:content];
+    self.wrapBox        = [self findCheckbox:@"Wrap around"       at:NSMakePoint(240, 100) in:content];
+    self.backwardBox    = [self findCheckbox:@"Backward"          at:NSMakePoint(240, 78)  in:content];
+    self.inSelectionBox = [self findCheckbox:@"In selection"      at:NSMakePoint(240, 56)  in:content];
+    self.wrapBox.state = NSControlStateValueOn;
+
+    [self findButton:@"Find Next"   action:@selector(findPanelNext:)       at:NSMakePoint(16, 16)  in:content];
+    [self findButton:@"Count"       action:@selector(findPanelCount:)      at:NSMakePoint(128, 16) in:content];
+    [self findButton:@"Replace"     action:@selector(findPanelReplace:)    at:NSMakePoint(240, 16) in:content];
+    [self findButton:@"Replace All" action:@selector(findPanelReplaceAll:) at:NSMakePoint(352, 16) in:content];
+    [self findButton:@"Mark All"    action:@selector(findPanelMarkAll:)    at:NSMakePoint(16, 48)  in:content];
+
+    self.findStatus = [NSTextField labelWithString:@""];
+    self.findStatus.frame = NSMakeRect(132, 52, 368, 18);
+    [content addSubview:self.findStatus];
+}
+
+/// What the panel currently describes.
+- (NppFindSpec *)currentFindSpec {
+    if (!self.findPanel) [self buildFindPanel];
+    NppFindSpec *spec = [NppFindSpec specFor:self.findField.stringValue
+                                        mode:(NppSearchMode)[self.modeRadios selectedRow]
+                                     options:NppFindNone];
+    spec.replacement = self.replaceField.stringValue;
+    NppFindOptions options = NppFindNone;
+    if (self.matchCaseBox.state == NSControlStateValueOn)   options |= NppFindMatchCase;
+    if (self.wholeWordBox.state == NSControlStateValueOn)   options |= NppFindWholeWord;
+    if (self.wrapBox.state == NSControlStateValueOn)        options |= NppFindWrap;
+    if (self.backwardBox.state == NSControlStateValueOn)    options |= NppFindBackward;
+    if (self.inSelectionBox.state == NSControlStateValueOn) options |= NppFindInSelection;
+    spec.options = options;
+    self.lastSearchTerm = spec.what;
+    self.lastFindSpec = spec;
+    return spec;
+}
+
+- (void)findPanelNext:(id)sender {
+    NppFindSpec *spec = [self currentFindSpec];
+    self.findStatus.stringValue = [self.editor findNext:spec] ? @"" : @"Not found";
+}
+
+- (void)findPanelCount:(id)sender {
+    NSUInteger n = [self.editor countMatches:[self currentFindSpec]];
+    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu match%@",
+                                   (unsigned long)n, n == 1 ? @"" : @"es"];
+}
+
+- (void)findPanelReplace:(id)sender {
+    NppFindSpec *spec = [self currentFindSpec];
+    self.findStatus.stringValue = [self.editor replaceCurrentThenFindNext:spec] ? @"" : @"Not found";
+}
+
+- (void)findPanelReplaceAll:(id)sender {
+    NSUInteger n = [self.editor replaceAll:[self currentFindSpec]];
+    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu replaced", (unsigned long)n];
+}
+
+- (void)findPanelMarkAll:(id)sender {
+    NSUInteger n = [self.editor markAll:[self currentFindSpec]];
+    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu marked", (unsigned long)n];
 }
 
 - (void)findNext:(id)sender {
-    if (!self.lastSearchTerm.length) { [self showFind:sender]; return; }
-    [self searchFrom:[self.editor.sci message:SCI_GETCURRENTPOS] forward:YES wrap:YES];
+    if (!self.lastFindSpec.what.length) { [self showFind:sender]; return; }
+    NppFindSpec *spec = self.lastFindSpec;
+    NppFindOptions saved = spec.options;
+    spec.options = saved & ~NppFindBackward;
+    if (![self.editor findNext:spec]) NSBeep();
+    spec.options = saved;
 }
 
 - (void)findPrevious:(id)sender {
-    if (!self.lastSearchTerm.length) { [self showFind:sender]; return; }
-    [self searchFrom:[self.editor.sci message:SCI_GETSELECTIONSTART] forward:NO wrap:YES];
+    if (!self.lastFindSpec.what.length) { [self showFind:sender]; return; }
+    NppFindSpec *spec = self.lastFindSpec;
+    NppFindOptions saved = spec.options;
+    spec.options = saved | NppFindBackward;
+    if (![self.editor findNext:spec]) NSBeep();
+    spec.options = saved;
 }
 
 /// Returns YES when a match was found and selected.
@@ -2211,32 +2354,6 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     [sci message:SCI_SETTARGETEND wParam:(uptr_t)to lParam:0];
     [sci message:SCI_SETSEARCHFLAGS wParam:0 lParam:0];
     return [sci message:SCI_SEARCHINTARGET wParam:(uptr_t)len lParam:(sptr_t)needle];
-}
-
-- (void)showReplace:(id)sender {
-    NSString *term = [self promptForString:@"Replace — find what?" default:self.lastSearchTerm];
-    if (!term.length) return;
-    self.lastSearchTerm = term;
-    NSString *with = [self promptForString:@"Replace with" default:@""];
-    if (!with) return;
-
-    ScintillaView *sci = self.editor.sci;
-    long count = 0;
-    [sci message:SCI_SETSEL wParam:0 lParam:0];
-    [sci message:SCI_BEGINUNDOACTION];
-    while ([self searchFrom:[sci message:SCI_GETSELECTIONEND] forward:YES wrap:NO]) {
-        // searchFrom left the target on the match, so replace it directly.
-        [sci setStringProperty:SCI_REPLACETARGET parameter:(long)strlen(with.UTF8String) value:with];
-        long end = [sci message:SCI_GETTARGETEND];
-        [sci message:SCI_SETSEL wParam:(uptr_t)end lParam:end];
-        count++;
-        if (count > 100000) break;   // pathological guard
-    }
-    [sci message:SCI_ENDUNDOACTION];
-    NSAlert *done = [[NSAlert alloc] init];
-    done.messageText = [NSString stringWithFormat:@"%ld replacement%@ made", count, count == 1 ? @"" : @"s"];
-    [done runModal];
-    [self.editor refreshChrome];
 }
 
 - (void)goToLine:(id)sender {

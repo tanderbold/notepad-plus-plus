@@ -133,6 +133,15 @@ static size_t NextCharacter(const uint8_t *bytes, size_t length, size_t from) {
 
 - (void)enumerateMatchesInData:(NSData *)data range:(NSRange)range
                     usingBlock:(void (^)(NSRange, BOOL *))block {
+    if (!block) return;
+    [self enumerateMatchesWithGroupsInData:data range:range
+                                usingBlock:^(NSArray<NSValue *> *groups, BOOL *stop) {
+        block(groups.firstObject.rangeValue, stop);
+    }];
+}
+
+- (void)enumerateMatchesWithGroupsInData:(NSData *)data range:(NSRange)range
+                              usingBlock:(void (^)(NSArray<NSValue *> *, BOOL *))block {
     if (!self.code || !data.length || !block) return;
     if (NSMaxRange(range) > data.length) return;
 
@@ -154,7 +163,20 @@ static size_t NextCharacter(const uint8_t *bytes, size_t length, size_t from) {
         size_t start = ovector[0], finish = ovector[1];
         if (start > end) break;
 
-        block(NSMakeRange(start, finish - start), &stop);
+        // rc is the number of pairs the match filled in, so it counts the whole
+        // match plus the groups that took part.
+        NSMutableArray<NSValue *> *groups = [NSMutableArray arrayWithCapacity:(NSUInteger)rc];
+        for (int g = 0; g < rc; ++g) {
+            size_t from = ovector[2 * g], to = ovector[2 * g + 1];
+            // PCRE2 marks a group that did not participate with ~0.
+            if (from == (size_t)-1 || to == (size_t)-1 || to < from) {
+                [groups addObject:[NSValue valueWithRange:NSMakeRange(NSNotFound, 0)]];
+            } else {
+                [groups addObject:[NSValue valueWithRange:NSMakeRange(from, to - from)]];
+            }
+        }
+
+        block(groups, &stop);
         at = (finish > start) ? finish : NextCharacter(bytes, end, start);
     }
 
