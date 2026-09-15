@@ -267,6 +267,12 @@ return type as a bare word with an optional `[\w,\s<>]+` generic list, leaving
 no room for `Task<string?>`, `byte[]?` or a tuple. A language whose
 upstream parser is right has no file there.
 
+"Sort Lines As Integers" is a natural sort, not a reading of each line as a
+number: Notepad++ walks both lines in chunks and compares runs of digits
+numerically, so `item2` comes before `item10`. The decimal sorts are the other
+kind -- they read each line as a number, set aside a line that holds no number at
+all, and refuse the whole sort, naming the line, when one cannot be read.
+
 Find and Replace carry Notepad++'s three search modes -- the text as typed,
 Extended with its `\n`, `\xHH` and the rest, and regular expressions -- together
 with match case, whole word, wrap, direction and in-selection, and replacement

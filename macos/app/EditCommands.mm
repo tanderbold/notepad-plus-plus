@@ -223,22 +223,162 @@ static NSString *ApplyCase(NSString *s, NppCaseMode mode) {
 
 #pragma mark - Sorting
 
-static NSComparisonResult CompareNumeric(NSString *a, NSString *b, NSString *decimalSeparator) {
-    NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
-    f.numberStyle = NSNumberFormatterDecimalStyle;
-    if (decimalSeparator) { f.decimalSeparator = decimalSeparator; f.usesGroupingSeparator = NO; }
-    NSNumber *na = [f numberFromString:[a stringByTrimmingCharactersInSet:
-                        [NSCharacterSet whitespaceCharacterSet]]];
-    NSNumber *nb = [f numberFromString:[b stringByTrimmingCharactersInSet:
-                        [NSCharacterSet whitespaceCharacterSet]]];
-    // Lines that are not numbers sort before the ones that are, as in Notepad++.
-    if (!na && !nb) return NSOrderedSame;
-    if (!na) return NSOrderedAscending;
-    if (!nb) return NSOrderedDescending;
-    return [na compare:nb];
+/// "Sort Lines As Integers" is not "read the line as a number" -- Notepad++
+/// walks both lines in chunks, comparing a run of digits as a number and a run
+/// of anything else as text, so item2 comes before item10. A '-' before a digit
+/// is a minus sign, which is why 0-1-3 sorts as 0 then -1 then -3. Ported from
+/// IntegerSorter in Sorters.h, including that.
+static NSComparisonResult CompareNatural(NSString *a, NSString *b) {
+    NSUInteger i = 0, j = 0;
+    NSUInteger lenA = a.length, lenB = b.length;
+    NSInteger result = 0;
+
+    while (result == 0) {
+        if (i >= lenA || j >= lenB) {
+            NSString *restA = [a substringFromIndex:MIN(i, lenA)];
+            NSString *restB = [b substringFromIndex:MIN(j, lenB)];
+            NSComparisonResult tail = [restA compare:restB];
+            result = (tail == NSOrderedAscending) ? -1 : (tail == NSOrderedDescending ? 1 : 0);
+            break;
+        }
+
+        unichar ca = [a characterAtIndex:i], cb = [b characterAtIndex:j];
+        BOOL numA = (ca >= '0' && ca <= '9');
+        BOOL numB = (cb >= '0' && cb <= '9');
+        NSInteger signA = 1, signB = 1;
+        if (!numA && i + 1 < lenA) {
+            unichar next = [a characterAtIndex:i + 1];
+            numA = (ca == '-' && next >= '0' && next <= '9');
+            signA = -1;
+        }
+        if (!numB && j + 1 < lenB) {
+            unichar next = [b characterAtIndex:j + 1];
+            numB = (cb == '-' && next >= '0' && next <= '9');
+            signB = -1;
+        }
+
+        if (numA != numB) {
+            // One is a number and the other is not: the characters decide.
+            result = (NSInteger)ca - (NSInteger)cb;
+            i++; j++;
+        } else if (numA) {
+            if (signA != signB) {
+                result = (signA == 1) ? 1 : -1;
+            } else {
+                if (signA == -1) { i++; j++; }
+
+                NSUInteger endA = i, endB = j;
+                while (endA < lenA) {
+                    unichar c = [a characterAtIndex:endA];
+                    if (c < '0' || c > '9') break;
+                    endA++;
+                }
+                while (endB < lenB) {
+                    unichar c = [b characterAtIndex:endB];
+                    if (c < '0' || c > '9') break;
+                    endB++;
+                }
+
+                NSInteger zerosA = 0, zerosB = 0;
+                while (i < lenA && [a characterAtIndex:i] == '0') { zerosA++; i++; }
+                while (j < lenB && [b characterAtIndex:j] == '0') { zerosB++; j++; }
+
+                NSUInteger digitsA = endA > i ? endA - i : 0;
+                NSUInteger digitsB = endB > j ? endB - j : 0;
+                if (digitsA > digitsB) {
+                    result = 1 * signA;          // the longer number is the larger one
+                } else if (digitsA < digitsB) {
+                    result = -1 * signA;
+                } else {
+                    // Same length: digit by digit, because the numbers can be
+                    // far longer than any integer type.
+                    while (result == 0 && i < lenA && j < lenB) {
+                        unichar da = [a characterAtIndex:i], db = [b characterAtIndex:j];
+                        if (da < '0' || da > '9' || db < '0' || db > '9') break;
+                        result = ((NSInteger)da - (NSInteger)db) * signA;
+                        i++; j++;
+                    }
+                    if (result == 0) result = zerosB - zerosA;
+                }
+            }
+        } else {
+            // Both are text: compare up to the next digit or minus sign.
+            if ([a characterAtIndex:i] == '-') i++;
+            if ([b characterAtIndex:j] == '-') j++;
+            NSCharacterSet *breakers = [NSCharacterSet characterSetWithCharactersInString:@"0123456789-"];
+            NSRange restA = NSMakeRange(i, lenA - i);
+            NSRange restB = NSMakeRange(j, lenB - j);
+            NSUInteger endA = [a rangeOfCharacterFromSet:breakers options:0 range:restA].location;
+            NSUInteger endB = [b rangeOfCharacterFromSet:breakers options:0 range:restB].location;
+            if (endA == NSNotFound) endA = lenA;
+            if (endB == NSNotFound) endB = lenB;
+            NSComparisonResult chunk = [[a substringWithRange:NSMakeRange(i, endA - i)]
+                                        compare:[b substringWithRange:NSMakeRange(j, endB - j)]];
+            result = (chunk == NSOrderedAscending) ? -1 : (chunk == NSOrderedDescending ? 1 : 0);
+            i = endA; j = endB;
+        }
+    }
+    return result < 0 ? NSOrderedAscending : (result > 0 ? NSOrderedDescending : NSOrderedSame);
 }
 
-- (void)sortLines:(NppSortKey)key descending:(BOOL)descending {
+/// The leading run of characters a decimal sort is willing to read.
+static NSString *TakeWhileAdmissable(NSString *input, NSString *admissable) {
+    NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:admissable];
+    NSUInteger stop = [input rangeOfCharacterFromSet:allowed.invertedSet].location;
+    return stop == NSNotFound ? input : [input substringToIndex:stop];
+}
+
+/// Whether a prepared line carries nothing a number could be read from.
+static BOOL PreparedLineIsEmpty(NSString *prepared) {
+    return [prepared stringByTrimmingCharactersInSet:
+            [NSCharacterSet characterSetWithCharactersInString:@" \t\r\n"]].length == 0;
+}
+
+- (NSInteger)sortLines:(NppSortKey)key descending:(BOOL)descending {
+    __block NSInteger failedLine = NSNotFound;
+
+    // The decimal sorts read each line as a number and refuse the whole sort if
+    // one of them is not, naming the line -- that is what Notepad++ does, rather
+    // than quietly leaving it where it was.
+    if (key == NppSortDecimalComma || key == NppSortDecimalDot) {
+        NSString *admissable = (key == NppSortDecimalComma)
+            ? @" \t\r\n0123456789,-" : @" \t\r\n0123456789.-";
+        [self transformSelectedLines:^NSArray *(NSArray *bodies) {
+            NSMutableArray *empties = [NSMutableArray array];
+            NSMutableArray *numbered = [NSMutableArray array];   // pairs of line and value
+            for (NSUInteger i = 0; i < bodies.count; ++i) {
+                NSString *prepared = TakeWhileAdmissable(bodies[i], admissable);
+                if (key == NppSortDecimalComma) {
+                    prepared = [prepared stringByReplacingOccurrencesOfString:@"," withString:@"."];
+                }
+                if (PreparedLineIsEmpty(prepared)) { [empties addObject:bodies[i]]; continue; }
+
+                NSScanner *scanner = [NSScanner scannerWithString:prepared];
+                scanner.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+                double value = 0;
+                if (![scanner scanDouble:&value]) {
+                    if (failedLine == NSNotFound) failedLine = (NSInteger)i;
+                    return bodies;                      // nothing is moved
+                }
+                [numbered addObject:@[bodies[i], @(value)]];
+            }
+            if (failedLine != NSNotFound) return bodies;
+
+            [numbered sortUsingComparator:^NSComparisonResult(NSArray *a, NSArray *b) {
+                return [a[1] compare:b[1]];
+            }];
+            if (descending) numbered = [numbered.reverseObjectEnumerator.allObjects mutableCopy];
+
+            NSMutableArray *out = [NSMutableArray array];
+            // Lines with no number go first ascending, last descending.
+            if (!descending) [out addObjectsFromArray:empties];
+            for (NSArray *pair in numbered) [out addObject:pair[0]];
+            if (descending) [out addObjectsFromArray:empties];
+            return out;
+        }];
+        return failedLine;
+    }
+
     [self transformSelectedLines:^NSArray *(NSArray *bodies) {
         if (key == NppSortReverseOrder) {
             return bodies.reverseObjectEnumerator.allObjects;
@@ -256,10 +396,8 @@ static NSComparisonResult CompareNumeric(NSString *a, NSString *b, NSString *dec
             switch (key) {
                 case NppSortLexicographic:                return [a compare:b];
                 case NppSortLexicographicCaseInsensitive: return [a caseInsensitiveCompare:b];
-                case NppSortLocale:                       return [a localizedStandardCompare:b];
-                case NppSortInteger:                      return CompareNumeric(a, b, nil);
-                case NppSortDecimalComma:                 return CompareNumeric(a, b, @",");
-                case NppSortDecimalDot:                   return CompareNumeric(a, b, @".");
+                case NppSortLocale:                       return [a localizedCompare:b];
+                case NppSortInteger:                      return CompareNatural(a, b);
                 case NppSortLength:
                     if (a.length != b.length) return a.length < b.length ? NSOrderedAscending : NSOrderedDescending;
                     return NSOrderedSame;
@@ -268,6 +406,7 @@ static NSComparisonResult CompareNumeric(NSString *a, NSString *b, NSString *dec
         }];
         return descending ? sorted.reverseObjectEnumerator.allObjects : sorted;
     }];
+    return NSNotFound;
 }
 
 #pragma mark - Line operations

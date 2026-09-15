@@ -357,6 +357,69 @@ int NppMacRunTests(AppDelegate *app) {
         [[NSFileManager defaultManager] removeItemAtPath:iniFile error:NULL];
     }
 
+    printf("\n== Sorting: the way Notepad++ sorts ==\n");
+    {
+        [ed newDocument];
+
+        // "Sort as integer" is not "read the line as a number": Notepad++ walks
+        // both lines in chunks and compares runs of digits numerically, so
+        // item2 comes before item10. This port compared whole lines as numbers,
+        // which left anything that was not purely a number exactly where it was.
+        SetDoc(ed, @"item10\nitem9\nitem2\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        [ed sortLines:NppSortInteger descending:NO];
+        BOOL natural = [DocText(ed) isEqualToString:@"item2\nitem9\nitem10\n"];
+
+        SetDoc(ed, @"10\n9\n-3\n2\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        [ed sortLines:NppSortInteger descending:NO];
+        BOOL numbers = [DocText(ed) isEqualToString:@"-3\n2\n9\n10\n"];
+
+        // Same value written with different numbers of leading zeros: upstream
+        // breaks the tie with bZeroNum - aZeroNum, which puts the one carrying
+        // more zeros first.
+        SetDoc(ed, @"x007\nx7\nx07\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        [ed sortLines:NppSortInteger descending:NO];
+        BOOL zeros = [DocText(ed) isEqualToString:@"x007\nx07\nx7\n"];
+
+        Check(@"IDM_EDIT_SORTLINES_INTEGER_ASCENDING (natural order)",
+              @"digit runs compare as numbers, so item2 comes before item10",
+              natural && numbers && zeros);
+
+        // A decimal sort reads every line as a number. A line it cannot read
+        // stops the sort and names itself; the document is left alone.
+        SetDoc(ed, @"2.5\n-\n1.5\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        NSInteger refused = [ed sortLines:NppSortDecimalDot descending:NO];
+        BOOL untouched = [DocText(ed) isEqualToString:@"2.5\n-\n1.5\n"];
+
+        // A line with no number in it at all is not an error: it counts as
+        // empty, and empties go first ascending and last descending.
+        SetDoc(ed, @"2.5\nplain\n1.5\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        NSInteger accepted = [ed sortLines:NppSortDecimalDot descending:NO];
+        BOOL emptiesFirst = [DocText(ed) isEqualToString:@"plain\n1.5\n2.5\n"];
+
+        SetDoc(ed, @"2.5\nplain\n1.5\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        [ed sortLines:NppSortDecimalDot descending:YES];
+        BOOL emptiesLast = [DocText(ed) isEqualToString:@"2.5\n1.5\nplain\n"];
+
+        Check(@"IDM_EDIT_SORTLINES_DECIMALDOT_ASCENDING (unreadable lines)",
+              @"a line that is not a number stops the sort; one with no number is put aside",
+              refused == 1 && untouched && accepted == NSNotFound &&
+              emptiesFirst && emptiesLast);
+
+        // A file whose lines end in CR alone is still a file of lines.
+        SetDoc(ed, @"A\rC\rB\r");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        [ed sortLines:NppSortLexicographic descending:NO];
+        Check(@"IDM_EDIT_SORTLINES_LEXICOGRAPHIC_ASCENDING (CR line endings)",
+              @"lines ending in a bare carriage return sort like any others",
+              [DocText(ed) isEqualToString:@"A\rB\rC\r"]);
+    }
+
     printf("\n== Search: modes and options ==\n");
     {
         // Find was a literal search and nothing else: no case option, no whole

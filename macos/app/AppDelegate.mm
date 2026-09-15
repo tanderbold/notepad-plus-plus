@@ -1768,7 +1768,18 @@
 - (void)convertCase:(NSMenuItem *)sender { [self.editor convertCase:(NppCaseMode)sender.tag]; }
 
 - (void)sortLines:(NSMenuItem *)sender {
-    [self.editor sortLines:(NppSortKey)(sender.tag / 2) descending:(sender.tag % 2) == 1];
+    NSInteger failed = [self.editor sortLines:(NppSortKey)(sender.tag / 2)
+                                   descending:(sender.tag % 2) == 1];
+    if (failed != NSNotFound) {
+        // Notepad++ refuses a numeric sort it cannot carry out and says which
+        // line stopped it, rather than leaving the file half sorted.
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = @"Sorting Error";
+        alert.informativeText = [NSString stringWithFormat:
+            @"Unable to perform numeric sorting due to line %ld.", (long)(failed + 1)];
+        [alert runModal];
+        return;
+    }
 }
 
 - (void)applyTrim:(NSMenuItem *)sender { [self.editor applyTrim:(NppTrimMode)sender.tag]; }

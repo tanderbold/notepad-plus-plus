@@ -30,7 +30,10 @@ typedef NS_ENUM(NSInteger, NppTrimMode) {
 - (void)transformSelectedText:(NSString *(^)(NSString *selected))transform;
 
 - (void)convertCase:(NppCaseMode)mode;
-- (void)sortLines:(NppSortKey)key descending:(BOOL)descending;
+/// Sorts, returning the index of the line that stopped a decimal sort, or
+/// NSNotFound when it went through. Notepad++ refuses a numeric sort that meets
+/// a line it cannot read, and says which line it was.
+- (NSInteger)sortLines:(NppSortKey)key descending:(BOOL)descending;
 - (void)removeDuplicateLines:(BOOL)consecutiveOnly;
 - (void)splitLines;
 - (void)joinLines;
