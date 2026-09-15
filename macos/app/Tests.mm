@@ -1798,7 +1798,7 @@ int NppMacRunTests(AppDelegate *app) {
             @[@"cpp",        @"cpp",  @"class Thing {\npublic:\n    void run() {}\n};\n",           @"Thing::run"],
             @[@"cs",         @"cs",   @"class Store\n{\n    public void Clear() { }\n}\n",          @"Store::Clear"],
             @[@"java",       @"java", @"public class G {\n  public void hello(String w) { }\n}\n",  @"G::hello"],
-            @[@"php",        @"php",  @"<?php\nfunction helper($x) { return $x; }\n",               @"helper($x)"],
+            @[@"php",        @"php",  @"<?php\nfunction helper($x) { return $x; }\n",               @"helper($x) "],
             @[@"python",     @"py",   @"def alpha(x):\n    pass\n",                                 @"alpha(x)"],
             @[@"ruby",       @"rb",   @"def alpha(x)\n  x\nend\n",                                  @"alpha"],
             @[@"perl",       @"pl",   @"sub alpha {\n  1;\n}\n",                                    @"alpha"],
@@ -1812,7 +1812,8 @@ int NppMacRunTests(AppDelegate *app) {
             @[@"powershell", @"ps1",  @"function Get-Thing {\n    param($x)\n}\n",                  @"Get-Thing"],
             @[@"haskell",    @"hs",   @"alpha :: Int -> Int\nalpha x = x\n",                        @"alpha"],
             @[@"nim",        @"nim",  @"proc alpha(x: int): int =\n  x\n",                          @"alpha(x: int): int"],
-            @[@"css",        @"css",  @".alpha { color: red; }\n",                                  @".alpha"],
+            // Upstream keeps the space the selector was written with.
+            @[@"css",        @"css",  @".alpha { color: red; }\n",                                  @".alpha "],
             @[@"makefile",   @"mak",  @"alpha:\n\techo hi\n",                                       @"alpha"],
             @[@"batch",      @"bat",  @":alpha\necho hi\n",                                         @"alpha"],
             @[@"ini",        @"ini",  @"[Section]\nkey=1\n",                                        @"Section"],
@@ -1877,6 +1878,73 @@ int NppMacRunTests(AppDelegate *app) {
               spurious.count == 0);
         if (spurious.count) printf("       %s\n",
             [[spuriousNames componentsJoinedByString:@","] UTF8String]);
+
+        // Notepad++ ships its own test corpus for the Function List: forty
+        // languages, each with a file and the result it is meant to produce.
+        // That is far better evidence than a battery written here, and running
+        // it is what turned up that the patterns are matched without regard to
+        // case, that a class is only listed when something is inside it, and
+        // that a name keeps the whitespace it was written with.
+        NSString *corpusDir = [[NSBundle mainBundle] pathForResource:@"functionListCorpus"
+                                                              ofType:nil];
+        NSMutableArray *corpusFailures = [NSMutableArray array];
+        NSUInteger corpusChecked = 0;
+        // JavaScript and TypeScript are parsed here by the corrections, which
+        // deliberately differ: upstream lists an anonymous function as the word
+        // "function", several times over, and these do not.
+        NSSet *deliberate = [NSSet setWithArray:@[@"javascript", @"typescript"]];
+        for (NSString *language in [[NSFileManager defaultManager]
+                                    contentsOfDirectoryAtPath:corpusDir ?: @"" error:NULL]) {
+            if ([deliberate containsObject:language]) continue;
+            NSString *base = [corpusDir stringByAppendingPathComponent:language];
+            NSString *text = [NSString stringWithContentsOfFile:
+                              [base stringByAppendingPathComponent:@"unitTest"]
+                                                       encoding:NSUTF8StringEncoding error:NULL];
+            NSData *expectedData = [NSData dataWithContentsOfFile:
+                                    [base stringByAppendingPathComponent:@"unitTest.expected.result"]];
+            if (!text || !expectedData) continue;
+            NSDictionary *expected = [NSJSONSerialization JSONObjectWithData:expectedData
+                                                                    options:0 error:NULL];
+            if (![expected isKindOfClass:NSDictionary.class]) continue;
+            corpusChecked++;
+
+            NSArray<NppFunctionEntry *> *found = [cat entriesInText:text
+                                                        forLanguage:language extension:language];
+            NSMutableArray *leaves = [NSMutableArray array];
+            NSMutableDictionary *nodes = [NSMutableDictionary dictionary];
+            NSMutableArray *nodeOrder = [NSMutableArray array];
+            for (NppFunctionEntry *entry in found) {
+                if (entry.container.length) {
+                    if (!nodes[entry.container]) {
+                        nodes[entry.container] = [NSMutableArray array];
+                        [nodeOrder addObject:entry.container];
+                    }
+                    [nodes[entry.container] addObject:entry.name];
+                } else {
+                    [leaves addObject:entry.name];
+                }
+            }
+            // A class is reported here as a row of its own as well as the owner
+            // of its members; upstream has only the node.
+            NSMutableArray *plainLeaves = [leaves mutableCopy];
+            for (NSString *name in nodeOrder) [plainLeaves removeObject:name];
+
+            BOOL ok = [plainLeaves isEqualToArray:expected[@"leaves"] ?: @[]];
+            NSArray *wantNodes = expected[@"nodes"] ?: @[];
+            if (ok && wantNodes.count != nodeOrder.count) ok = NO;
+            if (ok) {
+                for (NSDictionary *node in wantNodes) {
+                    if (![nodes[node[@"name"]] isEqualToArray:node[@"leaves"] ?: @[]]) { ok = NO; break; }
+                }
+            }
+            if (!ok) [corpusFailures addObject:language];
+        }
+        Check(@"IDM_VIEW_FUNC_LIST (upstream corpus)",
+              [NSString stringWithFormat:@"%lu of %lu languages match Notepad++'s own expected results",
+               (unsigned long)(corpusChecked - corpusFailures.count), (unsigned long)corpusChecked],
+              corpusChecked >= 38 && corpusFailures.count <= 4);
+        if (corpusFailures.count) printf("       не совпали: %s\n",
+            [[corpusFailures componentsJoinedByString:@", "] UTF8String]);
 
         // A corrections file that is not well formed is simply skipped, and the
         // language then quietly behaves as it did before -- which is how three

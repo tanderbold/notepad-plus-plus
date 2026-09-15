@@ -82,6 +82,9 @@ cp "$ROOT"/PowerEditor/installer/APIs/*.xml "$APP/Contents/Resources/APIs/"
 mkdir -p "$APP/Contents/Resources/functionList"
 cp "$ROOT"/PowerEditor/installer/functionList/*.xml "$APP/Contents/Resources/functionList/"
 
+mkdir -p "$APP/Contents/Resources/functionListCorpus"
+cp -R "$ROOT"/macos/resources/functionList-corpus/* "$APP/Contents/Resources/functionListCorpus/"
+
 mkdir -p "$APP/Contents/Resources/functionListCorrections"
 cp "$ROOT"/macos/resources/functionList-corrections/*.xml "$APP/Contents/Resources/functionListCorrections/"
 codesign --force --deep --sign - "$APP" 2>/dev/null

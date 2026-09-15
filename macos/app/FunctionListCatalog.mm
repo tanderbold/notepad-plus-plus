@@ -18,6 +18,10 @@
 @property (nonatomic, strong) NSMutableArray<NSString *> *functionNameExprs;
 @property (nonatomic, strong) NSMutableArray<NSString *> *classNameExprs;
 @property (nonatomic, strong) NSMutableArray<NSString *> *classFunctionNameExprs;
+/// <className> written inside a plain <function>: the container is read out of
+/// the function's own match, which is how "NppParameters::load" is filed under
+/// NppParameters without there being a class body anywhere in the file.
+@property (nonatomic, strong) NSMutableArray<NSString *> *functionClassNameExprs;
 @end
 
 @implementation NppFunctionParser
@@ -26,6 +30,7 @@
     _functionNameExprs = [NSMutableArray array];
     _classNameExprs = [NSMutableArray array];
     _classFunctionNameExprs = [NSMutableArray array];
+    _functionClassNameExprs = [NSMutableArray array];
     return self;
 }
 @end
@@ -43,6 +48,7 @@
 @property (nonatomic) BOOL inClassRange;
 @property (nonatomic) BOOL inClassName;
 @property (nonatomic) BOOL inFunctionName;
+@property (nonatomic) BOOL inFunction;
 @end
 
 @implementation FunctionListCatalog
@@ -165,6 +171,7 @@
     } else if ([element isEqualToString:@"functionName"]) {
         self.inFunctionName = YES;
     } else if ([element isEqualToString:@"function"]) {
+        self.inFunction = YES;
         if (self.inClassRange) self.current.classFunctionExpr = attrs[@"mainExpr"];
         else self.current.functionExpr = attrs[@"mainExpr"];
     } else if ([element isEqualToString:@"nameExpr"] ||
@@ -174,7 +181,12 @@
         // of upstream's files use <nameExpr> inside <functionName>.
         NSString *expr = attrs[@"expr"];
         if (!expr.length) return;
-        if (self.inClassName) [self.current.classNameExprs addObject:expr];
+        if (self.inClassName) {
+            // Inside a classRange it names the class; inside a plain function it
+            // names the container that function belongs to.
+            if (self.inClassRange) [self.current.classNameExprs addObject:expr];
+            else [self.current.functionClassNameExprs addObject:expr];
+        }
         else if (self.inFunctionName) {
             if (self.inClassRange) [self.current.classFunctionNameExprs addObject:expr];
             else [self.current.functionNameExprs addObject:expr];
@@ -192,6 +204,8 @@
             }
         }
         self.current = nil;
+    } else if ([element isEqualToString:@"function"]) {
+        self.inFunction = NO;
     } else if ([element isEqualToString:@"classRange"]) {
         self.inClassRange = NO;
     } else if ([element isEqualToString:@"className"]) {
@@ -247,6 +261,17 @@ static NSUInteger LineAtByte(NSData *data, NSUInteger offset) {
     return line;
 }
 
+/// Upstream searches with SCFIND_REGEXP | SCFIND_POSIX | SCFIND_REGEXP_DOTMATCHESNL
+/// and no SCFIND_MATCHCASE, so every one of these patterns is matched without
+/// regard to case. That is not incidental: the patterns opt back in where they
+/// need to, with (?-i:...) -- c.xml guards its keyword list that way, and
+/// hollywood.xml writes "function" in lower case for a language that spells it
+/// Function. A pattern compiled case-sensitively finds nothing there.
+static NppRegex *FunctionListRegex(NSString *pattern) {
+    if (!pattern.length) return nil;
+    return [NppRegex regexWithPattern:[@"(?i)" stringByAppendingString:pattern]];
+}
+
 static NSString *StringFromBytes(NSData *data, NSRange range) {
     if (range.location == NSNotFound || !range.length) return @"";
     if (NSMaxRange(range) > data.length) return @"";
@@ -274,18 +299,37 @@ static NSString *StringFromBytes(NSData *data, NSRange range) {
 
     void (^collect)(NSString *, NSArray<NSString *> *, NSRange, NSString *) =
         ^(NSString *mainExpr, NSArray<NSString *> *nameExprs, NSRange range, NSString *container) {
-        NppRegex *re = [NppRegex regexWithPattern:mainExpr];
+        NppRegex *re = FunctionListRegex(mainExpr);
         if (!re) return;
         [re enumerateMatchesInData:subject range:range usingBlock:^(NSRange m, BOOL *stop) {
+            // A match that runs to the very end of the range it was looked for
+            // in is dropped, and the search stops there. funcParse does the same
+            // -- "if (targetStart + foundTextLen == end) break" -- which is what
+            // keeps a trailing word from being reported as a declaration.
+            if (NSMaxRange(m) == NSMaxRange(range)) { *stop = YES; return; }
             NSRange named = NarrowToName(subject, m, nameExprs);
-            NSString *name = [StringFromBytes(subject, named)
-                              stringByTrimmingCharactersInSet:
-                                  [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (named.location == NSNotFound) return;      // nothing to call it
+            // The name is whatever the pattern narrowed to, not a tidied
+            // version of it: upstream keeps the trailing space in a CSS
+            // selector, and the tests say so.
+            NSString *name = StringFromBytes(subject, named);
+            if (![name stringByTrimmingCharactersInSet:
+                  [NSCharacterSet whitespaceAndNewlineCharacterSet]].length) name = @"";
             if (!name.length) return;
+
+            NSString *owner = container;
+            if (!owner.length && p.functionClassNameExprs.count) {
+                NSRange named = NarrowToName(subject, m, p.functionClassNameExprs);
+                if (named.location != NSNotFound) {
+                    owner = [StringFromBytes(subject, named)
+                             stringByTrimmingCharactersInSet:
+                                 [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+                }
+            }
 
             NppFunctionEntry *entry = [[NppFunctionEntry alloc] init];
             entry.name = name;
-            entry.container = container;
+            entry.container = owner;
             entry.line = LineAtByte(subject, m.location);
             [entries addObject:entry];
         }];
@@ -295,10 +339,11 @@ static NSString *StringFromBytes(NSData *data, NSRange range) {
     // reported a second time by the plain function pass.
     NSMutableArray<NSValue *> *classBodies = [NSMutableArray array];
     if (p.classRangeExpr.length) {
-        NppRegex *re = [NppRegex regexWithPattern:p.classRangeExpr];
+        NppRegex *re = FunctionListRegex(p.classRangeExpr);
         if (re) {
             [re enumerateMatchesInData:subject range:all usingBlock:^(NSRange header, BOOL *stop) {
                 NSRange named = NarrowToName(subject, header, p.classNameExprs);
+                if (named.location == NSNotFound) return;   // not a class after all
                 NSString *className = [StringFromBytes(subject, named)
                                        stringByTrimmingCharactersInSet:
                                            [NSCharacterSet whitespaceAndNewlineCharacterSet]];
@@ -312,14 +357,20 @@ static NSString *StringFromBytes(NSData *data, NSRange range) {
                                                              open:p.classOpenSymbol
                                                             close:p.classCloseSymbol];
 
-                NppFunctionEntry *entry = [[NppFunctionEntry alloc] init];
-                entry.name = className;
-                entry.line = LineAtByte(subject, header.location);
-                [entries addObject:entry];
-                [classBodies addObject:[NSValue valueWithRange:body]];
+                // A class is only worth a row when something was found inside
+                // it: Notepad++ lists a class as the parent of its methods and
+                // says nothing at all about one that has none.
+                NSUInteger before = entries.count;
                 if (p.classFunctionExpr.length) {
                     collect(p.classFunctionExpr, p.classFunctionNameExprs, body, className);
                 }
+                if (entries.count > before) {
+                    NppFunctionEntry *entry = [[NppFunctionEntry alloc] init];
+                    entry.name = className;
+                    entry.line = LineAtByte(subject, header.location);
+                    [entries insertObject:entry atIndex:before];
+                }
+                [classBodies addObject:[NSValue valueWithRange:body]];
             }];
         }
     }
@@ -354,8 +405,8 @@ static NSString *StringFromBytes(NSData *data, NSRange range) {
 /// forward until the symbols balance.
 + (NSRange)bodyRangeFrom:(NSRange)header inData:(NSData *)data
                     open:(NSString *)openExpr close:(NSString *)closeExpr {
-    NppRegex *open = openExpr.length ? [NppRegex regexWithPattern:openExpr] : nil;
-    NppRegex *close = closeExpr.length ? [NppRegex regexWithPattern:closeExpr] : nil;
+    NppRegex *open = openExpr.length ? FunctionListRegex(openExpr) : nil;
+    NppRegex *close = closeExpr.length ? FunctionListRegex(closeExpr) : nil;
     if (!open || !close) return header;
 
     NSUInteger from = NSMaxRange(header);
@@ -388,23 +439,26 @@ static NSString *StringFromBytes(NSData *data, NSRange range) {
 }
 
 static NSRange NarrowToName(NSData *data, NSRange body, NSArray<NSString *> *exprs) {
+    if (!exprs.count) return body;
     NSRange current = body;
     for (NSString *expr in exprs) {
-        NppRegex *re = [NppRegex regexWithPattern:expr];
+        NppRegex *re = FunctionListRegex(expr);
         if (!re) continue;
         // An empty match is no use as a name, and taking it would drop the
         // entry altogether; what is wanted is the first real one.
         NSRange found = [re firstNonEmptyMatchInData:data range:current];
-        // A step that matches nothing leaves the result where it was, rather
-        // than throwing away what the earlier steps had narrowed to.
-        if (found.location != NSNotFound) current = found;
+        // A step that matches nothing means there is no name here at all.
+        // parseSubLevel returns an empty string in that case, and the caller
+        // decides what to do about it.
+        if (found.location == NSNotFound) return NSMakeRange(NSNotFound, 0);
+        current = found;
     }
     return current;
 }
 
 static NSData *DataWithoutComments(NSData *data, NSString *commentExpr) {
     if (!commentExpr.length) return data;
-    NppRegex *re = [NppRegex regexWithPattern:commentExpr];
+    NppRegex *re = FunctionListRegex(commentExpr);
     // Upstream ships at least one commentExpr that does not compile at all
     // (fortran77's is cut off mid-pattern); that is not a reason to give up on
     // the rest of the parser.

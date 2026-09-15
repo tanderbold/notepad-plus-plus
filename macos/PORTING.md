@@ -242,13 +242,23 @@ them, were unusable on it. There is no pcre2.h in the SDK, so the handful of
 entry points are declared by hand and the option values are checked against the
 library's own behaviour by a test rather than trusted from memory.
 
-Four things about the definition files are easy to get wrong: the several
+Notepad++ ships its own test corpus for the Function List in
+`PowerEditor/Test/FunctionList`: forty languages, each with a file and the result
+it should produce. It is bundled and run as a test, and it is what settled
+several questions that guesswork had got wrong. Thirty-four of the thirty-eight
+it covers match exactly; the four that do not (pascal, perl, inno, sql) differ by
+one entry each.
+
+Five things about the definition files are easy to get wrong: the several
 `nameExpr` entries are applied one after another, each narrowing what the last
 one found, rather than being alternatives; an empty match is no use as a name, so
 narrowing takes the first non-empty one (ini's pattern matches nothing at all
 before it reaches the word); `classRange` matches only as far as the opening
 brace, and the body has to be found by counting `openSymbole` and `closeSymbole`;
-and the patterns must keep the newlines they were written with, because XML would
+the patterns are matched **without regard to case** -- upstream searches without
+SCFIND_MATCHCASE, which is why they opt back in with `(?-i:...)` where they mean
+it, and why hollywood.xml writes `function` for a language that spells it
+`Function`; and the patterns must keep the newlines they were written with, because XML would
 otherwise fold them into spaces and the `#` comments in a `(?x)` pattern would
 then swallow everything after the first one.
 
