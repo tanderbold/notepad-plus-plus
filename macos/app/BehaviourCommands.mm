@@ -77,13 +77,163 @@ static long Utf8Len(NSString *s) {
     return schemes;
 }
 
-- (NSRegularExpression *)linkExpression {
-    NSString *alternatives = [[self linkSchemes] componentsJoinedByString:@"|"];
-    NSString *pattern = [NSString stringWithFormat:@"(?:%@)://[^\\s\"'<>()]+|mailto:[^\\s\"'<>()]+",
-                         alternatives];
-    return [NSRegularExpression regularExpressionWithPattern:pattern
-                                                     options:NSRegularExpressionCaseInsensitive
-                                                       error:NULL];
+/// The characters a scheme can start with.
+static BOOL UrlSchemeStartChar(unichar c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
+/// What may stand immediately before a scheme. A letter, digit or underscore
+/// may not, which is why "xhttp://y" is not a link.
+///
+/// Upstream tests only the ASCII ranges here, so "ähttp://test.com" and
+/// "домhttp://test.com" come out as links; both sit in its own file of cases it
+/// says could be handled better. Any letter counts here, which settles them.
+static BOOL UrlSchemeDelimiter(unichar c) {
+    if (c == '_') return NO;
+    NSCharacterSet *wordLike = [NSCharacterSet alphanumericCharacterSet];
+    return ![wordLike characterIsMember:c];
+}
+
+/// Whether the character belongs to the body of a URL rather than ending it.
+static BOOL UrlTextChar(unichar c) {
+    if (c <= ' ') return NO;
+    switch (c) {
+        case 0x00A0: case 0x2002: case 0x2003: case 0x3000: case 0x2004:
+        case 0x2005: case 0x2006: case 0x2007: case 0x2008: case 0x2009:
+        case 0x200A: case 0x202F: case 0x205F: case 0xFEFF: case 0x200B:
+            return NO;                       // the spaces of other writing systems
+        case '"': case '#': case '<': case '>': case '{': case '}': case '?':
+        case 0x007F:
+            return NO;
+        default: return YES;
+    }
+}
+
+static BOOL UrlQueryDelimiter(unichar c) {
+    return c == '&' || c == '+' || c == '=' || c == ';';
+}
+
+/// Finds the next scheme at or after `start`. Returns NSNotFound when there is
+/// none; otherwise the index where it begins, with its length in `schemeLength`.
+static NSUInteger ScanToUrlStart(NSString *text, NSUInteger start,
+                                 NSArray<NSString *> *schemes, NSUInteger *schemeLength) {
+    NSUInteger length = text.length, p = start, p0 = 0;
+    BOOL inScheme = NO;
+    while (p < length) {
+        unichar c = [text characterAtIndex:p];
+        if (!inScheme) {
+            if (UrlSchemeStartChar(c) &&
+                (p == 0 || UrlSchemeDelimiter([text characterAtIndex:p - 1]))) {
+                p0 = p;
+                inScheme = YES;
+            }
+        } else {
+            if (c == ':') {
+                for (NSString *scheme in schemes) {
+                    NSUInteger n = scheme.length;
+                    if (p0 + n > length) continue;
+                    if ([[text substringWithRange:NSMakeRange(p0, n)]
+                         caseInsensitiveCompare:scheme] == NSOrderedSame) {
+                        *schemeLength = p - p0 + 1;
+                        return p0;
+                    }
+                }
+            }
+            if (!UrlSchemeStartChar(c)) inScheme = NO;
+        }
+        p++;
+    }
+    *schemeLength = 0;
+    return NSNotFound;
+}
+
+/// Walks from the end of the scheme to the end of the URL, keeping a loose grip
+/// on what a query may look like, as upstream does.
+static NSUInteger ScanToUrlEnd(NSString *text, NSUInteger start) {
+    enum { sHostAndPath, sQuery, sAfterDelimiter, sQuotes, sAfterQuotes, sFragment };
+    NSInteger state = sHostAndPath;
+    unichar closing = 0;
+    NSUInteger p = start, length = text.length;
+    while (p < length) {
+        unichar c = [text characterAtIndex:p];
+        switch (state) {
+            case sHostAndPath:
+                if (c == '?') state = sQuery;
+                else if (c == '#') state = sFragment;
+                else if (!UrlTextChar(c)) return p - start;
+                break;
+            case sQuery:
+                if (c == '#') state = sFragment;
+                else if (UrlQueryDelimiter(c)) state = sAfterDelimiter;
+                else if (!UrlTextChar(c)) return p - start;
+                break;
+            case sAfterDelimiter:
+                if (c == '\'' || c == '"' || c == '`') { closing = c; state = sQuotes; }
+                else if (c == '(') { closing = ')'; state = sQuotes; }
+                else if (c == '[') { closing = ']'; state = sQuotes; }
+                else if (c == '{') { closing = '}'; state = sQuotes; }
+                else if (UrlTextChar(c)) state = sQuery;
+                else return p - start;
+                break;
+            case sQuotes:
+                if (c < ' ') return p - start;
+                if (c == closing) state = sAfterQuotes;
+                break;
+            case sAfterQuotes:
+                if (UrlQueryDelimiter(c)) state = sAfterDelimiter;
+                else return p - start;
+                break;
+            case sFragment:
+                if (c != '?' && !UrlTextChar(c)) return p - start;
+                break;
+        }
+        p++;
+    }
+    return p - start;
+}
+
+/// Drops one trailing character that punctuation left behind. Called until it
+/// stops changing anything.
+static BOOL TrimOneTrailingUrlChar(NSString *text, NSUInteger start, NSUInteger *length) {
+    if (*length <= 1) return NO;
+    NSUInteger last = start + *length - 1;
+    unichar c = [text characterAtIndex:last];
+
+    if ([@".,:;?!#" rangeOfString:[NSString stringWithCharacters:&c length:1]].location != NSNotFound) {
+        (*length)--;
+        return YES;
+    }
+    // A closing bracket only counts as part of the URL when it has an opening
+    // one inside the URL to answer to.
+    NSString *closers = @")]", *openers = @"([";
+    NSRange which = [closers rangeOfString:[NSString stringWithCharacters:&c length:1]];
+    if (which.location == NSNotFound) return NO;
+    unichar opener = [openers characterAtIndex:which.location];
+    NSInteger count = 0;
+    for (NSInteger j = (NSInteger)last - 1; j >= (NSInteger)start; --j) {
+        unichar d = [text characterAtIndex:(NSUInteger)j];
+        if (d == c) count++;
+        if (d == opener) {
+            if (count > 0) count--;
+            else return NO;
+        }
+    }
+    if (count != 0) return NO;
+    (*length)--;
+    return YES;
+}
+
+/// Upstream hands the candidate to InternetCrackUrl to say whether it is a URL
+/// at all. The nearest thing here is asking Foundation to parse it and insisting
+/// on the parts that must be there.
+static BOOL UrlLooksReal(NSString *candidate) {
+    NSURL *url = [NSURL URLWithString:candidate];
+    if (!url.scheme.length) return NO;
+    NSRange sep = [candidate rangeOfString:@"://"];
+    if (sep.location != NSNotFound) return url.host.length > 0;
+    // mailto: and the like: something has to follow the colon.
+    NSRange colon = [candidate rangeOfString:@":"];
+    return colon.location != NSNotFound && colon.location + 1 < candidate.length;
 }
 
 - (NSUInteger)markClickableLinks {
@@ -95,18 +245,45 @@ static long Utf8Len(NSString *s) {
     [self configureLinkIndicator];
 
     NSString *text = [sci string] ?: @"";
-    NSRegularExpression *re = [self linkExpression];
-    if (!re) return 0;
+    // The schemes upstream accepts are written with their separator, and it is
+    // matched: "http://" only counts followed by the slashes.
+    NSMutableArray *schemes = [NSMutableArray arrayWithArray:
+        @[@"ftp://", @"http://", @"https://", @"mailto:", @"file://"]];
+    for (NSString *extra in [[NppPreferences shared].linkCustomSchemes
+                             componentsSeparatedByCharactersInSet:
+                             [NSCharacterSet characterSetWithCharactersInString:@" ,;"]]) {
+        NSString *trimmed = [extra stringByTrimmingCharactersInSet:
+                             [NSCharacterSet whitespaceCharacterSet]];
+        if (trimmed.length && ![schemes containsObject:trimmed]) [schemes addObject:trimmed];
+    }
 
-    __block NSUInteger count = 0;
-    [re enumerateMatchesInString:text options:0 range:NSMakeRange(0, text.length)
-                      usingBlock:^(NSTextCheckingResult *m, NSMatchingFlags flags, BOOL *stop) {
-        // Scintilla works in bytes, so the character range is converted.
-        long start = Utf8Len([text substringToIndex:m.range.location]);
-        long length = Utf8Len([text substringWithRange:m.range]);
-        [sci message:SCI_INDICATORFILLRANGE wParam:(uptr_t)start lParam:length];
+    NSUInteger count = 0, at = 0;
+    while (at < text.length) {
+        NSUInteger schemeLength = 0;
+        NSUInteger begin = ScanToUrlStart(text, at, schemes, &schemeLength);
+        if (begin == NSNotFound) break;
+
+        NSUInteger length = ScanToUrlEnd(text, begin + schemeLength);
+        if (!length) { at = begin + MAX((NSUInteger)1, schemeLength); continue; }
+        length += schemeLength;
+
+        NSString *candidate = [text substringWithRange:NSMakeRange(begin, length)];
+        if (!UrlLooksReal(candidate)) { at = begin + length; continue; }
+
+        // A URL wrapped in quotes or back-ticks keeps neither.
+        if (begin > 0 && length > 1) {
+            unichar before = [text characterAtIndex:begin - 1];
+            unichar last = [text characterAtIndex:begin + length - 1];
+            if ((before == '\'' && last == '\'') || (before == '`' && last == '`')) length--;
+        }
+        while (TrimOneTrailingUrlChar(text, begin, &length)) { }
+
+        long startByte = Utf8Len([text substringToIndex:begin]);
+        long byteLength = Utf8Len([text substringWithRange:NSMakeRange(begin, length)]);
+        [sci message:SCI_INDICATORFILLRANGE wParam:(uptr_t)startByte lParam:byteLength];
         count++;
-    }];
+        at = begin + length;
+    }
     return count;
 }
 

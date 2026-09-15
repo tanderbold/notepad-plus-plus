@@ -1946,6 +1946,60 @@ int NppMacRunTests(AppDelegate *app) {
         if (corpusFailures.count) printf("       не совпали: %s\n",
             [[corpusFailures componentsJoinedByString:@", "] UTF8String]);
 
+        // Notepad++ also ships a corpus for clickable-link detection: each case
+        // is a line of text and a mask saying which of its characters should be
+        // part of a link.
+        NSString *urlDir = [[NSBundle mainBundle] pathForResource:@"urlCorpus" ofType:nil];
+        NSUInteger urlCases = 0, urlWrong = 0;
+        NSMutableArray *urlExamples = [NSMutableArray array];
+        for (NSString *file in [[NSFileManager defaultManager]
+                                contentsOfDirectoryAtPath:urlDir ?: @"" error:NULL]) {
+            NSString *body = [NSString stringWithContentsOfFile:
+                              [urlDir stringByAppendingPathComponent:file]
+                                                       encoding:NSUTF8StringEncoding error:NULL];
+            NSArray *lines = [body componentsSeparatedByString:@"\n"];
+            for (NSUInteger i = 0; i + 1 < lines.count; ++i) {
+                NSString *one = [lines[i] stringByTrimmingCharactersInSet:
+                                 [NSCharacterSet characterSetWithCharactersInString:@"\r"]];
+                NSString *two = [lines[i + 1] stringByTrimmingCharactersInSet:
+                                 [NSCharacterSet characterSetWithCharactersInString:@"\r"]];
+                if (![one hasPrefix:@"u "] || ![one hasSuffix:@" u"]) continue;
+                if (![two hasPrefix:@"m "] || ![two hasSuffix:@" m"]) continue;
+                NSString *text = [one substringWithRange:NSMakeRange(2, one.length - 4)];
+                NSString *mask = [two substringWithRange:NSMakeRange(2, two.length - 4)];
+                if (text.length != mask.length) continue;
+                urlCases++;
+
+                SetDoc(ed, text);
+                [ed markClickableLinks];
+                NSMutableString *got = [NSMutableString stringWithCapacity:text.length];
+                NSData *bytes = [text dataUsingEncoding:NSUTF8StringEncoding];
+                NSUInteger byteAt = 0;
+                for (NSUInteger c = 0; c < text.length; ++c) {
+                    NSUInteger width = [[text substringWithRange:NSMakeRange(c, 1)]
+                                        lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+                    BOOL on = [sci message:SCI_INDICATORVALUEAT
+                                    wParam:NPPMAC_LINK_INDICATOR lParam:(sptr_t)byteAt] != 0;
+                    [got appendString:on ? @"1" : @"0"];
+                    byteAt += width;
+                }
+                (void)bytes;
+                if (![got isEqualToString:mask]) {
+                    urlWrong++;
+                    if (urlExamples.count < 5) {
+                        [urlExamples addObject:[NSString stringWithFormat:@"%@ | want %@ got %@",
+                                                text, mask, got]];
+                    }
+                }
+            }
+        }
+        Check(@"IDM_SETTING_PREFERENCE (clickable links)",
+              [NSString stringWithFormat:
+               @"%lu of %lu cases from Notepad++'s own URL corpus are detected the same way",
+               (unsigned long)(urlCases - urlWrong), (unsigned long)urlCases],
+              urlCases >= 140 && urlWrong == 0);
+        for (NSString *e in urlExamples) printf("         %s\n", e.UTF8String);
+
         // A corrections file that is not well formed is simply skipped, and the
         // language then quietly behaves as it did before -- which is how three
         // of them were written with a double hyphen inside an XML comment and

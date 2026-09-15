@@ -242,6 +242,13 @@ them, were unusable on it. There is no pcre2.h in the SDK, so the handful of
 entry points are declared by hand and the option values are checked against the
 library's own behaviour by a test rather than trusted from memory.
 
+Clickable-link detection is the state machine from Notepad_plus.cpp, not a
+regular expression: scan to a supported scheme that is not preceded by a word
+character, walk the host, path, query and fragment by their own rules, then drop
+the trailing punctuation a sentence leaves behind -- a closing bracket only counts
+when an opening one inside the URL answers it. Notepad++'s own corpus for this is
+bundled and all 148 of its cases are checked.
+
 Notepad++ ships its own test corpus for the Function List in
 `PowerEditor/Test/FunctionList`: forty languages, each with a file and the result
 it should produce. It is bundled and run as a test, and it is what settled

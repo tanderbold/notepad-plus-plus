@@ -82,6 +82,9 @@ cp "$ROOT"/PowerEditor/installer/APIs/*.xml "$APP/Contents/Resources/APIs/"
 mkdir -p "$APP/Contents/Resources/functionList"
 cp "$ROOT"/PowerEditor/installer/functionList/*.xml "$APP/Contents/Resources/functionList/"
 
+mkdir -p "$APP/Contents/Resources/urlCorpus"
+cp "$ROOT"/macos/resources/url-corpus/* "$APP/Contents/Resources/urlCorpus/"
+
 mkdir -p "$APP/Contents/Resources/functionListCorpus"
 cp -R "$ROOT"/macos/resources/functionList-corpus/* "$APP/Contents/Resources/functionListCorpus/"
 
