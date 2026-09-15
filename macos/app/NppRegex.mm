@@ -63,7 +63,13 @@ static void *CompilePattern(NSString *pattern, NSString **errorOut) {
         if (errorOut) *errorOut = @"libpcre2 is not available";
         return NULL;
     }
-    NSData *bytes = [pattern dataUsingEncoding:NSUTF8StringEncoding];
+    // Scintilla searches with Boost, which counts \r\n, \r and \n all as line
+    // separators: '$' stands before the \r of a CRLF and '.' does not swallow
+    // it. PCRE2 defaults to \n alone, which puts a stray \r on the end of
+    // anything matched up to '$' in a CRLF file. The newline convention has to
+    // be the first thing in the pattern.
+    NSString *withConvention = [@"(*ANYCRLF)" stringByAppendingString:pattern];
+    NSData *bytes = [withConvention dataUsingEncoding:NSUTF8StringEncoding];
     if (!bytes) {
         if (errorOut) *errorOut = @"the pattern is not valid UTF-8";
         return NULL;

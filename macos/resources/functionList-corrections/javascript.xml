@@ -29,7 +29,7 @@
                     mainExpr="^\h*(?:(?:static|async|get|set)\s+)*(?!(?:if|for|while|switch|catch|return|function|new)\b)\K[A-Za-z_$][\w$]*\s*\([^()]*\)\s*\{"
                 >
                     <functionName>
-                        <nameExpr expr="[A-Za-z_$][\w$]*" />
+                        <funcNameExpr expr="[A-Za-z_$][\w$]*" />
                     </functionName>
                 </function>
             </classRange>

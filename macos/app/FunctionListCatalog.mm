@@ -1,6 +1,17 @@
 #import "FunctionListCatalog.h"
 #import "NppRegex.h"
 
+@interface NSString (NppPrefixAt)
+- (BOOL)hasPrefixAtIndex:(NSUInteger)index string:(NSString *)prefix;
+@end
+
+@implementation NSString (NppPrefixAt)
+- (BOOL)hasPrefixAtIndex:(NSUInteger)index string:(NSString *)prefix {
+    if (index + prefix.length > self.length) return NO;
+    return [[self substringWithRange:NSMakeRange(index, prefix.length)] isEqualToString:prefix];
+}
+@end
+
 @implementation NppFunctionEntry
 @end
 
@@ -104,12 +115,36 @@
     NSMutableString *out = [NSMutableString stringWithCapacity:text.length];
     BOOL inTag = NO;
     unichar quote = 0;
-    for (NSUInteger i = 0; i < text.length; ++i) {
+    NSUInteger i = 0, length = text.length;
+
+    while (i < length) {
+        // Comments, CDATA and processing instructions are copied across
+        // untouched. Stepping through them character by character would be
+        // wrong: an apostrophe in a comment -- "the file's end", which nppexec
+        // has -- would look like the start of an attribute value, and the rest
+        // of the file would be read as one.
+        if (!quote) {
+            NSString *skipTo = nil;
+            if ([text hasPrefixAtIndex:i string:@"<!--"]) skipTo = @"-->";
+            else if ([text hasPrefixAtIndex:i string:@"<![CDATA["]) skipTo = @"]]>";
+            else if ([text hasPrefixAtIndex:i string:@"<?"]) skipTo = @"?>";
+            if (skipTo) {
+                NSRange end = [text rangeOfString:skipTo
+                                          options:0
+                                            range:NSMakeRange(i, length - i)];
+                NSUInteger stop = (end.location == NSNotFound) ? length : NSMaxRange(end);
+                [out appendString:[text substringWithRange:NSMakeRange(i, stop - i)]];
+                i = stop;
+                inTag = NO;
+                continue;
+            }
+        }
+
         unichar c = [text characterAtIndex:i];
         if (quote) {
             if (c == quote) quote = 0;
-            else if (c == '\n') { [out appendString:@"&#10;"]; continue; }
-            else if (c == '\r') { [out appendString:@"&#13;"]; continue; }
+            else if (c == '\n') { [out appendString:@"&#10;"]; ++i; continue; }
+            else if (c == '\r') { [out appendString:@"&#13;"]; ++i; continue; }
         } else if (inTag && (c == '"' || c == '\'')) {
             quote = c;
         } else if (c == '<') {
@@ -118,6 +153,7 @@
             inTag = NO;
         }
         [out appendFormat:@"%C", c];
+        ++i;
     }
     return [out dataUsingEncoding:NSUTF8StringEncoding] ?: data;
 }
@@ -217,13 +253,24 @@
 
 #pragma mark - Lookup
 
+/// An association names the file a parser lives in, not the parser itself:
+/// overrideMap.xml says userDefinedLangName="NppExec" is served by nppexec.xml.
+/// Resolve the file name to the id of the parser inside it.
+- (NSString *)parserIDForTarget:(NSString *)target {
+    if (!target.length) return nil;
+    NSString *base = target.stringByDeletingPathExtension.lowercaseString;
+    return self.parserIDByFile[base] ?: (self.parsers[target] ? target : nil);
+}
+
 - (NSString *)parserIDForLanguage:(NSString *)language extension:(NSString *)ext {
     if (ext.length) {
-        NSString *byExt = self.associations[[@"ext:" stringByAppendingString:ext.lowercaseString]];
+        NSString *byExt = [self parserIDForTarget:
+                           self.associations[[@"ext:" stringByAppendingString:ext.lowercaseString]]];
         if (byExt) return byExt;
     }
-    NSString *byName = self.associations[[@"language:" stringByAppendingString:
-                                          language.lowercaseString]];
+    NSString *byName = [self parserIDForTarget:
+                        self.associations[[@"language:" stringByAppendingString:
+                                           language.lowercaseString]]];
     if (byName) return byName;
 
     // Upstream names each file after its language, so that is the reliable key.

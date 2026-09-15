@@ -1955,11 +1955,17 @@ int NppMacRunTests(AppDelegate *app) {
         // JavaScript and TypeScript are parsed here by the corrections, which
         // deliberately differ: upstream lists an anonymous function as the word
         // "function", several times over, and these do not.
-        NSSet *deliberate = [NSSet setWithArray:@[@"javascript", @"typescript"]];
+        // udl-regexGlobalTest needs a user-defined language definition that
+        // nothing associates with a parser, so there is nothing to run it with.
+        NSSet *deliberate = [NSSet setWithArray:@[@"javascript", @"typescript",
+                                                  @"udl-regexGlobalTest"]];
         for (NSString *language in [[NSFileManager defaultManager]
                                     contentsOfDirectoryAtPath:corpusDir ?: @"" error:NULL]) {
             if ([deliberate containsObject:language]) continue;
+            // A directory named udl-X holds a user-defined language called X.
             NSString *base = [corpusDir stringByAppendingPathComponent:language];
+            NSString *languageName = [language hasPrefix:@"udl-"]
+                ? [language substringFromIndex:4] : language;
             NSString *text = [NSString stringWithContentsOfFile:
                               [base stringByAppendingPathComponent:@"unitTest"]
                                                        encoding:NSUTF8StringEncoding error:NULL];
@@ -1971,8 +1977,9 @@ int NppMacRunTests(AppDelegate *app) {
             if (![expected isKindOfClass:NSDictionary.class]) continue;
             corpusChecked++;
 
-            NSArray<NppFunctionEntry *> *found = [cat entriesInText:text
-                                                        forLanguage:language extension:language];
+            NSArray<NppFunctionEntry *> *found =
+                [cat entriesInText:text forLanguage:languageName
+                         extension:[language hasPrefix:@"udl-"] ? @"" : language];
             NSMutableArray *leaves = [NSMutableArray array];
             NSMutableDictionary *nodes = [NSMutableDictionary dictionary];
             NSMutableArray *nodeOrder = [NSMutableArray array];
@@ -1989,8 +1996,19 @@ int NppMacRunTests(AppDelegate *app) {
             }
             // A class is reported here as a row of its own as well as the owner
             // of its members; upstream has only the node.
-            NSMutableArray *plainLeaves = [leaves mutableCopy];
-            for (NSString *name in nodeOrder) [plainLeaves removeObject:name];
+            // The class row carries the whitespace its pattern matched, so the
+            // comparison with the container name ignores it.
+            NSMutableArray *plainLeaves = [NSMutableArray array];
+            NSMutableSet *classNames = [NSMutableSet set];
+            for (NSString *name in nodeOrder) {
+                [classNames addObject:[name stringByTrimmingCharactersInSet:
+                                       [NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+            }
+            for (NSString *leaf in leaves) {
+                NSString *bare = [leaf stringByTrimmingCharactersInSet:
+                                  [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+                if (![classNames containsObject:bare]) [plainLeaves addObject:leaf];
+            }
 
             BOOL ok = [plainLeaves isEqualToArray:expected[@"leaves"] ?: @[]];
             NSArray *wantNodes = expected[@"nodes"] ?: @[];
@@ -2005,7 +2023,7 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_VIEW_FUNC_LIST (upstream corpus)",
               [NSString stringWithFormat:@"%lu of %lu languages match Notepad++'s own expected results",
                (unsigned long)(corpusChecked - corpusFailures.count), (unsigned long)corpusChecked],
-              corpusChecked >= 38 && corpusFailures.count <= 4);
+              corpusChecked >= 39 && corpusFailures.count <= 4);
         if (corpusFailures.count) printf("       не совпали: %s\n",
             [[corpusFailures componentsJoinedByString:@", "] UTF8String]);
 

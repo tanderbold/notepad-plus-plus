@@ -31,7 +31,7 @@
                     mainExpr="^\h*(?:pub\s*(?:\([^)]*\)\s*)?)?(?:(?:async|const|unsafe|extern\s+&quot;[^&quot;]*&quot;)\s+)*fn\s+\K[A-Za-z_]\w*"
                 >
                     <functionName>
-                        <nameExpr expr="[A-Za-z_]\w*" />
+                        <funcNameExpr expr="[A-Za-z_]\w*" />
                     </functionName>
                 </function>
             </classRange>

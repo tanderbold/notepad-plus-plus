@@ -249,12 +249,16 @@ the trailing punctuation a sentence leaves behind -- a closing bracket only coun
 when an opening one inside the URL answers it. Notepad++'s own corpus for this is
 bundled and all 148 of its cases are checked.
 
+`macos/test-upstream.sh` runs the suites that come with the projects this port is
+built on -- Lexilla's lexers against its 208 example files, Lexilla's and
+Scintilla's unit tests -- and validates the function-list files this port adds
+against Notepad++'s own schema in `PowerEditor/Test/xmlValidator`.
+
 Notepad++ ships its own test corpus for the Function List in
 `PowerEditor/Test/FunctionList`: forty languages, each with a file and the result
 it should produce. It is bundled and run as a test, and it is what settled
-several questions that guesswork had got wrong. Thirty-four of the thirty-eight
-it covers match exactly; the four that do not (pascal, perl, inno, sql) differ by
-one entry each.
+several questions that guesswork had got wrong. Thirty-six of the thirty-nine it covers match exactly;
+the three that do not (perl, inno, sql) differ by one entry each.
 
 Five things about the definition files are easy to get wrong: the several
 `nameExpr` entries are applied one after another, each narrowing what the last

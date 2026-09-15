@@ -65,8 +65,8 @@
                     "
                 >
                     <functionName>
-                        <nameExpr expr="\w+(&lt;[\w,\s&lt;&gt;]+&gt;)?\s?\(" />
-                        <nameExpr expr="\w+(&lt;[\w,\s&lt;&gt;]+&gt;)?" />
+                        <funcNameExpr expr="\w+(&lt;[\w,\s&lt;&gt;]+&gt;)?\s?\(" />
+                        <funcNameExpr expr="\w+(&lt;[\w,\s&lt;&gt;]+&gt;)?" />
                     </functionName>
                 </function>
             </classRange>
