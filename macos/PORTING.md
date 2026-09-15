@@ -267,6 +267,16 @@ return type as a bare word with an optional `[\w,\s<>]+` generic list, leaving
 no room for `Task<string?>`, `byte[]?` or a tuple. A language whose
 upstream parser is right has no file there.
 
+Single-byte code pages are decoded from generated tables rather than from the
+system converters. macOS has converters for nearly all of them, but they do not
+always agree with Windows, and Notepad++ is Windows: its Icelandic (DOS) table is
+another code page's outright, sixty-seven bytes of a hundred and twenty-eight
+wrong; its Arabic (Windows-1256) one leaves out eight letters; and a dozen more
+differ in one or two bytes. `gen_encoding_reference.py` takes the mappings from
+Python's codecs, which do agree with Windows, and writes both the tables the
+editor uses and a reference the tests check every one of those 5,103 bytes
+against.
+
 Auto-completion and call tips use the function lists Notepad++ ships in
 `PowerEditor/installer/APIs` -- thirty-four files, one per language, carrying the
 names to complete and, for a function, its return value, parameters and

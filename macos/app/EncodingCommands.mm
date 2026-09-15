@@ -1,6 +1,6 @@
 #import "EncodingCommands.h"
 #import "ScintillaView.h"
-#include "CP720Table.h"
+#include "CodePageTables.h"
 
 const NppCharset kNppCharsets[] = {
     // Arabic
@@ -72,8 +72,6 @@ const int kNppCharsetCount = (int)(sizeof(kNppCharsets) / sizeof(kNppCharsets[0]
 @implementation EditorController (EncodingCommands)
 
 + (NSStringEncoding)encodingForCodepage:(unsigned int)codepage {
-    // 858 is 850 with one byte changed; it is handled by the data methods below.
-    if (codepage == 858) codepage = 850;
     CFStringEncoding cf = CFStringConvertWindowsCodepageToEncoding(codepage);
     if (cf == kCFStringEncodingInvalidId) {
         // A few sets have no Windows code page on this platform; name them directly.
@@ -89,25 +87,41 @@ const int kNppCharsetCount = (int)(sizeof(kNppCharsets) / sizeof(kNppCharsets[0]
 }
 
 + (BOOL)supportsCodepage:(unsigned int)codepage {
-    if (codepage == 720) return YES;        // handled by the embedded table
+    if (TableForCodepage(codepage)) return YES;
     return [self encodingForCodepage:codepage] != 0;
 }
 
-/// Code page 720 (Arabic DOS) has no converter in CoreFoundation or in the
-/// system iconv, so it is decoded and encoded from the generated table in
-/// CP720Table.h. Bytes 0x00-0x7F are ASCII.
-static NSString *DecodeCP720(NSData *data) {
+/// The table for a code page, or NULL when there is none and the system
+/// converter has to be used instead.
+static const uint16_t *TableForCodepage(unsigned int codepage) {
+    for (int i = 0; i < kNppCodePageTableCount; ++i) {
+        if (kNppCodePageTables[i].codepage == codepage) return kNppCodePageTables[i].high;
+    }
+    return NULL;
+}
+
+/// macOS has converters for most of these code pages, but they do not always
+/// agree with Windows, and Notepad++ is Windows. Its Icelandic table is another
+/// code page's outright -- sixty-seven of a hundred and twenty-eight bytes wrong
+/// -- its Arabic one has eight letters missing, and a scattering of others
+/// differ in one or two bytes. Where a generated table exists it is used, so the
+/// bytes mean here what they mean there. Bytes below 0x80 are ASCII in every one
+/// of these code pages.
+static NSString *DecodeWithTable(NSData *data, const uint16_t *high) {
     if (!data) return nil;
     const unsigned char *bytes = (const unsigned char *)data.bytes;
     NSMutableString *out = [NSMutableString stringWithCapacity:data.length];
     for (NSUInteger i = 0; i < data.length; ++i) {
-        unichar c = bytes[i] < 0x80 ? (unichar)bytes[i] : kCP720High[bytes[i] - 0x80];
+        uint16_t value = bytes[i] < 0x80 ? bytes[i] : high[bytes[i] - 0x80];
+        // A byte the code page does not define is shown as the replacement
+        // character rather than dropped, so the text keeps its length.
+        unichar c = (value == 0xFFFF) ? 0xFFFD : (unichar)value;
         [out appendString:[NSString stringWithCharacters:&c length:1]];
     }
     return out;
 }
 
-static NSData *EncodeCP720(NSString *text) {
+static NSData *EncodeWithTable(NSString *text, const uint16_t *high) {
     if (!text) return nil;
     NSMutableData *out = [NSMutableData dataWithCapacity:text.length];
     for (NSUInteger i = 0; i < text.length; ++i) {
@@ -117,7 +131,7 @@ static NSData *EncodeCP720(NSString *text) {
             b = (unsigned char)c;
         } else {
             for (int h = 0; h < 128; ++h) {
-                if (kCP720High[h] == c) { b = (unsigned char)(0x80 + h); break; }
+                if (high[h] == c) { b = (unsigned char)(0x80 + h); break; }
             }
         }
         [out appendBytes:&b length:1];
@@ -125,47 +139,20 @@ static NSData *EncodeCP720(NSString *text) {
     return out;
 }
 
-/// Code page 858 is code page 850 with byte 0xD5 carrying the euro sign instead
-/// of a dotless i. macOS ships 850 but not 858, so the one byte is translated
-/// here rather than substituting a different code page.
-static const unsigned char kCP858EuroByte = 0xD5;
-
 + (NSString *)stringFromData:(NSData *)data codepage:(unsigned int)codepage {
-    if (codepage == 720) return DecodeCP720(data);
+    const uint16_t *table = TableForCodepage(codepage);
+    if (table) return DecodeWithTable(data, table);
     NSStringEncoding enc = [self encodingForCodepage:codepage];
     if (!enc || !data) return nil;
-    if (codepage != 858) return [[NSString alloc] initWithData:data encoding:enc];
-
-    NSMutableData *patched = [data mutableCopy];
-    unsigned char *bytes = (unsigned char *)patched.mutableBytes;
-    NSMutableIndexSet *euroAt = [NSMutableIndexSet indexSet];
-    for (NSUInteger i = 0; i < patched.length; ++i) {
-        if (bytes[i] == kCP858EuroByte) { [euroAt addIndex:i]; bytes[i] = '?'; }
-    }
-    NSMutableString *text = [[[NSString alloc] initWithData:patched encoding:enc] mutableCopy];
-    if (!text) return nil;
-    // The 850 bytes are single-byte, so byte index equals character index here.
-    [euroAt enumerateIndexesUsingBlock:^(NSUInteger i, BOOL *stop) {
-        if (i < text.length) [text replaceCharactersInRange:NSMakeRange(i, 1) withString:@"\u20AC"];
-    }];
-    return text;
+    return [[NSString alloc] initWithData:data encoding:enc];
 }
 
 + (NSData *)dataFromString:(NSString *)string codepage:(unsigned int)codepage {
-    if (codepage == 720) return EncodeCP720(string);
+    const uint16_t *table = TableForCodepage(codepage);
+    if (table) return EncodeWithTable(string, table);
     NSStringEncoding enc = [self encodingForCodepage:codepage];
     if (!enc || !string) return nil;
-    if (codepage != 858) return [string dataUsingEncoding:enc allowLossyConversion:YES];
-
-    NSString *withPlaceholder = [string stringByReplacingOccurrencesOfString:@"\u20AC" withString:@"?"];
-    NSMutableData *out = [[withPlaceholder dataUsingEncoding:enc allowLossyConversion:YES] mutableCopy];
-    if (!out) return nil;
-    unsigned char *bytes = (unsigned char *)out.mutableBytes;
-    NSUInteger charIndex = 0;
-    for (NSUInteger i = 0; i < out.length && charIndex < string.length; ++i, ++charIndex) {
-        if ([string characterAtIndex:charIndex] == 0x20AC) bytes[i] = kCP858EuroByte;
-    }
-    return out;
+    return [string dataUsingEncoding:enc allowLossyConversion:YES];
 }
 
 - (BOOL)reinterpretAsCodepage:(unsigned int)codepage {

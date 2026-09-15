@@ -1795,6 +1795,50 @@ int NppMacRunTests(AppDelegate *app) {
             Check(cmd, [NSString stringWithFormat:@"%@ round-trips", @(kNppCharsets[i].label)],
                   [back isEqualToString:probe]);
         }
+
+        // Round-tripping ASCII proves nothing about which character set was
+        // chosen: "probe 123" survives all of them, so a code page wired to the
+        // wrong encoding would have passed. encoding-reference.txt says what
+        // each byte actually means, taken from Python's own codecs, and every
+        // one of those bytes is checked here.
+        NSString *referencePath = [[NSBundle mainBundle] pathForResource:@"encoding-reference"
+                                                                  ofType:@"txt"];
+        NSString *reference = referencePath
+            ? [NSString stringWithContentsOfFile:referencePath encoding:NSUTF8StringEncoding error:NULL]
+            : nil;
+        NSMutableArray *wrongBytes = [NSMutableArray array];
+        NSMutableSet *checkedPages = [NSMutableSet set];
+        NSUInteger checkedBytes = 0;
+        for (NSString *line in [reference componentsSeparatedByString:@"\n"]) {
+            if (!line.length || [line hasPrefix:@"#"]) continue;
+            NSArray *fields = [line componentsSeparatedByString:@"\t"];
+            if (fields.count != 3) continue;
+
+            unsigned int codepage = (unsigned int)[fields[0] intValue];
+            unsigned int byteValue = 0, expectedPoint = 0;
+            [[NSScanner scannerWithString:fields[1]] scanHexInt:&byteValue];
+            [[NSScanner scannerWithString:fields[2]] scanHexInt:&expectedPoint];
+
+            unsigned char raw = (unsigned char)byteValue;
+            NSString *decoded = [EditorController stringFromData:[NSData dataWithBytes:&raw length:1]
+                                                        codepage:codepage];
+            checkedBytes++;
+            [checkedPages addObject:@(codepage)];
+            if (decoded.length != 1 || [decoded characterAtIndex:0] != (unichar)expectedPoint) {
+                if (wrongBytes.count < 8) {
+                    [wrongBytes addObject:[NSString stringWithFormat:@"cp%u byte %02X -> %@ (want %04X)",
+                                           codepage, byteValue,
+                                           decoded.length ? @([decoded characterAtIndex:0]) : @"nothing",
+                                           expectedPoint]];
+                }
+            }
+        }
+        Check(@"IDM_FORMAT_ANSI (byte meanings)",
+              [NSString stringWithFormat:@"%lu bytes across %lu code pages decode to the right character",
+               (unsigned long)checkedBytes, (unsigned long)checkedPages.count],
+              checkedBytes > 5000 && wrongBytes.count == 0);
+        if (wrongBytes.count) printf("       %s\n",
+            [[wrongBytes componentsJoinedByString:@"; "] UTF8String]);
         printf("  (%d of %d character sets resolved%s)\n", resolved, kNppCharsetCount,
                unsupported.count ? [[NSString stringWithFormat:@"; missing: %@",
                                      [unsupported componentsJoinedByString:@", "]] UTF8String] : "");

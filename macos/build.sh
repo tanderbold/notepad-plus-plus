@@ -64,6 +64,7 @@ cp "$ROOT/PowerEditor/src/langs.model.xml"   "$APP/Contents/Resources/"
 cp "$ROOT/PowerEditor/src/stylers.model.xml" "$APP/Contents/Resources/"
 # read back by the coverage meta-test in the built-in suite
 cp "$ROOT/macos/implemented.txt"            "$APP/Contents/Resources/"
+cp "$ROOT/macos/resources/encoding-reference.txt" "$APP/Contents/Resources/"
 # The FTP tests need a server to talk to; this one exists only for them.
 cp "$ROOT/macos/test-ftp-server.py"         "$APP/Contents/Resources/"
 # Notepad++'s own colour themes; the Style Configurator and Preferences list these.
