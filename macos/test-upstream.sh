@@ -27,6 +27,11 @@ step "Lexilla: unit tests"
 step "Scintilla: unit tests"
 (cd "$ROOT/scintilla/test/unit" && make -s >/dev/null && ./unitTest | tail -2) || failed=1
 
+step "Scintilla: its own Python tests, through a macOS harness"
+"$ROOT/macos/test-scintilla/run.sh" > /tmp/npp-scintilla.txt 2>&1
+grep -E '^Ran |^OK$|^FAILED' /tmp/npp-scintilla.txt | sed 's/^/  /'
+echo "  (четыре известных расхождения описаны в macos/test-scintilla/README.md)"
+
 step "Notepad++ schema: the function-list files this port adds"
 schema="$ROOT/PowerEditor/Test/xmlValidator/functionList.xsd"
 for f in "$ROOT"/macos/resources/functionList-corrections/*.xml; do
