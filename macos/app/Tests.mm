@@ -357,6 +357,64 @@ int NppMacRunTests(AppDelegate *app) {
         [[NSFileManager defaultManager] removeItemAtPath:iniFile error:NULL];
     }
 
+    printf("\n== Search: replacement escapes ==\n");
+    {
+        [ed newDocument];
+
+        // \U and \L change the case of what follows until \E; \u and \l change
+        // a single character. A replacement that cannot do this cannot
+        // normalise what it captured, which is much of what people use it for.
+        SetDoc(ed, @"hello world\n");
+        NppFindSpec *upper = [NppFindSpec specFor:@"(\\w+) (\\w+)" mode:NppSearchRegex
+                                          options:NppFindNone];
+        upper.replacement = @"\\U\\1\\E \\2";
+        [ed replaceAll:upper];
+        BOOL upperRun = [DocText(ed) isEqualToString:@"HELLO world\n"];
+
+        SetDoc(ed, @"HELLO WORLD\n");
+        NppFindSpec *lower = [NppFindSpec specFor:@"(\\w+) (\\w+)" mode:NppSearchRegex
+                                          options:NppFindNone];
+        lower.replacement = @"\\L\\1 \\2";
+        [ed replaceAll:lower];
+        BOOL lowerRun = [DocText(ed) isEqualToString:@"hello world\n"];
+
+        SetDoc(ed, @"hello world\n");
+        NppFindSpec *initials = [NppFindSpec specFor:@"(\\w+) (\\w+)" mode:NppSearchRegex
+                                             options:NppFindNone];
+        initials.replacement = @"\\u\\1 \\u\\2";
+        [ed replaceAll:initials];
+        BOOL oneEach = [DocText(ed) isEqualToString:@"Hello World\n"];
+
+        Check(@"IDM_SEARCH_REPLACE (case escapes)",
+              @"\\U, \\L, \\E, \\u and \\l change the case of the replacement",
+              upperRun && lowerRun && oneEach);
+
+        // The replacement is text, not a second pattern: \d+ put in the replace
+        // field means those three characters.
+        SetDoc(ed, @"x\n");
+        NppFindSpec *literal = [NppFindSpec specFor:@"x" mode:NppSearchRegex options:NppFindNone];
+        literal.replacement = @"\\d+";
+        [ed replaceAll:literal];
+        Check(@"IDM_SEARCH_REPLACE (replacement is text)",
+              @"a pattern typed into the replace field is put in as it stands",
+              [DocText(ed) isEqualToString:@"\\d+\n"]);
+
+        // '^' is per line, so "^." matches once on each of them.
+        SetDoc(ed, @"abc\ndef\n");
+        Check(@"IDM_SEARCH_FIND (line anchors)",
+              @"'^' matches at the start of every line, not only the document",
+              [ed countMatches:[NppFindSpec specFor:@"^." mode:NppSearchRegex
+                                            options:NppFindNone]] == 2);
+
+        // '.' covers everything, including the odd control character.
+        unichar formFeed = 0x0C;
+        SetDoc(ed, [NSString stringWithFormat:@"a%Cb\n", formFeed]);
+        Check(@"IDM_SEARCH_FIND (dot spans anything)",
+              @"'.' matches a form feed as readily as a letter",
+              [ed countMatches:[NppFindSpec specFor:@"a.b" mode:NppSearchRegex
+                                            options:NppFindNone]] == 1);
+    }
+
     printf("\n== Sorting: the way Notepad++ sorts ==\n");
     {
         [ed newDocument];

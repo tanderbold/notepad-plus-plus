@@ -210,32 +210,69 @@
     }
     if (spec.mode != NppSearchRegex) return template_;
 
+    // \U and \L change the case of everything up to \E; \u and \l change one
+    // character. They are what makes a replacement able to normalise what it
+    // captured, and Notepad++ has them because Boost does.
+    typedef NS_ENUM(NSInteger, NppCaseRun) { NppCaseAsIs, NppCaseUpperRun, NppCaseLowerRun };
+    __block NppCaseRun run = NppCaseAsIs;
+    __block NSInteger single = 0;      // +1 next character upper, -1 next lower
+
     NSMutableString *out = [NSMutableString stringWithCapacity:template_.length];
+    void (^append)(NSString *) = ^(NSString *piece) {
+        if (!piece.length) return;
+        NSMutableString *text = [piece mutableCopy];
+        if (single != 0) {
+            NSString *first = [text substringToIndex:1];
+            [text replaceCharactersInRange:NSMakeRange(0, 1)
+                                withString:single > 0 ? first.uppercaseString : first.lowercaseString];
+            single = 0;
+            if (run == NppCaseUpperRun) {
+                NSString *rest = [text substringFromIndex:1].uppercaseString;
+                text = [[[text substringToIndex:1] stringByAppendingString:rest] mutableCopy];
+            } else if (run == NppCaseLowerRun) {
+                NSString *rest = [text substringFromIndex:1].lowercaseString;
+                text = [[[text substringToIndex:1] stringByAppendingString:rest] mutableCopy];
+            }
+        } else if (run == NppCaseUpperRun) {
+            text = [text.uppercaseString mutableCopy];
+        } else if (run == NppCaseLowerRun) {
+            text = [text.lowercaseString mutableCopy];
+        }
+        [out appendString:text];
+    };
+
     for (NSUInteger i = 0; i < template_.length; ++i) {
         unichar c = [template_ characterAtIndex:i];
-        BOOL isReference = (c == '\\' || c == '$') && i + 1 < template_.length;
-        unichar next = isReference ? [template_ characterAtIndex:i + 1] : 0;
-        if (isReference && next >= '0' && next <= '9') {
+        BOOL hasNext = i + 1 < template_.length;
+        unichar next = hasNext ? [template_ characterAtIndex:i + 1] : 0;
+
+        if ((c == '\\' || c == '$') && next >= '0' && next <= '9') {
             NSUInteger index = next - '0';
             if (index < groups.count) {
                 NSRange r = groups[index].rangeValue;
                 if (r.location != NSNotFound) {
-                    [out appendString:[[NSString alloc]
-                        initWithData:[data subdataWithRange:r] encoding:NSUTF8StringEncoding] ?: @""];
+                    append([[NSString alloc] initWithData:[data subdataWithRange:r]
+                                                 encoding:NSUTF8StringEncoding] ?: @"");
                 }
             }
             i++;
             continue;
         }
-        if (c == '\\' && i + 1 < template_.length) {
-            // The escapes that mean something in a replacement.
-            unichar escaped = next;
-            if (escaped == 'n') { [out appendString:@"\n"]; i++; continue; }
-            if (escaped == 'r') { [out appendString:@"\r"]; i++; continue; }
-            if (escaped == 't') { [out appendString:@"\t"]; i++; continue; }
-            if (escaped == '\\') { [out appendString:@"\\"]; i++; continue; }
+        if (c == '\\' && hasNext) {
+            switch (next) {
+                case 'U': run = NppCaseUpperRun; i++; continue;
+                case 'L': run = NppCaseLowerRun; i++; continue;
+                case 'E': run = NppCaseAsIs;     i++; continue;
+                case 'u': single = 1;            i++; continue;
+                case 'l': single = -1;           i++; continue;
+                case 'n': append(@"\n");         i++; continue;
+                case 'r': append(@"\r");         i++; continue;
+                case 't': append(@"\t");         i++; continue;
+                case '\\': append(@"\\");        i++; continue;
+                default: break;
+            }
         }
-        [out appendFormat:@"%C", c];
+        append([NSString stringWithCharacters:&c length:1]);
     }
     return out;
 }
