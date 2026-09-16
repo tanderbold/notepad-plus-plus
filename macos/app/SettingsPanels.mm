@@ -10,10 +10,17 @@
 
 #pragma mark - Preferences
 
-@interface PreferencesWindow ()
+@interface PreferencesWindow () <NSTableViewDataSource, NSTableViewDelegate>
 @property (nonatomic, strong) NSPanel *panel;
 @property (nonatomic, weak) EditorController *editor;
 @property (nonatomic, strong) NSMutableDictionary *controls;
+/// Notepad++ lists its categories down the left and shows one page at a time;
+/// this keeps the pages in that order, by the names it gives them.
+@property (nonatomic, strong) NSMutableArray<NSString *> *pageNames;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSView *> *pages;
+@property (nonatomic, strong) NSTableView *categories;
+@property (nonatomic, strong) NSView *pageHost;
+@property (nonatomic, strong) NSScrollView *pageScroller;
 @end
 
 @implementation PreferencesWindow
@@ -22,146 +29,346 @@
     if (!(self = [super init])) return nil;
     _editor = editor;
     _controls = [NSMutableDictionary dictionary];
+    _pageNames = [NSMutableArray array];
+    _pages = [NSMutableDictionary dictionary];
 
-    NSRect frame = NSMakeRect(0, 0, 480, 1020);
+    NSRect frame = NSMakeRect(0, 0, 700, 560);
     _panel = [[NSPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                                                   NSWindowStyleMaskResizable |
                                                    NSWindowStyleMaskUtilityWindow)
                                           backing:NSBackingStoreBuffered defer:YES];
     _panel.title = @"Preferences";
     _panel.releasedWhenClosed = NO;
 
-    NSView *content = [[NSView alloc] initWithFrame:frame];
-    CGFloat y = NSHeight(frame) - 40;
+    // A plain NSView paints nothing, which leaves white behind the buttons and,
+    // in dark mode, white labels on it. This follows the appearance instead.
+    NSVisualEffectView *content = [[NSVisualEffectView alloc] initWithFrame:frame];
+    content.material = NSVisualEffectMaterialWindowBackground;
+    content.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+    content.state = NSVisualEffectStateActive;
 
-    y = [self addField:@"Font" key:@"fontName" value:[NppPreferences shared].fontName
-                     to:content atY:y];
-    y = [self addField:@"Font size" key:@"fontSize"
-                  value:[@([NppPreferences shared].fontSize) stringValue] to:content atY:y];
-    y = [self addField:@"Tab width" key:@"tabWidth"
-                  value:[@([NppPreferences shared].tabWidth) stringValue] to:content atY:y];
-    y = [self addCheckbox:@"Insert spaces instead of tabs" key:@"useSpaces"
-                      on:[NppPreferences shared].useSpaces to:content atY:y];
-    y = [self addCheckbox:@"Word wrap" key:@"wordWrap"
-                      on:[NppPreferences shared].wordWrap to:content atY:y];
-    y = [self addCheckbox:@"Show whitespace" key:@"showWhitespace"
-                      on:[NppPreferences shared].showWhitespace to:content atY:y];
-    y = [self addCheckbox:@"Show indent guides" key:@"showIndentGuides"
-                      on:[NppPreferences shared].showIndentGuides to:content atY:y];
-    y = [self addCheckbox:@"Restore the previous session on launch" key:@"restoreSession"
-                      on:[NppPreferences shared].restoreSession to:content atY:y];
-    y = [self addField:@"Default encoding" key:@"defaultEncoding"
-                  value:[NppPreferences shared].defaultEncoding to:content atY:y];
+    // The category list, down the left as Notepad++ has it.
+    NSScrollView *listScroller = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 52, 190, 508)];
+    listScroller.hasVerticalScroller = YES;
+    listScroller.autoresizingMask = NSViewHeightSizable;
+    _categories = [[NSTableView alloc] initWithFrame:listScroller.bounds];
+    NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"page"];
+    column.width = 170;
+    [_categories addTableColumn:column];
+    _categories.headerView = nil;
+    _categories.dataSource = self;
+    _categories.delegate = self;
+    _categories.rowHeight = 22;
+    listScroller.documentView = _categories;
+    [content addSubview:listScroller];
 
-    y -= 8;
-    y = [self addPopup:@"Appearance" key:@"appearanceMode"
-                 items:@[@"Follow the system", @"Light", @"Dark"]
-              selected:[NppPreferences shared].appearanceMode to:content atY:y];
-    NSArray *themes = [StyleCatalog availableThemeNames];
-    y = [self addPopup:@"Light theme" key:@"lightThemeName" items:themes
-              selected:[themes indexOfObject:[NppPreferences shared].lightThemeName ?: @"Default"]
-                    to:content atY:y];
-    y = [self addPopup:@"Dark theme" key:@"darkThemeName" items:themes
-              selected:[themes indexOfObject:[NppPreferences shared].darkThemeName ?: @"DarkModeDefault"]
-                    to:content atY:y];
+    // The page itself, scrolling in case a page is taller than the window.
+    _pageScroller = [[NSScrollView alloc] initWithFrame:NSMakeRect(190, 52, 510, 508)];
+    _pageScroller.hasVerticalScroller = YES;
+    // The scroller paints the standard background. Leaving it transparent shows
+    // white behind the page, and in dark mode the labels are white too.
+    _pageScroller.drawsBackground = YES;
+    _pageScroller.backgroundColor = NSColor.windowBackgroundColor;
+    _pageScroller.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    [content addSubview:_pageScroller];
 
-    y -= 8;
-    y = [self addCheckbox:@"Show the toolbar" key:@"showToolbar"
-                      on:[NppPreferences shared].showToolbar to:content atY:y];
-    y = [self addPopup:@"Toolbar buttons" key:@"toolbarDisplayMode"
-                 items:@[@"Icons only", @"Icons and labels", @"Labels only"]
-              selected:[NppPreferences shared].toolbarDisplayMode to:content atY:y];
-    y = [self addPopup:@"Toolbar size" key:@"toolbarIconSize"
-                 items:@[@"Regular", @"Small"]
-              selected:[NppPreferences shared].toolbarIconSize to:content atY:y];
+    [self buildPages];
 
-    y -= 8;
-    y = [self addPopup:@"Backup on save" key:@"backupMode"
-                 items:@[@"None", @"Simple", @"Verbose (timestamped)"]
-              selected:[NppPreferences shared].backupMode to:content atY:y];
-    y = [self addField:@"Backup folder" key:@"backupDirectory"
-                  value:[NppPreferences shared].backupDirectory to:content atY:y];
-    y = [self addCheckbox:@"Autosave modified documents" key:@"autosaveEnabled"
-                      on:[NppPreferences shared].autosaveEnabled to:content atY:y];
-    y = [self addField:@"Autosave every (seconds)" key:@"autosaveInterval"
-                  value:[@([NppPreferences shared].autosaveInterval) stringValue] to:content atY:y];
-
-    y -= 8;
-    y = [self addCheckbox:@"Print line numbers" key:@"printLineNumbers"
-                      on:[NppPreferences shared].printLineNumbers to:content atY:y];
-    y = [self addPopup:@"Print colours" key:@"printColourMode"
-                 items:@[@"As shown", @"Inverted", @"Black on white", @"No background"]
-              selected:[NppPreferences shared].printColourMode to:content atY:y];
-    y = [self addField:@"Header (left)" key:@"printHeaderLeft"
-                  value:[NppPreferences shared].printHeaderLeft to:content atY:y];
-    y = [self addField:@"Header (right)" key:@"printHeaderRight"
-                  value:[NppPreferences shared].printHeaderRight to:content atY:y];
-    y = [self addField:@"Footer (middle)" key:@"printFooterMiddle"
-                  value:[NppPreferences shared].printFooterMiddle to:content atY:y];
-
-    y -= 8;
-    y = [self addCheckbox:@"Large file restriction (no syntax highlighting)"
-                      key:@"largeFileRestrictionEnabled"
-                       on:[NppPreferences shared].largeFileRestrictionEnabled to:content atY:y];
-    y = [self addField:@"Large file size (MB)" key:@"largeFileThresholdMB"
-                  value:[@([NppPreferences shared].largeFileThresholdMB) stringValue] to:content atY:y];
-    y = [self addCheckbox:@"Allow brace match above that size" key:@"largeFileAllowBraceMatch"
-                       on:[NppPreferences shared].largeFileAllowBraceMatch to:content atY:y];
-    y = [self addCheckbox:@"Allow clickable links above that size" key:@"largeFileAllowClickableLinks"
-                       on:[NppPreferences shared].largeFileAllowClickableLinks to:content atY:y];
-
-    y -= 8;
-    y = [self addCheckbox:@"Clickable links" key:@"linksEnabled"
-                       on:[NppPreferences shared].linksEnabled to:content atY:y];
-    y = [self addCheckbox:@"Links without underline" key:@"linksNoUnderline"
-                       on:[NppPreferences shared].linksNoUnderline to:content atY:y];
-    y = [self addField:@"Extra URI schemes" key:@"linkCustomSchemes"
-                  value:[NppPreferences shared].linkCustomSchemes to:content atY:y];
-    y = [self addCheckbox:@"Highlight matching braces" key:@"braceMatchEnabled"
-                       on:[NppPreferences shared].braceMatchEnabled to:content atY:y];
-    y = [self addCheckbox:@"Smart highlighting" key:@"smartHighlightEnabled"
-                       on:[NppPreferences shared].smartHighlightEnabled to:content atY:y];
-
-    y -= 8;
-    y = [self addCheckbox:@"Add characters to the word list" key:@"customWordCharsEnabled"
-                       on:[NppPreferences shared].customWordCharsEnabled to:content atY:y];
-    y = [self addField:@"Word characters" key:@"customWordChars"
-                  value:[NppPreferences shared].customWordChars to:content atY:y];
-    y = [self addField:@"Delimiter open" key:@"delimiterOpen"
-                  value:[NppPreferences shared].delimiterOpen to:content atY:y];
-    y = [self addField:@"Delimiter close" key:@"delimiterClose"
-                  value:[NppPreferences shared].delimiterClose to:content atY:y];
-    y = [self addCheckbox:@"Delimiter selection over several lines" key:@"delimiterMultiline"
-                       on:[NppPreferences shared].delimiterMultiline to:content atY:y];
-
-    y -= 8;
-    y = [self addPopup:@"Instances" key:@"multiInstanceMode"
-                 items:@[@"Default (one instance)", @"Always a new instance",
-                         @"A session per instance"]
-              selected:[NppPreferences shared].multiInstanceMode to:content atY:y];
-    y = [self addCheckbox:@"Reverse the date and time order" key:@"reverseDateTimeOrder"
-                       on:[NppPreferences shared].reverseDateTimeOrder to:content atY:y];
-    y = [self addCheckbox:@"Remember which panels were open" key:@"rememberPanelState"
-                       on:[NppPreferences shared].rememberPanelState to:content atY:y];
-    y = [self addField:@"Settings folder" key:@"settingsDirectory"
-                  value:[NppPreferences shared].settingsDirectory to:content atY:y];
-
-    NSButton *apply = [[NSButton alloc] initWithFrame:NSMakeRect(300, 12, 100, 28)];
+    NSButton *apply = [[NSButton alloc] initWithFrame:NSMakeRect(580, 12, 100, 28)];
     apply.title = @"Apply";
     apply.bezelStyle = NSBezelStyleRounded;
     apply.target = self;
     apply.action = @selector(apply:);
+    apply.autoresizingMask = NSViewMinXMargin;
     [content addSubview:apply];
 
-    NSButton *reset = [[NSButton alloc] initWithFrame:NSMakeRect(190, 12, 100, 28)];
+    NSButton *reset = [[NSButton alloc] initWithFrame:NSMakeRect(470, 12, 100, 28)];
     reset.title = @"Reset";
     reset.bezelStyle = NSBezelStyleRounded;
     reset.target = self;
     reset.action = @selector(resetAll:);
+    reset.autoresizingMask = NSViewMinXMargin;
     [content addSubview:reset];
 
     _panel.contentView = content;
+    [_categories selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    [self showPageAtIndex:0];
     return self;
+}
+
+#pragma mark - Pages
+
+/// Starts a page and returns the y to begin laying out at. Pages are tall
+/// enough for their contents; the scroller deals with the rest.
+- (CGFloat)beginPage:(NSString *)name {
+    NSView *page = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 500, 520)];
+    [self.pageNames addObject:name];
+    self.pages[name] = page;
+    return 480;
+}
+
+- (NSView *)page:(NSString *)name { return self.pages[name]; }
+
+/// Sizes the page to what was actually put on it, so short pages do not scroll.
+- (void)endPage:(NSString *)name atY:(CGFloat)y {
+    NSView *page = self.pages[name];
+    CGFloat used = 500 - y;
+    CGFloat height = MAX((CGFloat)500, used + 40);
+    NSRect frame = page.frame;
+    // Everything was laid out from the top of a 520-tall page, so when the page
+    // grows the contents have to move with it.
+    CGFloat shift = height - NSHeight(frame);
+    if (shift != 0) {
+        for (NSView *child in page.subviews) {
+            NSRect r = child.frame;
+            r.origin.y += shift;
+            child.frame = r;
+        }
+    }
+    frame.size.height = height;
+    page.frame = frame;
+}
+
+- (void)showPageAtIndex:(NSInteger)index {
+    if (index < 0 || index >= (NSInteger)self.pageNames.count) return;
+    NSView *page = self.pages[self.pageNames[(NSUInteger)index]];
+    self.pageScroller.documentView = page;
+    [self.pageScroller.contentView scrollToPoint:
+        NSMakePoint(0, MAX((CGFloat)0, NSHeight(page.frame) - NSHeight(self.pageScroller.bounds)))];
+}
+
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView {
+    return (NSInteger)self.pageNames.count;
+}
+
+- (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)column
+            row:(NSInteger)row {
+    if (row < 0 || row >= (NSInteger)self.pageNames.count) return @"";
+    return self.pageNames[(NSUInteger)row];
+}
+
+- (void)tableViewSelectionDidChange:(NSNotification *)notification {
+    [self showPageAtIndex:self.categories.selectedRow];
+}
+
+/// Every page, with the names and the grouping Notepad++ uses.
+- (void)buildPages {
+    NppPreferences *p = [NppPreferences shared];
+    NSView *v; CGFloat y;
+
+    y = [self beginPage:@"General"]; v = [self page:@"General"];
+    y = [self addCheckbox:@"Restore the previous session on launch" key:@"restoreSession"
+                       on:p.restoreSession to:v atY:y];
+    y = [self addCheckbox:@"Remember which panels were open" key:@"rememberPanelState"
+                       on:p.rememberPanelState to:v atY:y];
+    y = [self addPopup:@"Instances" key:@"multiInstanceMode"
+                 items:@[@"Default (one instance)", @"Always a new instance",
+                         @"A session per instance"]
+              selected:p.multiInstanceMode to:v atY:y];
+    [self endPage:@"General" atY:y];
+
+    y = [self beginPage:@"Toolbar"]; v = [self page:@"Toolbar"];
+    y = [self addCheckbox:@"Show the toolbar" key:@"showToolbar" on:p.showToolbar to:v atY:y];
+    y = [self addPopup:@"Toolbar buttons" key:@"toolbarDisplayMode"
+                 items:@[@"Icons only", @"Icons and labels", @"Labels only"]
+              selected:p.toolbarDisplayMode to:v atY:y];
+    y = [self addPopup:@"Toolbar size" key:@"toolbarIconSize" items:@[@"Regular", @"Small"]
+              selected:p.toolbarIconSize to:v atY:y];
+    [self endPage:@"Toolbar" atY:y];
+
+    y = [self beginPage:@"Editing 1"]; v = [self page:@"Editing 1"];
+    y = [self addField:@"Font" key:@"fontName" value:p.fontName to:v atY:y];
+    y = [self addField:@"Font size" key:@"fontSize"
+                  value:[@(p.fontSize) stringValue] to:v atY:y];
+    y = [self addPopup:@"Caret width" key:@"caretWidth"
+                 items:@[@"Hidden", @"1 pixel", @"2 pixels", @"3 pixels"]
+              selected:p.caretWidth to:v atY:y];
+    y = [self addField:@"Caret blink rate (ms, 0 steady)" key:@"caretBlinkRate"
+                  value:[@(p.caretBlinkRate) stringValue] to:v atY:y];
+    y = [self addPopup:@"Current line" key:@"currentLineHighlightMode"
+                 items:@[@"Not marked", @"Background", @"Frame"]
+              selected:p.currentLineHighlightMode to:v atY:y];
+    y = [self addField:@"Frame width (1-6)" key:@"currentLineFrameWidth"
+                  value:[@(p.currentLineFrameWidth) stringValue] to:v atY:y];
+    y = [self addCheckbox:@"Scroll beyond the last line" key:@"scrollBeyondLastLine"
+                       on:p.scrollBeyondLastLine to:v atY:y];
+    y = [self addCheckbox:@"Let the caret go past the end of a line" key:@"virtualSpace"
+                       on:p.virtualSpace to:v atY:y];
+    y = [self addCheckbox:@"Cut and Copy take the whole line when nothing is selected"
+                      key:@"lineCopyCutWithoutSelection"
+                       on:p.lineCopyCutWithoutSelection to:v atY:y];
+    y = [self addCheckbox:@"Selected text can be dragged" key:@"selectedTextDragDrop"
+                       on:p.selectedTextDragDrop to:v atY:y];
+    y = [self addCheckbox:@"A right-click keeps the selection" key:@"rightClickKeepsSelection"
+                       on:p.rightClickKeepsSelection to:v atY:y];
+    [self endPage:@"Editing 1" atY:y];
+
+    y = [self beginPage:@"Editing 2"]; v = [self page:@"Editing 2"];
+    y = [self addCheckbox:@"Word wrap" key:@"wordWrap" on:p.wordWrap to:v atY:y];
+    y = [self addPopup:@"Wrapped lines" key:@"lineWrapMethod"
+                 items:@[@"Plain", @"Aligned with the line above", @"Indented a level further"]
+              selected:p.lineWrapMethod to:v atY:y];
+    y = [self addCheckbox:@"Show whitespace" key:@"showWhitespace"
+                       on:p.showWhitespace to:v atY:y];
+    y = [self addCheckbox:@"Show indent guides" key:@"showIndentGuides"
+                       on:p.showIndentGuides to:v atY:y];
+    [self endPage:@"Editing 2" atY:y];
+
+    y = [self beginPage:@"Dark Mode"]; v = [self page:@"Dark Mode"];
+    y = [self addPopup:@"Appearance" key:@"appearanceMode"
+                 items:@[@"Follow the system", @"Light", @"Dark"]
+              selected:p.appearanceMode to:v atY:y];
+    NSArray *themes = [StyleCatalog availableThemeNames];
+    y = [self addPopup:@"Light theme" key:@"lightThemeName" items:themes
+              selected:[themes indexOfObject:p.lightThemeName ?: @"Default"] to:v atY:y];
+    y = [self addPopup:@"Dark theme" key:@"darkThemeName" items:themes
+              selected:[themes indexOfObject:p.darkThemeName ?: @"DarkModeDefault"] to:v atY:y];
+    [self endPage:@"Dark Mode" atY:y];
+
+    y = [self beginPage:@"Margins/Border/Edge"]; v = [self page:@"Margins/Border/Edge"];
+    y = [self addCheckbox:@"Show the bookmark margin" key:@"bookmarkMarginShow"
+                       on:p.bookmarkMarginShow to:v atY:y];
+    y = [self addCheckbox:@"Show the fold margin" key:@"foldMarginShow"
+                       on:p.foldMarginShow to:v atY:y];
+    y = [self addField:@"Padding left (0-9)" key:@"paddingLeft"
+                  value:[@(p.paddingLeft) stringValue] to:v atY:y];
+    y = [self addField:@"Padding right (0-9)" key:@"paddingRight"
+                  value:[@(p.paddingRight) stringValue] to:v atY:y];
+    y = [self addPopup:@"Vertical edge" key:@"edgeMode"
+                 items:@[@"None", @"A line", @"Background past the column"]
+              selected:p.edgeMode to:v atY:y];
+    y = [self addField:@"Columns (space separated)" key:@"edgeColumns"
+                  value:p.edgeColumns to:v atY:y];
+    [self endPage:@"Margins/Border/Edge" atY:y];
+
+    y = [self beginPage:@"New Document"]; v = [self page:@"New Document"];
+    y = [self addField:@"Default encoding" key:@"defaultEncoding"
+                  value:p.defaultEncoding to:v atY:y];
+    [self endPage:@"New Document" atY:y];
+
+    y = [self beginPage:@"Indentation"]; v = [self page:@"Indentation"];
+    y = [self addField:@"Tab width" key:@"tabWidth"
+                  value:[@(p.tabWidth) stringValue] to:v atY:y];
+    y = [self addCheckbox:@"Insert spaces instead of tabs" key:@"useSpaces"
+                       on:p.useSpaces to:v atY:y];
+    y = [self addPopup:@"Auto-indent" key:@"autoIndentMode"
+                 items:@[@"None", @"Keep the indent of the line above",
+                         @"Also open a level after a brace"]
+              selected:p.autoIndentMode to:v atY:y];
+    [self endPage:@"Indentation" atY:y];
+
+    y = [self beginPage:@"Highlighting"]; v = [self page:@"Highlighting"];
+    y = [self addCheckbox:@"Highlight matching braces" key:@"braceMatchEnabled"
+                       on:p.braceMatchEnabled to:v atY:y];
+    y = [self addCheckbox:@"Smart highlighting" key:@"smartHighlightEnabled"
+                       on:p.smartHighlightEnabled to:v atY:y];
+    y = [self addCheckbox:@"Smart highlighting matches case" key:@"smartHighlightMatchCase"
+                       on:p.smartHighlightMatchCase to:v atY:y];
+    y = [self addCheckbox:@"Smart highlighting matches whole words" key:@"smartHighlightWholeWord"
+                       on:p.smartHighlightWholeWord to:v atY:y];
+    y = [self addCheckbox:@"Mark All matches case" key:@"markAllCaseSensitive"
+                       on:p.markAllCaseSensitive to:v atY:y];
+    y = [self addCheckbox:@"Mark All matches whole words" key:@"markAllWordOnly"
+                       on:p.markAllWordOnly to:v atY:y];
+    [self endPage:@"Highlighting" atY:y];
+
+    y = [self beginPage:@"Print"]; v = [self page:@"Print"];
+    y = [self addCheckbox:@"Print line numbers" key:@"printLineNumbers"
+                       on:p.printLineNumbers to:v atY:y];
+    y = [self addPopup:@"Print colours" key:@"printColourMode"
+                 items:@[@"As shown", @"Inverted", @"Black on white", @"No background"]
+              selected:p.printColourMode to:v atY:y];
+    y = [self addField:@"Header (left)" key:@"printHeaderLeft"
+                  value:p.printHeaderLeft to:v atY:y];
+    y = [self addField:@"Header (right)" key:@"printHeaderRight"
+                  value:p.printHeaderRight to:v atY:y];
+    y = [self addField:@"Footer (middle)" key:@"printFooterMiddle"
+                  value:p.printFooterMiddle to:v atY:y];
+    [self endPage:@"Print" atY:y];
+
+    y = [self beginPage:@"Backup"]; v = [self page:@"Backup"];
+    y = [self addPopup:@"Backup on save" key:@"backupMode"
+                 items:@[@"None", @"Simple", @"Verbose (timestamped)"]
+              selected:p.backupMode to:v atY:y];
+    y = [self addField:@"Backup folder" key:@"backupDirectory"
+                  value:p.backupDirectory to:v atY:y];
+    y = [self addCheckbox:@"Autosave modified documents" key:@"autosaveEnabled"
+                       on:p.autosaveEnabled to:v atY:y];
+    y = [self addField:@"Autosave every (seconds)" key:@"autosaveInterval"
+                  value:[@(p.autosaveInterval) stringValue] to:v atY:y];
+    [self endPage:@"Backup" atY:y];
+
+    y = [self beginPage:@"Auto-Completion"]; v = [self page:@"Auto-Completion"];
+    y = [self addCheckbox:@"Complete as you type" key:@"autoCompleteOnInput"
+                       on:p.autoCompleteOnInput to:v atY:y];
+    y = [self addPopup:@"Complete from" key:@"autoCompleteSource"
+                 items:@[@"Functions", @"Words in the document", @"Both"]
+              selected:p.autoCompleteSource to:v atY:y];
+    y = [self addField:@"Characters before it opens" key:@"autoCompleteThreshold"
+                  value:[@(p.autoCompleteThreshold) stringValue] to:v atY:y];
+    y = [self addCheckbox:@"Show a short list" key:@"autoCompleteBriefList"
+                       on:p.autoCompleteBriefList to:v atY:y];
+    y = [self addCheckbox:@"Ignore numbers" key:@"autoCompleteIgnoreNumbers"
+                       on:p.autoCompleteIgnoreNumbers to:v atY:y];
+    y = [self addCheckbox:@"Tab accepts the choice (otherwise Enter)" key:@"autoCompleteUseTab"
+                       on:p.autoCompleteUseTab to:v atY:y];
+    y = [self addCheckbox:@"Show the parameters of a function" key:@"functionHintOnInput"
+                       on:p.functionHintOnInput to:v atY:y];
+    y = [self addCheckbox:@"Close ( automatically" key:@"autoInsertParenthesis"
+                       on:p.autoInsertParenthesis to:v atY:y];
+    y = [self addCheckbox:@"Close [ automatically" key:@"autoInsertBracket"
+                       on:p.autoInsertBracket to:v atY:y];
+    y = [self addCheckbox:@"Close { automatically" key:@"autoInsertBrace"
+                       on:p.autoInsertBrace to:v atY:y];
+    y = [self addCheckbox:@"Close ' automatically" key:@"autoInsertSingleQuote"
+                       on:p.autoInsertSingleQuote to:v atY:y];
+    y = [self addCheckbox:@"Close \" automatically" key:@"autoInsertDoubleQuote"
+                       on:p.autoInsertDoubleQuote to:v atY:y];
+    y = [self addCheckbox:@"Close an HTML or XML tag" key:@"autoInsertCloseTag"
+                       on:p.autoInsertCloseTag to:v atY:y];
+    [self endPage:@"Auto-Completion" atY:y];
+
+    y = [self beginPage:@"Multi-Instance & Date"]; v = [self page:@"Multi-Instance & Date"];
+    y = [self addCheckbox:@"Reverse the date and time order" key:@"reverseDateTimeOrder"
+                       on:p.reverseDateTimeOrder to:v atY:y];
+    [self endPage:@"Multi-Instance & Date" atY:y];
+
+    y = [self beginPage:@"Delimiter"]; v = [self page:@"Delimiter"];
+    y = [self addCheckbox:@"Add characters to the word list" key:@"customWordCharsEnabled"
+                       on:p.customWordCharsEnabled to:v atY:y];
+    y = [self addField:@"Word characters" key:@"customWordChars"
+                  value:p.customWordChars to:v atY:y];
+    y = [self addField:@"Delimiter open" key:@"delimiterOpen"
+                  value:p.delimiterOpen to:v atY:y];
+    y = [self addField:@"Delimiter close" key:@"delimiterClose"
+                  value:p.delimiterClose to:v atY:y];
+    y = [self addCheckbox:@"Delimiter selection over several lines" key:@"delimiterMultiline"
+                       on:p.delimiterMultiline to:v atY:y];
+    [self endPage:@"Delimiter" atY:y];
+
+    y = [self beginPage:@"Performance"]; v = [self page:@"Performance"];
+    y = [self addCheckbox:@"Large file restriction (no syntax highlighting)"
+                      key:@"largeFileRestrictionEnabled"
+                       on:p.largeFileRestrictionEnabled to:v atY:y];
+    y = [self addField:@"Large file size (MB)" key:@"largeFileThresholdMB"
+                  value:[@(p.largeFileThresholdMB) stringValue] to:v atY:y];
+    y = [self addCheckbox:@"Allow brace match above that size" key:@"largeFileAllowBraceMatch"
+                       on:p.largeFileAllowBraceMatch to:v atY:y];
+    y = [self addCheckbox:@"Allow clickable links above that size"
+                      key:@"largeFileAllowClickableLinks"
+                       on:p.largeFileAllowClickableLinks to:v atY:y];
+    [self endPage:@"Performance" atY:y];
+
+    y = [self beginPage:@"Cloud & Link"]; v = [self page:@"Cloud & Link"];
+    y = [self addCheckbox:@"Clickable links" key:@"linksEnabled" on:p.linksEnabled to:v atY:y];
+    y = [self addCheckbox:@"Links without underline" key:@"linksNoUnderline"
+                       on:p.linksNoUnderline to:v atY:y];
+    y = [self addField:@"Extra URI schemes" key:@"linkCustomSchemes"
+                  value:p.linkCustomSchemes to:v atY:y];
+    y = [self addField:@"Settings folder" key:@"settingsDirectory"
+                  value:p.settingsDirectory to:v atY:y];
+    [self endPage:@"Cloud & Link" atY:y];
 }
 
 - (CGFloat)addField:(NSString *)label key:(NSString *)key value:(NSString *)value
@@ -200,6 +407,9 @@
     self.controls[key] = box;
     return y - 28;
 }
+
+- (NSArray<NSString *> *)categoryNames { return [self.pageNames copy]; }
+- (BOOL)hasControlForKey:(NSString *)key { return self.controls[key] != nil; }
 
 - (BOOL)visible { return self.panel.isVisible; }
 
@@ -252,6 +462,43 @@
     p.reverseDateTimeOrder = [self.controls[@"reverseDateTimeOrder"] state] == NSControlStateValueOn;
     p.rememberPanelState = [self.controls[@"rememberPanelState"] state] == NSControlStateValueOn;
     p.settingsDirectory = [self.controls[@"settingsDirectory"] stringValue];
+
+    // The settings the Windows version has that this one had no controls for.
+    p.caretWidth = [self.controls[@"caretWidth"] indexOfSelectedItem];
+    p.caretBlinkRate = MAX(0, [[self.controls[@"caretBlinkRate"] stringValue] integerValue]);
+    p.currentLineHighlightMode = [self.controls[@"currentLineHighlightMode"] indexOfSelectedItem];
+    p.currentLineFrameWidth = MIN(6, MAX(1, [[self.controls[@"currentLineFrameWidth"] stringValue] integerValue]));
+    p.scrollBeyondLastLine = [self.controls[@"scrollBeyondLastLine"] state] == NSControlStateValueOn;
+    p.virtualSpace = [self.controls[@"virtualSpace"] state] == NSControlStateValueOn;
+    p.lineCopyCutWithoutSelection = [self.controls[@"lineCopyCutWithoutSelection"] state] == NSControlStateValueOn;
+    p.selectedTextDragDrop = [self.controls[@"selectedTextDragDrop"] state] == NSControlStateValueOn;
+    p.rightClickKeepsSelection = [self.controls[@"rightClickKeepsSelection"] state] == NSControlStateValueOn;
+    p.lineWrapMethod = [self.controls[@"lineWrapMethod"] indexOfSelectedItem];
+    p.bookmarkMarginShow = [self.controls[@"bookmarkMarginShow"] state] == NSControlStateValueOn;
+    p.foldMarginShow = [self.controls[@"foldMarginShow"] state] == NSControlStateValueOn;
+    p.paddingLeft = MIN(9, MAX(0, [[self.controls[@"paddingLeft"] stringValue] integerValue]));
+    p.paddingRight = MIN(9, MAX(0, [[self.controls[@"paddingRight"] stringValue] integerValue]));
+    p.edgeMode = [self.controls[@"edgeMode"] indexOfSelectedItem];
+    p.edgeColumns = [self.controls[@"edgeColumns"] stringValue];
+    p.autoIndentMode = [self.controls[@"autoIndentMode"] indexOfSelectedItem];
+    p.smartHighlightMatchCase = [self.controls[@"smartHighlightMatchCase"] state] == NSControlStateValueOn;
+    p.smartHighlightWholeWord = [self.controls[@"smartHighlightWholeWord"] state] == NSControlStateValueOn;
+    p.markAllCaseSensitive = [self.controls[@"markAllCaseSensitive"] state] == NSControlStateValueOn;
+    p.markAllWordOnly = [self.controls[@"markAllWordOnly"] state] == NSControlStateValueOn;
+    p.autoCompleteOnInput = [self.controls[@"autoCompleteOnInput"] state] == NSControlStateValueOn;
+    p.autoCompleteSource = [self.controls[@"autoCompleteSource"] indexOfSelectedItem];
+    p.autoCompleteThreshold = MAX(1, [[self.controls[@"autoCompleteThreshold"] stringValue] integerValue]);
+    p.autoCompleteBriefList = [self.controls[@"autoCompleteBriefList"] state] == NSControlStateValueOn;
+    p.autoCompleteIgnoreNumbers = [self.controls[@"autoCompleteIgnoreNumbers"] state] == NSControlStateValueOn;
+    p.autoCompleteUseTab = [self.controls[@"autoCompleteUseTab"] state] == NSControlStateValueOn;
+    p.functionHintOnInput = [self.controls[@"functionHintOnInput"] state] == NSControlStateValueOn;
+    p.autoInsertParenthesis = [self.controls[@"autoInsertParenthesis"] state] == NSControlStateValueOn;
+    p.autoInsertBracket = [self.controls[@"autoInsertBracket"] state] == NSControlStateValueOn;
+    p.autoInsertBrace = [self.controls[@"autoInsertBrace"] state] == NSControlStateValueOn;
+    p.autoInsertSingleQuote = [self.controls[@"autoInsertSingleQuote"] state] == NSControlStateValueOn;
+    p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
+    p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
+    [self.editor applyEditorPreferences];
     [self.editor setAutosaveEnabled:p.autosaveEnabled interval:p.autosaveInterval];
     [self.editor applyWordCharacters];
     [self.editor applyPerformanceRestrictions];

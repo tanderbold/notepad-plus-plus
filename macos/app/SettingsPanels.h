@@ -10,6 +10,11 @@ void ApplyShortcutSpec(NSMenuItem *item, NSString *spec);
 @interface PreferencesWindow : NSObject
 - (instancetype)initWithEditor:(EditorController *)editor;
 - (void)toggle;
+/// The category names, in the order they are listed; exposed for tests.
+- (NSArray<NSString *> *)categoryNames;
+/// Whether a setting has a control on some page.
+- (BOOL)hasControlForKey:(NSString *)key;
+- (void)showPageAtIndex:(NSInteger)index;
 @property (nonatomic, readonly) BOOL visible;
 @end
 

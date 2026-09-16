@@ -249,6 +249,12 @@ the trailing punctuation a sentence leaves behind -- a closing bracket only coun
 when an opening one inside the URL answers it. Notepad++'s own corpus for this is
 bundled and all 148 of its cases are checked.
 
+Preferences are laid out as Notepad++ lays them out: the categories down the
+left, one page at a time on the right, under its own names for them -- General,
+Toolbar, Editing 1 and 2, Dark Mode, Margins/Border/Edge, and the rest. A test
+checks the categories are there and that every setting that reaches Scintilla has
+a control to set it from.
+
 Notepad++'s own settings model -- `ScintillaViewParams` and `NppGUI` in
 Parameters.h -- is the other list worth comparing against, and it found what the
 Scintilla-message comparison could not: auto-indent, Cut and Copy taking the

@@ -815,6 +815,30 @@ int NppMacRunTests(AppDelegate *app) {
               [ed countMatches:fromPanel] == 3 &&
               modes.numberOfRows == 3);
 
+        // Cmd+V while a Find field has the caret must reach that field, not the
+        // document behind it. The menu items carry a target, so they never
+        // travel the responder chain on their own.
+        [app buildFindPanel];
+        NSPanel *findPanel = [app valueForKey:@"findPanel"];
+        NSTextField *replaceField = [app valueForKey:@"replaceField"];
+        replaceField.stringValue = @"";
+        SetDoc(ed, @"document\n");
+        [[NSPasteboard generalPasteboard] clearContents];
+        [[NSPasteboard generalPasteboard] setString:@"pasted" forType:NSPasteboardTypeString];
+
+        [findPanel makeKeyAndOrderFront:nil];
+        [findPanel makeFirstResponder:replaceField];
+        [app pasteText:nil];
+        NSString *fieldText = [[findPanel fieldEditor:NO forObject:replaceField] string]
+                              ?: replaceField.stringValue;
+        BOOL wentToField = [fieldText containsString:@"pasted"];
+        BOOL documentUntouched = ![DocText(ed) containsString:@"pasted"];
+        [findPanel orderOut:nil];
+        Check(@"IDM_EDIT_PASTE (into a dialog field)",
+              @"pasting while a Find field has the caret reaches the field, not the document",
+              wentToField && documentUntouched);
+
+
         SetDoc(ed, @"cat bat cat\n");
         NSUInteger marked = [ed markAll:[NppFindSpec specFor:@"cat" mode:NppSearchNormal
                                                      options:NppFindMatchCase]];
@@ -2901,6 +2925,44 @@ int NppMacRunTests(AppDelegate *app) {
         for (NSMenuItem *mi in ctx.itemArray) [ctxTitles addObject:mi.title];
         Check(@"IDM_SETTING_EDITCONTEXTMENU", @"the right-click menu follows the setting",
               ctx.numberOfItems == 3 && [ctxTitles containsObject:@"Toggle Line Comment"]);
+    }
+
+    printf("\n== Preferences: pages ==\n");
+    {
+        PreferencesWindow *prefs = [[PreferencesWindow alloc] initWithEditor:ed];
+        NSArray *pages = [prefs categoryNames];
+
+        // Notepad++ lists its settings by category down the left rather than as
+        // one long column, and these are its own names for them.
+        NSArray *expected = @[@"General", @"Toolbar", @"Editing 1", @"Editing 2",
+                              @"Dark Mode", @"Margins/Border/Edge", @"New Document",
+                              @"Indentation", @"Highlighting", @"Print", @"Backup",
+                              @"Auto-Completion", @"Delimiter", @"Performance",
+                              @"Cloud & Link"];
+        NSMutableArray *absent = [NSMutableArray array];
+        for (NSString *name in expected) if (![pages containsObject:name]) [absent addObject:name];
+
+        // Every setting that reaches Scintilla needs somewhere to be set from.
+        NSArray *keys = @[@"caretWidth", @"caretBlinkRate", @"currentLineHighlightMode",
+                          @"currentLineFrameWidth", @"scrollBeyondLastLine", @"virtualSpace",
+                          @"lineCopyCutWithoutSelection", @"selectedTextDragDrop",
+                          @"rightClickKeepsSelection", @"lineWrapMethod", @"bookmarkMarginShow",
+                          @"foldMarginShow", @"paddingLeft", @"paddingRight", @"edgeMode",
+                          @"edgeColumns", @"autoIndentMode", @"markAllCaseSensitive",
+                          @"markAllWordOnly", @"autoCompleteOnInput", @"autoInsertBrace"];
+        NSMutableArray *unreachable = [NSMutableArray array];
+        for (NSString *key in keys) {
+            if (![prefs hasControlForKey:key]) [unreachable addObject:key];
+        }
+
+        Check(@"IDM_SETTING_PREFERENCE (pages)",
+              [NSString stringWithFormat:@"%lu categories, and every setting has a control",
+               (unsigned long)pages.count],
+              absent.count == 0 && unreachable.count == 0 && pages.count >= 15);
+        if (absent.count) printf("       нет страниц: %s\n",
+            [[absent componentsJoinedByString:@", "] UTF8String]);
+        if (unreachable.count) printf("       нет элементов: %s\n",
+            [[unreachable componentsJoinedByString:@", "] UTF8String]);
     }
 
     printf("\n== Appearance: themes ==\n");

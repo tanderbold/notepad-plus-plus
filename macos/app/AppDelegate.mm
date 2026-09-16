@@ -1,4 +1,5 @@
 #import "AppDelegate.h"
+#import <objc/message.h>
 #import "EditorController.h"
 #import "EditCommands.h"
 #import "SearchCommands.h"
@@ -1743,11 +1744,38 @@
 
 #pragma mark - Edit actions (routed straight to Scintilla)
 
-- (void)undo:(id)sender        { [self.editor.sci message:SCI_UNDO]; }
-- (void)redo:(id)sender        { [self.editor.sci message:SCI_REDO]; }
+/// The text field that is being edited, when one is.
+///
+/// These menu items have a target, so they never travel the responder chain --
+/// which is what made Cmd+V in the Find panel paste into the document instead
+/// of the field the caret was in. Whatever is being edited is asked first, and
+/// only the editor is left to handle it.
+static NSText *NppEditingFieldEditor(void) {
+    NSResponder *responder = NSApp.keyWindow.firstResponder;
+    return [responder isKindOfClass:NSText.class] ? (NSText *)responder : nil;
+}
+
+/// Sends the standard action to the field being edited. Returns whether it did.
+static BOOL NppForwardToFieldEditor(SEL action, id sender) {
+    NSText *editor = NppEditingFieldEditor();
+    if (!editor || ![editor respondsToSelector:action]) return NO;
+    ((void (*)(id, SEL, id))objc_msgSend)(editor, action, sender);
+    return YES;
+}
+
+- (void)undo:(id)sender {
+    if (NppForwardToFieldEditor(@selector(undo:), sender)) return;
+    [self.editor.sci message:SCI_UNDO];
+}
+
+- (void)redo:(id)sender {
+    if (NppForwardToFieldEditor(@selector(redo:), sender)) return;
+    [self.editor.sci message:SCI_REDO];
+}
 /// With nothing selected, Cut and Copy take the whole line -- which is what
 /// Notepad++ does, and what it has on by default.
 - (void)cutText:(id)sender {
+    if (NppForwardToFieldEditor(@selector(cut:), sender)) return;
     ScintillaView *sci = self.editor.sci;
     BOOL empty = [sci message:SCI_GETSELECTIONEMPTY] != 0;
     if (empty && [NppPreferences shared].lineCopyCutWithoutSelection) {
@@ -1758,6 +1786,7 @@
 }
 
 - (void)copyText:(id)sender {
+    if (NppForwardToFieldEditor(@selector(copy:), sender)) return;
     ScintillaView *sci = self.editor.sci;
     BOOL empty = [sci message:SCI_GETSELECTIONEMPTY] != 0;
     if (empty && [NppPreferences shared].lineCopyCutWithoutSelection) {
@@ -1767,8 +1796,15 @@
     }
     [sci message:SCI_COPY];
 }
-- (void)pasteText:(id)sender   { [self.editor.sci message:SCI_PASTE]; }
-- (void)selectAllText:(id)sender { [self.editor.sci message:SCI_SELECTALL]; }
+- (void)pasteText:(id)sender {
+    if (NppForwardToFieldEditor(@selector(paste:), sender)) return;
+    [self.editor.sci message:SCI_PASTE];
+}
+
+- (void)selectAllText:(id)sender {
+    if (NppForwardToFieldEditor(@selector(selectAll:), sender)) return;
+    [self.editor.sci message:SCI_SELECTALL];
+}
 
 - (void)duplicateLine:(id)sender { [self.editor.sci message:SCI_LINEDUPLICATE]; }
 
