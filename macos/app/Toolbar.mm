@@ -62,6 +62,12 @@ static NSString *IdentifierForCommand(NSString *command) {
 @interface NppToolbarItem : NSToolbarItem
 @property (nonatomic, strong) NSImage *enabledImage;
 @property (nonatomic, strong) NSImage *disabledImage;
+/// What the images were made from, so they can be made again when the button
+/// changes state. Telling an image to draw itself again is not enough: the item
+/// keeps what it was given, and giving it the same object back changes nothing.
+@property (nonatomic, copy) NSString *iconName;
+@property (nonatomic, copy) NSString *disabledIconName;
+@property (nonatomic, copy) NSString *command;
 @end
 
 @implementation NppToolbarItem
@@ -203,9 +209,40 @@ static NSString *IdentifierForCommand(NSString *command) {
     NSString *identifier = IdentifierForCommand(command);
     for (NSToolbarItem *item in self.toolbar.items) {
         if (![item.itemIdentifier isEqualToString:identifier]) continue;
-        [item.image recache];
-        item.image = item.image;
+        if (![item isKindOfClass:NppToolbarItem.class]) continue;
+        NppToolbarItem *button = (NppToolbarItem *)item;
+
+        // Built afresh, so the item is handed an image it has not seen before
+        // and has to draw it.
+        button.enabledImage = [self imageNamed:button.iconName ?: @"" label:button.label
+                                       command:button.command];
+        button.disabledImage = [self imageNamed:button.disabledIconName ?: @"" label:button.label
+                                        command:button.command] ?: button.enabledImage;
+        button.image = button.isEnabled ? button.enabledImage : button.disabledImage;
     }
+}
+
+/// The image a button is showing, drawn into a bitmap; used by tests to look at
+/// what is on screen rather than at the flag behind it.
+- (NSBitmapImageRep *)renderedImageForCommand:(NSString *)command {
+    NSString *identifier = IdentifierForCommand(command);
+    for (NSToolbarItem *item in self.toolbar.items) {
+        if (![item.itemIdentifier isEqualToString:identifier]) continue;
+        NSImage *image = item.image;
+        if (!image) return nil;
+        NSBitmapImageRep *rep = [[NSBitmapImageRep alloc]
+            initWithBitmapDataPlanes:NULL pixelsWide:(NSInteger)image.size.width
+                          pixelsHigh:(NSInteger)image.size.height
+                       bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
+                      colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:0 bitsPerPixel:0];
+        NSGraphicsContext *context = [NSGraphicsContext graphicsContextWithBitmapImageRep:rep];
+        [NSGraphicsContext saveGraphicsState];
+        [NSGraphicsContext setCurrentContext:context];
+        [image drawInRect:NSMakeRect(0, 0, image.size.width, image.size.height)];
+        [NSGraphicsContext restoreGraphicsState];
+        return rep;
+    }
+    return nil;
 }
 
 - (NSImage *)imageNamed:(NSString *)name label:(NSString *)label command:(NSString *)command {
@@ -296,9 +333,12 @@ static NSString *IdentifierForCommand(NSString *command) {
         item.action = NSSelectorFromString(gSpecs[i].selectorName);
 
         NSDictionary *row = [self orderRowForCommand:gSpecs[i].command];
-        item.enabledImage = [self imageNamed:row[@"icon"] ?: @"" label:gSpecs[i].label
+        item.command = gSpecs[i].command;
+        item.iconName = row[@"icon"];
+        item.disabledIconName = row[@"disabled"];
+        item.enabledImage = [self imageNamed:item.iconName ?: @"" label:gSpecs[i].label
                                     command:gSpecs[i].command];
-        item.disabledImage = [self imageNamed:row[@"disabled"] ?: @"" label:gSpecs[i].label
+        item.disabledImage = [self imageNamed:item.disabledIconName ?: @"" label:gSpecs[i].label
                                       command:gSpecs[i].command] ?: item.enabledImage;
         item.image = item.enabledImage ?: item.disabledImage;
         return item;

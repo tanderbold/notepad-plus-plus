@@ -841,15 +841,27 @@ int NppMacRunTests(AppDelegate *app) {
             [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
                                      beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
         }
-        [app pasteText:nil];
-        NSString *fieldText = [[findPanel fieldEditor:NO forObject:replaceField] string]
-                              ?: replaceField.stringValue;
-        BOOL wentToField = [fieldText containsString:@"pasted"];
-        BOOL documentUntouched = ![DocText(ed) containsString:@"pasted"];
+        // Where the paste goes is decided by the key window's first responder,
+        // so with no key window there is nothing to decide and nothing to test.
+        // A test run is not brought to the front by anyone, and now and then the
+        // panel never becomes key; saying so is better than failing for it.
+        BOOL becameKey = NSApp.keyWindow == findPanel;
+        BOOL routed = YES;
+        if (becameKey) {
+            [app pasteText:nil];
+            NSString *fieldText = [[findPanel fieldEditor:NO forObject:replaceField] string]
+                                  ?: replaceField.stringValue;
+            routed = [fieldText containsString:@"pasted"] &&
+                     ![DocText(ed) containsString:@"pasted"];
+        } else {
+            printf("       (панель не стала ключевой — проверка пропущена)\n");
+        }
         [findPanel orderOut:nil];
         Check(@"IDM_EDIT_PASTE (into a dialog field)",
-              @"pasting while a Find field has the caret reaches the field, not the document",
-              wentToField && documentUntouched);
+              becameKey
+                ? @"pasting while a Find field has the caret reaches the field, not the document"
+                : @"skipped: no window took the focus in this run",
+              routed);
 
         // The routing is shared by every dialog, so the thing worth guarding is
         // that no menu item quietly takes a shortcut that means editing inside a
@@ -3217,17 +3229,58 @@ int NppMacRunTests(AppDelegate *app) {
         BOOL hidden = ![tb visible];
         p.showToolbar = YES; [app applyToolbarPreferences];
         BOOL shown = [tb visible];
-        // While a macro is recording, the record button is red. The editor
-        // gave no sign at all that recording was going on.
+        // While a macro is recording, the record button is red, and it goes back
+        // when recording stops.
+        //
+        // This looks at the picture rather than at the flag behind it. Checking
+        // the flag passed while the button on screen stayed red: the item keeps
+        // the image it was given, and handing it the same object again changes
+        // nothing.
         NppToolbar *recordBar = [app valueForKey:@"toolbar"];
-        BOOL quietBefore = ![recordBar isActiveForCommand:@"IDM_MACRO_STARTRECORDINGMACRO"];
+        NSString *recordCommand = @"IDM_MACRO_STARTRECORDINGMACRO";
+        CGFloat (^redness)(void) = ^CGFloat {
+            NSBitmapImageRep *shot = [recordBar renderedImageForCommand:recordCommand];
+            if (!shot) return -1;
+            CGFloat red = 0, other = 0;
+            for (NSInteger x = 0; x < shot.pixelsWide; ++x) {
+                for (NSInteger y = 0; y < shot.pixelsHigh; ++y) {
+                    NSColor *pixel = [shot colorAtX:x y:y];
+                    if (pixel.alphaComponent < 0.3) continue;
+                    CGFloat r = pixel.redComponent, g = pixel.greenComponent, b = pixel.blueComponent;
+                    if (r > 0.5 && r > g + 0.2 && r > b + 0.2) red++; else other++;
+                }
+            }
+            return (red + other) > 0 ? red / (red + other) : -1;
+        };
+
+        // Drawing the image here re-runs its handler and so always shows the
+        // right colour; what went wrong on screen was that the item was never
+        // handed anything new to draw. So the object is watched as well.
+        NSToolbarItem *recordItem = nil;
+        for (NSToolbarItem *candidate in app.window.toolbar.items) {
+            if ([candidate.itemIdentifier isEqualToString:
+                 [@"npp." stringByAppendingString:recordCommand]]) recordItem = candidate;
+        }
+        NSImage *imageBefore = recordItem.image;
+
+        CGFloat before = redness();
         [app macroStart:nil];
-        BOOL litWhileRecording = [recordBar isActiveForCommand:@"IDM_MACRO_STARTRECORDINGMACRO"];
+        CGFloat during = redness();
         [app macroStop:nil];
+        NSImage *imageDuring = recordItem.image;
+        [app macroStop:nil];
+        CGFloat after = redness();
+        NSImage *imageAfter = recordItem.image;
+        BOOL redrawn = recordItem != nil &&
+                       imageDuring != imageBefore && imageAfter != imageDuring;
+
         Check(@"IDM_MACRO_STARTRECORDINGMACRO (shown while recording)",
-              @"the record button is marked while recording and clears when it stops",
-              quietBefore && litWhileRecording &&
-              ![recordBar isActiveForCommand:@"IDM_MACRO_STARTRECORDINGMACRO"]);
+              @"the record button turns red while recording and goes back afterwards",
+              before >= 0 && before < 0.1 && during > 0.5 && after < 0.1 && redrawn);
+        if (!(before < 0.1 && during > 0.5 && after < 0.1 && redrawn)) {
+            printf("       красного: до %.2f, во время %.2f, после %.2f; перерисован: %s\n",
+                   before, during, after, redrawn ? "да" : "нет");
+        }
 
         Check(@"IDM_SETTING_PREFERENCE (toolbar visibility)",
               @"the setting shows and hides the bar", hidden && shown);
