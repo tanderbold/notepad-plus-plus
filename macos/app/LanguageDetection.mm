@@ -42,6 +42,8 @@ static NSDictionary<NSString *, NSString *> *InterpreterNames(void) {
             @"pwsh": @"powershell", @"powershell": @"powershell",
             @"make": @"makefile", @"cmake": @"cmake",
             @"swift": @"swift", @"go": @"go", @"julia": @"julia",
+            @"dmd": @"d", @"rdmd": @"d", @"ldc2": @"d",
+            @"raku": @"raku", @"perl6": @"raku", @"groovy": @"java", @"scala": @"java",
         };
     });
     return names;
@@ -62,6 +64,81 @@ static NSDictionary<NSString *, NSString *> *ModelineNames(void) {
         };
     });
     return names;
+}
+
+/// Shapes that belong to one language and are not words any keyword list holds:
+/// a TeX environment, an include line, a section header. Keyword counting alone
+/// leaves several languages with nothing to go on, and these are what it misses.
+static NSDictionary<NSString *, NSArray<NSString *> *> *StructuralMarks(void) {
+    static NSDictionary *marks;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        // Each of these has to belong to its language and to few others. A mark
+        // as ordinary as "->" or "@" appears in half the files ever written and
+        // drags whatever claims it to the top of every list.
+        marks = @{
+            @"latex":      @[@"\\begin{", @"\\end{", @"\\documentclass", @"\\usepackage",
+                             @"\\section{"],
+            @"tex":        @[@"\\def\\", @"\\hbox", @"\\vbox", @"\\catcode", @"\\newif",
+                             @"\\expandafter", @"\\csname"],
+            @"toml":       @[@"[[", @" = true", @" = false", @" = [", @"\n[dependencies"],
+            @"makefile":   @[@".PHONY", @"$(CC)", @"$(MAKE)", @"$(shell", @"$@", @"$<", @"$(wildcard"],
+            @"c":          @[@"#include <", @"#include \"", @"#define ", @"#ifndef ", @"int main("],
+            @"cpp":        @[@"std::", @"template<", @"template <", @"#include <iostream>",
+                             @"public:", @"private:", @"virtual "],
+            @"d":          @[@"import std.", @"writeln(", @"scope(exit)", @"pure nothrow"],
+            @"vb":         @[@"End Sub", @"End Function", @"End If", @"Private Sub", @"Public Sub",
+                             @"End Class", @"End Module", @"Dim ", @" As Integer", @" As String",
+                             @"Module "],
+            @"raku":       @[@"use v6", @"grammar ", @"multi sub", @".say", @"rule ", @"token "],
+            @"typescript": @[@"interface ", @"implements ", @"export type", @"readonly ",
+                             @": Promise<", @"as const", @"export interface", @"export class",
+                             @": void", @": string[]"],
+            @"javascript": @[@"=> {", @"require(", @"document.", @"=== ", @"console.log"],
+            @"python":     @[@"def ", @"self.", @"elif ", @"if __name__", @"__init__"],
+            @"yaml":       @[@": |", @"- name:", @"---\n"],
+            @"batch":      @[@"@echo off", @"%~dp0", @"goto :", @"set /p", @"%errorlevel%"],
+            @"powershell": @[@"$PSScriptRoot", @"Write-Host", @"-ErrorAction", @"[CmdletBinding",
+                             @"$_.", @"Write-Output"],
+            @"cs":         @[@"using System", @"public class ", @"string[] args", @"namespace "],
+            @"java":       @[@"public static void main", @"import java.", @"@Override",
+                             @"System.out."],
+            @"rust":       @[@"fn ", @"let mut ", @"impl ", @"::new(", @"#[derive"],
+            @"go":         @[@"func ", @":=", @"package main", @"import ("],
+            @"lua":        @[@"local ", @"elseif ", @"then\n", @"end)", @"function("],
+            @"sql":        @[@"INSERT INTO", @"CREATE TABLE", @"SELECT ", @"LEFT JOIN", @"GROUP BY"],
+            @"css":        @[@"px;", @"@media", @"!important", @"margin:", @"padding:"],
+            @"php":        @[@"$this->", @"<?=", @"::class", @"function ("],
+            @"perl":       @[@"my $", @"use strict", @"=~", @"@_"],
+            @"ruby":       @[@"do |", @"puts ", @"attr_accessor", @"end\nend", @"require '"],
+        };
+    });
+    return marks;
+}
+
+/// Files that are nothing but sections and assignments: [name] on its own line,
+/// then key=value. No keyword list has anything to say about them, and the
+/// shape is the whole of what they are.
+static double IniLikeness(NSString *sample) {
+    NSArray<NSString *> *lines = [sample componentsSeparatedByString:@"\n"];
+    NSUInteger sections = 0, assignments = 0, other = 0;
+    for (NSString *raw in lines) {
+        NSString *line = [raw stringByTrimmingCharactersInSet:
+            [NSCharacterSet whitespaceCharacterSet]];
+        if (!line.length || [line hasPrefix:@";"] || [line hasPrefix:@"#"]) continue;
+        if ([line hasPrefix:@"["] && [line hasSuffix:@"]"]) { sections++; continue; }
+        NSRange equals = [line rangeOfString:@"="];
+        if (equals.location != NSNotFound && equals.location > 0 &&
+            [line rangeOfString:@";"].location == NSNotFound &&
+            ![line hasSuffix:@"{"] && ![line hasSuffix:@","]) {
+            assignments++;
+            continue;
+        }
+        other++;
+    }
+    NSUInteger counted = sections + assignments + other;
+    if (counted < 4 || !sections || !assignments) return 0;
+    return (double)(sections + assignments) / (double)counted;
 }
 
 @implementation LanguageCatalog (Detection)
@@ -302,6 +379,25 @@ static NSDictionary<NSString *, NSString *> *ModelineNames(void) {
             scores[language.name] = @(score / (sqrt((double)total) * sqrt((double)keywords.count)));
         }
     }
+
+    // What a language looks like, over and above the words it uses. Several
+    // languages have keyword lists too thin or too ordinary to be told apart by
+    // words alone, and their shapes are what give them away.
+    NSDictionary<NSString *, NSArray<NSString *> *> *marks = StructuralMarks();
+    for (NSString *name in marks) {
+        NSUInteger hits = 0;
+        for (NSString *mark in marks[name]) {
+            // Case matters: Visual Basic writes "End If", Fortran writes
+            // "END IF", and ignoring the difference hands one the other's files.
+            if ([sample rangeOfString:mark].location != NSNotFound) hits++;
+        }
+        if (hits < 2) continue;                      // one shape is a coincidence
+        double bonus = 0.03 * (double)hits;
+        scores[name] = @(scores[name].doubleValue + bonus);
+    }
+
+    double iniLike = IniLikeness(sample);
+    if (iniLike > 0.8) scores[@"ini"] = @(scores[@"ini"].doubleValue + 0.06 * iniLike);
     return scores;
 }
 

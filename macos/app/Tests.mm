@@ -2911,9 +2911,14 @@ int NppMacRunTests(AppDelegate *app) {
                 if (where == 0) wasFirst++;
             }
             Check(@"IDM_LANG_DETECT (a file of each language)",
-                  @"most of the corpus is offered its own language, and most of "
-                  @"those have it first in the list",
-                  total >= 40 && offered >= 28 && wasFirst >= 23);
+                  @"nearly all of the corpus is offered its own language, and "
+                  @"nearly all of those have it first in the list",
+                  total >= 40 && offered >= 35 && wasFirst >= 29 &&
+                  // What is left over: TeX reads as LaTeX, TypeScript as
+                  // JavaScript, Raku as Perl - each the nearest relative - and
+                  // NppExec is a plugin's own language, which the catalogue
+                  // does not hold at all.
+                  notOffered.count <= 4);
 
             // Whatever is offered is short enough to be a choice rather than a
             // catalogue; more than ten and nothing is offered at all.
