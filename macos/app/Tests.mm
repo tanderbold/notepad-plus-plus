@@ -2932,6 +2932,36 @@ int NppMacRunTests(AppDelegate *app) {
                 if (!body) continue;
                 longest = MAX(longest, [lc languagesMatchingContents:body].count);
             }
+            // Pasting a script into an empty document, through the Paste
+            // command itself rather than by calling the detection directly.
+            NSString *script =
+                @"import os\nimport sys\n\n"
+                @"def read_config(path):\n"
+                @"    with open(path) as handle:\n"
+                @"        for line in handle:\n"
+                @"            if line.startswith('#'):\n"
+                @"                continue\n"
+                @"            yield line.strip()\n\n"
+                @"class Runner:\n"
+                @"    def __init__(self, config):\n"
+                @"        self.config = config\n\n"
+                @"    def run(self):\n"
+                @"        for item in self.config:\n"
+                @"            print(item)\n\n"
+                @"if __name__ == '__main__':\n"
+                @"    Runner(list(read_config(sys.argv[1]))).run()\n";
+            [ed newDocument];
+            NSPasteboard *board = [NSPasteboard generalPasteboard];
+            [board clearContents];
+            [board setString:script forType:NSPasteboardTypeString];
+            [app pasteText:nil];
+            NSString *pastedLanguage = ed.currentDocument.language.name ?: @"";
+            Check(@"IDM_LANG_DETECT (pasted into an empty document)",
+                  @"a script pasted into an empty document is recognised, the way "
+                  @"a file with no extension is",
+                  [DocText(ed) containsString:@"def read_config"] &&
+                  [pastedLanguage isEqualToString:@"python"]);
+
             Check(@"IDM_LANG_DETECT (a choice, not a catalogue)",
                   @"no more than ten languages are ever offered",
                   longest > 0 && longest <= NppMostLanguagesToOffer);
