@@ -42,6 +42,20 @@
 static int gPass = 0, gFail = 0;
 static NSMutableSet *gCovered = nil;
 
+/// Lets AppKit deliver what has been posted and the run loop turn over, which
+/// is what work put off to the next turn needs before it has run.
+static void NppSettle(NSTimeInterval seconds) {
+    NSDate *until = [NSDate dateWithTimeIntervalSinceNow:seconds];
+    while ([until timeIntervalSinceNow] > 0) {
+        NSEvent *queued = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                             untilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]
+                                                inMode:NSDefaultRunLoopMode dequeue:YES];
+        if (queued) [NSApp sendEvent:queued];
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                 beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+    }
+}
+
 static void Check(NSString *command, NSString *name, BOOL ok) {
     [gCovered addObject:command];
     if (ok) { gPass++; printf("  ok   %-28s %s\n", command.UTF8String, name.UTF8String); }
@@ -499,8 +513,13 @@ int NppMacRunTests(AppDelegate *app) {
         // The call has to come back at once, leaving the search to run.
         BOOL returnedBeforeFinishing = !finished;
 
+        // The run loop is given a moment of its own whatever the search does:
+        // otherwise a search that finishes on the first turn leaves the
+        // heartbeat with nothing to say, and the check turns on the weather.
+        NSDate *atLeast = [NSDate dateWithTimeIntervalSinceNow:0.2];
         NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:60];
-        while (!finished && [deadline timeIntervalSinceNow] > 0) {
+        while (([atLeast timeIntervalSinceNow] > 0 || !finished) &&
+               [deadline timeIntervalSinceNow] > 0) {
             [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
                                      beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
         }
@@ -653,13 +672,20 @@ int NppMacRunTests(AppDelegate *app) {
             [sciContent mouseDown:down];
             [sciContent mouseUp:up];
         }
+        NppSettle(0.5);
         long clickedLine = [ed.sci message:SCI_LINEFROMPOSITION
                                    wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
                                    lParam:0];
+        sptr_t clickedFrom = [ed.sci message:SCI_GETSELECTIONSTART wParam:0 lParam:0];
+        sptr_t clickedTo = [ed.sci message:SCI_GETSELECTIONEND wParam:0 lParam:0];
+        BOOL clickedLineSelected =
+            clickedFrom == [ed.sci message:SCI_POSITIONFROMLINE wParam:2 lParam:0] &&
+            clickedTo == [ed.sci message:SCI_GETLINEENDPOSITION wParam:2 lParam:0] &&
+            clickedTo > clickedFrom;
         Check(@"IDM_SEARCH_FINDINFILES (double click a result)",
-              @"double clicking a result line opens that file on that line",
+              @"double clicking a result line opens that file with that line selected",
               [ed.currentDocument.path isEqualToString:target] && clickedLine == 2 &&
-              (NSInteger)ed.documents.count == beforeTabs + 1);
+              clickedLineSelected && (NSInteger)ed.documents.count == beforeTabs + 1);
 
         // The whole way round, as anyone actually does it: the panel runs the
         // search, the results tab fills, and a double click on a hit line in it
@@ -717,22 +743,22 @@ int NppMacRunTests(AppDelegate *app) {
                                               clickCount:(NSInteger)click pressure:1]
                      atStart:NO];
         }
-        NSDate *settle = [NSDate dateWithTimeIntervalSinceNow:2];
-        while ([settle timeIntervalSinceNow] > 0 && !ed.currentDocument.path) {
-            NSEvent *queued = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                                 untilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]
-                                                    inMode:NSDefaultRunLoopMode dequeue:YES];
-            if (queued) [NSApp sendEvent:queued];
-        }
+        NppSettle(1.0);
         long liveCaret = [ed.sci message:SCI_LINEFROMPOSITION
                                  wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
                                  lParam:0];
+        sptr_t liveFrom = [ed.sci message:SCI_GETSELECTIONSTART wParam:0 lParam:0];
+        sptr_t liveTo = [ed.sci message:SCI_GETSELECTIONEND wParam:0 lParam:0];
+        BOOL liveLineSelected =
+            liveFrom == [ed.sci message:SCI_POSITIONFROMLINE wParam:2 lParam:0] &&
+            liveTo == [ed.sci message:SCI_GETLINEENDPOSITION wParam:2 lParam:0] &&
+            liveTo > liveFrom;
         Check(@"IDM_SEARCH_FINDINFILES (the whole way round)",
               @"running the search from the panel and double clicking a hit in the "
-              @"results it produced opens that file on that line",
+              @"results it produced leaves that file open with the line selected",
               liveResultsShown && liveHit > 0 &&
               [ed.currentDocument.path isEqualToString:target] && liveCaret == 2 &&
-              (NSInteger)ed.documents.count == liveTabs + 1);
+              liveLineSelected && (NSInteger)ed.documents.count == liveTabs + 1);
 
         // A search of the open document writes no per-file heading, only
         // 'Search "what" in <document>' at the top. Its results have to lead
@@ -752,6 +778,44 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_SEARCH_FINDALL (open a result)",
               @"results from searching the open document lead back to it as well",
               [ownPath isEqualToString:target] && ownLine == 3 && ownOpened && ownCaret == 2);
+
+        // A hit deep inside a long file. A short one hides whether the view
+        // actually goes to the line: it is on screen either way.
+        NSString *deepRoot = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp_fif_deep"];
+        [[NSFileManager defaultManager] removeItemAtPath:deepRoot error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:deepRoot
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        NSMutableString *long_ = [NSMutableString string];
+        for (NSUInteger i = 1; i <= 5000; ++i) {
+            [long_ appendFormat:i == 4000 ? @"needle is here %lu\n" : @"filler %lu\n",
+                                (unsigned long)i];
+        }
+        NSString *deepFile = [deepRoot stringByAppendingPathComponent:@"deep.txt"];
+        [long_ writeToFile:deepFile atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+
+        NSString *deepReport = nil;
+        [ed findInFiles:needle folder:deepRoot filters:nil recursive:NO includeHidden:NO
+                 report:&deepReport];
+        [ed showSearchResults:deepReport];
+        NSInteger deepHit = -1;
+        sptr_t deepLines = [ed.sci message:SCI_GETLINECOUNT wParam:0 lParam:0];
+        for (sptr_t i = 0; i < deepLines; ++i) {
+            if ([[ed textOfLine:(NSInteger)i] hasPrefix:@"\tLine "]) { deepHit = (NSInteger)i; break; }
+        }
+        [ed.sci message:SCI_GOTOLINE wParam:(uptr_t)MAX(deepHit, 0) lParam:0];
+        BOOL deepOpened = [ed openSearchResultAtCaret];
+        NppSettle(0.3);
+        long deepCaret = [ed.sci message:SCI_LINEFROMPOSITION
+                                 wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
+                                 lParam:0];
+        sptr_t firstVisible = [ed.sci message:SCI_GETFIRSTVISIBLELINE wParam:0 lParam:0];
+        sptr_t onScreen = [ed.sci message:SCI_LINESONSCREEN wParam:0 lParam:0];
+        Check(@"IDM_SEARCH_FINDINFILES (the line is brought into view)",
+              @"a hit deep inside a file leaves the caret on that line and the line "
+              @"on screen, rather than the document sitting at its top",
+              deepOpened && deepCaret == 3999 && onScreen > 0 &&
+              firstVisible <= 3999 && 3999 < firstVisible + onScreen);
+        [[NSFileManager defaultManager] removeItemAtPath:deepRoot error:NULL];
 
         // A file whose lines end in CR alone, or that mixes endings, used to
         // throw the whole report out of step: the carriage returns went into it

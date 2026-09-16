@@ -66,6 +66,8 @@ NS_ASSUME_NONNULL_BEGIN
                                        fileLine:(NSInteger *)fileLine;
 /// The text of one line, as Scintilla counts lines.
 - (NSString *)textOfLine:(NSInteger)line;
+/// Puts the caret on a line of the current document and selects that line.
+- (void)selectLine:(NSInteger)line;
 /// Opens what the caret sits on in the results tab. This is what a double click
 /// there does, the way Notepad++ jumps from a result to the file.
 - (BOOL)openSearchResultAtCaret;

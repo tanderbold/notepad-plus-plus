@@ -1443,8 +1443,14 @@ static long SciColor(NSColor *c) {
             break;
         case SCN_DOUBLECLICK:
             // In the results tab a double click means "take me there", the way
-            // it does in Notepad++'s Search results panel.
-            [self openSearchResultAtCaret];
+            // it does in Notepad++'s Search results panel. It waits for the
+            // turn of the run loop after this one: Scintilla is in the middle
+            // of the click, and switching the document under it leaves it
+            // finishing the click on the file just opened, which puts the caret
+            // back wherever the pointer happened to be.
+            {
+                dispatch_async(dispatch_get_main_queue(), ^{ [self openSearchResultAtCaret]; });
+            }
             break;
         case SCN_MACRORECORD:
             [self recordMacroMessage:(int)n->message

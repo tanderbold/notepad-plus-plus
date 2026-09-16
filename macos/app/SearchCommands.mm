@@ -546,13 +546,24 @@ static int IndicatorFor(NSInteger style) {
         [self selectDocumentAtIndex:found];
     }
 
-    sptr_t last = [self.sci message:SCI_GETLINECOUNT wParam:0 lParam:0] - 1;
-    sptr_t wanted = MAX((sptr_t)0, MIN((sptr_t)(target - 1), last));
-    [self.sci message:SCI_ENSUREVISIBLEENFORCEPOLICY wParam:(uptr_t)wanted lParam:0];
-    [self.sci message:SCI_GOTOLINE wParam:(uptr_t)wanted lParam:0];
-    [self.sci message:SCI_SCROLLCARET wParam:0 lParam:0];
-    [self refreshChrome];
+    [self selectLine:target - 1];
     return YES;
+}
+
+/// Puts the caret on a line and selects it, the way arriving from a search
+/// result should leave the document: the line is visible, folded sections above
+/// it are opened, and it is plain which line was meant.
+- (void)selectLine:(NSInteger)line {
+    ScintillaView *sci = self.sci;
+    sptr_t last = [sci message:SCI_GETLINECOUNT wParam:0 lParam:0] - 1;
+    sptr_t wanted = MAX((sptr_t)0, MIN((sptr_t)line, last));
+    [sci message:SCI_ENSUREVISIBLEENFORCEPOLICY wParam:(uptr_t)wanted lParam:0];
+    [sci message:SCI_GOTOLINE wParam:(uptr_t)wanted lParam:0];
+    sptr_t start = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)wanted lParam:0];
+    sptr_t end = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)wanted lParam:0];
+    [sci message:SCI_SETSEL wParam:(uptr_t)start lParam:(sptr_t)end];
+    [sci message:SCI_SCROLLCARET wParam:0 lParam:0];
+    [self refreshChrome];
 }
 
 - (NSInteger)searchResultsTabIndex {
