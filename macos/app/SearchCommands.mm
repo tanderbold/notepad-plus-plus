@@ -416,15 +416,15 @@ static int IndicatorFor(NSInteger style) {
     }
 }
 
-+ (NSString *)searchResultFileInReport:(NSString *)report
-                                atLine:(NSInteger)line
-                              fileLine:(NSInteger *)fileLine {
++ (NSString *)searchResultTargetInReport:(NSString *)report
+                                  atLine:(NSInteger)line
+                                fileLine:(NSInteger *)fileLine {
     if (fileLine) *fileLine = 1;
     NSArray<NSString *> *lines = [(report ?: @"") componentsSeparatedByString:@"\n"];
     if (line < 0 || line >= (NSInteger)lines.count) return nil;
 
-    // A hit reads "\tLine 42: ...", and the file it belongs to is the nearest
-    // heading above it, which reads "/some/path (3 hits)".
+    // A hit reads "\tLine 42: ...", and what it belongs to is the nearest
+    // heading above it.
     NSInteger heading = line;
     NSInteger wanted = 0;
     if ([lines[(NSUInteger)line] hasPrefix:@"\t"]) {
@@ -432,18 +432,46 @@ static int IndicatorFor(NSInteger style) {
         scanner.charactersToBeSkipped = [NSCharacterSet whitespaceCharacterSet];
         if (![scanner scanString:@"Line" intoString:NULL]) return nil;
         if (![scanner scanInteger:&wanted]) return nil;
-        while (heading >= 0 && [lines[(NSUInteger)heading] hasPrefix:@"\t"]) heading--;
+        while (heading >= 0 &&
+               ([lines[(NSUInteger)heading] hasPrefix:@"\t"] || !lines[(NSUInteger)heading].length)) {
+            heading--;
+        }
         if (heading < 0) return nil;
     }
 
     NSString *head = lines[(NSUInteger)heading];
-    NSRange tail = [head rangeOfString:@" (" options:NSBackwardsSearch];
-    if (tail.location == NSNotFound || ![head hasSuffix:@")"]) return nil;
-    NSString *path = [head substringToIndex:tail.location];
-    if (!path.length || ![[NSFileManager defaultManager] fileExistsAtPath:path]) return nil;
+    NSString *target = nil;
+
+    // A folder search heads each file with "<path> (3 hits)".
+    NSRange count = [head rangeOfString:@" (" options:NSBackwardsSearch];
+    if (count.location != NSNotFound && [head hasSuffix:@")"]) {
+        target = [head substringToIndex:count.location];
+    }
+
+    // A search of the open document has no such heading; all it writes is
+    // 'Search "what" in <document>' at the top, and the hits below it.
+    if (!target.length && [head hasPrefix:@"Search \""]) {
+        NSRange marker = [head rangeOfString:@"\" in " options:NSBackwardsSearch];
+        if (marker.location != NSNotFound) target = [head substringFromIndex:NSMaxRange(marker)];
+    }
+    if (!target.length) return nil;
 
     if (fileLine) *fileLine = wanted > 0 ? wanted : 1;
-    return path;
+    return target;
+}
+
++ (NSString *)searchResultFileInReport:(NSString *)report
+                                atLine:(NSInteger)line
+                              fileLine:(NSInteger *)fileLine {
+    NSString *target = [self searchResultTargetInReport:report atLine:line fileLine:fileLine];
+    BOOL directory = NO;
+    // The folder a search started in also ends in brackets; it is not a result.
+    if (!target || ![[NSFileManager defaultManager] fileExistsAtPath:target isDirectory:&directory]
+        || directory) {
+        if (fileLine) *fileLine = 1;
+        return nil;
+    }
+    return target;
 }
 
 - (BOOL)openSearchResultAtCaret {
@@ -452,10 +480,25 @@ static int IndicatorFor(NSInteger style) {
     sptr_t position = [self.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0];
     NSInteger line = (NSInteger)[self.sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)position lParam:0];
     NSInteger target = 1;
-    NSString *path = [EditorController searchResultFileInReport:[self.sci string] ?: @""
-                                                         atLine:line fileLine:&target];
-    if (!path) return NO;
-    if (![self openFileAtPath:path error:NULL]) return NO;
+    NSString *where = [EditorController searchResultTargetInReport:[self.sci string] ?: @""
+                                                            atLine:line fileLine:&target];
+    if (!where.length) return NO;
+
+    BOOL directory = NO;
+    BOOL onDisk = [[NSFileManager defaultManager] fileExistsAtPath:where isDirectory:&directory]
+                  && !directory;
+    if (onDisk) {
+        if (![self openFileAtPath:where error:NULL]) return NO;
+    } else {
+        // A search of the open document names it by the title on its tab, which
+        // is all an unsaved one has.
+        NSInteger found = -1;
+        for (NSUInteger i = 0; i < self.documents.count; ++i) {
+            if ([self.documents[i].displayName isEqualToString:where]) { found = (NSInteger)i; break; }
+        }
+        if (found < 0) return NO;
+        [self selectDocumentAtIndex:found];
+    }
 
     sptr_t last = [self.sci message:SCI_GETLINECOUNT wParam:0 lParam:0] - 1;
     sptr_t wanted = MAX((sptr_t)0, MIN((sptr_t)(target - 1), last));

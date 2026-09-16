@@ -621,6 +621,76 @@ int NppMacRunTests(AppDelegate *app) {
               opened && onlyOneTab == 1 &&
               [ed.currentDocument.path isEqualToString:target] && caretLine == 2);
 
+        // And through a real double click, which is how anyone actually gets
+        // there: the click goes into the view, Scintilla decides it is a double
+        // click and tells us.
+        [ed showSearchResults:report];
+        for (NSInteger i = (NSInteger)ed.documents.count - 1; i >= 0; --i) {
+            if ([ed.documents[(NSUInteger)i].path isEqualToString:target]) {
+                [ed closeDocumentAtIndex:i discardChanges:YES];
+            }
+        }
+        NSInteger beforeTabs = (NSInteger)ed.documents.count;
+        sptr_t hitPos = [ed.sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)hitLine lParam:0] + 4;
+        sptr_t px = [ed.sci message:SCI_POINTXFROMPOSITION wParam:0 lParam:(sptr_t)hitPos];
+        sptr_t py = [ed.sci message:SCI_POINTYFROMPOSITION wParam:0 lParam:(sptr_t)hitPos];
+        NSView *sciContent = [ed.sci content];
+        NSPoint inWindow = [sciContent convertPoint:NSMakePoint(px + 1, py + 4) toView:nil];
+        NSTimeInterval now = [NSProcessInfo processInfo].systemUptime;
+        for (NSUInteger click = 1; click <= 2; ++click) {
+            NSEvent *down = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown
+                                               location:inWindow modifierFlags:0
+                                              timestamp:now + click * 0.05
+                                           windowNumber:sciContent.window.windowNumber
+                                                context:nil eventNumber:(NSInteger)click
+                                             clickCount:(NSInteger)click pressure:1];
+            NSEvent *up = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp
+                                             location:inWindow modifierFlags:0
+                                            timestamp:now + click * 0.05 + 0.01
+                                         windowNumber:sciContent.window.windowNumber
+                                              context:nil eventNumber:(NSInteger)click
+                                           clickCount:(NSInteger)click pressure:1];
+            [sciContent mouseDown:down];
+            [sciContent mouseUp:up];
+        }
+        long clickedLine = [ed.sci message:SCI_LINEFROMPOSITION
+                                   wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
+                                   lParam:0];
+        Check(@"IDM_SEARCH_FINDINFILES (double click a result)",
+              @"double clicking a result line opens that file on that line",
+              [ed.currentDocument.path isEqualToString:target] && clickedLine == 2 &&
+              (NSInteger)ed.documents.count == beforeTabs + 1);
+
+        // A search of the open document writes no per-file heading, only
+        // 'Search "what" in <document>' at the top. Its results have to lead
+        // back to the document just the same, which is what went wrong: the
+        // double click selected a word and did nothing else.
+        NSString *ownReport = @"Search \"needle\" in %@\n\n\tLine 3: three needle\n\n1 hit\n";
+        ownReport = [NSString stringWithFormat:ownReport, target];
+        NSInteger ownLine = 0;
+        NSString *ownPath = [EditorController searchResultFileInReport:ownReport atLine:2
+                                                             fileLine:&ownLine];
+        [ed showSearchResults:ownReport];
+        [ed.sci message:SCI_GOTOLINE wParam:2 lParam:0];
+        BOOL ownOpened = [ed openSearchResultAtCaret];
+        long ownCaret = [ed.sci message:SCI_LINEFROMPOSITION
+                                 wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
+                                 lParam:0];
+        Check(@"IDM_SEARCH_FINDALL (open a result)",
+              @"results from searching the open document lead back to it as well",
+              [ownPath isEqualToString:target] && ownLine == 3 && ownOpened && ownCaret == 2);
+
+        // The folder a search started in is named in brackets at the top of the
+        // report too; it is not something to open.
+        NSString *folderHeader = [NSString stringWithFormat:@"Search \"x\" (%@)\n\n", root];
+        NSInteger ignored = 0;
+        BOOL folderIsNotAResult = [EditorController searchResultFileInReport:folderHeader
+                                                                     atLine:0
+                                                                   fileLine:&ignored] == nil;
+        Check(@"IDM_SEARCH_FINDINFILES (the folder is not a result)",
+              @"the folder named at the top of the report is not offered as a file to open",
+              folderIsNotAResult);
+
         [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
     }
 

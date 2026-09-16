@@ -49,6 +49,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// Replaces what the results tab holds while a search is still running, so hits
 /// appear as they are found. Does nothing when that tab is not the one on screen.
 - (void)updateSearchResults:(NSString *)report;
+/// What a results line points at: a file path, or the title of an open document
+/// when the search was of the document itself. `line` is one-based.
++ (nullable NSString *)searchResultTargetInReport:(NSString *)report
+                                           atLine:(NSInteger)line
+                                         fileLine:(NSInteger *)fileLine;
 /// The file and line a results line refers to, or nil when it refers to none.
 /// `line` is one-based, as the report writes it.
 + (nullable NSString *)searchResultFileInReport:(NSString *)report
