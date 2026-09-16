@@ -16,6 +16,20 @@
 
 @end
 
+@implementation NppFileSearch {
+    BOOL _cancelled;
+}
+
+- (BOOL)cancelled {
+    @synchronized (self) { return _cancelled; }
+}
+
+- (void)cancel {
+    @synchronized (self) { _cancelled = YES; }
+}
+
+@end
+
 @implementation EditorController (FindCommands)
 
 #pragma mark - Extended escapes
@@ -366,9 +380,25 @@
          recursive:(BOOL)recursive
      includeHidden:(BOOL)includeHidden
              visit:(void (^)(NSString *path, NSString *contents))visit {
+    [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
+              search:nil visit:^(NSString *path, NSString *contents, NSUInteger scanned) {
+        visit(path, contents);
+    }];
+}
+
+/// The same walk, stoppable, and counting how many files it has been through so
+/// the caller can say how far along it is.
+- (void)walkFolder:(NSString *)folder
+           filters:(NSString *)filters
+         recursive:(BOOL)recursive
+     includeHidden:(BOOL)includeHidden
+            search:(NppFileSearch *)search
+             visit:(void (^)(NSString *path, NSString *contents, NSUInteger scanned))visit {
     NSFileManager *files = [NSFileManager defaultManager];
     NSDirectoryEnumerator *walker = [files enumeratorAtPath:folder];
+    NSUInteger scanned = 0;
     for (NSString *relative in walker) {
+        if (search.cancelled) return;
         if (!recursive && relative.pathComponents.count > 1) continue;
 
         BOOL hidden = NO;
@@ -385,7 +415,7 @@
         NSString *contents = [NSString stringWithContentsOfFile:full
                                                        encoding:NSUTF8StringEncoding error:NULL];
         if (!contents) continue;                     // binary, or another encoding
-        visit(full, contents);
+        visit(full, contents, ++scanned);
     }
 }
 
@@ -431,6 +461,37 @@
     return hits;
 }
 
+/// Rewrites one file, returning how many matches went with it. Shared by the
+/// blocking Replace in Files and the one that runs in the background.
+- (NSUInteger)replaceEveryMatch:(NppFindSpec *)spec
+                          regex:(NppRegex *)regex
+                   inFileAtPath:(NSString *)path
+                       contents:(NSString *)contents
+                    cancelledBy:(NppFileSearch *)search {
+    NSData *data = [contents dataUsingEncoding:NSUTF8StringEncoding];
+    if (!data.length) return 0;
+
+    NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
+    NSMutableArray<NSString *> *texts = [NSMutableArray array];
+    [regex enumerateMatchesWithGroupsInData:data range:NSMakeRange(0, data.length)
+                                 usingBlock:^(NSArray<NSValue *> *groups, BOOL *stop) {
+        if (search.cancelled) { *stop = YES; return; }
+        [ranges addObject:groups.firstObject];
+        [texts addObject:[self replacementFor:spec groups:groups data:data]];
+    }];
+    if (!ranges.count || search.cancelled) return 0;
+
+    // Applied from the end, so a replacement cannot move the ones still to
+    // be made.
+    NSMutableData *updated = [data mutableCopy];
+    for (NSInteger i = (NSInteger)ranges.count - 1; i >= 0; --i) {
+        NSRange range = ranges[(NSUInteger)i].rangeValue;
+        NSData *piece = [texts[(NSUInteger)i] dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
+        [updated replaceBytesInRange:range withBytes:piece.bytes length:piece.length];
+    }
+    return [updated writeToFile:path atomically:YES] ? ranges.count : 0;
+}
+
 - (NSUInteger)replaceInFiles:(NppFindSpec *)spec
                       folder:(NSString *)folder
                      filters:(NSString *)filters
@@ -444,34 +505,119 @@
     __block NSUInteger replaced = 0, touched = 0;
     [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
                visit:^(NSString *path, NSString *contents) {
-        NSData *data = [contents dataUsingEncoding:NSUTF8StringEncoding];
-        if (!data.length) return;
-
-        NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
-        NSMutableArray<NSString *> *texts = [NSMutableArray array];
-        [regex enumerateMatchesWithGroupsInData:data range:NSMakeRange(0, data.length)
-                                     usingBlock:^(NSArray<NSValue *> *groups, BOOL *stop) {
-            [ranges addObject:groups.firstObject];
-            [texts addObject:[self replacementFor:spec groups:groups data:data]];
-        }];
-        if (!ranges.count) return;
-
-        // Applied from the end, so a replacement cannot move the ones still to
-        // be made.
-        NSMutableData *updated = [data mutableCopy];
-        for (NSInteger i = (NSInteger)ranges.count - 1; i >= 0; --i) {
-            NSRange range = ranges[(NSUInteger)i].rangeValue;
-            NSData *piece = [texts[(NSUInteger)i] dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
-            [updated replaceBytesInRange:range withBytes:piece.bytes length:piece.length];
-        }
-        if ([updated writeToFile:path atomically:YES]) {
-            replaced += ranges.count;
-            touched++;
-        }
+        NSUInteger inFile = [self replaceEveryMatch:spec regex:regex inFileAtPath:path
+                                           contents:contents cancelledBy:nil];
+        if (inFile) { replaced += inFile; touched++; }
     }];
 
     if (changedFiles) *changedFiles = touched;
     return replaced;
+}
+
+#pragma mark - Across files, without holding on to the window
+
+- (NppFileSearch *)findInFilesInBackground:(NppFindSpec *)spec
+                                    folder:(NSString *)folder
+                                   filters:(NSString *)filters
+                                 recursive:(BOOL)recursive
+                             includeHidden:(BOOL)includeHidden
+                                  progress:(void (^)(NSUInteger, NSUInteger, NSString *))progress
+                                completion:(void (^)(NSUInteger, NSString *, BOOL))completion {
+    NppFileSearch *search = [[NppFileSearch alloc] init];
+    NppRegex *regex = [self regexFor:spec];
+    if (!spec.what.length || !folder.length || !regex) {
+        if (completion) completion(0, @"", NO);
+        return search;
+    }
+
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSMutableString *report = [NSMutableString stringWithFormat:@"Search \"%@\" (%@)\n\n",
+                                   spec.what, folder];
+        __block NSUInteger hits = 0, matchedFiles = 0;
+
+        [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
+                  search:search
+                   visit:^(NSString *path, NSString *contents, NSUInteger scanned) {
+            NSArray<NSString *> *lines = [contents componentsSeparatedByString:@"\n"];
+            NSMutableString *block = [NSMutableString string];
+            NSUInteger inFile = 0;
+            for (NSUInteger i = 0; i < lines.count; ++i) {
+                if (search.cancelled) return;
+                NSData *line = [lines[i] dataUsingEncoding:NSUTF8StringEncoding];
+                if (!line.length) continue;
+                NSRange found = [regex firstMatchInData:line range:NSMakeRange(0, line.length)];
+                if (found.location == NSNotFound) continue;
+                inFile++;
+                [block appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1), lines[i]];
+            }
+            if (inFile) {
+                matchedFiles++;
+                hits += inFile;
+                [report appendFormat:@"%@ (%lu hit%@)\n%@\n", path, (unsigned long)inFile,
+                                     inFile == 1 ? @"" : @"s", block];
+            }
+
+            // Often enough to be worth watching, seldom enough that the search
+            // is not spent redrawing.
+            if (progress && (inFile || scanned % 50 == 0)) {
+                NSString *snapshot = [report copy];
+                NSUInteger hitsSoFar = hits;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (!search.cancelled) progress(scanned, hitsSoFar, snapshot);
+                });
+            }
+        }];
+
+        BOOL stopped = search.cancelled;
+        [report appendFormat:@"\n%lu hit%@ in %lu file%@%@\n", (unsigned long)hits,
+                             hits == 1 ? @"" : @"s", (unsigned long)matchedFiles,
+                             matchedFiles == 1 ? @"" : @"s", stopped ? @" - search stopped" : @""];
+        NSString *finished = [report copy];
+        NSUInteger total = hits;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion(total, finished, stopped);
+        });
+    });
+    return search;
+}
+
+- (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec
+                                       folder:(NSString *)folder
+                                      filters:(NSString *)filters
+                                    recursive:(BOOL)recursive
+                                includeHidden:(BOOL)includeHidden
+                                     progress:(void (^)(NSUInteger, NSUInteger))progress
+                                   completion:(void (^)(NSUInteger, NSUInteger, BOOL))completion {
+    NppFileSearch *search = [[NppFileSearch alloc] init];
+    NppRegex *regex = [self regexFor:spec];
+    if (!spec.what.length || !folder.length || !regex) {
+        if (completion) completion(0, 0, NO);
+        return search;
+    }
+
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        __block NSUInteger replaced = 0, touched = 0;
+        [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
+                  search:search
+                   visit:^(NSString *path, NSString *contents, NSUInteger scanned) {
+            NSUInteger inFile = [self replaceEveryMatch:spec regex:regex inFileAtPath:path
+                                               contents:contents cancelledBy:search];
+            if (inFile) { replaced += inFile; touched++; }
+            if (progress && (inFile || scanned % 50 == 0)) {
+                NSUInteger replacedSoFar = replaced;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (!search.cancelled) progress(scanned, replacedSoFar);
+                });
+            }
+        }];
+
+        BOOL stopped = search.cancelled;
+        NSUInteger total = replaced, files = touched;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion(total, files, stopped);
+        });
+    });
+    return search;
 }
 
 @end

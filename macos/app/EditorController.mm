@@ -10,6 +10,7 @@
 #import "TypingCommands.h"
 #import "TabBarView.h"
 #import "SettingsCommands.h"
+#import "SearchCommands.h"
 #include "ILexer.h"
 #include "Lexilla.h"
 
@@ -1439,6 +1440,11 @@ static long SciColor(NSColor *c) {
             break;
         case SCN_INDICATORRELEASE:
             [self openLinkAtPosition:(long)n->position];
+            break;
+        case SCN_DOUBLECLICK:
+            // In the results tab a double click means "take me there", the way
+            // it does in Notepad++'s Search results panel.
+            [self openSearchResultAtCaret];
             break;
         case SCN_MACRORECORD:
             [self recordMacroMessage:(int)n->message

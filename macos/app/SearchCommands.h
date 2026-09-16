@@ -46,6 +46,17 @@ NS_ASSUME_NONNULL_BEGIN
 /// Puts a report into the "Search results" tab, which is where every kind of
 /// find-all here leaves its output.
 - (void)showSearchResults:(NSString *)report;
+/// Replaces what the results tab holds while a search is still running, so hits
+/// appear as they are found. Does nothing when that tab is not the one on screen.
+- (void)updateSearchResults:(NSString *)report;
+/// The file and line a results line refers to, or nil when it refers to none.
+/// `line` is one-based, as the report writes it.
++ (nullable NSString *)searchResultFileInReport:(NSString *)report
+                                         atLine:(NSInteger)line
+                                       fileLine:(NSInteger *)fileLine;
+/// Opens what the caret sits on in the results tab. This is what a double click
+/// there does, the way Notepad++ jumps from a result to the file.
+- (BOOL)openSearchResultAtCaret;
 - (BOOL)focusSearchResults;
 - (BOOL)goToSearchResult:(BOOL)forward;
 

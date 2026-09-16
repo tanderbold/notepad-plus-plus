@@ -29,6 +29,12 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
 + (instancetype)specFor:(NSString *)what mode:(NppSearchMode)mode options:(NppFindOptions)options;
 @end
 
+/// A search that is running. Holding one lets the caller stop it.
+@interface NppFileSearch : NSObject
+@property (atomic, readonly) BOOL cancelled;
+- (void)cancel;
+@end
+
 @interface EditorController (FindCommands)
 
 /// The escapes Extended mode understands: \r \n \0 \t \\, and \b \o \d \x \u
@@ -62,6 +68,29 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
                    recursive:(BOOL)recursive
                includeHidden:(BOOL)includeHidden
                  changedFiles:(NSUInteger *_Nullable)changedFiles;
+
+/// The same search, off the main thread, so the window keeps answering while it
+/// runs. `progress` and `completion` are called on the main thread; `progress`
+/// carries what has been found so far, and the report grows as it goes.
+- (NppFileSearch *)findInFilesInBackground:(NppFindSpec *)spec
+                                    folder:(NSString *)folder
+                                   filters:(nullable NSString *)filters
+                                 recursive:(BOOL)recursive
+                             includeHidden:(BOOL)includeHidden
+                                  progress:(void (^)(NSUInteger scanned, NSUInteger hits,
+                                                     NSString *reportSoFar))progress
+                                completion:(void (^)(NSUInteger hits, NSString *report,
+                                                     BOOL cancelled))completion;
+
+/// Replacing across files, off the main thread, and stoppable the same way.
+- (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec
+                                       folder:(NSString *)folder
+                                      filters:(nullable NSString *)filters
+                                    recursive:(BOOL)recursive
+                                includeHidden:(BOOL)includeHidden
+                                     progress:(void (^)(NSUInteger scanned, NSUInteger replaced))progress
+                                   completion:(void (^)(NSUInteger replaced, NSUInteger files,
+                                                        BOOL cancelled))completion;
 
 /// Whether a file name is one the filter asks for.
 + (BOOL)name:(NSString *)name matchesFilters:(nullable NSString *)filters;

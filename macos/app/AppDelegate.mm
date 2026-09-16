@@ -67,6 +67,10 @@
 @property (nonatomic, strong) NSButton *backwardBox;
 @property (nonatomic, strong) NSButton *inSelectionBox;
 @property (nonatomic, strong) NSTextField *findStatus;
+@property (nonatomic, strong) NSProgressIndicator *findProgress;
+@property (nonatomic, strong) NSButton *findStopButton;
+@property (nonatomic, strong) NppFileSearch *runningSearch;
+@property (nonatomic, strong) NSArray<NSButton *> *findSearchButtons;
 @property (nonatomic, strong) NppFindSpec *lastFindSpec;
 /// The Find dialog's tabs, as Notepad++ has them.
 @property (nonatomic, strong) NSSegmentedControl *findTabs;
@@ -2427,8 +2431,23 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     clearMarks.frame = NSMakeRect(128, 28, 130, 26);
     [self.markViews addObjectsFromArray:@[markAll, clearMarks]];
 
+    // A search over a folder can take a while, so it says how far it has got
+    // and can be called off.
+    self.findStopButton = [self findButton:@"Stop" action:@selector(findPanelStop:)
+                                        at:NSMakePoint(276, 28) in:content];
+    self.findStopButton.frame = NSMakeRect(276, 28, 64, 26);
+    self.findStopButton.hidden = YES;
+
+    self.findProgress = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(348, 32, 120, 18)];
+    self.findProgress.style = NSProgressIndicatorStyleBar;
+    self.findProgress.indeterminate = YES;
+    self.findProgress.displayedWhenStopped = NO;
+    [content addSubview:self.findProgress];
+
+    self.findSearchButtons = @[filesFind, filesReplace, projectsFind];
+
     self.findStatus = [NSTextField labelWithString:@""];
-    self.findStatus.frame = NSMakeRect(300, 32, 324, 18);
+    self.findStatus.frame = NSMakeRect(300, 8, 324, 18);
     [content addSubview:self.findStatus];
 
     [self findTabChanged:nil];
@@ -2533,22 +2552,67 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 }
 
 - (void)findPanelFindInFiles:(id)sender {
+    if (self.runningSearch) return;                  // one at a time
     NppFindSpec *spec = [self currentFindSpec];
     NSString *folder = self.directoryField.stringValue;
     if (!folder.length) { self.findStatus.stringValue = @"Choose a folder first"; return; }
 
-    NSString *report = nil;
-    NSUInteger hits = [self.editor findInFiles:spec
-                                        folder:folder
-                                       filters:self.filtersField.stringValue
-                                     recursive:self.recursiveBox.state == NSControlStateValueOn
-                                 includeHidden:self.hiddenBox.state == NSControlStateValueOn
-                                        report:&report];
-    if (report) [self.editor showSearchResults:report];
-    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found", (unsigned long)hits];
+    // The search runs on its own queue: the window keeps answering, the results
+    // tab fills as hits turn up, and Stop calls it off.
+    [self.editor showSearchResults:[NSString stringWithFormat:@"Search \"%@\" (%@)\n\nSearching...\n",
+                                    spec.what, folder]];
+    [self beginSearchUI];
+    __weak __typeof(self) weakSelf = self;
+    self.runningSearch =
+        [self.editor findInFilesInBackground:spec
+                                      folder:folder
+                                     filters:self.filtersField.stringValue
+                                   recursive:self.recursiveBox.state == NSControlStateValueOn
+                               includeHidden:self.hiddenBox.state == NSControlStateValueOn
+                                    progress:^(NSUInteger scanned, NSUInteger hits, NSString *soFar) {
+            __typeof(self) strongSelf = weakSelf;
+            strongSelf.findStatus.stringValue =
+                [NSString stringWithFormat:@"%lu file%@ searched, %lu found",
+                 (unsigned long)scanned, scanned == 1 ? @"" : @"s", (unsigned long)hits];
+            [strongSelf.editor updateSearchResults:soFar];
+        }
+                                  completion:^(NSUInteger hits, NSString *report, BOOL stopped) {
+            __typeof(self) strongSelf = weakSelf;
+            [strongSelf endSearchUI];
+            [strongSelf.editor updateSearchResults:report];
+            if (![strongSelf.editor.currentDocument.displayName isEqualToString:@"Search results"]) {
+                [strongSelf.editor showSearchResults:report];
+            }
+            strongSelf.findStatus.stringValue =
+                [NSString stringWithFormat:@"%lu found%@", (unsigned long)hits,
+                 stopped ? @" (stopped)" : @""];
+        }];
 }
 
+/// The panel while a folder search is running: progress showing, Stop offered,
+/// and the buttons that would start another one out of reach.
+- (void)beginSearchUI {
+    self.findStopButton.hidden = NO;
+    for (NSButton *button in self.findSearchButtons) button.enabled = NO;
+    [self.findProgress startAnimation:nil];
+    self.findStatus.stringValue = @"Searching...";
+}
+
+- (void)endSearchUI {
+    self.runningSearch = nil;
+    self.findStopButton.hidden = YES;
+    for (NSButton *button in self.findSearchButtons) button.enabled = YES;
+    [self.findProgress stopAnimation:nil];
+}
+
+- (void)findPanelStop:(id)sender {
+    [self.runningSearch cancel];
+    self.findStatus.stringValue = @"Stopping...";
+}
+
+
 - (void)findPanelReplaceInFiles:(id)sender {
+    if (self.runningSearch) return;
     NppFindSpec *spec = [self currentFindSpec];
     NSString *folder = self.directoryField.stringValue;
     if (!folder.length) { self.findStatus.stringValue = @"Choose a folder first"; return; }
@@ -2564,38 +2628,90 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     [confirm addButtonWithTitle:@"Cancel"];
     if ([confirm runModal] != NSAlertFirstButtonReturn) return;
 
-    NSUInteger files = 0;
-    NSUInteger replaced = [self.editor replaceInFiles:spec
-                                               folder:folder
-                                              filters:self.filtersField.stringValue
-                                            recursive:self.recursiveBox.state == NSControlStateValueOn
-                                        includeHidden:self.hiddenBox.state == NSControlStateValueOn
-                                         changedFiles:&files];
-    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu replaced in %lu file%@",
-                                   (unsigned long)replaced, (unsigned long)files,
-                                   files == 1 ? @"" : @"s"];
+    [self beginSearchUI];
+    __weak __typeof(self) weakSelf = self;
+    self.runningSearch =
+        [self.editor replaceInFilesInBackground:spec
+                                         folder:folder
+                                        filters:self.filtersField.stringValue
+                                      recursive:self.recursiveBox.state == NSControlStateValueOn
+                                  includeHidden:self.hiddenBox.state == NSControlStateValueOn
+                                       progress:^(NSUInteger scanned, NSUInteger replaced) {
+            __typeof(self) strongSelf = weakSelf;
+            strongSelf.findStatus.stringValue =
+                [NSString stringWithFormat:@"%lu file%@ searched, %lu replaced",
+                 (unsigned long)scanned, scanned == 1 ? @"" : @"s", (unsigned long)replaced];
+        }
+                                     completion:^(NSUInteger replaced, NSUInteger files, BOOL stopped) {
+            __typeof(self) strongSelf = weakSelf;
+            [strongSelf endSearchUI];
+            strongSelf.findStatus.stringValue =
+                [NSString stringWithFormat:@"%lu replaced in %lu file%@%@",
+                 (unsigned long)replaced, (unsigned long)files, files == 1 ? @"" : @"s",
+                 stopped ? @" (stopped)" : @""];
+        }];
 }
+
 
 /// The projects tab searches the folders the project panels are rooted at.
 - (void)findPanelFindInProjects:(id)sender {
+    if (self.runningSearch) return;
     NppFindSpec *spec = [self currentFindSpec];
-    NSMutableString *report = [NSMutableString stringWithFormat:@"Search \"%@\" in the projects\n\n",
-                               spec.what];
-    NSUInteger hits = 0, roots = 0;
+
+    NSMutableArray<NSString *> *roots = [NSMutableArray array];
     for (NSInteger panel = 1; panel <= 3; ++panel) {
         NSString *root = [self.editor projectPanelRoot:panel];
-        if (!root.length) continue;
-        roots++;
-        NSString *part = nil;
-        hits += [self.editor findInFiles:spec folder:root
-                                 filters:self.filtersField.stringValue
-                               recursive:YES includeHidden:NO report:&part];
-        if (part) [report appendString:part];
+        if (root.length) [roots addObject:root];
     }
-    if (!roots) { self.findStatus.stringValue = @"No project panel has a folder"; return; }
-    [self.editor showSearchResults:report];
-    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found", (unsigned long)hits];
+    if (!roots.count) { self.findStatus.stringValue = @"No project panel has a folder"; return; }
+
+    [self.editor showSearchResults:[NSString stringWithFormat:@"Search \"%@\" in the projects\n\nSearching...\n",
+                                    spec.what]];
+    [self beginSearchUI];
+    [self searchProjectRoots:roots spec:spec collected:[NSMutableString string] hits:0];
 }
+
+/// The project panels are searched one after another, each in the background,
+/// so the window stays live and Stop reaches whichever is running.
+- (void)searchProjectRoots:(NSMutableArray<NSString *> *)roots
+                      spec:(NppFindSpec *)spec
+                 collected:(NSMutableString *)collected
+                      hits:(NSUInteger)hits {
+    if (!roots.count || self.runningSearch.cancelled) {
+        BOOL stopped = self.runningSearch.cancelled;
+        [self endSearchUI];
+        [self.editor updateSearchResults:collected];
+        if (![self.editor.currentDocument.displayName isEqualToString:@"Search results"]) {
+            [self.editor showSearchResults:collected];
+        }
+        self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found%@",
+                                       (unsigned long)hits, stopped ? @" (stopped)" : @""];
+        return;
+    }
+
+    NSString *root = roots.firstObject;
+    [roots removeObjectAtIndex:0];
+    NSString *done = [collected copy];
+    __weak __typeof(self) weakSelf = self;
+    self.runningSearch =
+        [self.editor findInFilesInBackground:spec folder:root
+                                     filters:self.filtersField.stringValue
+                                   recursive:YES includeHidden:NO
+                                    progress:^(NSUInteger scanned, NSUInteger found, NSString *soFar) {
+            __typeof(self) strongSelf = weakSelf;
+            strongSelf.findStatus.stringValue =
+                [NSString stringWithFormat:@"%lu file%@ searched, %lu found",
+                 (unsigned long)scanned, scanned == 1 ? @"" : @"s", (unsigned long)(hits + found)];
+            [strongSelf.editor updateSearchResults:[done stringByAppendingString:soFar]];
+        }
+                                  completion:^(NSUInteger found, NSString *report, BOOL stopped) {
+            __typeof(self) strongSelf = weakSelf;
+            [collected appendString:report ?: @""];
+            if (stopped) [roots removeAllObjects];
+            [strongSelf searchProjectRoots:roots spec:spec collected:collected hits:hits + found];
+        }];
+}
+
 
 - (void)findPanelClearMarks:(id)sender {
     [self.editor clearStyle:NPPMAC_STYLE_COUNT];

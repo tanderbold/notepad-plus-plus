@@ -381,12 +381,89 @@ static int IndicatorFor(NSInteger style) {
 
 - (void)showSearchResults:(NSString *)report {
     // Notepad++ docks a results panel; here the results are a tab of their own.
-    [self newDocument];
+    // An earlier one is reused, so a search that reports as it goes does not
+    // leave a trail of tabs behind it.
+    NSInteger existing = [self searchResultsTabIndex];
+    if (existing >= 0) [self selectDocumentAtIndex:existing];
+    else [self newDocument];
     self.currentDocument.displayName = @"Search results";
     [self.sci setString:report ?: @""];
     [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
     [self refreshChrome];
+}
+
+- (void)updateSearchResults:(NSString *)report {
+    // While the user is looking at something else, leaving their document alone
+    // matters more than a live count; the finished report still arrives.
+    if (![self.currentDocument.displayName isEqualToString:@"Search results"]) return;
+
+    // Whether the view was at the bottom decides whether it follows the new
+    // hits down or stays where the user left it.
+    sptr_t lines = [self.sci message:SCI_GETLINECOUNT wParam:0 lParam:0];
+    sptr_t first = [self.sci message:SCI_GETFIRSTVISIBLELINE wParam:0 lParam:0];
+    sptr_t onScreen = [self.sci message:SCI_LINESONSCREEN wParam:0 lParam:0];
+    BOOL atBottom = (first + onScreen) >= lines - 1;
+
+    [self.sci setString:report ?: @""];
+    [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+    self.currentDocument.modified = NO;
+    if (atBottom) {
+        [self.sci message:SCI_GOTOPOS
+                  wParam:(uptr_t)[self.sci message:SCI_GETLENGTH wParam:0 lParam:0] lParam:0];
+    } else {
+        [self.sci message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)first lParam:0];
+    }
+}
+
++ (NSString *)searchResultFileInReport:(NSString *)report
+                                atLine:(NSInteger)line
+                              fileLine:(NSInteger *)fileLine {
+    if (fileLine) *fileLine = 1;
+    NSArray<NSString *> *lines = [(report ?: @"") componentsSeparatedByString:@"\n"];
+    if (line < 0 || line >= (NSInteger)lines.count) return nil;
+
+    // A hit reads "\tLine 42: ...", and the file it belongs to is the nearest
+    // heading above it, which reads "/some/path (3 hits)".
+    NSInteger heading = line;
+    NSInteger wanted = 0;
+    if ([lines[(NSUInteger)line] hasPrefix:@"\t"]) {
+        NSScanner *scanner = [NSScanner scannerWithString:lines[(NSUInteger)line]];
+        scanner.charactersToBeSkipped = [NSCharacterSet whitespaceCharacterSet];
+        if (![scanner scanString:@"Line" intoString:NULL]) return nil;
+        if (![scanner scanInteger:&wanted]) return nil;
+        while (heading >= 0 && [lines[(NSUInteger)heading] hasPrefix:@"\t"]) heading--;
+        if (heading < 0) return nil;
+    }
+
+    NSString *head = lines[(NSUInteger)heading];
+    NSRange tail = [head rangeOfString:@" (" options:NSBackwardsSearch];
+    if (tail.location == NSNotFound || ![head hasSuffix:@")"]) return nil;
+    NSString *path = [head substringToIndex:tail.location];
+    if (!path.length || ![[NSFileManager defaultManager] fileExistsAtPath:path]) return nil;
+
+    if (fileLine) *fileLine = wanted > 0 ? wanted : 1;
+    return path;
+}
+
+- (BOOL)openSearchResultAtCaret {
+    if (![self.currentDocument.displayName isEqualToString:@"Search results"]) return NO;
+
+    sptr_t position = [self.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0];
+    NSInteger line = (NSInteger)[self.sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)position lParam:0];
+    NSInteger target = 1;
+    NSString *path = [EditorController searchResultFileInReport:[self.sci string] ?: @""
+                                                         atLine:line fileLine:&target];
+    if (!path) return NO;
+    if (![self openFileAtPath:path error:NULL]) return NO;
+
+    sptr_t last = [self.sci message:SCI_GETLINECOUNT wParam:0 lParam:0] - 1;
+    sptr_t wanted = MAX((sptr_t)0, MIN((sptr_t)(target - 1), last));
+    [self.sci message:SCI_ENSUREVISIBLEENFORCEPOLICY wParam:(uptr_t)wanted lParam:0];
+    [self.sci message:SCI_GOTOLINE wParam:(uptr_t)wanted lParam:0];
+    [self.sci message:SCI_SCROLLCARET wParam:0 lParam:0];
+    [self refreshChrome];
+    return YES;
 }
 
 - (NSInteger)searchResultsTabIndex {

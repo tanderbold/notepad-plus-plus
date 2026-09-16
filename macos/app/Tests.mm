@@ -457,6 +457,173 @@ int NppMacRunTests(AppDelegate *app) {
         [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
     }
 
+    printf("\n== Search: a folder search that does not hold the window ==\n");
+    {
+        // Find in Files used to run on the main thread, so a search over a
+        // large tree froze the application: it could not be brought forward,
+        // said nothing about how far it had got and could not be called off.
+        NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp_fif_async"];
+        [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:root
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        for (NSUInteger i = 0; i < 400; ++i) {
+            NSMutableString *body = [NSMutableString string];
+            for (NSUInteger line = 0; line < 60; ++line) {
+                [body appendFormat:@"filler %lu\nneedle %lu\n", (unsigned long)line, (unsigned long)i];
+            }
+            [body writeToFile:[root stringByAppendingPathComponent:
+                                   [NSString stringWithFormat:@"file%03lu.txt", (unsigned long)i]]
+                   atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        }
+        NppFindSpec *needle = [NppFindSpec specFor:@"needle" mode:NppSearchNormal options:NppFindNone];
+
+        __block BOOL finished = NO;
+        __block NSUInteger foundHits = 0;
+        __block NSUInteger progressCalls = 0, lastScanned = 0;
+        __block NSUInteger ticks = 0;
+        NSTimer *heartbeat = [NSTimer scheduledTimerWithTimeInterval:0.005 repeats:YES
+                                                              block:^(NSTimer *t) { ticks++; }];
+
+        NppFileSearch *running =
+            [ed findInFilesInBackground:needle folder:root filters:nil recursive:YES
+                          includeHidden:NO
+                               progress:^(NSUInteger scanned, NSUInteger hits, NSString *soFar) {
+                progressCalls++;
+                lastScanned = scanned;
+            }
+                             completion:^(NSUInteger hits, NSString *report, BOOL stopped) {
+                finished = YES;
+                foundHits = hits;
+            }];
+
+        // The call has to come back at once, leaving the search to run.
+        BOOL returnedBeforeFinishing = !finished;
+
+        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:60];
+        while (!finished && [deadline timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                     beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        }
+        [heartbeat invalidate];
+
+        Check(@"IDM_SEARCH_FINDINFILES (does not block)",
+              @"a folder search runs in the background: the call returns at once and "
+              @"the main thread keeps running while it works",
+              returnedBeforeFinishing && finished && ticks > 0 && running != nil);
+        Check(@"IDM_SEARCH_FINDINFILES (progress)",
+              @"the search says how many files it has been through as it goes",
+              progressCalls > 1 && lastScanned > 0 && lastScanned <= 400 && foundHits == 400 * 60);
+
+        // Stopping it. The walk looks at the flag before each file, so a search
+        // called off before it starts visits nothing at all.
+        __block BOOL stoppedFinished = NO, reportedStopped = NO;
+        __block NSUInteger stoppedHits = 1;
+        NppFileSearch *toStop =
+            [ed findInFilesInBackground:needle folder:root filters:nil recursive:YES
+                          includeHidden:NO progress:nil
+                             completion:^(NSUInteger hits, NSString *report, BOOL stopped) {
+                stoppedFinished = YES;
+                reportedStopped = stopped;
+                stoppedHits = hits;
+            }];
+        [toStop cancel];
+        deadline = [NSDate dateWithTimeIntervalSinceNow:60];
+        while (!stoppedFinished && [deadline timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                     beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        }
+        Check(@"IDM_SEARCH_FINDINFILES (stop)",
+              @"a search that is called off stops, and says that it was stopped",
+              stoppedFinished && reportedStopped && stoppedHits == 0);
+
+        // Replace in Files runs the same way.
+        NppFindSpec *renumber = [NppFindSpec specFor:@"needle" mode:NppSearchNormal
+                                             options:NppFindNone];
+        renumber.replacement = @"pin";
+        __block BOOL replaceFinished = NO;
+        __block NSUInteger replacedCount = 0, replacedFiles = 0;
+        [ed replaceInFilesInBackground:renumber folder:root filters:@"file00*.txt" recursive:YES
+                         includeHidden:NO progress:nil
+                            completion:^(NSUInteger replaced, NSUInteger files, BOOL stopped) {
+            replaceFinished = YES;
+            replacedCount = replaced;
+            replacedFiles = files;
+        }];
+        BOOL replaceReturnedFirst = !replaceFinished;
+        deadline = [NSDate dateWithTimeIntervalSinceNow:60];
+        while (!replaceFinished && [deadline timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                     beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        }
+        NSString *rewritten = [NSString stringWithContentsOfFile:
+            [root stringByAppendingPathComponent:@"file007.txt"]
+                                                        encoding:NSUTF8StringEncoding error:NULL];
+        Check(@"IDM_SEARCH_REPLACEINFILES (does not block)",
+              @"Replace in Files also runs in the background and writes what it matched",
+              replaceReturnedFirst && replaceFinished && replacedFiles == 10 &&
+              replacedCount == 10 * 60 && [rewritten containsString:@"pin 7"] &&
+              ![rewritten containsString:@"needle"]);
+
+        [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+    }
+
+    printf("\n== Search: going from a result to the file ==\n");
+    {
+        // Double clicking a line of the results opens that file at that line,
+        // which is what the Search results panel does in Notepad++.
+        NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp_fif_open"];
+        [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:root
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        NSString *target = [root stringByAppendingPathComponent:@"target.txt"];
+        [@"one\ntwo\nthree needle\nfour\n" writeToFile:target
+                                              atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+
+        NppFindSpec *needle = [NppFindSpec specFor:@"needle" mode:NppSearchNormal options:NppFindNone];
+        NSString *report = nil;
+        [ed findInFiles:needle folder:root filters:nil recursive:NO includeHidden:NO report:&report];
+
+        NSArray<NSString *> *reportLines = [report componentsSeparatedByString:@"\n"];
+        NSInteger headingLine = -1, hitLine = -1;
+        for (NSUInteger i = 0; i < reportLines.count; ++i) {
+            if ([reportLines[i] hasPrefix:@"\tLine "] && hitLine < 0) hitLine = (NSInteger)i;
+            else if ([reportLines[i] hasPrefix:root] && headingLine < 0) headingLine = (NSInteger)i;
+        }
+
+        NSInteger fromHit = 0, fromHeading = 0, fromSummary = 0;
+        NSString *hitPath = [EditorController searchResultFileInReport:report atLine:hitLine
+                                                             fileLine:&fromHit];
+        NSString *headPath = [EditorController searchResultFileInReport:report atLine:headingLine
+                                                              fileLine:&fromHeading];
+        NSString *summaryPath = [EditorController searchResultFileInReport:report
+                                                                   atLine:(NSInteger)reportLines.count - 2
+                                                                 fileLine:&fromSummary];
+        Check(@"IDM_SEARCH_FINDINFILES (result lines carry a place)",
+              @"a hit line names its file and the line within it; the summary names none",
+              [hitPath isEqualToString:target] && fromHit == 3 &&
+              [headPath isEqualToString:target] && fromHeading == 1 && summaryPath == nil);
+
+        // And the caret in the results tab goes there.
+        [ed showSearchResults:report];
+        NSInteger onlyOneTab = 0;
+        [ed showSearchResults:report];
+        for (NppDocument *doc in ed.documents) {
+            if ([doc.displayName isEqualToString:@"Search results"]) onlyOneTab++;
+        }
+        [ed.sci message:SCI_GOTOLINE wParam:(uptr_t)hitLine lParam:0];
+        BOOL opened = [ed openSearchResultAtCaret];
+        long caretLine = [ed.sci message:SCI_LINEFROMPOSITION
+                                 wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
+                                 lParam:0];
+        Check(@"IDM_SEARCH_FINDINFILES (open a result)",
+              @"opening the result under the caret brings up that file on that line, "
+              @"and repeated searches reuse the one results tab",
+              opened && onlyOneTab == 1 &&
+              [ed.currentDocument.path isEqualToString:target] && caretLine == 2);
+
+        [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+    }
+
     printf("\n== Search: replacement escapes ==\n");
     {
         [ed newDocument];
