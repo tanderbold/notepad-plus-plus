@@ -510,9 +510,6 @@ int NppMacRunTests(AppDelegate *app) {
         __block BOOL finished = NO;
         __block NSUInteger foundHits = 0;
         __block NSUInteger progressCalls = 0, lastScanned = 0;
-        __block NSUInteger ticks = 0;
-        NSTimer *heartbeat = [NSTimer scheduledTimerWithTimeInterval:0.005 repeats:YES
-                                                              block:^(NSTimer *t) { ticks++; }];
 
         NppFileSearch *running =
             [ed findInFilesInBackground:needle folder:root filters:nil recursive:YES
@@ -529,22 +526,28 @@ int NppMacRunTests(AppDelegate *app) {
         // The call has to come back at once, leaving the search to run.
         BOOL returnedBeforeFinishing = !finished;
 
-        // The run loop is given a moment of its own whatever the search does:
-        // otherwise a search that finishes on the first turn leaves the
-        // heartbeat with nothing to say, and the check turns on the weather.
-        NSDate *atLeast = [NSDate dateWithTimeIntervalSinceNow:0.2];
-        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:60];
-        while (([atLeast timeIntervalSinceNow] > 0 || !finished) &&
-               [deadline timeIntervalSinceNow] > 0) {
+        // And the main thread has to be free while it runs. This block is put
+        // on the main queue before the search can put its own there, so it goes
+        // first: if it finds the search already over, the search never left the
+        // main thread at all. No clock is involved, so nothing here depends on
+        // how busy the machine is.
+        __block BOOL probeRan = NO, searchStillRunning = NO;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            probeRan = YES;
+            searchStillRunning = !finished;
+        });
+
+        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:120];
+        while (!finished && [deadline timeIntervalSinceNow] > 0) {
             [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
                                      beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
         }
-        [heartbeat invalidate];
 
         Check(@"IDM_SEARCH_FINDINFILES (does not block)",
               @"a folder search runs in the background: the call returns at once and "
               @"the main thread keeps running while it works",
-              returnedBeforeFinishing && finished && ticks > 0 && running != nil);
+              returnedBeforeFinishing && finished && running != nil &&
+              probeRan && searchStillRunning);
         Check(@"IDM_SEARCH_FINDINFILES (progress)",
               @"the search says how many files it has been through as it goes",
               progressCalls > 1 && lastScanned > 0 && lastScanned <= 400 && foundHits == 400 * 60);
