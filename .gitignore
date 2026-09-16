@@ -168,3 +168,13 @@ PowerEditor/src/MISC/md5/RCa06792
 *.opendb
 # macOS port build artifacts
 macos/build/
+
+# Artefacts from running the upstream test suites (macos/test-upstream.sh)
+lexilla/test/TestLexers
+lexilla/test/*.o
+lexilla/test/unit/unitTest
+lexilla/test/unit/*.o
+scintilla/test/unit/unitTest
+scintilla/test/unit/*.o
+scintilla/test/__pycache__/
+scintilla/scripts/__pycache__/
