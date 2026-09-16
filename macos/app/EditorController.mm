@@ -11,6 +11,7 @@
 #import "TabBarView.h"
 #import "SettingsCommands.h"
 #import "SearchCommands.h"
+#import "LanguageDetection.h"
 #include "ILexer.h"
 #include "Lexilla.h"
 
@@ -427,6 +428,9 @@ static long SciColor(NSColor *c) {
     [self refreshChrome];
     [self noteRecentFile:path];
     [self rememberOpenDirectory:path];
+
+    // A name with no extension says nothing, so the contents are asked instead.
+    [self detectLanguageOfCurrentDocumentOffering:self.languageChoiceHandler];
     return YES;
 }
 

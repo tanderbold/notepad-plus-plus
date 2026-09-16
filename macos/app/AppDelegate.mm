@@ -22,6 +22,7 @@
 #import "XmlCommands.h"
 #import "RunCommands.h"
 #import "FindCommands.h"
+#import "LanguageDetection.h"
 #import "DocumentListPanel.h"
 #import "FunctionListPanel.h"
 #import "LanguageCatalog.h"
@@ -103,6 +104,12 @@
 
     self.editor = [[EditorController alloc] initWithFrame:frame];
     self.editor.window = self.window;
+    // Opening a file whose name says nothing may turn up several languages that
+    // fit; this is what puts them to the user.
+    __weak __typeof(self) weakSelf = self;
+    self.editor.languageChoiceHandler = ^(NSArray<NppLanguage *> *choices) {
+        [weakSelf offerLanguageChoices:choices];
+    };
     self.window.contentView = self.editor.view;
 
     [self buildMenus];
@@ -1815,7 +1822,41 @@ static BOOL NppForwardToFieldEditor(SEL action, id sender) {
 }
 - (void)pasteText:(id)sender {
     if (NppForwardToFieldEditor(@selector(paste:), sender)) return;
+    BOOL wasEmpty = [self.editor.sci message:SCI_GETLENGTH wParam:0 lParam:0] == 0;
     [self.editor.sci message:SCI_PASTE];
+    // A fragment dropped into an empty document is the other time nothing but
+    // the text itself can say what the language is.
+    if (wasEmpty) [self detectLanguageFromContents];
+}
+
+/// Works the language out from the document's contents, putting the choice to
+/// the user when more than one language fits.
+- (void)detectLanguageFromContents {
+    [self.editor detectLanguageOfCurrentDocumentOffering:self.editor.languageChoiceHandler];
+}
+
+- (void)offerLanguageChoices:(NSArray<NppLanguage *> *)choices {
+    if (choices.count < 2 || !self.editor.window) return;
+
+    NSPopUpButton *list = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, 220, 26)];
+    for (NppLanguage *language in choices) [list addItemWithTitle:language.name];
+
+    NSAlert *ask = [[NSAlert alloc] init];
+    ask.messageText = @"Which language is this?";
+    ask.informativeText = @"The name of this document does not say what it is. "
+                          @"These are what its contents look like, likeliest first.";
+    ask.accessoryView = list;
+    [ask addButtonWithTitle:@"Use this one"];
+    [ask addButtonWithTitle:@"Leave as text"];
+
+    __weak __typeof(self) weakSelf = self;
+    [ask beginSheetModalForWindow:self.editor.window
+                completionHandler:^(NSModalResponse response) {
+        if (response != NSAlertFirstButtonReturn) return;
+        NSInteger picked = list.indexOfSelectedItem;
+        if (picked < 0 || picked >= (NSInteger)choices.count) return;
+        [weakSelf.editor chooseLanguageNamed:choices[(NSUInteger)picked].name];
+    }];
 }
 
 - (void)selectAllText:(id)sender {

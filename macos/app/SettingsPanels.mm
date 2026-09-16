@@ -247,6 +247,9 @@
     y = [self beginPage:@"New Document"]; v = [self page:@"New Document"];
     y = [self addField:@"Default encoding" key:@"defaultEncoding"
                   value:p.defaultEncoding to:v atY:y];
+    y = [self addCheckbox:@"Work the language out from the contents when the name does not say"
+                      key:@"detectLanguageFromContent"
+                       on:p.detectLanguageFromContent to:v atY:y];
     [self endPage:@"New Document" atY:y];
 
     y = [self beginPage:@"Indentation"]; v = [self page:@"Indentation"];

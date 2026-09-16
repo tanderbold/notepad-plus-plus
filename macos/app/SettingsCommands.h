@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL showWhitespace;
 @property (nonatomic) BOOL showIndentGuides;
 @property (nonatomic) BOOL restoreSession;
+/// Work the language out from what is in a file when its name does not say:
+/// a file with no extension, or a fragment pasted into an empty document.
+@property (nonatomic) BOOL detectLanguageFromContent;
 @property (nonatomic) NSInteger defaultEOL;              // SC_EOL_*
 @property (nonatomic, copy) NSString *defaultEncoding;   // "UTF-8", "UTF-8-BOM", ...
 

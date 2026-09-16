@@ -121,7 +121,10 @@ static NSString *LexerIDForLanguage(NSString *langName) {
         [self.languages addObject:self.current];
         if (self.current.name.length) self.byName[self.current.name] = self.current;
         for (NSString *e in self.current.extensions) {
-            if (!self.byExtension[e]) self.byExtension[e] = self.current;  // first wins, as in npp
+            // Where two languages claim the same extension, Notepad++ walks its
+            // list from the end (Parameters.cpp, getLangFromExt), so the last
+            // definition wins: .tex belongs to tex, not to latex.
+            self.byExtension[e] = self.current;
         }
         self.current = nil;
         self.currentKeywords = nil;

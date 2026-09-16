@@ -28,6 +28,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"showWhitespace"):  @NO,
         Key(@"showIndentGuides"):@YES,
         Key(@"restoreSession"):  @NO,
+        Key(@"detectLanguageFromContent"): @YES,
         Key(@"defaultEOL"):      @(SC_EOL_LF),
         Key(@"defaultEncoding"): @"UTF-8",
         Key(@"appearanceMode"):  @0,
@@ -239,6 +240,7 @@ NPP_PREF_BOOL(wordWrap, setWordWrap, @"wordWrap")
 NPP_PREF_BOOL(showWhitespace, setShowWhitespace, @"showWhitespace")
 NPP_PREF_BOOL(showIndentGuides, setShowIndentGuides, @"showIndentGuides")
 NPP_PREF_BOOL(restoreSession, setRestoreSession, @"restoreSession")
+NPP_PREF_BOOL(detectLanguageFromContent, setDetectLanguageFromContent, @"detectLanguageFromContent")
 NPP_PREF_BOOL(showToolbar, setShowToolbar, @"showToolbar")
 NPP_PREF_BOOL(autosaveEnabled, setAutosaveEnabled, @"autosaveEnabled")
 NPP_PREF_BOOL(printLineNumbers, setPrintLineNumbers, @"printLineNumbers")

@@ -32,6 +32,7 @@
 #import "ApiCatalog.h"
 #import "FindCommands.h"
 #import "LanguageCatalog.h"
+#import "LanguageDetection.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
@@ -104,6 +105,7 @@ static NSString *TempFile(NSString *name, NSString *contents) {
 @end
 
 int NppMacRunTests(AppDelegate *app) {
+    setvbuf(stdout, NULL, _IOLBF, 0);   // a run that stops then says where
     gPass = gFail = 0;
     gCovered = [NSMutableSet set];
     EditorController *ed = [app editor];
@@ -2847,6 +2849,89 @@ int NppMacRunTests(AppDelegate *app) {
         // that a name keeps the whitespace it was written with.
         NSString *corpusDir = [[NSBundle mainBundle] pathForResource:@"functionListCorpus"
                                                               ofType:nil];
+        // Working the language out from a file's contents, for the files whose
+        // name cannot say: no extension, or nothing saved yet.
+        {
+            LanguageCatalog *lc = [LanguageCatalog sharedCatalog];
+
+            // What a file says about itself outright is taken as given, and is
+            // the one case where a couple of lines is enough.
+            BOOL declared =
+                [[lc languageForContents:@"#!/usr/bin/env python3\nx = 1\n"].name isEqualToString:@"python"] &&
+                [[lc languageForContents:@"#!/bin/sh\necho hi\n"].name isEqualToString:@"bash"] &&
+                [[lc languageForContents:@"#!/usr/bin/perl\nprint 1;\n"].name isEqualToString:@"perl"] &&
+                [[lc languageForContents:@"<?php echo 1; ?>\n"].name isEqualToString:@"php"] &&
+                [[lc languageForContents:@"<?xml version=\"1.0\"?><a/>"].name isEqualToString:@"xml"] &&
+                [[lc languageForContents:@"<!DOCTYPE html><html></html>"].name isEqualToString:@"html"] &&
+                [[lc languageForContents:@"# -*- mode: ruby -*-\nx = 1\n"].name isEqualToString:@"ruby"] &&
+                [[lc languageForContents:@"# vim: set ft=lua:\nx = 1\n"].name isEqualToString:@"lua"] &&
+                [[lc languageForContents:@"{\"a\": [1, 2, 3]}"].name isEqualToString:@"json"];
+            Check(@"IDM_LANG_DETECT (what the file says outright)",
+                  @"a shebang line, an opening tag, a doctype, an editor modeline "
+                  @"or JSON that parses settles the language on its own",
+                  declared);
+
+            // Too little to go on is left alone: a guess from three words would
+            // be wrong as often as right.
+            BOOL quiet = ![lc languagesMatchingContents:@""].count &&
+                         ![lc languagesMatchingContents:@"hello\n"].count &&
+                         ![lc languagesMatchingContents:@"one two three four\n"].count &&
+                         ![lc languagesMatchingContents:@"...\n...\n"].count;
+            Check(@"IDM_LANG_DETECT (too little to say)",
+                  @"a short fragment, or one with no words a language claims, "
+                  @"yields nothing rather than a guess",
+                  quiet);
+
+            // The corpus: a file of each language, under the name "unitTest",
+            // which is exactly the case this is for.
+            NSUInteger offered = 0, wasFirst = 0, total = 0;
+            NSMutableArray<NSString *> *notOffered = [NSMutableArray array];
+            for (NSString *language in [[NSFileManager defaultManager]
+                                        contentsOfDirectoryAtPath:corpusDir ?: @"" error:NULL]) {
+                NSString *body = [NSString stringWithContentsOfFile:
+                    [[corpusDir stringByAppendingPathComponent:language]
+                        stringByAppendingPathComponent:@"unitTest"]
+                                                           encoding:NSUTF8StringEncoding error:NULL];
+                if (!body) continue;
+                NSString *want = [language hasPrefix:@"udl-"] ? [language substringFromIndex:4] : language;
+                total++;
+                NSMutableArray<NSString *> *names = [NSMutableArray array];
+                for (NppLanguage *one in [lc languagesMatchingContents:body]) {
+                    [names addObject:one.name];
+                }
+                // Notepad++ lists JavaScript twice, as "javascript" and as
+                // "javascript.js"; either answer is the right one.
+                NSUInteger where = [names indexOfObject:want];
+                if (where == NSNotFound && [want hasPrefix:@"javascript"]) {
+                    where = [names indexOfObject:@"javascript.js"];
+                    if (where == NSNotFound) where = [names indexOfObject:@"javascript"];
+                }
+                if (where == NSNotFound) { [notOffered addObject:want]; continue; }
+                offered++;
+                if (where == 0) wasFirst++;
+            }
+            Check(@"IDM_LANG_DETECT (a file of each language)",
+                  @"most of the corpus is offered its own language, and most of "
+                  @"those have it first in the list",
+                  total >= 40 && offered >= 28 && wasFirst >= 23);
+
+            // Whatever is offered is short enough to be a choice rather than a
+            // catalogue; more than ten and nothing is offered at all.
+            NSUInteger longest = 0;
+            for (NSString *language in [[NSFileManager defaultManager]
+                                        contentsOfDirectoryAtPath:corpusDir ?: @"" error:NULL]) {
+                NSString *body = [NSString stringWithContentsOfFile:
+                    [[corpusDir stringByAppendingPathComponent:language]
+                        stringByAppendingPathComponent:@"unitTest"]
+                                                           encoding:NSUTF8StringEncoding error:NULL];
+                if (!body) continue;
+                longest = MAX(longest, [lc languagesMatchingContents:body].count);
+            }
+            Check(@"IDM_LANG_DETECT (a choice, not a catalogue)",
+                  @"no more than ten languages are ever offered",
+                  longest > 0 && longest <= NppMostLanguagesToOffer);
+        }
+
         NSMutableArray *corpusFailures = [NSMutableArray array];
         NSUInteger corpusChecked = 0;
         // JavaScript and TypeScript are parsed here by the corrections, which
