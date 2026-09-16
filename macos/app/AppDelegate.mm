@@ -1730,8 +1730,28 @@
 
 - (void)undo:(id)sender        { [self.editor.sci message:SCI_UNDO]; }
 - (void)redo:(id)sender        { [self.editor.sci message:SCI_REDO]; }
-- (void)cutText:(id)sender     { [self.editor.sci message:SCI_CUT]; }
-- (void)copyText:(id)sender    { [self.editor.sci message:SCI_COPY]; }
+/// With nothing selected, Cut and Copy take the whole line -- which is what
+/// Notepad++ does, and what it has on by default.
+- (void)cutText:(id)sender {
+    ScintillaView *sci = self.editor.sci;
+    BOOL empty = [sci message:SCI_GETSELECTIONEMPTY] != 0;
+    if (empty && [NppPreferences shared].lineCopyCutWithoutSelection) {
+        [sci message:SCI_LINECUT];
+        return;
+    }
+    [sci message:SCI_CUT];
+}
+
+- (void)copyText:(id)sender {
+    ScintillaView *sci = self.editor.sci;
+    BOOL empty = [sci message:SCI_GETSELECTIONEMPTY] != 0;
+    if (empty && [NppPreferences shared].lineCopyCutWithoutSelection) {
+        // COPYALLOWLINE is the message that means "the line, with its ending".
+        [sci message:SCI_COPYALLOWLINE];
+        return;
+    }
+    [sci message:SCI_COPY];
+}
 - (void)pasteText:(id)sender   { [self.editor.sci message:SCI_PASTE]; }
 - (void)selectAllText:(id)sender { [self.editor.sci message:SCI_SELECTALL]; }
 

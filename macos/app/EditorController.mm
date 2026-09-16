@@ -307,6 +307,43 @@ static long SciColor(NSColor *c) {
            wParam:prefs.virtualSpace ? (SCVS_RECTANGULARSELECTION | SCVS_USERACCESSIBLE)
                                      : SCVS_RECTANGULARSELECTION
            lParam:0];
+
+    // The current line can be left alone, given a background, or framed.
+    switch (prefs.currentLineHighlightMode) {
+        case 0:
+            [sci message:SCI_SETCARETLINEVISIBLE wParam:0 lParam:0];
+            break;
+        case 2:
+            [sci message:SCI_SETCARETLINEVISIBLE wParam:1 lParam:0];
+            [sci message:SCI_SETCARETLINEFRAME
+                   wParam:(uptr_t)MIN((NSInteger)6, MAX((NSInteger)1, prefs.currentLineFrameWidth))
+                   lParam:0];
+            break;
+        default:
+            [sci message:SCI_SETCARETLINEVISIBLE wParam:1 lParam:0];
+            [sci message:SCI_SETCARETLINEFRAME wParam:0 lParam:0];
+            break;
+    }
+
+    // Margins the user can turn off. The line number margin has its own
+    // setting elsewhere; these two are the bookmark and fold margins.
+    [sci message:SCI_SETMARGINWIDTHN wParam:1 lParam:prefs.bookmarkMarginShow ? 14 : 0];
+    [sci message:SCI_SETMARGINWIDTHN wParam:2 lParam:prefs.foldMarginShow ? 16 : 0];
+
+    // How a wrapped line continues: plain, aligned with the line above, or a
+    // level further in.
+    long wrapIndent = prefs.lineWrapMethod == 2 ? SC_WRAPINDENT_INDENT
+                    : prefs.lineWrapMethod == 0 ? SC_WRAPINDENT_FIXED
+                                                : SC_WRAPINDENT_SAME;
+    [sci message:SCI_SETWRAPINDENTMODE wParam:(uptr_t)wrapIndent lParam:0];
+
+    [sci message:SCI_SETMARGINLEFT wParam:0
+           lParam:(sptr_t)MIN((NSInteger)9, MAX((NSInteger)0, prefs.paddingLeft))];
+    [sci message:SCI_SETMARGINRIGHT wParam:0
+           lParam:(sptr_t)MIN((NSInteger)9, MAX((NSInteger)0, prefs.paddingRight))];
+
+    [sci message:SCI_SETMOUSESELECTIONRECTANGULARSWITCH wParam:1 lParam:0];
+    [sci message:SCI_SETDRAGDROPENABLED wParam:prefs.selectedTextDragDrop ? 1 : 0 lParam:0];
 }
 
 #pragma mark - Typing mode

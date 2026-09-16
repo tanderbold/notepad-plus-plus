@@ -114,9 +114,74 @@ static long Utf8Len(NSString *s) {
     return [NSString stringWithFormat:@"</%@>", tag];
 }
 
+/// The languages Notepad++ treats as brace-structured for auto-indent.
+static BOOL LanguageUsesBraces(NSString *name) {
+    static NSSet *braced;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        braced = [NSSet setWithArray:@[@"c", @"cpp", @"java", @"cs", @"objc", @"php",
+                                       @"javascript", @"javascript.js", @"jsp", @"css",
+                                       @"perl", @"rust", @"powershell", @"json", @"json5",
+                                       @"typescript", @"go", @"golang", @"swift"]];
+    });
+    return [braced containsObject:(name ?: @"").lowercaseString];
+}
+
+- (void)maintainIndentationAfter:(int)character {
+    NppPreferences *prefs = [NppPreferences shared];
+    if (prefs.autoIndentMode == 0) return;
+
+    ScintillaView *sci = self.sci;
+    long eolMode = [sci message:SCI_GETEOLMODE];
+    BOOL isNewline = (eolMode == SC_EOL_CR) ? (character == '\r') : (character == '\n');
+    if (!isNewline) return;
+
+    long current = [sci message:SCI_LINEFROMPOSITION
+                          wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+    long previous = current - 1;
+    if (previous < 0) return;
+
+    // Pressing Enter on an empty line leaves the indentation alone.
+    if ([sci message:SCI_LINELENGTH wParam:(uptr_t)previous] == 0) return;
+
+    // The indent to carry over comes from the last line that had any text.
+    while (previous >= 0 && [sci message:SCI_LINELENGTH wParam:(uptr_t)previous] == 0) previous--;
+    if (previous < 0) return;
+    long indent = [sci message:SCI_GETLINEINDENTATION wParam:(uptr_t)previous];
+
+    if (prefs.autoIndentMode == 1 || !LanguageUsesBraces(self.currentDocument.language.name)) {
+        if (indent > 0) [sci message:SCI_SETLINEINDENTATION wParam:(uptr_t)current lParam:indent];
+        return;
+    }
+
+    // A brace opens a level, and a closing brace waiting on the same line is
+    // pushed onto one of its own so the block is left open.
+    long tabWidth = [sci message:SCI_GETTABWIDTH];
+    long caret = [sci message:SCI_GETCURRENTPOS];
+    long beforeNewline = caret - (eolMode == SC_EOL_CRLF ? 3 : 2);
+    unsigned char previousChar = beforeNewline >= 0
+        ? (unsigned char)[sci message:SCI_GETCHARAT wParam:(uptr_t)beforeNewline] : 0;
+    unsigned char nextChar = (unsigned char)[sci message:SCI_GETCHARAT wParam:(uptr_t)caret];
+
+    if (previousChar == '{') {
+        if (nextChar == '}') {
+            NSString *eol = eolMode == SC_EOL_CRLF ? @"\r\n" : eolMode == SC_EOL_CR ? @"\r" : @"\n";
+            [sci setStringProperty:SCI_INSERTTEXT parameter:caret value:eol];
+            [sci message:SCI_SETLINEINDENTATION wParam:(uptr_t)(current + 1) lParam:indent];
+        }
+        [sci message:SCI_SETLINEINDENTATION wParam:(uptr_t)current lParam:indent + tabWidth];
+    } else {
+        if (indent > 0) [sci message:SCI_SETLINEINDENTATION wParam:(uptr_t)current lParam:indent];
+    }
+}
+
 - (void)handleCharacterAdded:(int)character {
     NppPreferences *p = [NppPreferences shared];
     ScintillaView *sci = self.sci;
+
+    // Indentation is carried over before anything else, so the line is already
+    // in place when completion looks at it.
+    [self maintainIndentationAfter:character];
 
     // Auto-insertion first: it does not depend on completion being on.
     NSString *closing = [self autoInsertionForCharacter:character];

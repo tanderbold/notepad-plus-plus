@@ -14,6 +14,9 @@ typedef NS_ENUM(NSInteger, NppCompletionSource) {
 
 /// Called for every character typed; drives completion and auto-insertion.
 - (void)handleCharacterAdded:(int)character;
+/// Carries the previous line's indentation onto a new one, and in the languages
+/// that use braces opens a level after one. Called when a newline is typed.
+- (void)maintainIndentationAfter:(int)character;
 
 /// Candidates the current settings would offer for `prefix`.
 - (NSArray<NSString *> *)completionCandidatesForPrefix:(NSString *)prefix;

@@ -1,4 +1,5 @@
 #import "SearchCommands.h"
+#import "SettingsCommands.h"
 #import "EditCommands.h"
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
@@ -62,6 +63,13 @@ static int IndicatorFor(NSInteger style) {
 
 /// Byte offsets of every occurrence of `term`.
 - (NSArray<NSNumber *> *)occurrencesOf:(NSString *)term {
+    // Plain matching, which is what the callers that do not offer the choice
+    // have always used.
+    return [self occurrencesOf:term matchCase:NO wholeWord:NO];
+}
+
+- (NSArray<NSNumber *> *)occurrencesOf:(NSString *)term
+                             matchCase:(BOOL)matchCase wholeWord:(BOOL)wholeWord {
     ScintillaView *sci = self.sci;
     NSMutableArray *out = [NSMutableArray array];
     if (!term.length) return out;
@@ -72,7 +80,8 @@ static int IndicatorFor(NSInteger style) {
     while (from < docLen) {
         [sci message:SCI_SETTARGETSTART wParam:(uptr_t)from lParam:0];
         [sci message:SCI_SETTARGETEND wParam:(uptr_t)docLen lParam:0];
-        [sci message:SCI_SETSEARCHFLAGS wParam:0 lParam:0];
+        long flags = (matchCase ? SCFIND_MATCHCASE : 0) | (wholeWord ? SCFIND_WHOLEWORD : 0);
+        [sci message:SCI_SETSEARCHFLAGS wParam:(uptr_t)flags lParam:0];
         long hit = [sci message:SCI_SEARCHINTARGET wParam:(uptr_t)len lParam:(sptr_t)needle];
         if (hit < 0) break;
         [out addObject:@(hit)];
@@ -84,6 +93,16 @@ static int IndicatorFor(NSInteger style) {
 #pragma mark - Token styling
 
 - (NSUInteger)markAllOccurrencesOfSelection:(NSInteger)style {
+    // Mark All has its own case and whole-word settings, as it does in
+    // Notepad++; smart highlighting has separate ones and asks explicitly.
+    NppPreferences *prefs = [NppPreferences shared];
+    return [self markAllOccurrencesOfSelection:style
+                                     matchCase:prefs.markAllCaseSensitive
+                                     wholeWord:prefs.markAllWordOnly];
+}
+
+- (NSUInteger)markAllOccurrencesOfSelection:(NSInteger)style
+                                  matchCase:(BOOL)matchCase wholeWord:(BOOL)wholeWord {
     ScintillaView *sci = self.sci;
     NSString *term = [self selectedText];
     if (!term.length) { NSBeep(); return 0; }
@@ -92,7 +111,7 @@ static int IndicatorFor(NSInteger style) {
     [sci message:SCI_SETINDICATORCURRENT wParam:(uptr_t)ind lParam:0];
     [sci message:SCI_INDICATORCLEARRANGE wParam:0 lParam:[sci message:SCI_GETLENGTH]];
 
-    NSArray *hits = [self occurrencesOf:term];
+    NSArray *hits = [self occurrencesOf:term matchCase:matchCase wholeWord:wholeWord];
     long len = Utf8Len(term);
     for (NSNumber *hit in hits) {
         [sci message:SCI_INDICATORFILLRANGE wParam:(uptr_t)hit.longValue lParam:len];

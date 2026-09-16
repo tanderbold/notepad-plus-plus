@@ -15,6 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 // Token styling. style is 0..4, or NPPMAC_STYLE_COUNT for the Find Mark style.
 - (NSUInteger)markAllOccurrencesOfSelection:(NSInteger)style;
+/// The same, with the matching rules given rather than taken from the Mark All
+/// settings; smart highlighting has settings of its own.
+- (NSUInteger)markAllOccurrencesOfSelection:(NSInteger)style
+                                  matchCase:(BOOL)matchCase wholeWord:(BOOL)wholeWord;
 - (void)markOneOccurrenceOfSelection:(NSInteger)style;
 - (void)clearStyle:(NSInteger)style;
 - (void)clearAllStyles;

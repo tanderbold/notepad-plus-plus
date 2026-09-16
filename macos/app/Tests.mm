@@ -487,6 +487,127 @@ int NppMacRunTests(AppDelegate *app) {
               ([sv message:SCI_GETVIRTUALSPACEOPTIONS] & SCVS_USERACCESSIBLE) != 0);
         p.virtualSpace = NO;
         [ed applyEditorPreferences];
+
+        // Cut and Copy with nothing selected take the whole line. Notepad++ has
+        // this on by default and it is what people expect from it.
+        SetDoc(ed, @"first\nsecond\nthird\n");
+        [sv message:SCI_GOTOLINE wParam:1 lParam:0];
+        p.lineCopyCutWithoutSelection = YES;
+        [app copyText:nil];
+        SetDoc(ed, @"");
+        [app pasteText:nil];
+        BOOL copiedLine = [DocText(ed) isEqualToString:@"second\n"];
+
+        SetDoc(ed, @"first\nsecond\nthird\n");
+        [sv message:SCI_GOTOLINE wParam:1 lParam:0];
+        [app cutText:nil];
+        BOOL cutLine = [DocText(ed) isEqualToString:@"first\nthird\n"];
+
+        // With the setting off, an empty selection copies nothing.
+        p.lineCopyCutWithoutSelection = NO;
+        SetDoc(ed, @"alpha\n");
+        [sv message:SCI_GOTOPOS wParam:0 lParam:0];
+        [app copyText:nil];
+        SetDoc(ed, @"kept\n");
+        [app pasteText:nil];
+        BOOL leftAlone = [DocText(ed) containsString:@"kept"];
+        p.lineCopyCutWithoutSelection = YES;
+
+        Check(@"IDM_EDIT_COPY (whole line)",
+              @"with nothing selected, Cut and Copy take the line, unless the setting says not to",
+              copiedLine && cutLine && leftAlone);
+
+        // The current line can be plain, coloured, or framed.
+        p.currentLineHighlightMode = 0;
+        [ed applyEditorPreferences];
+        BOOL plain = [sv message:SCI_GETCARETLINEVISIBLE] == 0;
+        p.currentLineHighlightMode = 2; p.currentLineFrameWidth = 3;
+        [ed applyEditorPreferences];
+        BOOL framed = [sv message:SCI_GETCARETLINEVISIBLE] != 0 &&
+                      [sv message:SCI_GETCARETLINEFRAME] == 3;
+        p.currentLineHighlightMode = 1;
+        [ed applyEditorPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (current line)",
+              @"the current line can be left plain, coloured or framed",
+              plain && framed && [sv message:SCI_GETCARETLINEFRAME] == 0);
+
+        // Margins that can be turned off, and the padding around the text.
+        p.foldMarginShow = NO; p.bookmarkMarginShow = NO;
+        p.paddingLeft = 5; p.paddingRight = 7;
+        [ed applyEditorPreferences];
+        BOOL hidden = [sv message:SCI_GETMARGINWIDTHN wParam:1] == 0 &&
+                      [sv message:SCI_GETMARGINWIDTHN wParam:2] == 0 &&
+                      [sv message:SCI_GETMARGINLEFT] == 5 &&
+                      [sv message:SCI_GETMARGINRIGHT] == 7;
+        p.foldMarginShow = YES; p.bookmarkMarginShow = YES;
+        p.paddingLeft = 0; p.paddingRight = 0;
+        [ed applyEditorPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (margins and padding)",
+              @"the fold and bookmark margins can be hidden and the text can be given room",
+              hidden && [sv message:SCI_GETMARGINWIDTHN wParam:2] > 0);
+
+        // How a wrapped line continues.
+        p.lineWrapMethod = 2;
+        [ed applyEditorPreferences];
+        BOOL indented = [sv message:SCI_GETWRAPINDENTMODE] == SC_WRAPINDENT_INDENT;
+        p.lineWrapMethod = 1;
+        [ed applyEditorPreferences];
+        // Auto-indent. Notepad++ carries the previous line's indentation onto a
+        // new one, and in brace languages opens a level after an opening brace.
+        p.autoIndentMode = 1;
+        [ed setLanguageNamed:@"normal"];
+        // No trailing newline: the caret sits at the end of the text, which is
+        // where it is when Enter is actually pressed.
+        SetDoc(ed, @"        keep me");
+        [sv message:SCI_GOTOPOS wParam:(uptr_t)[sv message:SCI_GETLENGTH] lParam:0];
+        [sv setStringProperty:SCI_REPLACESEL parameter:0 value:@"\n"];
+        [ed maintainIndentationAfter:'\n'];
+        BOOL carried = [sv message:SCI_GETLINEINDENTATION
+                              wParam:(uptr_t)[sv message:SCI_LINEFROMPOSITION
+                                                    wParam:(uptr_t)[sv message:SCI_GETCURRENTPOS]]] == 8;
+
+        p.autoIndentMode = 2;
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"    if (x) {");
+        [sv message:SCI_GOTOPOS wParam:(uptr_t)[sv message:SCI_GETLENGTH] lParam:0];
+        [sv setStringProperty:SCI_REPLACESEL parameter:0 value:@"\n"];
+        [ed maintainIndentationAfter:'\n'];
+        long openedLine = [sv message:SCI_LINEFROMPOSITION
+                                 wParam:(uptr_t)[sv message:SCI_GETCURRENTPOS]];
+        BOOL opened = [sv message:SCI_GETLINEINDENTATION wParam:(uptr_t)openedLine] == 8;
+
+        // Off means off.
+        p.autoIndentMode = 0;
+        SetDoc(ed, @"        x");
+        [sv message:SCI_GOTOPOS wParam:(uptr_t)[sv message:SCI_GETLENGTH] lParam:0];
+        [sv setStringProperty:SCI_REPLACESEL parameter:0 value:@"\n"];
+        [ed maintainIndentationAfter:'\n'];
+        BOOL leftFlat = [sv message:SCI_GETLINEINDENTATION
+                               wParam:(uptr_t)[sv message:SCI_LINEFROMPOSITION
+                                                     wParam:(uptr_t)[sv message:SCI_GETCURRENTPOS]]] == 0;
+        p.autoIndentMode = 2;
+        [ed setLanguageNamed:@"normal"];
+        Check(@"IDM_SETTING_PREFERENCE (auto-indent)",
+              @"a new line keeps the indent above it, and a brace opens a level",
+              carried && opened && leftFlat);
+
+        // Mark All follows its own case and whole-word settings.
+        SetDoc(ed, @"cat cats CAT\n");
+        [sv message:SCI_SETSEL wParam:0 lParam:3];          // "cat"
+        p.markAllCaseSensitive = NO;  p.markAllWordOnly = YES;
+        NSUInteger loose = [ed markAllOccurrencesOfSelection:0];
+        p.markAllCaseSensitive = YES; p.markAllWordOnly = YES;
+        NSUInteger cased = [ed markAllOccurrencesOfSelection:0];
+        p.markAllCaseSensitive = YES; p.markAllWordOnly = NO;
+        NSUInteger anywhere = [ed markAllOccurrencesOfSelection:0];
+        p.markAllCaseSensitive = NO;  p.markAllWordOnly = YES;
+        Check(@"IDM_SEARCH_MARKALLEXT1 (options)",
+              @"Mark All matches by case and whole word as its settings say",
+              loose == 2 && cased == 1 && anywhere == 2);
+
+        Check(@"IDM_SETTING_PREFERENCE (wrap method)",
+              @"a wrapped line can continue plainly, aligned, or a level further in",
+              indented && [sv message:SCI_GETWRAPINDENTMODE] == SC_WRAPINDENT_SAME);
     }
 
     printf("\n== Sorting: the way Notepad++ sorts ==\n");

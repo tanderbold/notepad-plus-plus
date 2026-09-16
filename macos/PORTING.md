@@ -249,6 +249,13 @@ the trailing punctuation a sentence leaves behind -- a closing bracket only coun
 when an opening one inside the URL answers it. Notepad++'s own corpus for this is
 bundled and all 148 of its cases are checked.
 
+Notepad++'s own settings model -- `ScintillaViewParams` and `NppGUI` in
+Parameters.h -- is the other list worth comparing against, and it found what the
+Scintilla-message comparison could not: auto-indent, Cut and Copy taking the
+whole line when nothing is selected, the current line's highlight mode, the fold
+and bookmark margins, the wrap method, the padding around the text, and Mark
+All's own case and whole-word settings.
+
 Which Scintilla messages Notepad++ sends and which this port sends can be
 compared directly, and doing so is a good way to find a setting that was never
 carried over. It turned up five: the typing mode (INS/OVR, which Notepad++ shows

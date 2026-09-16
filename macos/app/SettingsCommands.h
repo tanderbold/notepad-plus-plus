@@ -160,6 +160,40 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL scrollBeyondLastLine;
 @property (nonatomic) BOOL virtualSpace;
 
+/// Auto-indent: 0 off, 1 keep the previous line's indent, 2 also open a level
+/// after a brace in the languages that use them. Notepad++ defaults to 2.
+@property (nonatomic) NSInteger autoIndentMode;
+
+/// Mark All: whether it matches by case and whole words.
+@property (nonatomic) BOOL markAllCaseSensitive;
+@property (nonatomic) BOOL markAllWordOnly;
+
+/// Cut and Copy with nothing selected take the whole line, as they do in
+/// Notepad++, where this is on by default.
+@property (nonatomic) BOOL lineCopyCutWithoutSelection;
+
+/// The current line: 0 nothing, 1 a coloured background, 2 a frame of
+/// `currentLineFrameWidth` pixels.
+@property (nonatomic) NSInteger currentLineHighlightMode;
+@property (nonatomic) NSInteger currentLineFrameWidth;      // 1..6
+
+/// Which margins are shown beside the text.
+@property (nonatomic) BOOL foldMarginShow;
+@property (nonatomic) BOOL bookmarkMarginShow;
+
+/// How a wrapped line is laid out: 0 plain, 1 aligned with the line it
+/// continues, 2 indented one level further.
+@property (nonatomic) NSInteger lineWrapMethod;
+
+/// Blank space kept to the left and right of the text, 0..9 pixels.
+@property (nonatomic) NSInteger paddingLeft;
+@property (nonatomic) NSInteger paddingRight;
+
+/// Whether a right-click leaves the selection alone, and whether selected text
+/// can be dragged.
+@property (nonatomic) BOOL rightClickKeepsSelection;
+@property (nonatomic) BOOL selectedTextDragDrop;
+
 /// Commands saved under a name, each of which gets its own Run-menu entry.
 @property (nonatomic, copy) NSArray<NSDictionary *> *savedRunCommands;
 

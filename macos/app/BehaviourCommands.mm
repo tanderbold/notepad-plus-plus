@@ -356,7 +356,9 @@ static BOOL UrlLooksReal(NSString *candidate) {
     NppMatchFlags flags = NppMatchNone;
     if ([NppPreferences shared].smartHighlightMatchCase) flags |= NppMatchCase;
     if ([NppPreferences shared].smartHighlightWholeWord) flags |= NppMatchWholeWord;
-    if (flags == NppMatchNone) return [self markAllOccurrencesOfSelection:style];
+    if (flags == NppMatchNone) {
+        return [self markAllOccurrencesOfSelection:style matchCase:NO wholeWord:NO];
+    }
 
     // With either refinement on, the match rules come from AdvancedEditCommands.
     ScintillaView *view = self.sci;

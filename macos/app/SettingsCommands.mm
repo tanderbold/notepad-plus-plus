@@ -90,6 +90,20 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"caretBlinkRate"): @530,          // the Windows default
         Key(@"scrollBeyondLastLine"): @YES,
         Key(@"virtualSpace"): @NO,
+        // These defaults are Notepad++'s own, from ScintillaViewParams.
+        Key(@"autoIndentMode"): @2,            // Notepad++ defaults to advanced
+        Key(@"markAllCaseSensitive"): @NO,
+        Key(@"markAllWordOnly"): @YES,
+        Key(@"lineCopyCutWithoutSelection"): @YES,
+        Key(@"currentLineHighlightMode"): @1,
+        Key(@"currentLineFrameWidth"): @1,
+        Key(@"foldMarginShow"): @YES,
+        Key(@"bookmarkMarginShow"): @YES,
+        Key(@"lineWrapMethod"): @1,            // aligned
+        Key(@"paddingLeft"): @0,
+        Key(@"paddingRight"): @0,
+        Key(@"rightClickKeepsSelection"): @NO,
+        Key(@"selectedTextDragDrop"): @YES,
         Key(@"autoCompleteOnInput"): @NO,
         Key(@"autoCompleteSource"): @2,
         Key(@"autoCompleteThreshold"): @3,
@@ -186,6 +200,19 @@ NPP_PREF_INT(caretWidth, setCaretWidth, @"caretWidth")
 NPP_PREF_INT(caretBlinkRate, setCaretBlinkRate, @"caretBlinkRate")
 NPP_PREF_BOOL(scrollBeyondLastLine, setScrollBeyondLastLine, @"scrollBeyondLastLine")
 NPP_PREF_BOOL(virtualSpace, setVirtualSpace, @"virtualSpace")
+NPP_PREF_INT(autoIndentMode, setAutoIndentMode, @"autoIndentMode")
+NPP_PREF_BOOL(markAllCaseSensitive, setMarkAllCaseSensitive, @"markAllCaseSensitive")
+NPP_PREF_BOOL(markAllWordOnly, setMarkAllWordOnly, @"markAllWordOnly")
+NPP_PREF_BOOL(lineCopyCutWithoutSelection, setLineCopyCutWithoutSelection, @"lineCopyCutWithoutSelection")
+NPP_PREF_INT(currentLineHighlightMode, setCurrentLineHighlightMode, @"currentLineHighlightMode")
+NPP_PREF_INT(currentLineFrameWidth, setCurrentLineFrameWidth, @"currentLineFrameWidth")
+NPP_PREF_BOOL(foldMarginShow, setFoldMarginShow, @"foldMarginShow")
+NPP_PREF_BOOL(bookmarkMarginShow, setBookmarkMarginShow, @"bookmarkMarginShow")
+NPP_PREF_INT(lineWrapMethod, setLineWrapMethod, @"lineWrapMethod")
+NPP_PREF_INT(paddingLeft, setPaddingLeft, @"paddingLeft")
+NPP_PREF_INT(paddingRight, setPaddingRight, @"paddingRight")
+NPP_PREF_BOOL(rightClickKeepsSelection, setRightClickKeepsSelection, @"rightClickKeepsSelection")
+NPP_PREF_BOOL(selectedTextDragDrop, setSelectedTextDragDrop, @"selectedTextDragDrop")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
