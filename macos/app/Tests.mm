@@ -826,8 +826,20 @@ int NppMacRunTests(AppDelegate *app) {
         [[NSPasteboard generalPasteboard] clearContents];
         [[NSPasteboard generalPasteboard] setString:@"pasted" forType:NSPasteboardTypeString];
 
+        // A window only becomes key while the application is active, and a test
+        // run is not activated by anyone.
+        [NSApp activateIgnoringOtherApps:YES];
         [findPanel makeKeyAndOrderFront:nil];
         [findPanel makeFirstResponder:replaceField];
+        // Becoming key goes through the window server, so it is not in effect
+        // the instant it is asked for. Without waiting, the paste sometimes
+        // finds no key window and goes to the document -- which is the very
+        // thing this is checking.
+        NSDate *keyDeadline = [NSDate dateWithTimeIntervalSinceNow:2];
+        while (NSApp.keyWindow != findPanel && [keyDeadline timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                     beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+        }
         [app pasteText:nil];
         NSString *fieldText = [[findPanel fieldEditor:NO forObject:replaceField] string]
                               ?: replaceField.stringValue;
