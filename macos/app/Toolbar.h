@@ -18,6 +18,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// What AppKit is actually showing, which can differ from the request above.
 @property (nonatomic, readonly) NSToolbarDisplayMode effectiveDisplayMode;
 
+/// Marks a button as active. The record button is tinted red while a macro is
+/// being recorded, which is the only sign the editor gives that it is.
+- (void)setActive:(BOOL)active forCommand:(NSString *)command;
+- (BOOL)isActiveForCommand:(NSString *)command;
+
 /// Identifiers of the buttons currently on the bar; used by tests.
 - (NSArray<NSString *> *)itemIdentifiers;
 /// The selector a given button triggers, or NULL.

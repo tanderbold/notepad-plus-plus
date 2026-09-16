@@ -3051,6 +3051,18 @@ int NppMacRunTests(AppDelegate *app) {
         BOOL hidden = ![tb visible];
         p.showToolbar = YES; [app applyToolbarPreferences];
         BOOL shown = [tb visible];
+        // While a macro is recording, the record button is red. The editor
+        // gave no sign at all that recording was going on.
+        NppToolbar *recordBar = [app valueForKey:@"toolbar"];
+        BOOL quietBefore = ![recordBar isActiveForCommand:@"IDM_MACRO_STARTRECORDINGMACRO"];
+        [app macroStart:nil];
+        BOOL litWhileRecording = [recordBar isActiveForCommand:@"IDM_MACRO_STARTRECORDINGMACRO"];
+        [app macroStop:nil];
+        Check(@"IDM_MACRO_STARTRECORDINGMACRO (shown while recording)",
+              @"the record button is marked while recording and clears when it stops",
+              quietBefore && litWhileRecording &&
+              ![recordBar isActiveForCommand:@"IDM_MACRO_STARTRECORDINGMACRO"]);
+
         Check(@"IDM_SETTING_PREFERENCE (toolbar visibility)",
               @"the setting shows and hides the bar", hidden && shown);
 

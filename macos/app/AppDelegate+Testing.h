@@ -33,6 +33,8 @@
 - (void)toggleFileBrowser:(id)sender;
 - (void)toggleDocumentList:(id)sender;
 - (void)applyToolbarPreferences;
+- (void)macroStart:(id)sender;
+- (void)macroStop:(id)sender;
 // View
 - (void)zoomIn:(id)sender;
 - (void)zoomOut:(id)sender;

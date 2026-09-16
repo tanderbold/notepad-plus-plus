@@ -84,6 +84,9 @@ static NSString *IdentifierForCommand(NSString *command) {
 @property (nonatomic) NSInteger requestedIconSize;
 /// Buttons in the order Notepad++ arranges them; a separator is an empty entry.
 @property (nonatomic, strong) NSArray<NSDictionary *> *order;
+/// Commands drawn as active. Kept here rather than on the item so the image,
+/// which decides its own colours at draw time, can ask about it.
+@property (nonatomic, strong) NSMutableSet<NSString *> *activeCommands;
 @end
 
 @implementation NppToolbar
@@ -120,6 +123,7 @@ static NSString *IdentifierForCommand(NSString *command) {
     _window = window;
     _actionTarget = target;
     _order = [self loadOrder];
+    _activeCommands = [NSMutableSet set];
 
     _toolbar = [[NSToolbar alloc] initWithIdentifier:@"NppMacToolbar"];
     _toolbar.delegate = self;
@@ -185,7 +189,26 @@ static NSString *IdentifierForCommand(NSString *command) {
 /// Notepad++ has a light and a dark version of every icon. Rather than watching
 /// for the appearance to change, the image decides which one to draw each time
 /// it is drawn, which is also correct for a window that is not the active one.
-- (NSImage *)imageNamed:(NSString *)name label:(NSString *)label {
+- (BOOL)isActiveForCommand:(NSString *)command {
+    return [self.activeCommands containsObject:command ?: @""];
+}
+
+- (void)setActive:(BOOL)active forCommand:(NSString *)command {
+    if (!command.length) return;
+    if (active) [self.activeCommands addObject:command];
+    else [self.activeCommands removeObject:command];
+
+    // The image draws itself from this state, so it only has to be told to
+    // draw again.
+    NSString *identifier = IdentifierForCommand(command);
+    for (NSToolbarItem *item in self.toolbar.items) {
+        if (![item.itemIdentifier isEqualToString:identifier]) continue;
+        [item.image recache];
+        item.image = item.image;
+    }
+}
+
+- (NSImage *)imageNamed:(NSString *)name label:(NSString *)label command:(NSString *)command {
     NSBundle *bundle = [NSBundle mainBundle];
     NSString *light = [bundle pathForResource:name ofType:@"png" inDirectory:@"toolbar/light"];
     NSString *dark  = [bundle pathForResource:name ofType:@"png" inDirectory:@"toolbar/dark"];
@@ -197,6 +220,7 @@ static NSString *IdentifierForCommand(NSString *command) {
 
     // The files hold the largest size Notepad++ ships, so drawing them into a
     // 24-point image keeps them sharp on a Retina display.
+    __weak NppToolbar *weakSelf = self;
     NSImage *image = [NSImage imageWithSize:NSMakeSize(24, 24) flipped:NO
                              drawingHandler:^BOOL(NSRect rect) {
         NSAppearance *appearance = NSAppearance.currentDrawingAppearance ?: NSAppearance.currentAppearance;
@@ -206,6 +230,13 @@ static NSString *IdentifierForCommand(NSString *command) {
         NSImage *chosen = (isDark ? darkImage : lightImage) ?: (lightImage ?: darkImage);
         [chosen drawInRect:rect fromRect:NSZeroRect operation:NSCompositingOperationSourceOver
                   fraction:1.0];
+
+        // An active button keeps its shape and takes the colour on top of it,
+        // so the icon still reads as itself.
+        if ([weakSelf isActiveForCommand:command]) {
+            [[NSColor systemRedColor] set];
+            NSRectFillUsingOperation(rect, NSCompositingOperationSourceAtop);
+        }
         return YES;
     }];
     image.accessibilityDescription = label;
@@ -265,9 +296,10 @@ static NSString *IdentifierForCommand(NSString *command) {
         item.action = NSSelectorFromString(gSpecs[i].selectorName);
 
         NSDictionary *row = [self orderRowForCommand:gSpecs[i].command];
-        item.enabledImage = [self imageNamed:row[@"icon"] ?: @"" label:gSpecs[i].label];
-        item.disabledImage = [self imageNamed:row[@"disabled"] ?: @"" label:gSpecs[i].label]
-                             ?: item.enabledImage;
+        item.enabledImage = [self imageNamed:row[@"icon"] ?: @"" label:gSpecs[i].label
+                                    command:gSpecs[i].command];
+        item.disabledImage = [self imageNamed:row[@"disabled"] ?: @"" label:gSpecs[i].label
+                                      command:gSpecs[i].command] ?: item.enabledImage;
         item.image = item.enabledImage ?: item.disabledImage;
         return item;
     }

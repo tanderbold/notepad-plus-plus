@@ -1421,8 +1421,23 @@
 
 #pragma mark - Macro
 
-- (void)macroStart:(id)sender { [self.editor startRecordingMacro]; }
-- (void)macroStop:(id)sender  { [self.editor stopRecordingMacro]; }
+- (void)macroStart:(id)sender {
+    [self.editor startRecordingMacro];
+    [self showRecordingState];
+}
+
+- (void)macroStop:(id)sender {
+    [self.editor stopRecordingMacro];
+    [self showRecordingState];
+}
+
+/// While a macro is being recorded the record button is red. Nothing else in
+/// the window says that recording is going on.
+- (void)showRecordingState {
+    BOOL recording = [self.editor recordingMacro];
+    [self.toolbar setActive:recording forCommand:@"IDM_MACRO_STARTRECORDINGMACRO"];
+    [self.editor refreshChrome];
+}
 - (void)macroPlay:(id)sender  { [self.editor playbackMacro:1]; }
 
 - (void)macroSave:(id)sender {
