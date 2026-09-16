@@ -1,3 +1,4 @@
+#import "NppPanel.h"
 #import "AuxPanels.h"
 #import "EditorController.h"
 #import "ScintillaView.h"
@@ -21,7 +22,7 @@ static const NSInteger kLastCode = 255;
     _editor = editor;
 
     NSRect frame = NSMakeRect(0, 0, 260, 420);
-    _panel = [[NSPanel alloc] initWithContentRect:frame
+    _panel = [[NppPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
                                           backing:NSBackingStoreBuffered defer:YES];
@@ -104,7 +105,7 @@ static const NSInteger kLastCode = 255;
     _lastChangeCount = [NSPasteboard generalPasteboard].changeCount;
 
     NSRect frame = NSMakeRect(0, 0, 320, 360);
-    _panel = [[NSPanel alloc] initWithContentRect:frame
+    _panel = [[NppPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
                                           backing:NSBackingStoreBuffered defer:YES];

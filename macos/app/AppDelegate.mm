@@ -1,3 +1,4 @@
+#import "NppPanel.h"
 #import "AppDelegate.h"
 #import <objc/message.h>
 #import "EditorController.h"
@@ -984,7 +985,7 @@
 
     if (!self.jsonTreePanel) {
         NSRect frame = NSMakeRect(0, 0, 460, 500);
-        self.jsonTreePanel = [[NSPanel alloc] initWithContentRect:frame
+        self.jsonTreePanel = [[NppPanel alloc] initWithContentRect:frame
             styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                        NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
               backing:NSBackingStoreBuffered defer:YES];
@@ -1237,7 +1238,7 @@
 
     if (!self.ftpPanel) {
         NSRect frame = NSMakeRect(0, 0, 420, 460);
-        self.ftpPanel = [[NSPanel alloc] initWithContentRect:frame
+        self.ftpPanel = [[NppPanel alloc] initWithContentRect:frame
             styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                        NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
               backing:NSBackingStoreBuffered defer:YES];
@@ -2275,7 +2276,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 
 - (void)buildFindPanel {
     NSRect frame = NSMakeRect(0, 0, 520, 250);
-    self.findPanel = [[NSPanel alloc] initWithContentRect:frame
+    self.findPanel = [[NppPanel alloc] initWithContentRect:frame
                                                 styleMask:(NSWindowStyleMaskTitled |
                                                            NSWindowStyleMaskClosable |
                                                            NSWindowStyleMaskUtilityWindow)
@@ -2316,7 +2317,10 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     self.inSelectionBox = [self findCheckbox:@"In selection"      at:NSMakePoint(240, 56)  in:content];
     self.wrapBox.state = NSControlStateValueOn;
 
-    [self findButton:@"Find Next"   action:@selector(findPanelNext:)       at:NSMakePoint(16, 16)  in:content];
+    NSButton *findNext =
+        [self findButton:@"Find Next" action:@selector(findPanelNext:) at:NSMakePoint(16, 16) in:content];
+    // Enter does what the dialog is for, as it does in Notepad++.
+    findNext.keyEquivalent = @"\r";
     [self findButton:@"Count"       action:@selector(findPanelCount:)      at:NSMakePoint(128, 16) in:content];
     [self findButton:@"Replace"     action:@selector(findPanelReplace:)    at:NSMakePoint(240, 16) in:content];
     [self findButton:@"Replace All" action:@selector(findPanelReplaceAll:) at:NSMakePoint(352, 16) in:content];

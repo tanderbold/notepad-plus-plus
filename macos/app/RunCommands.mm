@@ -1,3 +1,4 @@
+#import "NppPanel.h"
 #import "RunCommands.h"
 #import "SettingsCommands.h"
 #import "ScintillaView.h"
@@ -54,7 +55,7 @@ static NSString *SliceBytes(NSData *data, long start, long end) {
     _editor = editor;
 
     NSRect frame = NSMakeRect(0, 0, 640, 260);
-    _panel = [[NSPanel alloc] initWithContentRect:frame
+    _panel = [[NppPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
                                           backing:NSBackingStoreBuffered defer:YES];

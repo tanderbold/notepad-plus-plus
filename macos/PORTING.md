@@ -249,6 +249,12 @@ the trailing punctuation a sentence leaves behind -- a closing bracket only coun
 when an opening one inside the URL answers it. Notepad++'s own corpus for this is
 bundled and all 148 of its cases are checked.
 
+Every panel is an `NppPanel`, which does what a dialog on this platform is
+expected to do and what AppKit gives only to sheets and alerts: Escape puts it
+away, and it opens where the user last left it or, failing that, in the middle of
+the screen. A window made with a content rectangle at the origin opens in the
+bottom left corner, which is where all of them were appearing.
+
 Preferences are laid out as Notepad++ lays them out: the categories down the
 left, one page at a time on the right, under its own names for them -- General,
 Toolbar, Editing 1 and 2, Dark Mode, Margins/Border/Edge, and the rest. A test

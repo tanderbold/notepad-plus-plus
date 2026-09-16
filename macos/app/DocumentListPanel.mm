@@ -1,3 +1,4 @@
+#import "NppPanel.h"
 #import "DocumentListPanel.h"
 #import "EditorController.h"
 
@@ -14,7 +15,7 @@
     _editor = editor;
 
     NSRect frame = NSMakeRect(0, 0, 280, 360);
-    _panel = [[NSPanel alloc] initWithContentRect:frame
+    _panel = [[NppPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
                                           backing:NSBackingStoreBuffered

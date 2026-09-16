@@ -1,3 +1,4 @@
+#import "NppPanel.h"
 #import "FunctionListPanel.h"
 #import "EditorController.h"
 #import "LanguageCatalog.h"
@@ -46,7 +47,7 @@ static NSString *PatternForLanguage(NSString *lang) {
     _entries = @[];
 
     NSRect frame = NSMakeRect(0, 0, 260, 400);
-    _panel = [[NSPanel alloc] initWithContentRect:frame
+    _panel = [[NppPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
                                           backing:NSBackingStoreBuffered defer:YES];

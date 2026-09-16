@@ -1,3 +1,4 @@
+#import "NppPanel.h"
 #import "SettingsPanels.h"
 #import "SettingsCommands.h"
 #import "EditorController.h"
@@ -33,7 +34,7 @@
     _pages = [NSMutableDictionary dictionary];
 
     NSRect frame = NSMakeRect(0, 0, 700, 560);
-    _panel = [[NSPanel alloc] initWithContentRect:frame
+    _panel = [[NppPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskResizable |
                                                    NSWindowStyleMaskUtilityWindow)
@@ -80,6 +81,7 @@
     apply.bezelStyle = NSBezelStyleRounded;
     apply.target = self;
     apply.action = @selector(apply:);
+    apply.keyEquivalent = @"\r";              // Enter applies
     apply.autoresizingMask = NSViewMinXMargin;
     [content addSubview:apply];
 
@@ -550,7 +552,7 @@ static NSColor *ColourFromHexString(NSString *hex) {
     _editor = editor;
 
     NSRect frame = NSMakeRect(0, 0, 460, 420);
-    _panel = [[NSPanel alloc] initWithContentRect:frame
+    _panel = [[NppPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
                                           backing:NSBackingStoreBuffered defer:YES];
@@ -731,7 +733,7 @@ static NSString *HexOfColour(NSColor *colour) {
     _editor = editor;
 
     NSRect frame = NSMakeRect(0, 0, 520, 460);
-    _panel = [[NSPanel alloc] initWithContentRect:frame
+    _panel = [[NppPanel alloc] initWithContentRect:frame
                                         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                                                    NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow)
                                           backing:NSBackingStoreBuffered defer:YES];

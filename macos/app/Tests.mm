@@ -16,6 +16,7 @@
 #import "SettingsCommands.h"
 #import "SettingsPanels.h"
 #import "Toolbar.h"
+#import "NppPanel.h"
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
@@ -872,6 +873,69 @@ int NppMacRunTests(AppDelegate *app) {
                 }
             }
         }
+        // A dialog is expected to answer Enter and Escape. None of these panels
+        // did: Enter did nothing at all, and Escape left them on screen.
+        [app buildFindPanel];
+        NSPanel *findDialog = [app valueForKey:@"findPanel"];
+        PreferencesWindow *prefsForKeys = [[PreferencesWindow alloc] initWithEditor:ed];
+        NSPanel *prefsDialog = [prefsForKeys valueForKey:@"panel"];
+
+        NSMutableArray *noDefault = [NSMutableArray array];
+        NSMutableArray *noEscape = [NSMutableArray array];
+        NSArray *dialogs = @[@[@"Find", findDialog], @[@"Preferences", prefsDialog]];
+        for (NSArray *pair in dialogs) {
+            NSPanel *dialog = pair[1];
+
+            BOOL hasDefault = NO;
+            NSMutableArray *views = [dialog.contentView.subviews mutableCopy];
+            while (views.count) {
+                NSView *view = views.firstObject;
+                [views removeObjectAtIndex:0];
+                [views addObjectsFromArray:view.subviews];
+                if ([view isKindOfClass:NSButton.class] &&
+                    [[(NSButton *)view keyEquivalent] isEqualToString:@"\r"]) hasDefault = YES;
+            }
+            if (!hasDefault) [noDefault addObject:pair[0]];
+
+            [dialog orderFront:nil];
+            [dialog cancelOperation:nil];       // what Escape sends
+            if (dialog.isVisible) [noEscape addObject:pair[0]];
+            [dialog orderOut:nil];
+        }
+        // A panel made with a content rectangle at the origin opens in the
+        // bottom left corner of the screen. They should come up in the middle.
+        //
+        // The panel under test is made here with a name nothing has used, so
+        // that a position remembered from a previous run cannot stand in for
+        // the placing and make this pass when it should not.
+        NppPanel *fresh = [[NppPanel alloc]
+            initWithContentRect:NSMakeRect(0, 0, 420, 260)
+                      styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                                 NSWindowStyleMaskUtilityWindow)
+                        backing:NSBackingStoreBuffered defer:YES];
+        fresh.title = [NSString stringWithFormat:@"Placement check %@",
+                       [[NSUUID UUID] UUIDString]];
+        [fresh orderFront:nil];
+        NSRect screen = fresh.screen.visibleFrame;
+        if (NSIsEmptyRect(screen)) screen = NSScreen.mainScreen.visibleFrame;
+        NSPoint middle = NSMakePoint(NSMidX(fresh.frame), NSMidY(fresh.frame));
+        // Centring is not exact -- AppKit places a window a little above the
+        // middle -- so this only asks that it is nowhere near a corner.
+        BOOL centred = fabs(middle.x - NSMidX(screen)) <= NSWidth(screen) / 4 &&
+                       fabs(middle.y - NSMidY(screen)) <= NSHeight(screen) / 3;
+        [fresh orderOut:nil];
+        Check(@"IDM_SETTING_PREFERENCE (dialog position)",
+              @"a dialog opens near the middle of the screen, not in a corner",
+              centred);
+
+        Check(@"IDM_SETTING_PREFERENCE (dialog keys)",
+              @"Enter does the dialog's job and Escape puts it away",
+              noDefault.count == 0 && noEscape.count == 0);
+        if (noDefault.count) printf("       без действия на Enter: %s\n",
+            [[noDefault componentsJoinedByString:@", "] UTF8String]);
+        if (noEscape.count) printf("       не закрываются по Escape: %s\n",
+            [[noEscape componentsJoinedByString:@", "] UTF8String]);
+
         Check(@"IDM_EDIT_PASTE (no shortcut is taken)",
               @"nothing on the menu takes an editing shortcut without offering it to the field first",
               stealing.count == 0);
