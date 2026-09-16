@@ -2542,7 +2542,8 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
             ? [[NSString alloc] initWithData:[bytes subdataWithRange:NSMakeRange(start, end - start)]
                                     encoding:NSUTF8StringEncoding]
             : @"";
-        [report appendFormat:@"\tLine %ld: %@\n", line + 1, text ?: @""];
+        [report appendFormat:@"\tLine %ld: %@\n", line + 1,
+                             [EditorController singleReportLine:text ?: @""]];
     }
     [report appendFormat:@"\n%lu hit%@\n", (unsigned long)matches.count,
                          matches.count == 1 ? @"" : @"s"];

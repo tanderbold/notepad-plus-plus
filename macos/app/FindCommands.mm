@@ -32,6 +32,11 @@
 
 @implementation EditorController (FindCommands)
 
++ (NSString *)singleReportLine:(NSString *)text {
+    if (!text || [text rangeOfString:@"\r"].location == NSNotFound) return text ?: @"";
+    return [text stringByReplacingOccurrencesOfString:@"\r" withString:@""];
+}
+
 #pragma mark - Extended escapes
 
 + (NSString *)convertExtendedToString:(NSString *)query {
@@ -445,7 +450,8 @@
                 continue;
             }
             inFile++;
-            [block appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1), lines[i]];
+            [block appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1),
+                                [EditorController singleReportLine:lines[i]]];
         }
         if (!inFile) return;
         matchedFiles++;
@@ -548,7 +554,12 @@
                 NSRange found = [regex firstMatchInData:line range:NSMakeRange(0, line.length)];
                 if (found.location == NSNotFound) continue;
                 inFile++;
-                [block appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1), lines[i]];
+                // A file with CR or mixed line ends leaves carriage returns in
+                // what was read; written out as they are they would each start
+                // a fresh line in the report, and every line below would then
+                // stand for something other than what it says.
+                [block appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1),
+                                    [EditorController singleReportLine:lines[i]]];
             }
             if (inFile) {
                 matchedFiles++;

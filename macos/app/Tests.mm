@@ -636,7 +636,7 @@ int NppMacRunTests(AppDelegate *app) {
         sptr_t py = [ed.sci message:SCI_POINTYFROMPOSITION wParam:0 lParam:(sptr_t)hitPos];
         NSView *sciContent = [ed.sci content];
         NSPoint inWindow = [sciContent convertPoint:NSMakePoint(px + 1, py + 4) toView:nil];
-        NSTimeInterval now = [NSProcessInfo processInfo].systemUptime;
+        NSTimeInterval now = [NSProcessInfo processInfo].systemUptime + 10;
         for (NSUInteger click = 1; click <= 2; ++click) {
             NSEvent *down = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown
                                                location:inWindow modifierFlags:0
@@ -661,6 +661,79 @@ int NppMacRunTests(AppDelegate *app) {
               [ed.currentDocument.path isEqualToString:target] && clickedLine == 2 &&
               (NSInteger)ed.documents.count == beforeTabs + 1);
 
+        // The whole way round, as anyone actually does it: the panel runs the
+        // search, the results tab fills, and a double click on a hit line in it
+        // opens the file. Everything above builds the report by hand; this does
+        // not, so it catches what the report really looks like.
+        for (NSInteger i = (NSInteger)ed.documents.count - 1; i >= 0; --i) {
+            if ([ed.documents[(NSUInteger)i].path isEqualToString:target]) {
+                [ed closeDocumentAtIndex:i discardChanges:YES];
+            }
+        }
+        [app openFindPanelOnTab:2];
+        [[app valueForKey:@"findField"] setStringValue:@"needle"];
+        [[app valueForKey:@"directoryField"] setStringValue:root];
+        [[app valueForKey:@"filtersField"] setStringValue:@""];
+        [app findPanelFindInFiles:nil];
+        NSDate *until = [NSDate dateWithTimeIntervalSinceNow:30];
+        while ([app valueForKey:@"runningSearch"] && [until timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                     beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        }
+        [[app valueForKey:@"findPanel"] orderOut:nil];
+
+        NSString *live = [ed.sci string] ?: @"";
+        NSArray<NSString *> *liveLines = [live componentsSeparatedByString:@"\n"];
+        NSInteger liveHit = -1;
+        for (NSUInteger i = 0; i < liveLines.count; ++i) {
+            if ([liveLines[i] hasPrefix:@"\tLine "]) { liveHit = (NSInteger)i; break; }
+        }
+        BOOL liveResultsShown = [ed.currentDocument.displayName isEqualToString:@"Search results"];
+        NSInteger liveTabs = (NSInteger)ed.documents.count;
+
+        sptr_t livePos = [ed.sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)MAX(liveHit, 0) lParam:0] + 4;
+        sptr_t lx = [ed.sci message:SCI_POINTXFROMPOSITION wParam:0 lParam:(sptr_t)livePos];
+        sptr_t ly = [ed.sci message:SCI_POINTYFROMPOSITION wParam:0 lParam:(sptr_t)livePos];
+        NSView *liveContent = [ed.sci content];
+        NSPoint livePoint = [liveContent convertPoint:NSMakePoint(lx + 1, ly + 4) toView:nil];
+        // Put through AppKit's own queue rather than handed to the view: the
+        // window has to hit-test the point and route it, which is what a real
+        // mouse gets and what calling mouseDown: directly skips.
+        [ed.window makeKeyAndOrderFront:nil];
+        NSTimeInterval base = [NSProcessInfo processInfo].systemUptime + 30;
+        for (NSUInteger click = 1; click <= 2; ++click) {
+            [NSApp postEvent:[NSEvent mouseEventWithType:NSEventTypeLeftMouseDown
+                                                location:livePoint modifierFlags:0
+                                               timestamp:base + click * 0.05
+                                            windowNumber:ed.window.windowNumber
+                                                 context:nil eventNumber:(NSInteger)click
+                                              clickCount:(NSInteger)click pressure:1]
+                     atStart:NO];
+            [NSApp postEvent:[NSEvent mouseEventWithType:NSEventTypeLeftMouseUp
+                                                location:livePoint modifierFlags:0
+                                               timestamp:base + click * 0.05 + 0.01
+                                            windowNumber:ed.window.windowNumber
+                                                 context:nil eventNumber:(NSInteger)click
+                                              clickCount:(NSInteger)click pressure:1]
+                     atStart:NO];
+        }
+        NSDate *settle = [NSDate dateWithTimeIntervalSinceNow:2];
+        while ([settle timeIntervalSinceNow] > 0 && !ed.currentDocument.path) {
+            NSEvent *queued = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                                 untilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]
+                                                    inMode:NSDefaultRunLoopMode dequeue:YES];
+            if (queued) [NSApp sendEvent:queued];
+        }
+        long liveCaret = [ed.sci message:SCI_LINEFROMPOSITION
+                                 wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
+                                 lParam:0];
+        Check(@"IDM_SEARCH_FINDINFILES (the whole way round)",
+              @"running the search from the panel and double clicking a hit in the "
+              @"results it produced opens that file on that line",
+              liveResultsShown && liveHit > 0 &&
+              [ed.currentDocument.path isEqualToString:target] && liveCaret == 2 &&
+              (NSInteger)ed.documents.count == liveTabs + 1);
+
         // A search of the open document writes no per-file heading, only
         // 'Search "what" in <document>' at the top. Its results have to lead
         // back to the document just the same, which is what went wrong: the
@@ -679,6 +752,49 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_SEARCH_FINDALL (open a result)",
               @"results from searching the open document lead back to it as well",
               [ownPath isEqualToString:target] && ownLine == 3 && ownOpened && ownCaret == 2);
+
+        // A file whose lines end in CR alone, or that mixes endings, used to
+        // throw the whole report out of step: the carriage returns went into it
+        // as they were, Scintilla counted each one as a line of its own, and
+        // from there every result pointed at the wrong line or at nothing.
+        NSString *crRoot = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp_fif_cr"];
+        [[NSFileManager defaultManager] removeItemAtPath:crRoot error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:crRoot
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        NSString *crFile = [crRoot stringByAppendingPathComponent:@"old_mac.txt"];
+        // The first line carries carriage returns, the second is an ordinary
+        // line below it: that second hit is the one a shifted report loses.
+        [@"alpha\rbeta needle\rgamma\nsecond needle here\n" writeToFile:crFile
+                                          atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+
+        NSString *crReport = nil;
+        [ed findInFiles:needle folder:crRoot filters:nil recursive:NO includeHidden:NO
+                 report:&crReport];
+        Check(@"IDM_SEARCH_FINDINFILES (a hit stays on one line)",
+              @"what a file with CR line endings matched is reported on a single "
+              @"line, so the lines below it still stand for what they say",
+              [crReport rangeOfString:@"\r"].location == NSNotFound &&
+              [crReport containsString:@"Line 1: alphabeta needlegamma"]);
+
+        [ed showSearchResults:crReport];
+        NSInteger crHit = -1;
+        sptr_t crLines = [ed.sci message:SCI_GETLINECOUNT wParam:0 lParam:0];
+        for (sptr_t i = 0; i < crLines; ++i) {
+            if ([[ed textOfLine:(NSInteger)i] containsString:@"second needle here"]) {
+                crHit = (NSInteger)i;
+                break;
+            }
+        }
+        [ed.sci message:SCI_GOTOLINE wParam:(uptr_t)MAX(crHit, 0) lParam:0];
+        BOOL crOpened = [ed openSearchResultAtCaret];
+        Check(@"IDM_SEARCH_FINDINFILES (files with other line endings)",
+              @"a result below one that held carriage returns still leads to the "
+              @"right file and line",
+              crHit > 0 && crOpened && [ed.currentDocument.path isEqualToString:crFile] &&
+              [ed.sci message:SCI_LINEFROMPOSITION
+                       wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
+                       lParam:0] == 1);
+        [[NSFileManager defaultManager] removeItemAtPath:crRoot error:NULL];
 
         // The folder a search started in is named in brackets at the top of the
         // report too; it is not something to open.

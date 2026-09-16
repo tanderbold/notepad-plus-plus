@@ -1,4 +1,5 @@
 #import "SearchCommands.h"
+#import "FindCommands.h"
 #import "SettingsCommands.h"
 #import "EditCommands.h"
 #import "LanguageCatalog.h"
@@ -363,7 +364,8 @@ static int IndicatorFor(NSInteger style) {
         for (NSUInteger i = 0; i < lines.count; ++i) {
             if ([lines[i] rangeOfString:term].location == NSNotFound) continue;
             fileHits++;
-            [fileBlock appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1), lines[i]];
+            [fileBlock appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1),
+                                    [EditorController singleReportLine:lines[i]]];
         }
         if (fileHits) {
             files++;
@@ -416,6 +418,33 @@ static int IndicatorFor(NSInteger style) {
     }
 }
 
++ (NSString *)searchResultTargetInHeading:(NSString *)head {
+    // A folder search heads each file with "<path> (3 hits)".
+    NSRange count = [head rangeOfString:@" (" options:NSBackwardsSearch];
+    if (count.location != NSNotFound && [head hasSuffix:@")"]) {
+        return [head substringToIndex:count.location];
+    }
+
+    // A search of the open document has no such heading; all it writes is
+    // 'Search "what" in <document>' at the top, and the hits below it.
+    if ([head hasPrefix:@"Search \""]) {
+        NSRange marker = [head rangeOfString:@"\" in " options:NSBackwardsSearch];
+        if (marker.location != NSNotFound) return [head substringFromIndex:NSMaxRange(marker)];
+    }
+    return nil;
+}
+
+/// The line number a hit line carries, or 0 when the line is not a hit.
++ (NSInteger)searchResultLineInHitLine:(NSString *)text {
+    if (![text hasPrefix:@"\t"]) return 0;
+    NSScanner *scanner = [NSScanner scannerWithString:text];
+    scanner.charactersToBeSkipped = [NSCharacterSet whitespaceCharacterSet];
+    NSInteger wanted = 0;
+    if (![scanner scanString:@"Line" intoString:NULL]) return 0;
+    if (![scanner scanInteger:&wanted]) return 0;
+    return wanted;
+}
+
 + (NSString *)searchResultTargetInReport:(NSString *)report
                                   atLine:(NSInteger)line
                                 fileLine:(NSInteger *)fileLine {
@@ -439,21 +468,7 @@ static int IndicatorFor(NSInteger style) {
         if (heading < 0) return nil;
     }
 
-    NSString *head = lines[(NSUInteger)heading];
-    NSString *target = nil;
-
-    // A folder search heads each file with "<path> (3 hits)".
-    NSRange count = [head rangeOfString:@" (" options:NSBackwardsSearch];
-    if (count.location != NSNotFound && [head hasSuffix:@")"]) {
-        target = [head substringToIndex:count.location];
-    }
-
-    // A search of the open document has no such heading; all it writes is
-    // 'Search "what" in <document>' at the top, and the hits below it.
-    if (!target.length && [head hasPrefix:@"Search \""]) {
-        NSRange marker = [head rangeOfString:@"\" in " options:NSBackwardsSearch];
-        if (marker.location != NSNotFound) target = [head substringFromIndex:NSMaxRange(marker)];
-    }
+    NSString *target = [self searchResultTargetInHeading:lines[(NSUInteger)heading]];
     if (!target.length) return nil;
 
     if (fileLine) *fileLine = wanted > 0 ? wanted : 1;
@@ -474,14 +489,45 @@ static int IndicatorFor(NSInteger style) {
     return target;
 }
 
+/// The text of one line of the document, as Scintilla counts lines. Splitting
+/// the whole text on "\n" instead would put the lines out of step with the
+/// caret whenever a carriage return sits inside one.
+- (NSString *)textOfLine:(NSInteger)line {
+    if (line < 0) return @"";
+    sptr_t start = [self.sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)line lParam:0];
+    sptr_t end = [self.sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)line lParam:0];
+    if (end <= start) return @"";
+    NSData *bytes = [([self.sci string] ?: @"") dataUsingEncoding:NSUTF8StringEncoding];
+    if ((NSUInteger)end > bytes.length) return @"";
+    NSString *text = [[NSString alloc] initWithData:
+        [bytes subdataWithRange:NSMakeRange((NSUInteger)start, (NSUInteger)(end - start))]
+                                           encoding:NSUTF8StringEncoding];
+    return text ?: @"";
+}
+
 - (BOOL)openSearchResultAtCaret {
     if (![self.currentDocument.displayName isEqualToString:@"Search results"]) return NO;
 
     sptr_t position = [self.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0];
     NSInteger line = (NSInteger)[self.sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)position lParam:0];
-    NSInteger target = 1;
-    NSString *where = [EditorController searchResultTargetInReport:[self.sci string] ?: @""
-                                                            atLine:line fileLine:&target];
+
+    NSInteger target = [EditorController searchResultLineInHitLine:[self textOfLine:line]];
+    NSInteger heading = line;
+    if (target > 0) {
+        // Up to the file this hit belongs to, past the blank lines between
+        // one file's hits and the next.
+        NSString *above = nil;
+        while (heading >= 0) {
+            above = [self textOfLine:heading];
+            if (![above hasPrefix:@"\t"] && above.length) break;
+            heading--;
+        }
+        if (heading < 0) return NO;
+    } else {
+        target = 1;
+    }
+
+    NSString *where = [EditorController searchResultTargetInHeading:[self textOfLine:heading]];
     if (!where.length) return NO;
 
     BOOL directory = NO;

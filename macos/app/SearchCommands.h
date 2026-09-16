@@ -49,6 +49,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// Replaces what the results tab holds while a search is still running, so hits
 /// appear as they are found. Does nothing when that tab is not the one on screen.
 - (void)updateSearchResults:(NSString *)report;
+/// What a heading line of a search report names: a file path, or the title of
+/// the document that was searched. Nil when the line is not a heading.
++ (nullable NSString *)searchResultTargetInHeading:(NSString *)head;
+/// The line number a hit line carries, or 0 when it is not a hit line.
++ (NSInteger)searchResultLineInHitLine:(NSString *)text;
 /// What a results line points at: a file path, or the title of an open document
 /// when the search was of the document itself. `line` is one-based.
 + (nullable NSString *)searchResultTargetInReport:(NSString *)report
@@ -59,6 +64,8 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable NSString *)searchResultFileInReport:(NSString *)report
                                          atLine:(NSInteger)line
                                        fileLine:(NSInteger *)fileLine;
+/// The text of one line, as Scintilla counts lines.
+- (NSString *)textOfLine:(NSInteger)line;
 /// Opens what the caret sits on in the results tab. This is what a double click
 /// there does, the way Notepad++ jumps from a result to the file.
 - (BOOL)openSearchResultAtCaret;

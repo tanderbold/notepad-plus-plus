@@ -92,6 +92,10 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
                                    completion:(void (^)(NSUInteger replaced, NSUInteger files,
                                                         BOOL cancelled))completion;
 
+/// One line of a file as a search report shows it: without carriage returns, so
+/// that a hit takes exactly one line whatever the file's line endings are.
++ (NSString *)singleReportLine:(NSString *)text;
+
 /// Whether a file name is one the filter asks for.
 + (BOOL)name:(NSString *)name matchesFilters:(nullable NSString *)filters;
 
