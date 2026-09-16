@@ -56,6 +56,22 @@ static void NppSettle(NSTimeInterval seconds) {
     }
 }
 
+/// The same, but only until what was expected has happened: waiting a fixed
+/// time instead makes the test turn on how busy the machine is.
+/// The same, but only until what was expected has happened: waiting a fixed
+/// time instead makes the test turn on how busy the machine is.
+static void NppSettleUntil(BOOL (^done)(void), NSTimeInterval limit) {
+    NSDate *until = [NSDate dateWithTimeIntervalSinceNow:limit];
+    while ([until timeIntervalSinceNow] > 0 && !done()) {
+        NSEvent *queued = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                             untilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]
+                                                inMode:NSDefaultRunLoopMode dequeue:YES];
+        if (queued) [NSApp sendEvent:queued];
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                 beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+    }
+}
+
 static void Check(NSString *command, NSString *name, BOOL ok) {
     [gCovered addObject:command];
     if (ok) { gPass++; printf("  ok   %-28s %s\n", command.UTF8String, name.UTF8String); }
@@ -672,7 +688,8 @@ int NppMacRunTests(AppDelegate *app) {
             [sciContent mouseDown:down];
             [sciContent mouseUp:up];
         }
-        NppSettle(0.5);
+        NppSettleUntil(^BOOL{ return [ed.currentDocument.path isEqualToString:target]; }, 10);
+        NppSettle(0.05);
         long clickedLine = [ed.sci message:SCI_LINEFROMPOSITION
                                    wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
                                    lParam:0];
@@ -743,7 +760,8 @@ int NppMacRunTests(AppDelegate *app) {
                                               clickCount:(NSInteger)click pressure:1]
                      atStart:NO];
         }
-        NppSettle(1.0);
+        NppSettleUntil(^BOOL{ return [ed.currentDocument.path isEqualToString:target]; }, 10);
+        NppSettle(0.05);
         long liveCaret = [ed.sci message:SCI_LINEFROMPOSITION
                                  wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
                                  lParam:0];
@@ -821,7 +839,6 @@ int NppMacRunTests(AppDelegate *app) {
         }
         [ed.sci message:SCI_GOTOLINE wParam:(uptr_t)MAX(deepHit, 0) lParam:0];
         BOOL deepOpened = [ed openSearchResultAtCaret];
-        NppSettle(0.3);
         long deepCaret = [ed.sci message:SCI_LINEFROMPOSITION
                                  wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
                                  lParam:0];
