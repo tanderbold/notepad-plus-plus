@@ -2962,6 +2962,87 @@ int NppMacRunTests(AppDelegate *app) {
                   [DocText(ed) containsString:@"def read_config"] &&
                   [pastedLanguage isEqualToString:@"python"]);
 
+            // C# written as top-level statements: no namespace, no class, no
+            // Main. It shares nearly every keyword it uses with JavaScript, so
+            // the words alone called it JavaScript; what tells them apart is
+            // what only C# writes.
+            NSString *topLevelCSharp =
+                @"using System.Net.Http.Headers;\n"
+                @"using System.Security.Cryptography;\n"
+                @"using System.Text.Json;\n"
+                @"\n"
+                @"var builder = WebApplication.CreateBuilder(args);\n"
+                @"builder.Services.AddHttpClient(\"proxy\", c => c.Timeout = TimeSpan.FromMinutes(10));\n"
+                @"builder.Logging.SetMinimumLevel(LogLevel.Warning);\n"
+                @"\n"
+                @"var (cert, _) = await SetupCertificateAsync();\n"
+                @"var app = builder.Build();\n"
+                @"\n"
+                @"var nugetOrg = \"https://api.nuget.org/v3\";\n"
+                @"Console.WriteLine(\"NuGet Aggregating Proxy\");\n"
+                @"Console.Write(\"\\nNexus Username: \");\n"
+                @"var username = Console.ReadLine()!;\n"
+                @"\n"
+                @"var factory = app.Services.GetRequiredService<IHttpClientFactory>();\n"
+                @"foreach (var src in nexusSources)\n"
+                @"{\n"
+                @"    var client = CreateAuthClient(factory, creds);\n"
+                @"    var r = await client.GetAsync($\"{src}/index.json\");\n"
+                @"    Console.WriteLine($\"  {(r.IsSuccessStatusCode ? \"ok\" : \"no\")} {src}\");\n"
+                @"}\n"
+                @"\n"
+                @"app.MapGet(\"/v3/search\", async (string? q, int? skip, IHttpClientFactory f) =>\n"
+                @"{\n"
+                @"    var results = new List<JsonElement>();\n"
+                @"    foreach (var src in nexusSources)\n"
+                @"    {\n"
+                @"        var content = await TryGetNexus(f, creds, $\"{src}/v3/search?q={Uri.EscapeDataString(q ?? \"\")}\");\n"
+                @"        if (content != null)\n"
+                @"        {\n"
+                @"            try\n"
+                @"            {\n"
+                @"                var json = JsonDocument.Parse(content);\n"
+                @"                if (json.RootElement.TryGetProperty(\"data\", out var data))\n"
+                @"                    foreach (var item in data.EnumerateArray())\n"
+                @"                        results.Add(item);\n"
+                @"            }\n"
+                @"            catch { }\n"
+                @"        }\n"
+                @"    }\n"
+                @"    return Results.Json(new { totalHits = results.Count, data = results });\n"
+                @"});\n"
+                @"\n"
+                @"static async Task<string?> TryGetNexus(IHttpClientFactory f, CredentialStore c, string url)\n"
+                @"{\n"
+                @"    try\n"
+                @"    {\n"
+                @"        var client = CreateAuthClient(f, c);\n"
+                @"        var r = await client.GetAsync(url);\n"
+                @"        if (r.IsSuccessStatusCode)\n"
+                @"            return await r.Content.ReadAsStringAsync();\n"
+                @"    }\n"
+                @"    catch { }\n"
+                @"    return null;\n"
+                @"}\n"
+                @"\n"
+                @"class CredentialStore\n"
+                @"{\n"
+                @"    char[] _p;\n"
+                @"    public string Username { get; private set; }\n"
+                @"    public string Password => new(_p);\n"
+                @"    public CredentialStore(string u, string p) { Username = u; _p = p.ToCharArray(); }\n"
+                @"    public void Clear() { Array.Clear(_p); Username = \"\"; }\n"
+                @"}\n"
+                @"\n";
+            NSMutableArray *csNames = [NSMutableArray array];
+            for (NppLanguage *one in [lc languagesMatchingContents:topLevelCSharp]) {
+                [csNames addObject:one.name];
+            }
+            Check(@"IDM_LANG_DETECT (C# without a class)",
+                  @"a file of top-level C# statements is taken for C#, not for "
+                  @"JavaScript, whose keywords are nearly the same",
+                  csNames.count && [csNames.firstObject isEqualToString:@"cs"]);
+
             Check(@"IDM_LANG_DETECT (a choice, not a catalogue)",
                   @"no more than ten languages are ever offered",
                   longest > 0 && longest <= NppMostLanguagesToOffer);

@@ -100,7 +100,13 @@ static NSDictionary<NSString *, NSArray<NSString *> *> *StructuralMarks(void) {
             @"batch":      @[@"@echo off", @"%~dp0", @"goto :", @"set /p", @"%errorlevel%"],
             @"powershell": @[@"$PSScriptRoot", @"Write-Host", @"-ErrorAction", @"[CmdletBinding",
                              @"$_.", @"Write-Output"],
-            @"cs":         @[@"using System", @"public class ", @"string[] args", @"namespace "],
+            // Modern C# has no namespace, no class and no Main: a file of
+            // top-level statements has only these to give it away, and without
+            // them it reads as JavaScript, which shares nearly every keyword.
+            @"cs":         @[@"using System", @"public class ", @"string[] args", @"namespace ",
+                             @"Console.WriteLine", @"Console.Write", @"async Task", @"$\"",
+                             @"nameof(", @"public static ", @"internal ", @"IEnumerable<",
+                             @"var ", @"new List<", @"?? ", @".ToLower()", @"#region"],
             @"java":       @[@"public static void main", @"import java.", @"@Override",
                              @"System.out."],
             @"rust":       @[@"fn ", @"let mut ", @"impl ", @"::new(", @"#[derive"],
