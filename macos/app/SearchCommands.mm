@@ -358,7 +358,7 @@ static int IndicatorFor(NSInteger style) {
         NSString *content = [NSString stringWithContentsOfFile:full encoding:NSUTF8StringEncoding error:NULL];
         if (!content) continue;                       // binary or another encoding
 
-        NSArray *lines = [content componentsSeparatedByString:@"\n"];
+        NSArray *lines = [EditorController linesOfText:content];
         NSMutableString *fileBlock = [NSMutableString string];
         NSUInteger fileHits = 0;
         for (NSUInteger i = 0; i < lines.count; ++i) {
@@ -561,6 +561,11 @@ static int IndicatorFor(NSInteger style) {
     [sci message:SCI_GOTOLINE wParam:(uptr_t)wanted lParam:0];
     sptr_t start = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)wanted lParam:0];
     sptr_t end = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)wanted lParam:0];
+    if (end == start && wanted < last) {
+        // An empty line has nothing to highlight; taking in its line break
+        // leaves a mark, rather than looking as though nothing happened.
+        end = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)(wanted + 1) lParam:0];
+    }
     [sci message:SCI_SETSEL wParam:(uptr_t)start lParam:(sptr_t)end];
     [sci message:SCI_SCROLLCARET wParam:0 lParam:0];
     [self refreshChrome];

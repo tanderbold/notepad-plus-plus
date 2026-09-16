@@ -92,6 +92,12 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
                                    completion:(void (^)(NSUInteger replaced, NSUInteger files,
                                                         BOOL cancelled))completion;
 
+/// The lines of a file, counted as the editor counts them: CRLF, CR and LF all
+/// end a line. Splitting on LF alone numbers the lines of a file with CR or
+/// mixed endings differently from the document the result leads to, and a
+/// result is then off by however many carriage returns came before it.
++ (NSArray<NSString *> *)linesOfText:(NSString *)text;
+
 /// One line of a file as a search report shows it: without carriage returns, so
 /// that a hit takes exactly one line whatever the file's line endings are.
 + (NSString *)singleReportLine:(NSString *)text;

@@ -779,6 +779,23 @@ int NppMacRunTests(AppDelegate *app) {
               @"results from searching the open document lead back to it as well",
               [ownPath isEqualToString:target] && ownLine == 3 && ownOpened && ownCaret == 2);
 
+        // How a file's lines are counted decides every line number in the
+        // report, and it has to agree with the document the result leads to.
+        NSArray<NSString *> *lf = [EditorController linesOfText:@"a\nb\n"];
+        NSArray<NSString *> *crlf = [EditorController linesOfText:@"a\r\nb\r\n"];
+        NSArray<NSString *> *cr = [EditorController linesOfText:@"a\rb\r"];
+        NSArray<NSString *> *mixed = [EditorController linesOfText:@"a\rb\r\nc\nd"];
+        NSArray<NSString *> *bare = [EditorController linesOfText:@"only"];
+        NSArray<NSString *> *nothing = [EditorController linesOfText:@""];
+        Check(@"IDM_SEARCH_FINDINFILES (counting lines)",
+              @"CRLF, CR and LF each end one line, and a document that does not "
+              @"end in a break has no line after its last",
+              [lf isEqualToArray:@[@"a", @"b", @""]] &&
+              [crlf isEqualToArray:@[@"a", @"b", @""]] &&
+              [cr isEqualToArray:@[@"a", @"b", @""]] &&
+              [mixed isEqualToArray:@[@"a", @"b", @"c", @"d"]] &&
+              [bare isEqualToArray:@[@"only"]] && [nothing isEqualToArray:@[@""]]);
+
         // A hit deep inside a long file. A short one hides whether the view
         // actually goes to the line: it is on screen either way.
         NSString *deepRoot = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp_fif_deep"];
@@ -834,11 +851,15 @@ int NppMacRunTests(AppDelegate *app) {
         NSString *crReport = nil;
         [ed findInFiles:needle folder:crRoot filters:nil recursive:NO includeHidden:NO
                  report:&crReport];
-        Check(@"IDM_SEARCH_FINDINFILES (a hit stays on one line)",
-              @"what a file with CR line endings matched is reported on a single "
-              @"line, so the lines below it still stand for what they say",
+        // The file reads: alpha / beta needle / gamma, ended by CR, then
+        // "second needle here" ended by LF. The editor numbers those 1 to 4,
+        // and a report that counted only line feeds called them all line 1.
+        Check(@"IDM_SEARCH_FINDINFILES (lines counted as the editor counts them)",
+              @"a file whose lines end in CR is numbered the way the document "
+              @"itself is, and each hit is reported on one line",
               [crReport rangeOfString:@"\r"].location == NSNotFound &&
-              [crReport containsString:@"Line 1: alphabeta needlegamma"]);
+              [crReport containsString:@"Line 2: beta needle"] &&
+              [crReport containsString:@"Line 4: second needle here"]);
 
         [ed showSearchResults:crReport];
         NSInteger crHit = -1;
@@ -852,12 +873,17 @@ int NppMacRunTests(AppDelegate *app) {
         [ed.sci message:SCI_GOTOLINE wParam:(uptr_t)MAX(crHit, 0) lParam:0];
         BOOL crOpened = [ed openSearchResultAtCaret];
         Check(@"IDM_SEARCH_FINDINFILES (files with other line endings)",
-              @"a result below one that held carriage returns still leads to the "
-              @"right file and line",
+              @"a result in a file with CR line endings selects the line it names, "
+              @"not one several carriage returns away from it",
               crHit > 0 && crOpened && [ed.currentDocument.path isEqualToString:crFile] &&
               [ed.sci message:SCI_LINEFROMPOSITION
                        wParam:(uptr_t)[ed.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0]
-                       lParam:0] == 1);
+                       lParam:0] == 3 &&
+              [[ed textOfLine:3] isEqualToString:@"second needle here"] &&
+              [ed.sci message:SCI_GETSELECTIONSTART wParam:0 lParam:0] ==
+                  [ed.sci message:SCI_POSITIONFROMLINE wParam:3 lParam:0] &&
+              [ed.sci message:SCI_GETSELECTIONEND wParam:0 lParam:0] ==
+                  [ed.sci message:SCI_GETLINEENDPOSITION wParam:3 lParam:0]);
         [[NSFileManager defaultManager] removeItemAtPath:crRoot error:NULL];
 
         // The folder a search started in is named in brackets at the top of the

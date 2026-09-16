@@ -32,6 +32,29 @@
 
 @implementation EditorController (FindCommands)
 
++ (NSArray<NSString *> *)linesOfText:(NSString *)text {
+    NSMutableArray<NSString *> *lines = [NSMutableArray array];
+    NSCharacterSet *ends = [NSCharacterSet characterSetWithCharactersInString:@"\r\n"];
+    NSUInteger start = 0, length = text.length;
+    while (YES) {
+        NSRange found = [text rangeOfCharacterFromSet:ends options:0
+                                                range:NSMakeRange(start, length - start)];
+        if (found.location == NSNotFound) {
+            [lines addObject:[text substringFromIndex:start]];
+            break;
+        }
+        [lines addObject:[text substringWithRange:NSMakeRange(start, found.location - start)]];
+        NSUInteger next = NSMaxRange(found);
+        if ([text characterAtIndex:found.location] == '\r' && next < length &&
+            [text characterAtIndex:next] == '\n') {
+            next++;                                  // CRLF ends one line, not two
+        }
+        start = next;
+        if (start == length) { [lines addObject:@""]; break; }
+    }
+    return lines;
+}
+
 + (NSString *)singleReportLine:(NSString *)text {
     if (!text || [text rangeOfString:@"\r"].location == NSNotFound) return text ?: @"";
     return [text stringByReplacingOccurrencesOfString:@"\r" withString:@""];
@@ -440,7 +463,7 @@
 
     [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
                visit:^(NSString *path, NSString *contents) {
-        NSArray *lines = [contents componentsSeparatedByString:@"\n"];
+        NSArray *lines = [EditorController linesOfText:contents];
         NSMutableString *block = [NSMutableString string];
         NSUInteger inFile = 0;
         for (NSUInteger i = 0; i < lines.count; ++i) {
@@ -544,7 +567,7 @@
         [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
                   search:search
                    visit:^(NSString *path, NSString *contents, NSUInteger scanned) {
-            NSArray<NSString *> *lines = [contents componentsSeparatedByString:@"\n"];
+            NSArray<NSString *> *lines = [EditorController linesOfText:contents];
             NSMutableString *block = [NSMutableString string];
             NSUInteger inFile = 0;
             for (NSUInteger i = 0; i < lines.count; ++i) {
