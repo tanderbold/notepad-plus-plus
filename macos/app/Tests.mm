@@ -850,6 +850,34 @@ int NppMacRunTests(AppDelegate *app) {
               @"pasting while a Find field has the caret reaches the field, not the document",
               wentToField && documentUntouched);
 
+        // The routing is shared by every dialog, so the thing worth guarding is
+        // that no menu item quietly takes a shortcut that means editing inside a
+        // field. Anything carrying Cmd+X, C, V, A or Z has to be one of the
+        // commands that offers itself to the field first.
+        NSSet *forwarding = [NSSet setWithArray:@[@"cutText:", @"copyText:", @"pasteText:",
+                                                  @"selectAllText:", @"undo:", @"redo:"]];
+        NSMutableArray *stealing = [NSMutableArray array];
+        NSMutableArray *pending = [@[[NSApp mainMenu]] mutableCopy];
+        while (pending.count) {
+            NSMenu *menu = pending.firstObject;
+            [pending removeObjectAtIndex:0];
+            for (NSMenuItem *entry in menu.itemArray) {
+                if (entry.submenu) [pending addObject:entry.submenu];
+                NSString *key = entry.keyEquivalent.lowercaseString;
+                if (!key.length || ![@"xcvaz" containsString:key]) continue;
+                if ((entry.keyEquivalentModifierMask & NSEventModifierFlagCommand) == 0) continue;
+                NSString *action = entry.action ? NSStringFromSelector(entry.action) : @"";
+                if (![forwarding containsObject:action]) {
+                    [stealing addObject:[NSString stringWithFormat:@"%@ (%@)", entry.title, action]];
+                }
+            }
+        }
+        Check(@"IDM_EDIT_PASTE (no shortcut is taken)",
+              @"nothing on the menu takes an editing shortcut without offering it to the field first",
+              stealing.count == 0);
+        if (stealing.count) printf("       перехватывают: %s\n",
+            [[stealing componentsJoinedByString:@", "] UTF8String]);
+
 
         SetDoc(ed, @"cat bat cat\n");
         NSUInteger marked = [ed markAll:[NppFindSpec specFor:@"cat" mode:NppSearchNormal
