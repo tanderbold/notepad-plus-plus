@@ -13,6 +13,7 @@
     return spec;
 }
 
+
 @end
 
 @implementation EditorController (FindCommands)
@@ -338,6 +339,139 @@
         }
     }
     return [self findNext:spec];
+}
+
+
+
+#pragma mark - Across files
+
++ (BOOL)name:(NSString *)name matchesFilters:(NSString *)filters {
+    NSString *trimmed = [(filters ?: @"") stringByTrimmingCharactersInSet:
+                         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (!trimmed.length) return YES;                 // no filter means every file
+
+    for (NSString *pattern in [trimmed componentsSeparatedByCharactersInSet:
+                               [NSCharacterSet characterSetWithCharactersInString:@" ,;"]]) {
+        if (!pattern.length) continue;
+        // Notepad++ takes shell patterns here, and so does this.
+        NSPredicate *glob = [NSPredicate predicateWithFormat:@"SELF LIKE[c] %@", pattern];
+        if ([glob evaluateWithObject:name]) return YES;
+    }
+    return NO;
+}
+
+/// Walks the folder, handing each file that passes the filter to `visit`.
+- (void)walkFolder:(NSString *)folder
+           filters:(NSString *)filters
+         recursive:(BOOL)recursive
+     includeHidden:(BOOL)includeHidden
+             visit:(void (^)(NSString *path, NSString *contents))visit {
+    NSFileManager *files = [NSFileManager defaultManager];
+    NSDirectoryEnumerator *walker = [files enumeratorAtPath:folder];
+    for (NSString *relative in walker) {
+        if (!recursive && relative.pathComponents.count > 1) continue;
+
+        BOOL hidden = NO;
+        for (NSString *component in relative.pathComponents) {
+            if ([component hasPrefix:@"."]) { hidden = YES; break; }
+        }
+        if (hidden && !includeHidden) continue;
+
+        NSString *full = [folder stringByAppendingPathComponent:relative];
+        BOOL isDirectory = NO;
+        if (![files fileExistsAtPath:full isDirectory:&isDirectory] || isDirectory) continue;
+        if (![EditorController name:relative.lastPathComponent matchesFilters:filters]) continue;
+
+        NSString *contents = [NSString stringWithContentsOfFile:full
+                                                       encoding:NSUTF8StringEncoding error:NULL];
+        if (!contents) continue;                     // binary, or another encoding
+        visit(full, contents);
+    }
+}
+
+- (NSUInteger)findInFiles:(NppFindSpec *)spec
+                   folder:(NSString *)folder
+                  filters:(NSString *)filters
+                recursive:(BOOL)recursive
+            includeHidden:(BOOL)includeHidden
+                   report:(NSString **)report {
+    if (!spec.what.length || !folder.length) return 0;
+    NppRegex *regex = [self regexFor:spec];
+    if (!regex) return 0;
+
+    NSMutableString *text = [NSMutableString stringWithFormat:@"Search \"%@\" in %@\n\n",
+                             spec.what, folder];
+    __block NSUInteger hits = 0, matchedFiles = 0;
+
+    [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
+               visit:^(NSString *path, NSString *contents) {
+        NSArray *lines = [contents componentsSeparatedByString:@"\n"];
+        NSMutableString *block = [NSMutableString string];
+        NSUInteger inFile = 0;
+        for (NSUInteger i = 0; i < lines.count; ++i) {
+            NSData *line = [lines[i] dataUsingEncoding:NSUTF8StringEncoding];
+            if (!line.length) continue;
+            if ([regex firstMatchInData:line range:NSMakeRange(0, line.length)].location == NSNotFound) {
+                continue;
+            }
+            inFile++;
+            [block appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1), lines[i]];
+        }
+        if (!inFile) return;
+        matchedFiles++;
+        hits += inFile;
+        [text appendFormat:@"%@ (%lu hit%@)\n%@\n", path, (unsigned long)inFile,
+                           inFile == 1 ? @"" : @"s", block];
+    }];
+
+    [text appendFormat:@"\n%lu hit%@ in %lu file%@\n", (unsigned long)hits,
+                       hits == 1 ? @"" : @"s", (unsigned long)matchedFiles,
+                       matchedFiles == 1 ? @"" : @"s"];
+    if (report) *report = text;
+    return hits;
+}
+
+- (NSUInteger)replaceInFiles:(NppFindSpec *)spec
+                      folder:(NSString *)folder
+                     filters:(NSString *)filters
+                   recursive:(BOOL)recursive
+               includeHidden:(BOOL)includeHidden
+                changedFiles:(NSUInteger *)changedFiles {
+    if (!spec.what.length || !folder.length) return 0;
+    NppRegex *regex = [self regexFor:spec];
+    if (!regex) return 0;
+
+    __block NSUInteger replaced = 0, touched = 0;
+    [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
+               visit:^(NSString *path, NSString *contents) {
+        NSData *data = [contents dataUsingEncoding:NSUTF8StringEncoding];
+        if (!data.length) return;
+
+        NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
+        NSMutableArray<NSString *> *texts = [NSMutableArray array];
+        [regex enumerateMatchesWithGroupsInData:data range:NSMakeRange(0, data.length)
+                                     usingBlock:^(NSArray<NSValue *> *groups, BOOL *stop) {
+            [ranges addObject:groups.firstObject];
+            [texts addObject:[self replacementFor:spec groups:groups data:data]];
+        }];
+        if (!ranges.count) return;
+
+        // Applied from the end, so a replacement cannot move the ones still to
+        // be made.
+        NSMutableData *updated = [data mutableCopy];
+        for (NSInteger i = (NSInteger)ranges.count - 1; i >= 0; --i) {
+            NSRange range = ranges[(NSUInteger)i].rangeValue;
+            NSData *piece = [texts[(NSUInteger)i] dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
+            [updated replaceBytesInRange:range withBytes:piece.bytes length:piece.length];
+        }
+        if ([updated writeToFile:path atomically:YES]) {
+            replaced += ranges.count;
+            touched++;
+        }
+    }];
+
+    if (changedFiles) *changedFiles = touched;
+    return replaced;
 }
 
 @end

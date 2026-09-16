@@ -137,6 +137,32 @@ int NppMacRunTests(AppDelegate *app) {
               ![[NSFileManager defaultManager] fileExistsAtPath:p] &&
               [ed.currentDocument.language.name isEqualToString:@"python"]);
 
+        // A language the user picked survives a rename; Notepad++ keeps it too,
+        // and only works the language out again when nobody chose one.
+        NSString *keepPath = TempFile(@"t_keeplang.txt", @"print(1)\n");
+        [ed openFileAtPath:keepPath error:NULL];
+        [ed chooseLanguageNamed:@"python"];
+        NSString *renamedPath = [NSTemporaryDirectory()
+                                 stringByAppendingPathComponent:@"t_keeplang.log"];
+        [[NSFileManager defaultManager] removeItemAtPath:renamedPath error:NULL];
+        [ed renameCurrentTo:renamedPath error:NULL];
+        BOOL kept = [ed.currentDocument.language.name isEqualToString:@"python"];
+
+        // One that was worked out from the name follows the new name.
+        NSString *autoPath = TempFile(@"t_autolang.py", @"print(1)\n");
+        [ed openFileAtPath:autoPath error:NULL];
+        NSString *autoRenamed = [NSTemporaryDirectory()
+                                 stringByAppendingPathComponent:@"t_autolang.cpp"];
+        [[NSFileManager defaultManager] removeItemAtPath:autoRenamed error:NULL];
+        [ed renameCurrentTo:autoRenamed error:NULL];
+        BOOL followed = [ed.currentDocument.language.name isEqualToString:@"cpp"];
+        [[NSFileManager defaultManager] removeItemAtPath:renamedPath error:NULL];
+        [[NSFileManager defaultManager] removeItemAtPath:autoRenamed error:NULL];
+        Check(@"IDM_FILE_RENAME (language)",
+              @"a language the user chose survives a rename; a detected one follows the name",
+              kept && followed);
+
+
         NSString *doomed = TempFile(@"t_trash.txt", @"bye\n");
         [ed openFileAtPath:doomed error:&err];
         BOOL trashed = [ed moveCurrentToTrash:&err];
@@ -356,6 +382,79 @@ int NppMacRunTests(AppDelegate *app) {
               noApi != nil);
         [[NSFileManager defaultManager] removeItemAtPath:cFile error:NULL];
         [[NSFileManager defaultManager] removeItemAtPath:iniFile error:NULL];
+    }
+
+    printf("\n== Find dialog: the tabs Notepad++ has ==\n");
+    {
+        [ed newDocument];
+        [app buildFindPanel];
+        NSSegmentedControl *tabs = [app valueForKey:@"findTabs"];
+        NSArray *expected = @[@"Find", @"Replace", @"Find in Files", @"Find in Projects", @"Mark"];
+        NSMutableArray *names = [NSMutableArray array];
+        for (NSInteger i = 0; i < tabs.segmentCount; ++i) [names addObject:[tabs labelForSegment:i]];
+        Check(@"IDM_SEARCH_FINDINFILES (tabs)",
+              @"the dialog has the tabs Notepad++ has, rather than a run of prompts",
+              [names isEqualToArray:expected]);
+
+        // Each tab shows what belongs to it. Find has no Filters; Find in Files
+        // does, along with the folder to search.
+        NSTextField *filters = [app valueForKey:@"filtersField"];
+        NSTextField *directory = [app valueForKey:@"directoryField"];
+        [app openFindPanelOnTab:0];
+        BOOL hiddenOnFind = filters.isHidden && directory.isHidden;
+        [app openFindPanelOnTab:2];
+        BOOL shownInFiles = !filters.isHidden && !directory.isHidden;
+        [app openFindPanelOnTab:4];
+        BOOL hiddenOnMark = filters.isHidden && directory.isHidden;
+        [[app valueForKey:@"findPanel"] orderOut:nil];
+        Check(@"IDM_SEARCH_FINDINFILES (tab contents)",
+              @"the folder and filters belong to Find in Files and appear only there",
+              hiddenOnFind && shownInFiles && hiddenOnMark);
+
+        // Searching a folder for real, with the filter and the search mode that
+        // the dialog is set to. The old one matched a literal substring and
+        // ignored both.
+        NSString *root = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp_fif"];
+        [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:
+            [root stringByAppendingPathComponent:@"inner"]
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        [@"alpha 42\nbeta\n" writeToFile:[root stringByAppendingPathComponent:@"one.txt"]
+                              atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [@"alpha 7\n" writeToFile:[root stringByAppendingPathComponent:@"two.log"]
+                       atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [@"alpha 99\n" writeToFile:[root stringByAppendingPathComponent:@"inner/three.txt"]
+                        atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+
+        NppFindSpec *digits = [NppFindSpec specFor:@"\\d+" mode:NppSearchRegex options:NppFindNone];
+        NSString *report = nil;
+        NSUInteger everywhere = [ed findInFiles:digits folder:root filters:nil
+                                      recursive:YES includeHidden:NO report:&report];
+        NSUInteger txtOnly = [ed findInFiles:digits folder:root filters:@"*.txt"
+                                   recursive:YES includeHidden:NO report:NULL];
+        NSUInteger topOnly = [ed findInFiles:digits folder:root filters:@"*.txt"
+                                   recursive:NO includeHidden:NO report:NULL];
+        Check(@"IDM_SEARCH_FINDINFILES (search)",
+              @"a folder search honours the pattern, the filter and sub-folders",
+              everywhere == 3 && txtOnly == 2 && topOnly == 1 &&
+              [report containsString:@"one.txt"]);
+
+        // Replace in Files writes to the files it matched.
+        NppFindSpec *renumber = [NppFindSpec specFor:@"\\d+" mode:NppSearchRegex options:NppFindNone];
+        renumber.replacement = @"N";
+        NSUInteger changedFiles = 0;
+        NSUInteger replaced = [ed replaceInFiles:renumber folder:root filters:@"*.txt"
+                                       recursive:YES includeHidden:NO changedFiles:&changedFiles];
+        NSString *afterOne = [NSString stringWithContentsOfFile:
+            [root stringByAppendingPathComponent:@"one.txt"] encoding:NSUTF8StringEncoding error:NULL];
+        NSString *untouched = [NSString stringWithContentsOfFile:
+            [root stringByAppendingPathComponent:@"two.log"] encoding:NSUTF8StringEncoding error:NULL];
+        Check(@"IDM_SEARCH_FINDINFILES (replace)",
+              @"Replace in Files rewrites the files the filter allows and leaves the others",
+              replaced == 2 && changedFiles == 2 &&
+              [afterOne isEqualToString:@"alpha N\nbeta\n"] &&
+              [untouched isEqualToString:@"alpha 7\n"]);
+        [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
     }
 
     printf("\n== Search: replacement escapes ==\n");

@@ -26,6 +26,9 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 @property (nonatomic) int eolMode;                 // SC_EOL_CRLF / SC_EOL_LF / SC_EOL_CR
 @property (nonatomic) BOOL pinned;                 // survives Close All but Pinned
 @property (nonatomic) NSInteger tabColour;         // 0 = none, 1..5 as in Notepad++
+/// Set when the language was chosen from the menu rather than worked out from
+/// the file name. Renaming then leaves it alone, as Notepad++ does.
+@property (nonatomic) BOOL languageChosenByUser;
 @end
 
 @interface EditorController : NSObject <NppTabBarDelegate>
@@ -85,6 +88,8 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (void)selectDocumentAtIndex:(NSInteger)index;
 
 - (void)setLanguageNamed:(NSString *)langName;   // manual override
+/// The same, marking the choice as the user's so a rename will not undo it.
+- (void)chooseLanguageNamed:(NSString *)langName;
 - (void)setEncoding:(NSStringEncoding)enc withBOM:(BOOL)bom;   // re-saves in this encoding
 - (void)convertEOLTo:(int)eolMode;
 - (NSString *)encodingDisplayName;

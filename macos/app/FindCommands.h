@@ -46,6 +46,26 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
 - (BOOL)replaceCurrentThenFindNext:(NppFindSpec *)spec;
 /// Marks every match with the Find mark style, returning how many.
 - (NSUInteger)markAll:(NppFindSpec *)spec;
+/// Searching a folder, which is what the Find in Files tab does. The filter is
+/// what Notepad++ takes there: patterns such as "*.cpp *.h", empty for all.
+- (NSUInteger)findInFiles:(NppFindSpec *)spec
+                   folder:(NSString *)folder
+                  filters:(nullable NSString *)filters
+                recursive:(BOOL)recursive
+            includeHidden:(BOOL)includeHidden
+                   report:(NSString *_Nullable *_Nullable)report;
+
+/// The same walk, replacing as it goes. Returns how many files were changed.
+- (NSUInteger)replaceInFiles:(NppFindSpec *)spec
+                      folder:(NSString *)folder
+                     filters:(nullable NSString *)filters
+                   recursive:(BOOL)recursive
+               includeHidden:(BOOL)includeHidden
+                 changedFiles:(NSUInteger *_Nullable)changedFiles;
+
+/// Whether a file name is one the filter asks for.
++ (BOOL)name:(NSString *)name matchesFilters:(nullable NSString *)filters;
+
 /// Byte ranges of every match; the others are built on this.
 - (NSArray<NSValue *> *)rangesOfMatches:(NppFindSpec *)spec;
 

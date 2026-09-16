@@ -12,6 +12,9 @@
 
 // Find panel: the controls the Find dialog carries, and what they add up to.
 - (void)buildFindPanel;
+- (void)openFindPanelOnTab:(NSInteger)tab;
+- (void)findPanelFindInFiles:(id)sender;
+- (void)findPanelFindAll:(id)sender;
 - (id)currentFindSpec;
 
 // File

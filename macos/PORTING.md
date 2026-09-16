@@ -321,6 +321,12 @@ numerically, so `item2` comes before `item10`. The decimal sorts are the other
 kind -- they read each line as a number, set aside a line that holds no number at
 all, and refuse the whole sort, naming the line, when one cannot be read.
 
+The Find dialog carries the tabs Notepad++ gives it -- Find, Replace, Find in
+Files, Find in Projects, Mark -- with the fields each one needs and the search
+modes and options shared beneath them. Find in Files takes patterns such as
+`*.cpp *.h`, searches sub-folders and hidden folders by choice, and can replace
+across the files it matched.
+
 Find and Replace carry Notepad++'s three search modes -- the text as typed,
 Extended with its `\n`, `\xHH` and the rest, and regular expressions -- together
 with match case, whole word, wrap, direction and in-selection, and replacement

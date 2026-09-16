@@ -375,14 +375,18 @@ static int IndicatorFor(NSInteger style) {
     [report appendFormat:@"\n%lu hit%@ in %lu file%@\n", (unsigned long)hits, hits == 1 ? @"" : @"s",
                          (unsigned long)files, files == 1 ? @"" : @"s"];
 
+    [self showSearchResults:report];
+    return hits;
+}
+
+- (void)showSearchResults:(NSString *)report {
     // Notepad++ docks a results panel; here the results are a tab of their own.
     [self newDocument];
     self.currentDocument.displayName = @"Search results";
-    [self.sci setString:report];
+    [self.sci setString:report ?: @""];
     [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
     [self refreshChrome];
-    return hits;
 }
 
 - (NSInteger)searchResultsTabIndex {

@@ -608,7 +608,11 @@ static long SciColor(NSColor *c) {
     if (![[NSFileManager defaultManager] moveItemAtPath:doc.path toPath:newPath error:error]) return NO;
     doc.path = newPath;
     doc.displayName = newPath.lastPathComponent;
-    doc.language = [[LanguageCatalog sharedCatalog] languageForFileName:newPath];
+    // A language the user picked survives the rename; one worked out from the
+    // old name is worked out again from the new one.
+    if (!doc.languageChosenByUser) {
+        doc.language = [[LanguageCatalog sharedCatalog] languageForFileName:newPath];
+    }
     [self applyLanguage];
     [self refreshChrome];
     return YES;
@@ -821,6 +825,11 @@ static long SciColor(NSColor *c) {
 }
 
 #pragma mark - Language + theme
+
+- (void)chooseLanguageNamed:(NSString *)langName {
+    [self setLanguageNamed:langName];
+    self.currentDocument.languageChosenByUser = YES;
+}
 
 - (void)setLanguageNamed:(NSString *)langName {
     NppLanguage *lang = [[LanguageCatalog sharedCatalog] languageNamed:langName];

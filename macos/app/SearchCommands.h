@@ -43,6 +43,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSUInteger)findInFiles:(NSString *)term
                 inFolder:(NSString *)folder
                   filter:(nullable NSString *)filter;
+/// Puts a report into the "Search results" tab, which is where every kind of
+/// find-all here leaves its output.
+- (void)showSearchResults:(NSString *)report;
 - (BOOL)focusSearchResults;
 - (BOOL)goToSearchResult:(BOOL)forward;
 
