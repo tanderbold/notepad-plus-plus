@@ -1,6 +1,7 @@
 #import "LanguageDetection.h"
 #import "SettingsCommands.h"
 #import "ScintillaView.h"
+#import "LanguageModel.h"
 #import <objc/runtime.h>
 
 /// The C character tests may only be given a byte; handing them a UTF-16 unit
@@ -15,8 +16,6 @@ static inline BOOL NppIsDigit(unichar c) { return c >= '0' && c <= '9'; }
 /// Below this much text there is nothing to judge by, and a guess made on two
 /// or three words would be wrong as often as not. A file this short is left
 /// alone unless it says outright what it is.
-const NSUInteger NppMostLanguagesToOffer = 10;
-
 static const NSUInteger kLeastWords = 12;
 static const NSUInteger kLeastCharacters = 40;
 
@@ -73,50 +72,33 @@ static NSDictionary<NSString *, NSArray<NSString *> *> *StructuralMarks(void) {
     static NSDictionary *marks;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        // Each of these has to belong to its language and to few others. A mark
-        // as ordinary as "->" or "@" appears in half the files ever written and
-        // drags whatever claims it to the top of every list.
+        // Each of these has to belong to its language and to almost nothing
+        // else: two of them in a text are taken as that language's presence
+        // whatever the rest of it looks like. A mark as ordinary as "def " or
+        // "->" would drag its language into every list.
         marks = @{
             @"latex":      @[@"\\begin{", @"\\end{", @"\\documentclass", @"\\usepackage",
                              @"\\section{"],
             @"tex":        @[@"\\def\\", @"\\hbox", @"\\vbox", @"\\catcode", @"\\newif",
                              @"\\expandafter", @"\\csname"],
-            @"toml":       @[@"[[", @" = true", @" = false", @" = [", @"\n[dependencies"],
-            @"makefile":   @[@".PHONY", @"$(CC)", @"$(MAKE)", @"$(shell", @"$@", @"$<", @"$(wildcard"],
-            @"c":          @[@"#include <", @"#include \"", @"#define ", @"#ifndef ", @"int main("],
-            @"cpp":        @[@"std::", @"template<", @"template <", @"#include <iostream>",
-                             @"public:", @"private:", @"virtual "],
-            @"d":          @[@"import std.", @"writeln(", @"scope(exit)", @"pure nothrow"],
+            @"makefile":   @[@".PHONY", @"$(CC)", @"$(MAKE)", @"$(shell", @"$(wildcard"],
             @"vb":         @[@"End Sub", @"End Function", @"End If", @"Private Sub", @"Public Sub",
-                             @"End Class", @"End Module", @"Dim ", @" As Integer", @" As String",
-                             @"Module "],
-            @"raku":       @[@"use v6", @"grammar ", @"multi sub", @".say", @"rule ", @"token "],
-            @"typescript": @[@"interface ", @"implements ", @"export type", @"readonly ",
-                             @": Promise<", @"as const", @"export interface", @"export class",
-                             @": void", @": string[]"],
-            @"javascript": @[@"=> {", @"require(", @"document.", @"=== ", @"console.log"],
-            @"python":     @[@"def ", @"self.", @"elif ", @"if __name__", @"__init__"],
-            @"yaml":       @[@": |", @"- name:", @"---\n"],
+                             @"End Class", @"End Module", @" As Integer", @" As String"],
+            @"typescript": @[@"export type", @": Promise<", @"as const", @"export interface",
+                             @": string[]", @"implements "],
             @"batch":      @[@"@echo off", @"%~dp0", @"goto :", @"set /p", @"%errorlevel%"],
             @"powershell": @[@"$PSScriptRoot", @"Write-Host", @"-ErrorAction", @"[CmdletBinding",
-                             @"$_.", @"Write-Output"],
-            // Modern C# has no namespace, no class and no Main: a file of
-            // top-level statements has only these to give it away, and without
-            // them it reads as JavaScript, which shares nearly every keyword.
-            @"cs":         @[@"using System", @"public class ", @"string[] args", @"namespace ",
-                             @"Console.WriteLine", @"Console.Write", @"async Task", @"$\"",
-                             @"nameof(", @"public static ", @"internal ", @"IEnumerable<",
-                             @"var ", @"new List<", @"?? ", @".ToLower()", @"#region"],
+                             @"Write-Output", @"$args[", @"$($", @"-like ", @"-match ",
+                             @"-eq ", @"-ne ", @"-not ", @"]::", @"param(", @"Get-"],
+            @"cs":         @[@"using System", @"string[] args", @"Console.WriteLine",
+                             @"async Task", @"nameof(", @"IEnumerable<", @"#region"],
             @"java":       @[@"public static void main", @"import java.", @"@Override",
                              @"System.out."],
-            @"rust":       @[@"fn ", @"let mut ", @"impl ", @"::new(", @"#[derive"],
-            @"go":         @[@"func ", @":=", @"package main", @"import ("],
-            @"lua":        @[@"local ", @"elseif ", @"then\n", @"end)", @"function("],
-            @"sql":        @[@"INSERT INTO", @"CREATE TABLE", @"SELECT ", @"LEFT JOIN", @"GROUP BY"],
-            @"css":        @[@"px;", @"@media", @"!important", @"margin:", @"padding:"],
-            @"php":        @[@"$this->", @"<?=", @"::class", @"function ("],
-            @"perl":       @[@"my $", @"use strict", @"=~", @"@_"],
-            @"ruby":       @[@"do |", @"puts ", @"attr_accessor", @"end\nend", @"require '"],
+            @"rust":       @[@"let mut ", @"impl ", @"#[derive", @"::new(", @"fn main()"],
+            @"go":         @[@"package main", @"import (", @"func main()", @"fmt."],
+            @"php":        @[@"$this->", @"<?=", @"::class"],
+            @"perl":       @[@"use strict", @"my $", @"=~", @"@_"],
+            @"ruby":       @[@"attr_accessor", @"do |", @"puts ", @"require '"],
         };
     });
     return marks;
@@ -410,9 +392,69 @@ static double IniLikeness(NSString *sample) {
 #pragma mark - The answer
 
 - (NSArray<NppLanguage *> *)languagesMatchingContents:(NSString *)text {
+    // What a file says about itself outright is taken as given. A shebang line
+    // is not a guess, and no amount of training beats reading it.
     NppLanguage *declared = [self declaredLanguageInContents:text];
     if (declared) return @[declared];
 
+    // The model answers with a set: one language, a short list, or nothing
+    // when more than ten would fit. Only when it cannot judge the text at all
+    // - there is no model, or too little text - do the rules get a turn.
+    NSArray<NppLanguage *> *fromModel = [self languagesFromModelForContents:text];
+    if (!fromModel) return [self languagesFromRulesForContents:text];
+    if (fromModel.count) return fromModel;
+
+    // The model found no language it was sure enough of. It was never shown
+    // an example of a fifth of the list, and for those the rules are the
+    // only judge there is: whatever they offer among the languages the model
+    // does not know is offered, and nothing else.
+    NSSet<NSString *> *known = [NSSet setWithArray:[NppLanguageModel sharedModel].languageNames];
+    NSMutableArray<NppLanguage *> *unknown = [NSMutableArray array];
+    for (NppLanguage *language in [self languagesFromRulesForContents:text]) {
+        if (![known containsObject:language.name]) [unknown addObject:language];
+    }
+    return unknown;
+}
+
+/// What the trained model makes of the text, as the set it was fitted to
+/// offer: the fewest languages whose likelihoods reach the coverage chosen on
+/// held-back fragments. nil when the model has nothing to say.
+- (NSArray<NppLanguage *> *)languagesFromModelForContents:(NSString *)text {
+    NppLanguageModel *model = [NppLanguageModel sharedModel];
+    if (!model) return nil;
+
+    NSArray<NSString *> *offered = [model languagesOfferedForText:text];
+    if (!offered) return nil;
+
+    // The marks are read alongside the model rather than instead of it. The
+    // model judges the text as a whole and can be talked round by a file that
+    // is mostly one language quoting another - a PowerShell script whose body
+    // is shell commands and a unit file reads as shell and ini - while a mark
+    // such as "[environment]::" or "$($args[0])" belongs to one language and
+    // to nothing else. Two of them put the language on the list.
+    NSMutableArray<NSString *> *names = [offered mutableCopy];
+    NSString *sample = [self sampleOfContents:text];
+    NSDictionary<NSString *, NSArray<NSString *> *> *marks = StructuralMarks();
+    for (NSString *name in [marks.allKeys sortedArrayUsingSelector:@selector(compare:)]) {
+        if ([names containsObject:name]) continue;
+        NSUInteger hits = 0;
+        for (NSString *mark in marks[name]) {
+            if ([sample rangeOfString:mark].location != NSNotFound) hits++;
+        }
+        if (hits >= 2) [names addObject:name];
+    }
+    if (names.count > NppMostLanguagesToOffer) return @[];
+
+    NSMutableArray<NppLanguage *> *fitting = [NSMutableArray array];
+    for (NSString *name in names) {
+        NppLanguage *language = [self languageNamed:name];
+        if (language && ![language.name isEqualToString:@"normal"]) [fitting addObject:language];
+    }
+    return fitting;
+}
+
+/// The marks and the keyword counting, as they were before the model.
+- (NSArray<NppLanguage *> *)languagesFromRulesForContents:(NSString *)text {
     NSDictionary<NSString *, NSNumber *> *scores = [self languageScoresForContents:text];
     if (!scores.count) return @[];
 
@@ -434,6 +476,7 @@ static double IniLikeness(NSString *sample) {
     }
     return fitting;
 }
+
 
 - (NppLanguage *)languageForContents:(NSString *)text {
     NSArray<NppLanguage *> *fitting = [self languagesMatchingContents:text];

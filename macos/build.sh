@@ -45,12 +45,12 @@ libtool -static -o "$OUT/libscintilla-cocoa.a" "$OUT"/obj/*.o 2>/dev/null
 echo "==> NotepadMac"
 APPOBJ="$OUT/appobj"
 mkdir -p "$APPOBJ"
-for f in NppPanel NppRegex ApiCatalog LanguageCatalog LanguageDetection StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands FindCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
+for f in NppPanel NppRegex ApiCatalog LanguageCatalog LanguageModel LanguageDetection StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands FindCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
 done
 clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o \
     "$OUT/libscintilla-cocoa.a" "$LEX/bin/liblexilla.a" \
-    -framework Cocoa -framework QuartzCore -framework Security -lcurl -lxml2 \
+    -framework Cocoa -framework QuartzCore -framework Security -lcurl -lxml2 -lz \
     -o "$OUT/NotepadMac"
 
 echo "==> NotepadMac.app"
@@ -65,6 +65,8 @@ cp "$ROOT/PowerEditor/src/stylers.model.xml" "$APP/Contents/Resources/"
 # read back by the coverage meta-test in the built-in suite
 cp "$ROOT/macos/implemented.txt"            "$APP/Contents/Resources/"
 cp "$ROOT/macos/resources/encoding-reference.txt" "$APP/Contents/Resources/"
+# The trained language model, fitted offline by macos/train-language-model.py.
+cp "$ROOT/macos/resources/language-model.bin"    "$APP/Contents/Resources/"
 # The FTP tests need a server to talk to; this one exists only for them.
 cp "$ROOT/macos/test-ftp-server.py"         "$APP/Contents/Resources/"
 # Notepad++'s own colour themes; the Style Configurator and Preferences list these.

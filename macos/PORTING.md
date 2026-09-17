@@ -404,6 +404,66 @@ repositories were read to establish what the commands are and how they behave.
   Function List are a split view and floating panels rather than a dockable
   layout that can be rearranged and saved.
 
+### Working out a language from its contents
+
+Notepad++ has nothing of the kind; it is offered here as a setting, and only
+consulted when the name says nothing: a file with no extension, or a fragment
+pasted into an empty document. The answer is a set - one language, a list of
+up to ten to choose from, or nothing when more than ten would fit - and it is
+built in three layers:
+
+1. **What the text says outright**: a shebang line, `<?php`, `<?xml`, an HTML
+   doctype, an editor modeline, JSON that parses. Taken as given.
+2. **A trained model**, `macos/resources/language-model.bin`, read by
+   `app/LanguageModel.mm`. Seventy-three independent yes-or-no judgements, one
+   per language, so that a text two languages could have written scores well
+   for both and both are offered. Trained by `macos/train-language-model.py`
+   from the Linguist samples, Rosetta Code, Lexilla's lexer examples, the
+   function-list corpus and this repository's own files - and trained on
+   pieces of three to forty lines as well as whole files, because pieces are
+   what it is asked about. Features are byte n-grams, whole words, and the
+   first word and first and last character of each line, every one a 64-bit
+   key the application computes the same way; the trainer reads its own file
+   back and the two answer identically. The scale at which scores become
+   likelihoods and the level a language has to reach are fitted on held-back
+   files, for the rule itself: as many right answers as possible with as few
+   lists as possible. Rosetta Code is split for testing by task, so two
+   versions of one program never sit on both sides.
+3. **Marks** that belong to one language and to nothing else - `[CmdletBinding`,
+   `\documentclass`, `End Sub` - put their language on the list whatever the
+   rest of the text looks like: a PowerShell script whose body is shell
+   commands reads as shell to the model, and the marks are what say otherwise.
+
+The old keyword-list rules remain for the twenty-one languages there is no
+example of anywhere to hand, and are only reached when the model has nothing
+to say.
+
+Measured on files the model never saw (the half of the held-back files not
+used to fit the rule; 1,128 whole files and about 1,100 fragments of each
+length):
+
+| Text | Right first | Right in what is offered | One language | One and right | A list | Nothing |
+|---|---|---|---|---|---|---|
+| whole file | 94.6% | 95.4% | 83% | 97% | 15% | 2% |
+| 40 lines | 93.5% | 94.8% | 82% | 97% | 16% | 2% |
+| 20 lines | 91.7% | 93.5% | 77% | 96% | 20% | 3% |
+| 10 lines | 89.1% | 91.4% | 70% | 96% | 26% | 4% |
+| 5 lines | 85.3% | 89.6% | 59% | 95% | 37% | 4% |
+
+By source, whole files: Linguist 86.9% first (the most varied, and the most
+telling), the repository's own files 89.8%, Rosetta Code 97.3%. What is
+misread is mostly family: C as C++, Scheme as Lisp, Raku as Perl, TypeScript
+as JavaScript, ASP as HTML.
+
+```
+python3 macos/train-language-model.py --linguist <github-linguist> --rosetta <RosettaCodeData>
+python3 macos/train-language-model.py --model macos/resources/language-model.bin --try file...
+```
+
+Training takes about ninety seconds and needs numpy. The corpora are not in
+this repository: Linguist is github.com/github-linguist/linguist, Rosetta
+Code is github.com/acmeism/RosettaCodeData.
+
 ### Fix applied to make this possible
 
 `lexilla/lexers/LexUser.cxx` was the single file blocking a macOS Lexilla build:
@@ -521,11 +581,14 @@ macos/
 ├── gen_cp720.py       regenerates app/CP720Table.h (code page 720)
 ├── gen_features.sh    regenerates FEATURES.md from the Windows menu resource
 ├── test.sh            builds if needed, then runs the built-in suite
+├── train-language-model.py  fits resources/language-model.bin
 └── app/
     ├── main.mm            entry point
     ├── AppDelegate.mm     menus, shortcuts, file/search actions, self-test
     ├── EditorController.mm tabs, documents, language + theme application
     ├── LanguageCatalog.mm  parses langs.model.xml
+    ├── LanguageDetection.mm a language from a file's contents
+    ├── LanguageModel.mm    reads the trained model
     ├── StyleCatalog.mm     parses stylers.model.xml
     ├── LangMap.h           generated: language -> Lexilla lexer ID
     └── Info.plist          bundle metadata, plain-text/source-code types
