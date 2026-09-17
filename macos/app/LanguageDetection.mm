@@ -488,28 +488,49 @@ static double IniLikeness(NSString *sample) {
 
 @implementation EditorController (LanguageDetection)
 
+// One key for both accessors. A static declared inside each of them is two
+// variables at two addresses, and what the setter stored the getter could
+// never find: the handler read back as nil, and no choice was ever shown.
+static const char kLanguageChoiceHandlerKey = 0;
+
 - (void (^)(NSArray<NppLanguage *> *))languageChoiceHandler {
-    static const char kHandlerKey = 0;
-    return objc_getAssociatedObject(self, &kHandlerKey);
+    return objc_getAssociatedObject(self, &kLanguageChoiceHandlerKey);
 }
 
 - (void)setLanguageChoiceHandler:(void (^)(NSArray<NppLanguage *> *))handler {
-    static const char kHandlerKey = 0;
-    objc_setAssociatedObject(self, &kHandlerKey, handler, OBJC_ASSOCIATION_COPY);
+    objc_setAssociatedObject(self, &kLanguageChoiceHandlerKey, handler, OBJC_ASSOCIATION_COPY);
+}
+
+/// Why nothing was suggested, or nil when something could be. One line in
+/// the system log per decision: "nothing happened" is otherwise impossible
+/// to tell apart from "nothing was asked".
+- (NSString *)reasonNotToSuggestForDocument:(NppDocument *)doc {
+    if (![NppPreferences shared].detectLanguageFromContent) return @"the setting is off";
+    if (!doc) return @"no document";
+    if (doc.languageChosenByUser) return @"the language was chosen by hand";
+    // Only where the name has nothing to say. A file called script.py is that
+    // language whatever its contents look like.
+    if (doc.path.pathExtension.length) return @"the name has an extension";
+    if (doc.language && ![doc.language.name isEqualToString:@"normal"]) {
+        return [NSString stringWithFormat:@"the language is already %@", doc.language.name];
+    }
+    return nil;
 }
 
 - (NSArray<NppLanguage *> *)languagesSuggestedForCurrentDocument {
-    if (![NppPreferences shared].detectLanguageFromContent) return @[];
-
     NppDocument *doc = self.currentDocument;
-    if (!doc || doc.languageChosenByUser) return @[];
-
-    // Only where the name has nothing to say. A file called script.py is that
-    // language whatever its contents look like.
-    if (doc.path.pathExtension.length) return @[];
-    if (doc.language && ![doc.language.name isEqualToString:@"normal"]) return @[];
-
-    return [[LanguageCatalog sharedCatalog] languagesMatchingContents:[self.sci string] ?: @""];
+    NSString *reason = [self reasonNotToSuggestForDocument:doc];
+    if (reason) {
+        NSLog(@"language detection: not asked, %@", reason);
+        return @[];
+    }
+    NSArray<NppLanguage *> *fitting =
+        [[LanguageCatalog sharedCatalog] languagesMatchingContents:[self.sci string] ?: @""];
+    NSMutableArray<NSString *> *names = [NSMutableArray array];
+    for (NppLanguage *one in fitting) [names addObject:one.name];
+    NSLog(@"language detection: %lu characters, offered [%@]",
+          (unsigned long)[self.sci string].length, [names componentsJoinedByString:@", "]);
+    return fitting;
 }
 
 - (NppLanguage *)detectLanguageOfCurrentDocumentOffering:

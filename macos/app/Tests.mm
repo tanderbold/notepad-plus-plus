@@ -3134,6 +3134,30 @@ int NppMacRunTests(AppDelegate *app) {
             NSString *crlf = [mixed stringByReplacingOccurrencesOfString:@"\n" withString:@"\r\n"];
             NSMutableArray *crlfNames = [NSMutableArray array];
             for (NppLanguage *one in [lc languagesMatchingContents:crlf]) [crlfNames addObject:one.name];
+            // The choice reaches the user. Pasting the same script into an
+            // empty document, through the Paste command itself, has to put a
+            // sheet on the window with the languages in it - which is where
+            // a handler that read back as nil left nothing at all.
+            [ed newDocument];
+            [board clearContents];
+            [board setString:mixed forType:NSPasteboardTypeString];
+            [app pasteText:nil];
+            [[NSRunLoop mainRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.3]];
+            NSWindow *sheet = ed.window.attachedSheet;
+            NSPopUpButton *choices = nil;
+            for (NSView *view in sheet.contentView.subviews) {
+                for (NSView *inner in [@[view] arrayByAddingObjectsFromArray:view.subviews]) {
+                    if ([inner isKindOfClass:[NSPopUpButton class]]) choices = (NSPopUpButton *)inner;
+                }
+            }
+            Check(@"IDM_LANG_DETECT (the choice is put to the user)",
+                  @"pasting a script several languages fit puts a sheet on the "
+                  @"window, and the handler that shows it can be read back",
+                  ed.languageChoiceHandler != nil && sheet != nil &&
+                  (choices == nil || [choices.itemTitles containsObject:@"powershell"]));
+            if (sheet) [ed.window endSheet:sheet returnCode:NSModalResponseCancel];
+            [[NSRunLoop mainRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+
             Check(@"IDM_LANG_DETECT (line endings make no difference)",
                   @"the same text with CRLF line endings is offered the same languages",
                   [crlfNames isEqualToArray:mixedNames]);
