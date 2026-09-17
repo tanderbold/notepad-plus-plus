@@ -218,20 +218,22 @@ static const char kSavedMacrosKey = 0;
 static const char kPreviousTabKey = 0;
 
 - (BOOL)activateRecentWindow {
-    NSNumber *prev = objc_getAssociatedObject(self, &kPreviousTabKey);
-    NSInteger current = [self.documents indexOfObject:self.currentDocument];
-    if (!prev || prev.integerValue >= (NSInteger)self.documents.count ||
-        prev.integerValue == current) {
+    // A document rather than an index: tabs closed since it was remembered
+    // would have shifted an index onto the wrong tab.
+    NppDocument *prev = objc_getAssociatedObject(self, &kPreviousTabKey);
+    NppDocument *current = self.currentDocument;
+    NSUInteger where = prev ? [self.documents indexOfObject:prev] : NSNotFound;
+    if (where == NSNotFound || prev == current) {
         NSBeep();
         return NO;
     }
-    [self selectDocumentAtIndex:prev.integerValue];
-    objc_setAssociatedObject(self, &kPreviousTabKey, @(current), OBJC_ASSOCIATION_RETAIN);
+    [self selectDocumentAtIndex:(NSInteger)where];
+    objc_setAssociatedObject(self, &kPreviousTabKey, current, OBJC_ASSOCIATION_RETAIN);
     return YES;
 }
 
-- (void)rememberPreviousTab:(NSInteger)index {
-    objc_setAssociatedObject(self, &kPreviousTabKey, @(index), OBJC_ASSOCIATION_RETAIN);
+- (void)rememberPreviousTab:(NppDocument *)doc {
+    objc_setAssociatedObject(self, &kPreviousTabKey, doc, OBJC_ASSOCIATION_RETAIN);
 }
 
 #pragma mark - Run

@@ -37,7 +37,7 @@
 #include "SciLexer.h"
 #import "Tests.h"
 
-@interface AppDelegate ()
+@interface AppDelegate () <NSWindowDelegate>
 @property (nonatomic, strong) NSWindow *window;
 @property (nonatomic, strong) EditorController *editor;
 @property (nonatomic, copy) NSString *lastSearchTerm;
@@ -58,6 +58,11 @@
 @property (nonatomic) BOOL alwaysOnTop;
 @property (nonatomic, strong) NSMenu *runMenu;
 @property (nonatomic) NSInteger fixedRunItemCount;
+/// Files handed over before the editor existed, opened once it does.
+@property (nonatomic, strong) NSMutableArray<NSString *> *pendingOpenPaths;
+/// The window's close was already put to the user: quitting after it must
+/// not ask again about what was declined.
+@property (nonatomic) BOOL closingConfirmed;
 @property (nonatomic, strong) NSPanel *findPanel;
 @property (nonatomic, strong) NSTextField *findField;
 @property (nonatomic, strong) NSTextField *replaceField;
@@ -161,6 +166,7 @@
 
     self.editor = [[EditorController alloc] initWithFrame:frame];
     self.editor.window = self.window;
+    self.window.delegate = self;
     // Opening a file whose name says nothing may turn up several languages that
     // fit; this is what puts them to the user.
     __weak __typeof(self) weakSelf = self;
@@ -184,6 +190,13 @@
     if ([NppPreferences shared].restoreSession) {
         [self.editor loadSessionFrom:[self.editor defaultSessionPath] error:NULL];
     }
+    // The documents this instance was launched with arrive through
+    // application:openFile: before this method runs, and waited here.
+    for (NSString *path in self.pendingOpenPaths) {
+        NSError *err = nil;
+        if (![self.editor openFileAtPath:path error:&err] && err) [[NSAlert alertWithError:err] runModal];
+    }
+    self.pendingOpenPaths = nil;
 
     // Follow the system appearance while Preferences is set to do so.
     [NSApp addObserver:self forKeyPath:@"effectiveAppearance"
@@ -208,7 +221,27 @@
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)a { return YES; }
 
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)app {
+    if (self.closingConfirmed) return NSTerminateNow;
+    return [self.editor confirmClosingDocuments:self.editor.documents] ? NSTerminateNow
+                                                                         : NSTerminateCancel;
+}
+
+- (BOOL)windowShouldClose:(NSWindow *)sender {
+    if (![self.editor confirmClosingDocuments:self.editor.documents]) return NO;
+    self.closingConfirmed = YES;     // what was not saved was declined, not forgotten
+    return YES;
+}
+
 - (BOOL)application:(NSApplication *)app openFile:(NSString *)filename {
+    if (!self.editor) {
+        // Delivered before applicationDidFinishLaunching: has built the
+        // editor, which is how AppKit hands over the files an instance was
+        // launched with. Kept until there is somewhere to open them.
+        if (!self.pendingOpenPaths) self.pendingOpenPaths = [NSMutableArray array];
+        [self.pendingOpenPaths addObject:filename];
+        return YES;
+    }
     // "Always in multi-instance mode" hands the file to a second copy of the app
     // instead of adding a tab here.
     if ([self.editor shouldOpenFilesInNewInstance] && self.editor.documents.count > 0) {
@@ -1737,6 +1770,20 @@
 - (void)openInDefaultViewer:(id)sender { if (![self.editor openInDefaultViewer]) NSBeep(); }
 
 - (void)reloadDocument:(id)sender {
+    NppDocument *doc = self.editor.currentDocument;
+    if (doc.modified && doc.path) {
+        NSInteger answer = self.editor.scriptedCloseAnswer;
+        if (!answer && getenv("NPPMAC_TEST")) answer = NSAlertFirstButtonReturn;
+        if (!answer) {
+            NSAlert *ask = [[NSAlert alloc] init];
+            ask.messageText = [NSString stringWithFormat:@"Reload %@?", doc.displayName];
+            ask.informativeText = @"The changes made here will be lost.";
+            [ask addButtonWithTitle:@"Reload"];
+            [ask addButtonWithTitle:@"Cancel"];
+            answer = [ask runModal];
+        }
+        if (answer != NSAlertFirstButtonReturn) return;
+    }
     NSError *err = nil;
     if (![self.editor reloadCurrentDocument:&err] && err) [[NSAlert alertWithError:err] runModal];
 }
@@ -1937,18 +1984,31 @@ static BOOL NppForwardToFieldEditor(SEL action, id sender) {
 - (void)zoomOut:(id)sender   { [self.editor.sci message:SCI_ZOOMOUT]; }
 - (void)zoomReset:(id)sender { [self.editor.sci message:SCI_SETZOOM wParam:0 lParam:0]; }
 
+// The View toggles are the preference: written there, so that the next
+// appearance change or Preferences apply does not put things back, and
+// pushed to both views, as Notepad++ does.
 - (void)toggleWordWrap:(id)sender {
-    ScintillaView *sci = self.editor.sci;
-    BOOL on = [sci message:SCI_GETWRAPMODE] != SC_WRAP_NONE;
-    [sci message:SCI_SETWRAPMODE wParam:(on ? SC_WRAP_NONE : SC_WRAP_WORD) lParam:0];
+    NppPreferences *p = [NppPreferences shared];
+    p.wordWrap = [self.editor.sci message:SCI_GETWRAPMODE] == SC_WRAP_NONE;
+    for (ScintillaView *sci in [self bothViews]) {
+        [sci message:SCI_SETWRAPMODE wParam:(uptr_t)(p.wordWrap ? SC_WRAP_WORD : SC_WRAP_NONE) lParam:0];
+    }
+}
+
+- (NSArray<ScintillaView *> *)bothViews {
+    ScintillaView *second = self.editor.secondarySci;
+    return second ? @[self.editor.sci, second] : @[self.editor.sci];
 }
 
 - (void)toggleOvertype:(id)sender { [self.editor toggleOvertype]; }
 
 - (void)toggleWhitespace:(id)sender {
-    ScintillaView *sci = self.editor.sci;
-    BOOL on = [sci message:SCI_GETVIEWWS] != SCWS_INVISIBLE;
-    [sci message:SCI_SETVIEWWS wParam:(on ? SCWS_INVISIBLE : SCWS_VISIBLEALWAYS) lParam:0];
+    NppPreferences *p = [NppPreferences shared];
+    p.showWhitespace = [self.editor.sci message:SCI_GETVIEWWS] == SCWS_INVISIBLE;
+    for (ScintillaView *sci in [self bothViews]) {
+        [sci message:SCI_SETVIEWWS
+               wParam:(uptr_t)(p.showWhitespace ? SCWS_VISIBLEALWAYS : SCWS_INVISIBLE) lParam:0];
+    }
 }
 
 - (void)pickLanguage:(NSMenuItem *)sender {

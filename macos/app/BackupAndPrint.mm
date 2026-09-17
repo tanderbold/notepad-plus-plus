@@ -165,7 +165,7 @@ static const char kAutosaveTimerKey = 0;
         NppDocument *d = self.documents[(NSUInteger)i];
         if (d.path) continue;
         [self selectDocumentAtIndex:i];
-        NSString *text = [self.sci string] ?: @"";
+        NSString *text = [self documentText];
         if (!text.length) continue;
         [unsaved addObject:@{@"name": d.displayName ?: @"", @"text": text}];
     }

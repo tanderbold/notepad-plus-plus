@@ -31,12 +31,17 @@ make -C "$LEX/src" -j"$(sysctl -n hw.ncpu)" >/dev/null
 
 echo "==> Scintilla core"
 for f in "$SCI"/src/*.cxx; do
-    clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -c "$f" -o "$OUT/obj/$(basename "${f%.cxx}").o"
+    o="$OUT/obj/$(basename "${f%.cxx}").o"
+    # Scintilla does not change from one build of the editor to the next.
+    [ "$o" -nt "$f" ] && [ "$o" -nt "$0" ] && continue
+    clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -c "$f" -o "$o"
 done
 
 echo "==> Scintilla Cocoa layer"
 for f in PlatCocoa ScintillaCocoa ScintillaView InfoBar; do
-    clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SCI/cocoa/$f.mm" -o "$OUT/obj/$f.o"
+    o="$OUT/obj/$f.o"
+    [ "$o" -nt "$SCI/cocoa/$f.mm" ] && [ "$o" -nt "$0" ] && continue
+    clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SCI/cocoa/$f.mm" -o "$o"
 done
 
 echo "==> libscintilla-cocoa.a"

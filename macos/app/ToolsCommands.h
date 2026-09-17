@@ -30,7 +30,7 @@ typedef NS_ENUM(NSInteger, NppTabSort) {
 - (NSArray<NSString *> *)savedMacroNames;
 /// Called from the notification handler for each recorded Scintilla action.
 - (void)recordMacroMessage:(int)message wParam:(unsigned long)wParam lParam:(long)lParam;
-- (void)rememberPreviousTab:(NSInteger)index;
+- (void)rememberPreviousTab:(NppDocument *)doc;
 
 // Window
 - (void)sortTabsBy:(NppTabSort)key ascending:(BOOL)ascending;

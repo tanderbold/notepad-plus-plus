@@ -60,7 +60,6 @@ static NSString *LineEnding(NSString *line) {
 
 #pragma mark - Shared plumbing
 
-- (NSString *)documentText { return [self.sci string] ?: @""; }
 
 /// Replaces the whole document in one undo step, restoring the caret line.
 - (void)replaceDocumentText:(NSString *)text keepingLine:(long)line {

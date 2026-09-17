@@ -1,3 +1,4 @@
+#include <string>
 #import "EditorController.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
@@ -96,6 +97,7 @@ static int DetectEOL(NSString *text) {
     NSRange lf = [text rangeOfString:@"\n"];
     if (cr.location == NSNotFound) return SC_EOL_LF;   // no CR at all, incl. no line ending
     if (lf.location == NSNotFound) return SC_EOL_CR;
+    if (lf.location < cr.location) return SC_EOL_LF;   // the first ending is a bare LF
     return (lf.location == cr.location + 1) ? SC_EOL_CRLF : SC_EOL_CR;
 }
 
@@ -242,10 +244,14 @@ static long SciColor(NSColor *c) {
 /// re-applied on every switch rather than only at startup.
 - (void)applyDocumentSettings {
     ScintillaView *sci = self.sciView;
-    [sci message:SCI_SETTABWIDTH wParam:4 lParam:0];
-    [sci message:SCI_SETINDENT wParam:4 lParam:0];
-    [sci message:SCI_SETUSETABS wParam:0 lParam:0];
-    [sci message:SCI_SETINDENTATIONGUIDES wParam:SC_IV_LOOKBOTH lParam:0];
+    // From the preferences, not literals: these live in the Scintilla
+    // document, so whatever was applied to the last one is gone on a switch.
+    NppPreferences *prefs = [NppPreferences shared];
+    [sci message:SCI_SETTABWIDTH wParam:(uptr_t)MAX(1, prefs.tabWidth) lParam:0];
+    [sci message:SCI_SETINDENT wParam:(uptr_t)MAX(1, prefs.tabWidth) lParam:0];
+    [sci message:SCI_SETUSETABS wParam:(uptr_t)(prefs.useSpaces ? 0 : 1) lParam:0];
+    [sci message:SCI_SETINDENTATIONGUIDES
+           wParam:(uptr_t)(prefs.showIndentGuides ? SC_IV_LOOKBOTH : SC_IV_NONE) lParam:0];
     [sci message:SCI_SETBACKSPACEUNINDENTS wParam:1 lParam:0];
     [sci message:SCI_SETTABINDENTS wParam:1 lParam:0];
     // Change History powers Search > Change History; it is per document.
@@ -383,6 +389,24 @@ static long SciColor(NSColor *c) {
     [self applyNewDocumentDefaults];
 }
 
+#pragma mark - The text, by length
+
+- (NSString *)documentText {
+    long length = [self.sciView message:SCI_GETLENGTH wParam:0 lParam:0];
+    if (length <= 0) return @"";
+    std::string buffer((size_t)length + 1, '\0');
+    [self.sciView message:SCI_GETTEXT wParam:(uptr_t)(length + 1) lParam:(sptr_t)&buffer[0]];
+    NSString *text = [[NSString alloc] initWithBytes:buffer.data() length:(NSUInteger)length
+                                            encoding:NSUTF8StringEncoding];
+    return text ?: ([self.sciView string] ?: @"");
+}
+
+- (void)setDocumentText:(NSString *)text {
+    NSData *utf8 = [text dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
+    [self.sciView message:SCI_CLEARALL wParam:0 lParam:0];
+    [self.sciView message:SCI_ADDTEXT wParam:(uptr_t)utf8.length lParam:(sptr_t)utf8.bytes];
+}
+
 - (BOOL)openFileAtPath:(NSString *)path error:(NSError **)error {
     // Already open? Just focus it.
     for (NSUInteger i = 0; i < self.docs.count; ++i) {
@@ -416,7 +440,7 @@ static long SciColor(NSColor *c) {
     [self.docs addObject:doc];
     [self selectDocumentAtIndex:(NSInteger)self.docs.count - 1];
 
-    [self.sciView setString:text];
+    [self setDocumentText:text];
     [self.sciView message:SCI_SETEOLMODE wParam:(uptr_t)doc.eolMode lParam:0];
     [self applyPerformanceRestrictions];
     [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
@@ -436,12 +460,17 @@ static long SciColor(NSColor *c) {
 
 - (void)selectDocumentAtIndex:(NSInteger)index {
     if (index < 0 || index >= (NSInteger)self.docs.count) return;
-    if (self.currentIndex >= 0 && self.currentIndex != index) {
-        [self rememberPreviousTab:self.currentIndex];   // backs Window > Recent Window
+    if (self.currentIndex >= 0 && self.currentIndex != index &&
+        self.currentIndex < (NSInteger)self.docs.count) {
+        [self rememberPreviousTab:self.docs[self.currentIndex]];   // backs Window > Recent Window
     }
     self.currentIndex = index;
     NppDocument *doc = self.docs[index];
     [self.sciView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    // The map mirrors whatever is in front, not whatever was when it opened.
+    if (self.docMapView.superview) {
+        [self.docMapView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    }
     [self applyDocumentSettings];
     [self applyLanguage];
     [self refreshChrome];
@@ -495,7 +524,7 @@ static long SciColor(NSColor *c) {
     NSError *err = nil;
     // Preserve what is on disk before overwriting it, if Backup asks for that.
     [self writeBackupForPath:path];
-    NSString *text = [self.sciView string] ?: @"";
+    NSString *text = [self documentText];
     NppDocument *doc = self.currentDocument;
     NSStringEncoding enc = doc.encoding ?: NSUTF8StringEncoding;
     NSData *data = doc.codepage
@@ -510,26 +539,44 @@ static long SciColor(NSColor *c) {
     }
     [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
+    self.currentDocument.encodingChanged = NO;
     [self refreshChrome];
+    return YES;
+}
+
+- (BOOL)confirmClosingDocuments:(NSArray<NppDocument *> *)docs {
+    NppDocument *was = self.currentDocument;
+    for (NppDocument *doc in [docs copy]) {
+        if (!doc.modified || ![self.docs containsObject:doc]) continue;
+        [self selectDocumentAtIndex:(NSInteger)[self.docs indexOfObject:doc]];
+
+        NSInteger answer = self.scriptedCloseAnswer;
+        // The suite cannot answer a sheet; unless a test scripted the answer,
+        // it does not save, which is what every test before this relied on.
+        if (!answer && getenv("NPPMAC_TEST")) answer = NSAlertSecondButtonReturn;
+        if (!answer) {
+            NSAlert *alert = [[NSAlert alloc] init];
+            alert.messageText = [NSString stringWithFormat:@"Save changes to %@?", doc.displayName];
+            alert.informativeText = @"Your changes will be lost if you don't save them.";
+            [alert addButtonWithTitle:@"Save"];
+            [alert addButtonWithTitle:@"Don't Save"];
+            [alert addButtonWithTitle:@"Cancel"];
+            answer = [alert runModal];
+        }
+        if (answer == NSAlertThirdButtonReturn) { [self reselectDocument:was]; return NO; }
+        if (answer == NSAlertFirstButtonReturn && ![self saveCurrentDocument]) {
+            [self reselectDocument:was];
+            return NO;
+        }
+    }
+    [self reselectDocument:was];
     return YES;
 }
 
 - (void)closeCurrentDocument {
     NppDocument *doc = self.currentDocument;
     if (!doc) return;
-
-    if (doc.modified) {
-        NSAlert *alert = [[NSAlert alloc] init];
-        alert.messageText = [NSString stringWithFormat:@"Save changes to %@?", doc.displayName];
-        alert.informativeText = @"Your changes will be lost if you don't save them.";
-        [alert addButtonWithTitle:@"Save"];
-        [alert addButtonWithTitle:@"Don't Save"];
-        [alert addButtonWithTitle:@"Cancel"];
-        NSModalResponse r = [alert runModal];
-        if (r == NSAlertThirdButtonReturn) return;
-        if (r == NSAlertFirstButtonReturn && ![self saveCurrentDocument]) return;
-    }
-
+    if (![self confirmClosingDocuments:@[doc]]) return;
     [self closeDocumentAtIndex:self.currentIndex discardChanges:YES];
 }
 
@@ -537,6 +584,7 @@ static long SciColor(NSColor *c) {
     if (index < 0 || index >= (NSInteger)self.docs.count) return;
     NppDocument *doc = self.docs[index];
     if (!discard && doc.modified) return;
+    NppDocument *inFront = self.currentDocument;
 
     [self.docs removeObjectAtIndex:index];
 
@@ -547,6 +595,11 @@ static long SciColor(NSColor *c) {
         }
         self.currentIndex = -1;
         [self newDocument];                       // switches the view off the old doc
+    } else if (inFront && inFront != doc && [self.docs containsObject:inFront]) {
+        // Closing another tab leaves the one in front where it is; only its
+        // number changed.
+        self.currentIndex = (NSInteger)[self.docs indexOfObject:inFront];
+        [self refreshChrome];
     } else {
         [self selectDocumentAtIndex:MIN(index, (NSInteger)self.docs.count - 1)];
     }
@@ -567,19 +620,26 @@ static long SciColor(NSColor *c) {
     if (!data) return NO;
 
     NSStringEncoding enc = NSUTF8StringEncoding; BOOL bom = NO;
-    NSString *text = DecodeText(data, &enc, &bom);
+    // Read back the way it is being read: a code page the user chose stays.
+    NSString *text = doc.codepage ? [EditorController stringFromData:data codepage:doc.codepage]
+                                  : DecodeText(data, &enc, &bom);
     if (!text) return NO;
 
     long caret = [self.sciView message:SCI_GETCURRENTPOS];
-    [self.sciView setString:text];
-    doc.encoding = enc;
-    doc.hasBOM = bom;
+    long firstLine = [self.sciView message:SCI_GETFIRSTVISIBLELINE];
+    [self setDocumentText:text];
+    if (!doc.codepage) {
+        doc.encoding = enc;
+        doc.hasBOM = bom;
+    }
+    doc.encodingChanged = NO;
     doc.eolMode = DetectEOL(text);
     [self.sciView message:SCI_SETEOLMODE wParam:(uptr_t)doc.eolMode lParam:0];
     [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     [self.sciView message:SCI_EMPTYUNDOBUFFER wParam:0 lParam:0];
     [self.sciView message:SCI_GOTOPOS
                    wParam:(uptr_t)MIN(caret, [self.sciView message:SCI_GETLENGTH]) lParam:0];
+    [self.sciView message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)firstLine lParam:0];
     doc.modified = NO;
     [self refreshChrome];
     return YES;
@@ -588,7 +648,10 @@ static long SciColor(NSColor *c) {
 - (BOOL)saveCopyOfCurrentTo:(NSString *)path error:(NSError **)error {
     NppDocument *doc = self.currentDocument;
     if (!doc) return NO;
-    NSData *data = EncodeText([self.sciView string] ?: @"", doc.encoding ?: NSUTF8StringEncoding, doc.hasBOM);
+    NSString *text = [self documentText];
+    NSData *data = doc.codepage
+        ? [EditorController dataFromString:text codepage:doc.codepage]
+        : EncodeText(text, doc.encoding ?: NSUTF8StringEncoding, doc.hasBOM);
     if (!data) return NO;
     return [data writeToFile:path options:NSDataWritingAtomic error:error];
 }
@@ -638,11 +701,13 @@ static long SciColor(NSColor *c) {
 }
 
 - (void)closeAllDocuments {
+    if (![self confirmClosingDocuments:self.docs]) return;
     while (self.docs.count > 1) [self closeDocumentAtIndex:0 discardChanges:YES];
     [self closeDocumentAtIndex:0 discardChanges:YES];   // last one is replaced by a fresh tab
 }
 
 - (void)closeAllButCurrent {
+    if (![self confirmClosingDocuments:[self.docs filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NppDocument *d, NSDictionary *b) { return d != self.currentDocument; }]]]) return;
     NppDocument *keep = self.currentDocument;
     for (NSInteger i = (NSInteger)self.docs.count - 1; i >= 0; --i) {
         if (self.docs[i] != keep) [self closeDocumentAtIndex:i discardChanges:YES];
@@ -651,6 +716,7 @@ static long SciColor(NSColor *c) {
 }
 
 - (void)closeAllToLeft {
+    if (![self confirmClosingDocuments:[self.docs subarrayWithRange:NSMakeRange(0, (NSUInteger)MAX(0, self.currentIndex))]]) return;
     NppDocument *keep = self.currentDocument;
     for (NSInteger i = self.currentIndex - 1; i >= 0; --i) {
         [self closeDocumentAtIndex:i discardChanges:YES];
@@ -659,6 +725,7 @@ static long SciColor(NSColor *c) {
 }
 
 - (void)closeAllToRight {
+    if (![self confirmClosingDocuments:(self.currentIndex + 1 < (NSInteger)self.docs.count ? [self.docs subarrayWithRange:NSMakeRange((NSUInteger)self.currentIndex + 1, self.docs.count - (NSUInteger)self.currentIndex - 1)] : @[])]) return;
     NppDocument *keep = self.currentDocument;
     // closeDocumentAtIndex: moves currentIndex, so the bound is captured first.
     NSInteger from = self.currentIndex;
@@ -676,6 +743,7 @@ static long SciColor(NSColor *c) {
 }
 
 - (void)closeAllButPinned {
+    if (![self confirmClosingDocuments:[self.docs filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NppDocument *d, NSDictionary *b) { return !d.pinned; }]]]) return;
     for (NSInteger i = (NSInteger)self.docs.count - 1; i >= 0; --i) {
         if (!self.docs[i].pinned) [self closeDocumentAtIndex:i discardChanges:YES];
     }
@@ -698,7 +766,7 @@ static long SciColor(NSColor *c) {
     NppDocument *doc = self.currentDocument;
     if (!doc) return nil;
     NSTextView *page = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, 540, 720)];
-    page.string = [self.sciView string] ?: @"";
+    page.string = [self documentText];
     page.font = [NSFont fontWithName:@"Menlo" size:10] ?: [NSFont userFixedPitchFontOfSize:10];
 
     NSPrintInfo *info = [NSPrintInfo sharedPrintInfo];
@@ -793,8 +861,11 @@ static long SciColor(NSColor *c) {
         [files addObject:@{@"path": d.path,
                            @"language": d.language.name ?: @"normal"}];
     }
+    // The active tab is named by path: an index would count the unsaved
+    // tabs that are not in the list, and the tabs open before the load.
     NSDictionary *session = @{@"version": @1,
                               @"current": @(MAX(0, self.currentIndex)),
+                              @"currentPath": self.currentDocument.path ?: @"",
                               @"files": files};
     NSData *json = [NSJSONSerialization dataWithJSONObject:session
                                                    options:NSJSONWritingPrettyPrinted error:error];
@@ -822,8 +893,16 @@ static long SciColor(NSColor *c) {
             if ([lang isKindOfClass:[NSString class]] && lang.length) [self setLanguageNamed:lang];
         }
     }
+    NSString *currentPath = session[@"currentPath"];
+    NSUInteger byPath = [currentPath isKindOfClass:[NSString class]] && currentPath.length
+        ? [self.docs indexOfObjectPassingTest:^BOOL(NppDocument *d, NSUInteger i, BOOL *stop) {
+              return [d.path isEqualToString:currentPath];
+          }]
+        : NSNotFound;
     NSNumber *cur = session[@"current"];
-    if ([cur isKindOfClass:[NSNumber class]]) {
+    if (byPath != NSNotFound) {
+        [self selectDocumentAtIndex:(NSInteger)byPath];
+    } else if ([cur isKindOfClass:[NSNumber class]]) {
         [self selectDocumentAtIndex:MIN(cur.integerValue, (NSInteger)self.docs.count - 1)];
     }
     return opened > 0 || files.count == 0;
@@ -973,8 +1052,10 @@ static long SciColor(NSColor *c) {
     if (!doc) return;
     doc.encoding = enc;
     doc.hasBOM = bom;
-    // Changing the encoding changes the bytes on disk, so the document is dirty.
-    [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+    // Changing the encoding changes the bytes on disk, so the document is
+    // dirty - and stays dirty however far the text is undone, which is why
+    // the savepoint is left where it was.
+    doc.encodingChanged = YES;
     doc.modified = YES;
     [self refreshChrome];
 }
@@ -1431,7 +1512,10 @@ static long SciColor(NSColor *c) {
 
 - (void)notification:(SCNotification *)n {
     switch (n->nmhdr.code) {
-        case SCN_SAVEPOINTREACHED: self.currentDocument.modified = NO; [self refreshChrome]; break;
+        case SCN_SAVEPOINTREACHED:
+            self.currentDocument.modified = self.currentDocument.encodingChanged;
+            [self refreshChrome];
+            break;
         case SCN_SAVEPOINTLEFT:    self.currentDocument.modified = YES; [self refreshChrome]; break;
         case SCN_UPDATEUI:
             [self refreshChrome];

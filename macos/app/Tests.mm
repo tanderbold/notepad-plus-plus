@@ -150,6 +150,201 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_FILE_RELOAD", @"picks up the file from disk",
               reloaded && [DocText(ed) isEqualToString:@"second\n"]);
 
+        // Closing asks. Every close that can throw text away - the current
+        // tab, Close All and its variants, the window, quitting - goes through
+        // one question with Save, Don't Save and Cancel; Cancel stops the
+        // whole operation and leaves every tab in place.
+        {
+            [ed newDocument];
+            [ed setDocumentText:@"kept\n"];
+            ed.currentDocument.modified = YES;
+            NSUInteger before = ed.documents.count;
+            ed.scriptedCloseAnswer = NSAlertThirdButtonReturn;          // Cancel
+            [ed closeAllDocuments];
+            BOOL cancelKeeps = ed.documents.count == before && ed.currentDocument.modified;
+            BOOL quitStops = [app applicationShouldTerminate:NSApp] == NSTerminateCancel;
+            ed.scriptedCloseAnswer = NSAlertSecondButtonReturn;         // Don't Save
+            [ed closeCurrentDocument];
+            BOOL discardCloses = ed.documents.count == before - 1;
+            ed.scriptedCloseAnswer = 0;
+            Check(@"IDM_FILE_CLOSE (asks before losing text)",
+                  @"Cancel keeps every tab, for Close All and for quitting alike; "
+                  @"Don't Save closes the tab",
+                  cancelKeeps && quitStops && discardCloses);
+        }
+
+        // Tab settings come from the preferences on every switch, not from
+        // literals that undo them.
+        {
+            NppPreferences *p = [NppPreferences shared];
+            NSInteger wasWidth = p.tabWidth; BOOL wasSpaces = p.useSpaces;
+            p.tabWidth = 8; p.useSpaces = NO;
+            [ed newDocument];
+            BOOL kept = [ed.sci message:SCI_GETTABWIDTH] == 8 && [ed.sci message:SCI_GETUSETABS] == 1;
+            p.tabWidth = wasWidth; p.useSpaces = wasSpaces;
+            [ed newDocument];
+            BOOL restored = [ed.sci message:SCI_GETTABWIDTH] == wasWidth;
+            Check(@"IDM_SETTING_PREFERENCE (tab settings survive a switch)",
+                  @"a new tab takes the tab width and tabs-or-spaces from Preferences",
+                  kept && restored);
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+        }
+
+        // The first line ending decides, whichever kind it is.
+        {
+            NSString *eolPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-eol-test.txt"];
+            [@"a\nb\r\nc\r\n" writeToFile:eolPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [ed openFileAtPath:eolPath error:NULL];
+            BOOL lfFirst = ed.currentDocument.eolMode == SC_EOL_LF;
+            ed.scriptedCloseAnswer = NSAlertSecondButtonReturn; [ed closeCurrentDocument]; ed.scriptedCloseAnswer = 0;
+            [[NSFileManager defaultManager] removeItemAtPath:eolPath error:NULL];
+            Check(@"IDM_FORMAT_TOUNIX (the first line ending decides)",
+                  @"a file whose first ending is LF is LF even when a CRLF comes later",
+                  lfFirst);
+        }
+
+        // The session remembers the active tab by path, so an unsaved tab in
+        // front of it, or the tab open before the load, cannot shift it.
+        {
+            NSString *sA = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-session-a.txt"];
+            NSString *sB = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-session-b.txt"];
+            [@"a\n" writeToFile:sA atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [@"b\n" writeToFile:sB atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            NSString *sessionPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-session-test.json"];
+            [ed newDocument];                                       // an unsaved tab first
+            NppDocument *untitled = ed.currentDocument;
+            [ed openFileAtPath:sA error:NULL];
+            [ed openFileAtPath:sB error:NULL];
+            [ed openFileAtPath:sA error:NULL];                      // A is active, behind an unsaved tab
+            [ed saveSessionTo:sessionPath error:NULL];
+            void (^closePaths)(void) = ^{
+                for (NSString *path in @[sA, sB]) {
+                    NSUInteger at = [ed.documents indexOfObjectPassingTest:^BOOL(NppDocument *d, NSUInteger i, BOOL *stop) {
+                        return [d.path isEqualToString:path];
+                    }];
+                    if (at != NSNotFound) [ed closeDocumentAtIndex:(NSInteger)at discardChanges:YES];
+                }
+            };
+            closePaths();
+            [ed loadSessionFrom:sessionPath error:NULL];
+            BOOL activeIsA = [ed.currentDocument.path isEqualToString:sA];
+            Check(@"IDM_FILE_LOADSESSION (the active tab comes back)",
+                  @"the tab that was active when the session was saved is active after it loads",
+                  activeIsA);
+            closePaths();
+            if ([ed.documents containsObject:untitled]) {
+                [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:untitled] discardChanges:YES];
+            }
+            for (NSString *path in @[sA, sB, sessionPath]) [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+        }
+
+        // The Document Map follows the tab in front, and Recent Window steps
+        // back to the right tab after another one was closed.
+        {
+            [ed newDocument]; [ed setDocumentText:@"first\n"];
+            NppDocument *first = ed.currentDocument;
+            [ed newDocument]; [ed setDocumentText:@"second\n"];
+            NppDocument *second = ed.currentDocument;
+            [ed newDocument]; [ed setDocumentText:@"third\n"];
+            NppDocument *third = ed.currentDocument;
+            [ed setDocumentMapVisible:YES];
+            [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:second]];
+            ScintillaView *map = [ed valueForKey:@"docMapView"];
+            BOOL mapFollows = (void *)[map message:SCI_GETDOCPOINTER] == second.docPointer;
+            [ed setDocumentMapVisible:NO];
+
+            [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:third]];   // previous is second
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:first] discardChanges:YES];
+            BOOL frontStays = ed.currentDocument == third;
+            BOOL recentIsSecond = [ed activateRecentWindow] && ed.currentDocument == second;
+            for (NppDocument *mine in @[second, third]) {
+                if ([ed.documents containsObject:mine]) {
+                    [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:mine] discardChanges:YES];
+                }
+            }
+            Check(@"IDM_VIEW_DOC_MAP (the map follows the tab in front)",
+                  @"switching tabs switches the map, closing another tab leaves the front "
+                  @"one in front, and Recent Window steps back to the right tab after that",
+                  mapFollows && frontStays && recentIsSecond);
+        }
+
+        // View > Word Wrap is the preference, and reaches both views.
+        {
+            NppPreferences *p = [NppPreferences shared];
+            BOOL was = p.wordWrap;
+            [app toggleWordWrap:nil];
+            BOOL flipped = p.wordWrap != was &&
+                ([ed.sci message:SCI_GETWRAPMODE] != SC_WRAP_NONE) == p.wordWrap;
+            [app toggleWordWrap:nil];
+            BOOL back = p.wordWrap == was;
+            Check(@"IDM_VIEW_WRAP (the toggle is the preference)",
+                  @"toggling Word Wrap writes the preference, so nothing later puts it back",
+                  flipped && back);
+        }
+
+        // A NUL byte inside a file is content, not the end of it.
+        {
+            NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];
+            const char raw[] = "before\0after\n";
+            NSData *bytes = [NSData dataWithBytes:raw length:sizeof(raw) - 1];
+            [bytes writeToFile:nulPath atomically:YES];
+            BOOL opened = [ed openFileAtPath:nulPath error:NULL];
+            NSString *shown = [ed documentText];
+            NSString *copyPath = [nulPath stringByAppendingString:@".copy"];
+            [ed saveCopyOfCurrentTo:copyPath error:NULL];
+            NSData *back = [NSData dataWithContentsOfFile:copyPath];
+            Check(@"IDM_FILE_OPEN (a NUL byte inside a file)",
+                  @"the text after a NUL byte is shown and written back, not cut off",
+                  opened && shown.length == 13 && [back isEqualToData:bytes]);
+            ed.scriptedCloseAnswer = NSAlertSecondButtonReturn;
+            [ed closeCurrentDocument];
+            ed.scriptedCloseAnswer = 0;
+            [[NSFileManager defaultManager] removeItemAtPath:nulPath error:NULL];
+            [[NSFileManager defaultManager] removeItemAtPath:copyPath error:NULL];
+        }
+
+        // A changed encoding is a change however far the text is undone.
+        {
+            [ed newDocument];
+            [ed setDocumentText:@"plain\n"];
+            [ed.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+            ed.currentDocument.modified = NO;
+            [ed setEncoding:NSUTF8StringEncoding withBOM:YES];
+            BOOL dirty = ed.currentDocument.modified;
+            [ed.sci setStringProperty:SCI_INSERTTEXT parameter:0 value:@"x"];
+            [ed.sci message:SCI_UNDO wParam:0 lParam:0];
+            BOOL stillDirty = ed.currentDocument.modified;
+            Check(@"IDM_FORMAT_UTF8_BOM (a changed encoding stays a change)",
+                  @"after undoing a keystroke the document is still modified, because "
+                  @"its bytes on disk would still differ",
+                  dirty && stillDirty);
+            ed.scriptedCloseAnswer = NSAlertSecondButtonReturn;
+            [ed closeCurrentDocument];
+            ed.scriptedCloseAnswer = 0;
+        }
+
+        // Reload reads the file the way it is being read: a chosen code page
+        // stays, and the text comes back right.
+        {
+            NSString *cpPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-cp1251-test.txt"];
+            const unsigned char raw[] = {0xCF, 0xF0, 0xE8, 0xE2, 0xE5, 0xF2, '\n'};   // Привет
+            [[NSData dataWithBytes:raw length:sizeof(raw)] writeToFile:cpPath atomically:YES];
+            [ed openFileAtPath:cpPath error:NULL];
+            [ed reinterpretAsCodepage:1251];
+            BOOL reloaded = [ed reloadCurrentDocument:NULL];
+            BOOL keeps = ed.currentDocument.codepage == 1251 &&
+                         [[ed documentText] hasPrefix:@"Привет"];
+            Check(@"IDM_FILE_RELOAD (keeps the chosen code page)",
+                  @"a document read as Windows-1251 is still Windows-1251 after "
+                  @"Reload, and still reads correctly",
+                  reloaded && keeps);
+            ed.scriptedCloseAnswer = NSAlertSecondButtonReturn;
+            [ed closeCurrentDocument];
+            ed.scriptedCloseAnswer = 0;
+            [[NSFileManager defaultManager] removeItemAtPath:cpPath error:NULL];
+        }
+
         NSString *copy = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_copy.txt"];
         [[NSFileManager defaultManager] removeItemAtPath:copy error:NULL];
         BOOL copied = [ed saveCopyOfCurrentTo:copy error:&err];

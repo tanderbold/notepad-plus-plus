@@ -29,6 +29,9 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// Set when the language was chosen from the menu rather than worked out from
 /// the file name. Renaming then leaves it alone, as Notepad++ does.
 @property (nonatomic) BOOL languageChosenByUser;
+/// The encoding or BOM was changed since the last save: the bytes on disk
+/// differ from what would be written even when the text does not.
+@property (nonatomic) BOOL encodingChanged;
 @end
 
 @interface EditorController : NSObject <NppTabBarDelegate>
@@ -37,6 +40,23 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 @property (nonatomic, readonly) NSArray<NppDocument *> *documents;
 @property (nonatomic, readonly) NppDocument *currentDocument;
 @property (nonatomic, weak, nullable) NSWindow *window;
+
+/// The text of the document in front, and its replacement: read and written
+/// by length, so that a NUL byte inside a file is kept rather than ending it.
+- (NSString *)documentText;
+- (void)setDocumentText:(NSString *)text;
+
+/// Asks, for every modified document among `docs`, whether to save it, not
+/// save it, or stop. Returns NO when the user stopped or a save failed; the
+/// documents the user chose to save are saved by then. Every close that can
+/// throw text away - one tab, Close All and its variants, the window,
+/// quitting - goes through this.
+- (BOOL)confirmClosingDocuments:(NSArray<NppDocument *> *)docs;
+
+/// What confirmClosingDocuments: answers without asking: 0 asks;
+/// NSAlertFirstButtonReturn saves, NSAlertSecondButtonReturn does not,
+/// NSAlertThirdButtonReturn cancels. For the tests.
+@property (nonatomic) NSInteger scriptedCloseAnswer;
 
 - (instancetype)initWithFrame:(NSRect)frame;
 
