@@ -35,6 +35,9 @@ typedef NS_ENUM(NSInteger, NppTabSort) {
 - (void)recordMacroMessage:(int)message wParam:(unsigned long)wParam lParam:(long)lParam;
 - (void)rememberPreviousTab:(NppDocument *)doc;
 
+/// The tab Recent Window would step back to, or nil.
+- (nullable NppDocument *)previousTab;
+
 // Window
 - (void)sortTabsBy:(NppTabSort)key ascending:(BOOL)ascending;
 - (NSArray<NSString *> *)windowList;

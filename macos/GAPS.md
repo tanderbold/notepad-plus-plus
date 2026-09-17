@@ -66,7 +66,11 @@ Found by the same audit, not yet fixed. Most serious first.
     the window.
 11. **Column Editor** lacks repeat count, number base and the from-caret
     mode; Sort Lines ignores a rectangular selection's column range.
-12. Cosmetic: four `nullable` annotations missing (`EditorController.mm:202`,
+12. **The secondary view can be left on a released document**: nothing
+    tracks which document the other pane shows, and closing that document
+    from the main pane (`EditorController.mm`, `closeDocumentAtIndex:`)
+    releases it while the pane still points at it. Pre-existing.
+13. Cosmetic: four `nullable` annotations missing (`EditorController.mm:202`,
     `Toolbar.mm:232,245`, `WorkspacePanel.mm:103`).
 
 ## What the Windows version has and this does not

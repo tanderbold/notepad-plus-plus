@@ -228,7 +228,11 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
 
     for (NSUInteger i = 0; i < length; ++i) {
         unichar c = [source characterAtIndex:i];
-        BOOL escaped = i > 0 && [source characterAtIndex:i - 1] == '\\';
+        // A quote is escaped by an odd run of backslashes before it, and
+        // never inside single quotes, where a backslash is just a backslash.
+        NSUInteger backslashes = 0;
+        for (NSUInteger k = i; k > 0 && [source characterAtIndex:k - 1] == '\\'; --k) backslashes++;
+        BOOL escaped = context != NppShellInSingle && (backslashes % 2) == 1;
         if (c == '\'' && context != NppShellInDouble && !escaped) {
             context = context == NppShellInSingle ? NppShellBare : NppShellInSingle;
         } else if (c == '"' && context != NppShellInSingle && !escaped) {

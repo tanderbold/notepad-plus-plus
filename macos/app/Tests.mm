@@ -597,6 +597,76 @@ int NppMacRunTests(AppDelegate *app) {
                   whole == 2 && any == 3);
         }
 
+        // What the re-review turned up: a double-byte set outside the tables,
+        // CDATA under Linearize, a pattern's own verbs, a backslash in single
+        // quotes.
+        {
+            const unsigned char gbk[] = {0xD6, 0xD0};                       // 中 in GBK
+            NSString *gbkText = [EditorController stringFromData:[NSData dataWithBytes:gbk length:2] codepage:936];
+            NSString *cdata = [EditorController linearizeXML:
+                @"<r>\n  <s><![CDATA[<p>a</p>\n<p>b</p>]]></s>\n</r>"];
+            [ed newDocument];
+            [ed setDocumentText:@"caf\u00E9 x"];
+            NSUInteger verbs = [ed countMatches:[NppFindSpec specFor:@"(*UCP)\\w+" mode:NppSearchRegex options:0]];
+            [ed setDocumentText:@"a b"];
+            NSString *afterQuote = [ed expandRunVariables:@"echo '\\' $(CURRENT_LINESTR)"];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_FORMAT_GB2312 (a set outside the tables)",
+                  @"GBK decodes through the system converter, and the table lookup stops at the last table",
+                  [gbkText isEqualToString:@"中"]);
+            Check(@"IDM_XMLTOOLS_LINEARIZE (CDATA is content)",
+                  @"a line break inside a CDATA section stays",
+                  [cdata containsString:@"<p>a</p>\n<p>b</p>"] && [cdata containsString:@"<r><s>"]);
+            Check(@"IDM_SEARCH_FIND (a pattern's own verbs)",
+                  @"a pattern that starts with (*UCP) still compiles with the flags in front of the rest",
+                  verbs == 2);
+            Check(@"IDM_EXECUTE (a backslash in single quotes)",
+                  @"the quote after a backslash inside single quotes still closes them",
+                  [afterQuote isEqualToString:@"echo '\\' 'a b'"]);
+        }
+
+        // A code page chosen is a change however far the text is undone, and
+        // the closer tracked in one tab is not judged in another.
+        {
+            [ed newDocument];
+            [ed setDocumentText:@"plain\n"];
+            [ed.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+            ed.currentDocument.modified = NO;
+            [ed convertToCodepage:932];
+            [ed.sci setStringProperty:SCI_INSERTTEXT parameter:0 value:@"x"];
+            [ed.sci message:SCI_UNDO wParam:0 lParam:0];
+            // 932 has a system encoding, so it lives in `encoding`; a set without one
+            // would live in `codepage`. Either way the change must survive undo.
+            BOOL codepageStays = ed.currentDocument.modified &&
+                                 ed.currentDocument.encoding == [EditorController encodingForCodepage:932];
+            NppDocument *tabA = ed.currentDocument;
+
+            NppPreferences *p = [NppPreferences shared];
+            BOOL was = p.autoInsertParenthesis;
+            p.autoInsertParenthesis = YES;
+            [ed setLanguageNamed:@"cpp"];
+            [ed setDocumentText:@""];
+            [ed.sci setStringProperty:SCI_INSERTTEXT parameter:0 value:@"("];
+            [ed.sci message:SCI_GOTOPOS wParam:1 lParam:0];
+            [ed handleCharacterAdded:'('];                       // "()" with the closer tracked
+            [ed newDocument];
+            [ed setLanguageNamed:@"cpp"];
+            [ed setDocumentText:@"x)"];
+            [ed.sci setStringProperty:SCI_INSERTTEXT parameter:1 value:@")"];
+            [ed.sci message:SCI_GOTOPOS wParam:2 lParam:0];
+            [ed handleCharacterAdded:')'];
+            BOOL otherTabUntouched = [[ed documentText] isEqualToString:@"x))"];
+            p.autoInsertParenthesis = was;
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:tabA] discardChanges:YES];
+            Check(@"IDM_FORMAT_SHIFT_JIS (a code page chosen stays a change)",
+                  @"after undoing a keystroke the document is still modified and still Shift-JIS",
+                  codepageStays);
+            Check(@"IDM_SETTING_PREFERENCE (a closer tracked in one tab is forgotten in another)",
+                  @"typing ) before a ) in another tab does not delete that tab's own bracket",
+                  otherTabUntouched);
+        }
+
         // A NUL byte inside a file is content, not the end of it.
         {
             NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];

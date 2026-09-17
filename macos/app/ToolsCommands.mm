@@ -252,6 +252,10 @@ static const char kPreviousTabKey = 0;
     return YES;
 }
 
+- (NppDocument *)previousTab {
+    return objc_getAssociatedObject(self, &kPreviousTabKey);
+}
+
 - (void)rememberPreviousTab:(NppDocument *)doc {
     objc_setAssociatedObject(self, &kPreviousTabKey, doc, OBJC_ASSOCIATION_RETAIN);
 }

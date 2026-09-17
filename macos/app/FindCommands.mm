@@ -162,12 +162,20 @@
     if ((spec.options & NppFindWholeWord) && spec.mode != NppSearchRegex) {
         body = [NSString stringWithFormat:@"\\b(?:%@)\\b", body];
     }
+    // What a pattern says with (*UTF), (*UCP) and the like has to stay at
+    // the very start, ahead of the flags put in here.
+    NSString *verbs = @"";
+    NSRange leading = [body rangeOfString:@"^(?:\\(\\*[^)]*\\))+" options:NSRegularExpressionSearch];
+    if (leading.location == 0 && spec.mode == NppSearchRegex) {
+        verbs = [body substringToIndex:leading.length];
+        body = [body substringFromIndex:leading.length];
+    }
     NSMutableString *flags = [NSMutableString string];
     if (!(spec.options & NppFindMatchCase)) [flags appendString:@"i"];
     // Whether '.' may cross a line ending is the dialog's box, off by
     // default as on Windows; the engine's own default is overridden here.
     [flags appendString:(spec.options & NppFindDotMatchesNewline) ? @"s" : @"-s"];
-    body = [NSString stringWithFormat:@"(?%@)%@", flags, body];
+    body = [NSString stringWithFormat:@"%@(?%@)%@", verbs, flags, body];
     return [NppRegex regexWithPattern:body];
 }
 
@@ -486,11 +494,19 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
             if ([component hasPrefix:@"."]) { hidden = YES; break; }
         }
         if (hidden && !includeHidden) continue;
-        if ([EditorController relativePath:relative isInFolderExcludedByFilters:filters]) continue;
 
         NSString *full = [folder stringByAppendingPathComponent:relative];
         BOOL isDirectory = NO;
-        if (![files fileExistsAtPath:full isDirectory:&isDirectory] || isDirectory) continue;
+        if (![files fileExistsAtPath:full isDirectory:&isDirectory]) continue;
+        if (isDirectory) {
+            // A folder the filter leaves out is not walked at all; that, not
+            // the filtering of its files one by one, is what makes
+            // "!\node_modules" worth having.
+            if ([EditorController relativePath:[relative stringByAppendingPathComponent:@"x"]
+                       isInFolderExcludedByFilters:filters]) [walker skipDescendants];
+            continue;
+        }
+        if ([EditorController relativePath:relative isInFolderExcludedByFilters:filters]) continue;
         if (![EditorController name:relative.lastPathComponent matchesFilters:filters]) continue;
 
         NSString *contents = [NSString stringWithContentsOfFile:full

@@ -227,7 +227,7 @@ static const char kAutosaveTimerKey = 0;
 }
 
 - (NSString *)textForPrinting {
-    NSString *text = [self.sci string] ?: @"";
+    NSString *text = [self documentText];
     if (![NppPreferences shared].printLineNumbers) return text;
 
     NSArray *lines = [text componentsSeparatedByString:@"\n"];

@@ -160,7 +160,7 @@ static NSData *EncodeWithTable(NSString *text, const uint16_t *high) {
     NSStringEncoding target = [EditorController encodingForCodepage:codepage];
 
     NppDocument *doc = self.currentDocument;
-    NSString *text = [self.sci string] ?: @"";
+    NSString *text = [self documentText];
     // Recover the bytes as they stand, then read them through the new charset.
     NSData *bytes = doc.codepage
         ? [EditorController dataFromString:text codepage:doc.codepage]
@@ -169,11 +169,12 @@ static NSData *EncodeWithTable(NSString *text, const uint16_t *high) {
     if (!reread) { NSBeep(); return NO; }
 
     [self.sci message:SCI_BEGINUNDOACTION];
-    [self.sci setString:reread];
+    [self setDocumentText:reread];
     [self.sci message:SCI_ENDUNDOACTION];
     doc.encoding = target ?: NSUTF8StringEncoding;
     doc.codepage = codepage;
     doc.hasBOM = NO;
+    doc.encodingChanged = YES;      // undo may reach the savepoint; the code page still differs
     doc.modified = YES;
     [self refreshChrome];
     return YES;
@@ -184,12 +185,13 @@ static NSData *EncodeWithTable(NSString *text, const uint16_t *high) {
     NSStringEncoding target = [EditorController encodingForCodepage:codepage];
     if (!target) {                                   // code-page-only charset
         self.currentDocument.codepage = codepage;
+        self.currentDocument.encodingChanged = YES;
         self.currentDocument.modified = YES;
         [self refreshChrome];
         return YES;
     }
     // The text is unchanged; only the encoding it will be written in changes.
-    if (![[self.sci string] ?: @"" canBeConvertedToEncoding:target]) {
+    if (![[self documentText] canBeConvertedToEncoding:target]) {
         NSAlert *alert = [[NSAlert alloc] init];
         alert.messageText = @"Some characters cannot be represented in this encoding.";
         alert.informativeText = @"Converting will replace them.";

@@ -110,8 +110,25 @@
     // leaves it alone.
     NSRegularExpression *between = [NSRegularExpression regularExpressionWithPattern:
         @">[ \\t]*\\r?\\n[ \\t\\r\\n]*<" options:0 error:NULL];
-    return [between stringByReplacingMatchesInString:compact options:0
-                                               range:NSMakeRange(0, compact.length) withTemplate:@"><"];
+    // A CDATA section or a comment is content too: the joining is done
+    // between them, never inside one.
+    NSRegularExpression *opaque = [NSRegularExpression regularExpressionWithPattern:
+        @"<!\\[CDATA\\[.*?\\]\\]>|<!--.*?-->" options:NSRegularExpressionDotMatchesLineSeparators error:NULL];
+    NSMutableString *out = [NSMutableString string];
+    __block NSUInteger at = 0;
+    void (^join)(NSRange) = ^(NSRange range) {
+        NSString *piece = [compact substringWithRange:range];
+        [out appendString:[between stringByReplacingMatchesInString:piece options:0
+                                                              range:NSMakeRange(0, piece.length) withTemplate:@"><"]];
+    };
+    [opaque enumerateMatchesInString:compact options:0 range:NSMakeRange(0, compact.length)
+                          usingBlock:^(NSTextCheckingResult *m, NSMatchingFlags flags, BOOL *stop) {
+        join(NSMakeRange(at, m.range.location - at));
+        [out appendString:[compact substringWithRange:m.range]];
+        at = NSMaxRange(m.range);
+    }];
+    join(NSMakeRange(at, compact.length - at));
+    return out;
 }
 
 #pragma mark - XPath and XSL

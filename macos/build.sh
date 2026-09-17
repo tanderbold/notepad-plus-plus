@@ -24,14 +24,18 @@ CXXFLAGS=(-std=c++17 -DNDEBUG -DSCI_LEXER -O2 -fPIC -Wno-deprecated-declarations
 INCLUDES=(-I"$SCI/include" -I"$SCI/src" -I"$SCI/cocoa" -I"$LEX/include" -I"$SRC"
           -I"$(xcrun --show-sdk-path)/usr/include/libxml2")
 
-mkdir -p "$OUT/obj"
+# Objects built for one set of architectures must not serve another, so the
+# object directory is named after it. Headers are not tracked: after editing
+# one under scintilla/, remove macos/build/obj-* to rebuild.
+OBJ="$OUT/obj-${NPPMAC_ARCH:-universal}"
+mkdir -p "$OBJ"
 
 echo "==> Lexilla"
 make -C "$LEX/src" -j"$(sysctl -n hw.ncpu)" >/dev/null
 
 echo "==> Scintilla core"
 for f in "$SCI"/src/*.cxx; do
-    o="$OUT/obj/$(basename "${f%.cxx}").o"
+    o="$OBJ/$(basename "${f%.cxx}").o"
     # Scintilla does not change from one build of the editor to the next.
     [ "$o" -nt "$f" ] && [ "$o" -nt "$0" ] && continue
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -c "$f" -o "$o"
@@ -39,13 +43,13 @@ done
 
 echo "==> Scintilla Cocoa layer"
 for f in PlatCocoa ScintillaCocoa ScintillaView InfoBar; do
-    o="$OUT/obj/$f.o"
+    o="$OBJ/$f.o"
     [ "$o" -nt "$SCI/cocoa/$f.mm" ] && [ "$o" -nt "$0" ] && continue
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SCI/cocoa/$f.mm" -o "$o"
 done
 
 echo "==> libscintilla-cocoa.a"
-libtool -static -o "$OUT/libscintilla-cocoa.a" "$OUT"/obj/*.o 2>/dev/null
+libtool -static -o "$OUT/libscintilla-cocoa.a" "$OBJ"/*.o 2>/dev/null
 
 echo "==> NotepadMac"
 APPOBJ="$OUT/appobj"

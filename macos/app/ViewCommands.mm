@@ -1,4 +1,5 @@
 #import "ViewCommands.h"
+#import "SettingsCommands.h"
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
 #import <objc/runtime.h>
@@ -99,7 +100,13 @@
     BOOL on = [self symbolVisible:symbol];
     switch (symbol) {
         case NppSymbolWhitespace:
+            // The preference, so that nothing applied later puts it back.
+            [NppPreferences shared].showWhitespace = !on;
             [sci message:SCI_SETVIEWWS wParam:(uptr_t)(on ? SCWS_INVISIBLE : SCWS_VISIBLEALWAYS) lParam:0];
+            if (self.secondarySci) {
+                [self.secondarySci message:SCI_SETVIEWWS
+                                    wParam:(uptr_t)(on ? SCWS_INVISIBLE : SCWS_VISIBLEALWAYS) lParam:0];
+            }
             break;
         case NppSymbolEOL:
             [sci message:SCI_SETVIEWEOL wParam:(uptr_t)(on ? 0 : 1) lParam:0];

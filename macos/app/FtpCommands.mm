@@ -143,7 +143,13 @@ static const char kFtpRemotePathsKey = 0;   // local temp path -> remote path
     NSString *host = [(client.profile.host ?: @"host") stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
     NSString *cache = [[[self supportDirectory] stringByAppendingPathComponent:@"ftp-cache"]
                        stringByAppendingPathComponent:host];
-    NSString *local = [cache stringByAppendingPathComponent:remote];
+    // Nothing the server names can climb out of the cache folder.
+    NSMutableArray *parts = [NSMutableArray array];
+    for (NSString *part in remote.pathComponents) {
+        if (part.length && ![part isEqualToString:@"/"] && ![part isEqualToString:@".."] &&
+            ![part isEqualToString:@"."]) [parts addObject:part];
+    }
+    NSString *local = [cache stringByAppendingPathComponent:[parts componentsJoinedByString:@"/"]];
     [[NSFileManager defaultManager] createDirectoryAtPath:local.stringByDeletingLastPathComponent
                              withIntermediateDirectories:YES attributes:nil error:NULL];
     if (![data writeToFile:local atomically:YES]) return NO;
@@ -167,7 +173,7 @@ static const char kFtpRemotePathsKey = 0;   // local temp path -> remote path
         remote = [([self ftpCurrentDirectory] ?: @"/") stringByAppendingPathComponent:name];
     }
 
-    NSString *text = [self.sci string] ?: @"";
+    NSString *text = [self documentText];
     NSData *data = [text dataUsingEncoding:self.currentDocument.encoding ?: NSUTF8StringEncoding
                       allowLossyConversion:YES];
     if (!data) return NO;

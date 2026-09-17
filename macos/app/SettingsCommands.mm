@@ -349,8 +349,8 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
     ScintillaView *sci = editor.sci;
     [sci setStringProperty:SCI_STYLESETFONT parameter:STYLE_DEFAULT value:self.fontName];
     [sci message:SCI_STYLESETSIZE wParam:STYLE_DEFAULT lParam:self.fontSize];
-    [sci message:SCI_SETTABWIDTH wParam:(uptr_t)self.tabWidth lParam:0];
-    [sci message:SCI_SETINDENT wParam:(uptr_t)self.tabWidth lParam:0];
+    [sci message:SCI_SETTABWIDTH wParam:(uptr_t)MAX(1, self.tabWidth) lParam:0];
+    [sci message:SCI_SETINDENT wParam:(uptr_t)MAX(1, self.tabWidth) lParam:0];
     [sci message:SCI_SETUSETABS wParam:(uptr_t)(self.useSpaces ? 0 : 1) lParam:0];
     [sci message:SCI_SETWRAPMODE wParam:(uptr_t)(self.wordWrap ? SC_WRAP_WORD : SC_WRAP_NONE) lParam:0];
     [sci message:SCI_SETVIEWWS

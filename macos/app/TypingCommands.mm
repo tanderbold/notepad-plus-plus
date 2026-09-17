@@ -101,6 +101,10 @@ static long Utf8Len(NSString *s) {
 
 static const char kAutoCloseKey = 0;
 
+- (void)forgetAutoCloser {
+    objc_setAssociatedObject(self, &kAutoCloseKey, nil, OBJC_ASSOCIATION_RETAIN);
+}
+
 /// Typing the closer that was put in for you steps over it rather than
 /// doubling it. Only the closer put in last is remembered, and only while
 /// it is still where it was left.

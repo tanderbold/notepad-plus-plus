@@ -94,4 +94,4 @@ static const NppCodePageTable kNppCodePageTables[] = {
     { 28605, kNppCP28605 },
 };
 
-static const int kNppCodePageTableCount = 42;
+static const int kNppCodePageTableCount = (int)(sizeof(kNppCodePageTables) / sizeof(kNppCodePageTables[0]));

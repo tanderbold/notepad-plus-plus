@@ -467,6 +467,7 @@ static long SciColor(NSColor *c) {
     self.currentIndex = index;
     NppDocument *doc = self.docs[index];
     [self.sciView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    [self forgetAutoCloser];
     // The map mirrors whatever is in front, not whatever was when it opened.
     if (self.docMapView.superview) {
         [self.docMapView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
@@ -546,6 +547,9 @@ static long SciColor(NSColor *c) {
 
 - (BOOL)confirmClosingDocuments:(NSArray<NppDocument *> *)docs {
     NppDocument *was = self.currentDocument;
+    // Selecting each document to ask about it must not become the tab that
+    // Recent Window steps back to.
+    NppDocument *previous = [self previousTab];
     for (NppDocument *doc in [docs copy]) {
         if (!doc.modified || ![self.docs containsObject:doc]) continue;
         [self selectDocumentAtIndex:(NSInteger)[self.docs indexOfObject:doc]];
@@ -563,13 +567,19 @@ static long SciColor(NSColor *c) {
             [alert addButtonWithTitle:@"Cancel"];
             answer = [alert runModal];
         }
-        if (answer == NSAlertThirdButtonReturn) { [self reselectDocument:was]; return NO; }
+        if (answer == NSAlertThirdButtonReturn) {
+            [self reselectDocument:was];
+            [self rememberPreviousTab:previous];
+            return NO;
+        }
         if (answer == NSAlertFirstButtonReturn && ![self saveCurrentDocument]) {
             [self reselectDocument:was];
+            [self rememberPreviousTab:previous];
             return NO;
         }
     }
     [self reselectDocument:was];
+    [self rememberPreviousTab:previous];
     return YES;
 }
 
@@ -902,9 +912,12 @@ static long SciColor(NSColor *c) {
     NSNumber *cur = session[@"current"];
     if (byPath != NSNotFound) {
         [self selectDocumentAtIndex:(NSInteger)byPath];
-    } else if ([cur isKindOfClass:[NSNumber class]]) {
+    } else if (![currentPath isKindOfClass:[NSString class]] && [cur isKindOfClass:[NSNumber class]]) {
+        // A session written before the path was kept: the index is all there is.
         [self selectDocumentAtIndex:MIN(cur.integerValue, (NSInteger)self.docs.count - 1)];
     }
+    // An untitled tab was active: it is not in the list, and an index over
+    // the tabs of that time would land on the wrong file; the last one opened stays.
     return opened > 0 || files.count == 0;
 }
 
