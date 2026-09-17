@@ -10,162 +10,64 @@ once chosen, and about what has no menu command at all.
 
 ## Bugs
 
-Most serious first. "Data" means the user can lose or corrupt text.
+The thirty-five bugs the audit found were fixed on 2026-09-18, in five
+commits after the audit's own, each with a test that fails on the old code
+(the suite went from 583 checks to 613). In brief: nothing that can throw
+text away does so unasked (closing a tab, Close All and its variants, the
+window, quitting, Reload); files opened at launch open; a NUL byte is
+content; a changed encoding stays a change; Reload keeps the code page and
+the scroll position; Save a Copy As writes what Save would; tab settings,
+line-ending detection, the session's active tab, the Document Map, Recent
+Window and the View toggles behave; closing another tab leaves the front
+one in front; Find Next leaves an empty match behind; Replace matches over
+the rest of the document; '.' stays on its line unless asked; whole word
+leaves a regex alone; !pattern and !\folder work in Find in Files; line
+transforms keep the end of the file; marks count bytes by code point; the
+Column Editor pads and replaces; Shift-JIS decodes; Run… quotes what it
+splices; FTP caches by whole path, uses absolute encoded addresses and
+ignores sftp's echo; Compare and Linearize leave line endings and text
+alone; the Style Configurator, Preferences Reset, word characters, saved
+macros, print variables, backups, the Function List, userDefineLang.xml,
+auto-close pairs and smart highlighting do what they say.
 
-### Data
+### Still open
 
-1. **Quit and closing the window never ask about unsaved documents.** The
-   Quit item calls `terminate:` directly (`AppDelegate.mm:265`), there is no
-   `applicationShouldTerminate:` and the window has no delegate, and
-   `EditorController.mm:545` also terminates outright. Type, press Cmd+Q,
-   the edits are gone. Fix: an `applicationShouldTerminate:` that runs the
-   Save / Don't Save / Cancel alert for every modified document and returns
-   `NSTerminateCancel`; route `windowShouldClose:` through it.
-2. **Files handed to a fresh instance are dropped.** `application:openFile:`
-   (`AppDelegate.mm:211`) arrives before `applicationDidFinishLaunching:`
-   creates the editor, so `self.editor` is nil and nothing opens. Double
-   clicking a file in Finder opens an empty editor; "Always a new instance"
-   hands every file to an instance that discards it; "Open in new instance"
-   then closes the modified original without a prompt. Fix: queue paths
-   received before launch finishes, or create the editor in
-   `applicationWillFinishLaunching:`.
-3. **A NUL byte truncates the document on open and on save.**
-   `[sciView setString:]` hands `UTF8String` to `SCI_SETTEXT`, which stops
-   at the first NUL, and `[sciView string]` reads back with `c_str()`
-   (`EditorController.mm:419,498`, `scintilla/cocoa/ScintillaView.mm:1705`).
-   A log with an embedded NUL, or UTF-16 without a BOM, is shown cut short
-   and saved cut short. Fix: `SCI_ADDTEXT` with the data length and
-   `SCI_GETTEXT` sized by `SCI_GETLENGTH`, or refuse binaries as Windows does.
-4. **Shift-JIS goes through a single-byte table.** `CodePageTables.h:72`
-   lists 932 among the tables although it is double-byte; every lead byte is
-   marked invalid, so Japanese text decodes to U+FFFD, and after
-   `reinterpretAsCodepage:` every save turns non-ASCII into `?`. Fix: drop
-   932 (and never table 936/949/950) so the CoreFoundation converter is used.
-5. **Run… splices document text into `sh -c` unquoted.** `RunCommands.mm:243`
-   runs the expanded command through `/bin/sh -c`; `$(CURRENT_LINESTR)` and
-   `$(CURRENT_WORD)` come from the buffer, so a line containing a backtick or
-   `$(...)` executes it, and a path with a space splits. Fix: single-quote
-   every substituted value, or build argv.
-6. **FTP: two remote files with one name share one cache file.**
-   `FtpCommands.mm:143` caches under `ftp-cache/<lastPathComponent>`; opening
-   `/b/index.html` after `/a/index.html` overwrites the cache, keeps a's tab,
-   and remaps the upload path to b, so saving writes a's text over b. Also
-   `FtpClient.mm:32` builds `ftp://host/dir` paths relative to the login home
-   rather than absolute (`%2F` is needed) and does not percent-encode names;
-   and `sftp -b` echoes each command, which `parseListing` (`FtpClient.mm:130`)
-   turns into a phantom file in every SFTP directory. Fix: cache under a
-   per-profile mirror of the remote path; encode paths; skip `sftp>` lines.
-7. **Changing the encoding marks the buffer clean underneath.**
-   `setEncoding:withBOM:` sends `SCI_SETSAVEPOINT` then sets `modified`
-   (`EditorController.mm:977`); typing and undoing reaches the savepoint and
-   clears the flag, so Close discards the pending encoding change without
-   asking. Fix: drop the savepoint call.
-8. **Reload forgets the code page but Save still uses it.**
-   `reloadCurrentDocument:` resets encoding and BOM, not `codepage`
-   (`EditorController.mm:575`); the text is decoded as UTF-8/Latin-1 and
-   re-encoded through the old code page on save. Fix: clear `codepage` on
-   reload, or decode through it.
+Found by the same audit, not yet fixed. Most serious first.
 
-### Behaviour
-
-9. **Tab width, spaces and indent guides are hard-coded and reset on every
-   tab switch.** `applyDocumentSettings` (`EditorController.mm:245`) sends
-   4 / 4 / spaces / guides on every `selectDocumentAtIndex:`, undoing the
-   preferences `applyToEditor:` set once. Fix: read `NppPreferences` there.
-   There is no per-language tab setting at all (Windows: `Lang::_tabSize`).
-10. **EOL detection picks CR when an LF comes first.** `DetectEOL`
-    (`EditorController.mm:94`) finds the first CR and the first LF and, when
-    they are not adjacent, answers CR without checking which came first;
-    "a\nb\r\n" reports Classic Mac endings. Fix: compare the positions.
-11. **The session restores the wrong tab.** The active index is taken over
-    all documents but the file list skips unsaved ones, and loading appends
-    after the untitled tab (`EditorController.mm:797,827`). Fix: store the
-    active path. Unsaved tabs are not in the session at all (see Session below).
-12. **Find Next loops on a zero-length regex match.** `findNext:`
-    (`FindCommands.mm:200`) picks the first match at or after the caret, and
-    an empty match at the caret is itself; `^`, `$`, `\b` and lookarounds
-    never advance. Fix: skip a candidate equal to the current selection.
-13. **A single Replace fails for regexes that look past the match.** The
-    subject is cut at the selection end (`FindCommands.mm:353`,
-    `NppRegex.mm:165`), so `foo(?=bar)` never matches on Replace while
-    Replace All works. Fix: match over the whole document from the start of
-    the selection and accept the match whose range equals it.
-14. **Line transforms add a newline the file did not have.**
-    `transformSelectedLines:` (`EditCommands.mm:107`) recognises the tail by
-    input index, so Join, Remove Empty, Remove Duplicate and Split on an
-    unterminated last line append "\n". Fix: define the tail by output index.
-15. **Mark misplaces after an emoji.** `markCharactersInRangeFrom:to:`
-    (`SearchCommands.mm:635`) advances by `lengthOfBytesUsingEncoding:` per
-    UTF-16 unit, which is 0 for a lone surrogate; every mark after a non-BMP
-    character lands four bytes early. Fix: walk composed character sequences.
-16. **The Column Editor ignores virtual space and never replaces the block.**
-    `AdvancedEditCommands.mm:158` inserts at each row's selection start; on a
-    short line that is the line end, and a two-wide block gets text inserted
-    before it rather than replaced. Fix: pad to the virtual-space offset, then
-    `SCI_SETTARGETRANGE` + `SCI_REPLACETARGET` per row.
-17. **Compare treats CR as content.** Lines are split on "\n" only
-    (`CompareCommands.mm:15,210`), so a CRLF file against an LF file reports
-    every line changed, and a CR-only file misaligns markers. Fix: split on
-    all three endings and strip the CR.
-18. **Linearize XML deletes newlines inside text.** `XmlCommands.mm:104`
-    removes every newline in the serialised document, including those in
-    text nodes and attribute values. Fix: only between `>` and `<`.
-19. **An Extended-mode replacement containing `\0` is cut there.** Replace
-    passes length -1 to `SCI_REPLACETARGET` (`FindCommands.mm:347`). Fix: pass
-    the UTF-8 length, as `pasteOverBookmarkedLines` does.
-20. **The Document Map shows the document that was current when it was
-    opened.** Nothing rebinds `docMapView` on tab switch or close
-    (`EditorController.mm:1369`). Fix: `SCI_SETDOCPOINTER` in
-    `selectDocumentAtIndex:`.
-21. **Recent Window records a stale index.** `closeDocumentAtIndex:` removes
-    from `docs` first, then `selectDocumentAtIndex:` remembers the old index
-    (`EditorController.mm:439,551`). Fix: remember the document, not an index.
-22. **A system appearance change undoes View toggles.** The KVO handler
-    (`AppDelegate.mm:1016`) re-runs `applyToEditor:`, which pushes the stored
-    wrap, whitespace, guides and font over what the View menu changed
-    (`AppDelegate.mm:1940`); the View toggles never write the preference and
-    only touch the active view. Fix: have the toggles write the preference.
-23. **The Style Configurator pins a background to the current appearance.**
-    `SettingsPanels.mm:661` always stores fg and bg, with bg defaulting to
-    the resolved `textBackgroundColor`; ticking Bold on a keyword in light
-    mode leaves keywords on white boxes in the dark theme. Fix: store only
-    what changed.
-24. **Preferences Reset leaves stale controls.** `resetAll:`
-    (`SettingsPanels.mm:518`) clears the defaults, not the controls, and the
-    next Apply writes the old values back. Fix: refresh from the preferences.
-25. **Custom word characters cannot be turned off.** `BehaviourCommands.mm:374`
-    returns early when disabled and nothing sends `SCI_SETCHARSDEFAULT`.
-26. **Saved macros do not survive a restart.** `macros.json` is written
-    (`ToolsCommands.mm:157`) and never read.
-27. **Print headers ignore `$(SHORT_DATE)`, `$(LONG_DATE)` and `$(TIME)`**
-    (`BackupAndPrint.mm:197`), the names in Windows' default header.
-28. **Timestamped backups collide within one second** and the earlier one is
-    deleted first (`BackupAndPrint.mm:91`).
-29. **Function List lines are wrong for CR-only files**: `LineAtByte`
-    counts only "\n" (`FunctionListCatalog.mm:302`).
-30. **`userDefineLang.xml` is written unescaped** (`SettingsCommands.mm:417`),
-    so a name with `"` or `&` breaks the file for Windows too.
-31. **Auto-close pairs are inserted unconditionally and the closer is never
-    typed over** (`TypingCommands.mm:73,187`): typing `()` yields `())`.
-    Windows inserts only before a blank or closer and swallows the typed
-    closer. The close-tag runs in every language, not only HTML/XML, and
-    does not skip void elements (`TypingCommands.mm:86`).
-32. **Smart highlighting with Match case or Whole word does nothing**:
-    `BehaviourCommands.mm:357` builds a multi-selection and restores it
-    instead of filling the indicator, and beeps on zero hits.
-33. **Find in Files exclusion patterns are not understood.** `!*.log` is
-    tried as a glob (`FindCommands.mm:390`) and excludes everything else.
-34. **Whole word in regex mode rewrites the pattern** as `\b(?:...)\b`
-    (`FindCommands.mm:161`), which changes patterns that start or end with
-    a non-word character; Windows applies whole-word to literal modes only.
-35. **`.` always matches a newline.** Every pattern compiles with DOTALL
-    (`NppRegex.mm:83`) and the dialog has no ". matches newline" box; the
-    Windows default is the opposite. Regex error offsets are also shifted by
-    the injected `(*ANYCRLF)` and `(?i)` prefixes (`NppRegex.mm:71,87`).
-
-Cosmetic but real: the analyzer's four `nil returned from a non-null method`
-warnings (`EditorController.mm:202`, `Toolbar.mm:232,245`,
-`WorkspacePanel.mm:103`) are missing `nullable` annotations; callers check.
+1. **Periodic "autosave" writes the user's file** (`BackupAndPrint.mm:148`).
+   Windows' periodic backup writes `backup\NAME@timestamp` and never the
+   file itself; the port's setting is called autosave and presented as
+   such, but a user coming from Windows expects a snapshot. The snapshot
+   of unsaved documents (`snapshot.json`) is written and never restored.
+2. **No read-only detection on open** (`EditorController.mm:386`): a file
+   without write permission is editable until Save fails.
+3. **Save As does not refuse a path already open in another tab**
+   (`EditorController.mm:478`); Save All skips untitled documents and does
+   not confirm; Rename of an untitled document writes it to disk.
+4. **Restore Last Closed File and Open All Recent Files are missing**, and
+   the recent list is filled by opening rather than closing
+   (`EditorController.mm:429`).
+5. **Insert Date/Time**: the order is inverted against Windows (time
+   first by default), the long form has seconds, and the selection is not
+   replaced (`EditCommands.mm:607`).
+6. **Paste to Bookmarked Lines** hands clipboard line i to bookmark i;
+   Windows replaces every marked line with the whole clipboard. Copy and
+   Cut of bookmarked lines drop the line endings (`SearchCommands.mm:232`).
+7. **Go To Line** has no offset mode and no range check
+   (`AppDelegate.mm:2914`); Select All Between Matching Braces excludes the
+   braces where Windows includes them (`SearchCommands.mm:326`).
+8. **Proper Case and Sentence Case** differ from Windows on apostrophes,
+   digits and sentence boundaries (`EditCommands.mm:164`); Trim removes
+   every Unicode space where Windows removes tabs and spaces.
+9. **Large files** are decided on after a full decode, with no too-big
+   guard and backups not suppressed (`BehaviourCommands.mm:17`).
+10. **Close All But Pinned** keeps pinned tabs anywhere; Windows keeps the
+    leading run and moves pinned tabs left. No drag and drop of files onto
+    the window.
+11. **Column Editor** lacks repeat count, number base and the from-caret
+    mode; Sort Lines ignores a rectangular selection's column range.
+12. Cosmetic: four `nullable` annotations missing (`EditorController.mm:202`,
+    `Toolbar.mm:232,245`, `WorkspacePanel.mm:103`).
 
 ## What the Windows version has and this does not
 
@@ -277,15 +179,13 @@ items. About is the stock Cocoa panel.
 In this order, each a day or less of work and each closing a hole a daily
 user falls into:
 
-1. Bugs 1 to 3 (quit prompt, launch files, NUL) - all three lose text.
-2. Bugs 9 to 11 (tab settings, EOL, session tab) - they show on every launch.
-3. File-change detection on activation, with reload / keep prompts.
-4. Bugs 4 to 8 (Shift-JIS, Run quoting, FTP cache and paths, encoding flag,
-   reload code page).
-5. Command-line switches, at least `-n -c -l -ro -nosession -multiInst`.
-6. Character-set detection (uchardet is in `PowerEditor/src/uchardet`, and
+1. File-change detection on activation, with reload / keep prompts.
+2. Snapshot restore of unsaved documents, and periodic backup that does
+   not touch the file (still-open bug 1).
+3. Command-line switches, at least `-n -c -l -ro -nosession -multiInst`.
+4. Character-set detection (uchardet is in `PowerEditor/src/uchardet`, and
    builds on macOS) and "Open ANSI as UTF-8".
-7. Session depth: caret, scroll, folds, marks, encoding, untitled buffers.
-8. Search bugs 12, 13, 33, 34, 35 and the ". matches newline" box.
-9. Loading `userDefineLang.xml` into the lexer; a UDL editor after that.
-10. Preferences controls for the settings that already exist.
+5. Session depth: caret, scroll, folds, marks, encoding, untitled buffers.
+6. Still-open bugs 2 to 8.
+7. Loading `userDefineLang.xml` into the lexer; a UDL editor after that.
+8. Preferences controls for the settings that already exist.
