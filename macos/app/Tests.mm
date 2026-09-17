@@ -3144,17 +3144,26 @@ int NppMacRunTests(AppDelegate *app) {
             [app pasteText:nil];
             [[NSRunLoop mainRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.3]];
             NSWindow *sheet = ed.window.attachedSheet;
-            NSPopUpButton *choices = nil;
-            for (NSView *view in sheet.contentView.subviews) {
-                for (NSView *inner in [@[view] arrayByAddingObjectsFromArray:view.subviews]) {
-                    if ([inner isKindOfClass:[NSPopUpButton class]]) choices = (NSPopUpButton *)inner;
-                }
+            // The list is a table with every candidate showing and the first
+            // one selected: nothing has to be opened to see the choices.
+            NSTableView *choices = nil;
+            NSMutableArray<NSView *> *pending = [sheet.contentView.subviews mutableCopy];
+            while (pending.count && !choices) {
+                NSView *view = pending.firstObject;
+                [pending removeObjectAtIndex:0];
+                if ([view isKindOfClass:[NSTableView class]]) choices = (NSTableView *)view;
+                [pending addObjectsFromArray:view.subviews];
+            }
+            NSMutableArray *titles = [NSMutableArray array];
+            for (NSInteger row = 0; row < choices.numberOfRows; ++row) {
+                NSTextField *label = [choices viewAtColumn:0 row:row makeIfNecessary:YES];
+                if ([label isKindOfClass:[NSTextField class]]) [titles addObject:label.stringValue];
             }
             Check(@"IDM_LANG_DETECT (the choice is put to the user)",
                   @"pasting a script several languages fit puts a sheet on the "
-                  @"window, and the handler that shows it can be read back",
-                  ed.languageChoiceHandler != nil && sheet != nil &&
-                  (choices == nil || [choices.itemTitles containsObject:@"powershell"]));
+                  @"window with every candidate in view and the first selected",
+                  ed.languageChoiceHandler != nil && sheet != nil && choices != nil &&
+                  choices.selectedRow == 0 && [titles containsObject:@"powershell"]);
             if (sheet) [ed.window endSheet:sheet returnCode:NSModalResponseCancel];
             [[NSRunLoop mainRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
 

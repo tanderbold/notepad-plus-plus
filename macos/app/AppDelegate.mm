@@ -87,6 +87,63 @@
 @property (nonatomic, strong) NSMutableArray<NSView *> *markViews;
 @end
 
+/// The candidates for a document's language, as a plain list: every one in
+/// view, the first selected, a double click choosing it.
+@interface NppLanguageChoiceList : NSObject <NSTableViewDataSource, NSTableViewDelegate>
+@property (nonatomic, strong) NSArray<NSString *> *names;
+@property (nonatomic, strong) NSTableView *table;
+@property (nonatomic, strong) NSScrollView *scrollView;
+@property (nonatomic, copy) void (^chosen)(void);
+- (instancetype)initWithNames:(NSArray<NSString *> *)names;
+@end
+
+@implementation NppLanguageChoiceList
+
+- (instancetype)initWithNames:(NSArray<NSString *> *)names {
+    if (!(self = [super init])) return nil;
+    _names = [names copy];
+
+    const CGFloat rowHeight = 22, width = 260;
+    CGFloat height = rowHeight * (CGFloat)names.count + 4;
+    _table = [[NSTableView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+    NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"name"];
+    column.width = width - 4;
+    [_table addTableColumn:column];
+    _table.headerView = nil;
+    _table.rowHeight = rowHeight;
+    _table.allowsEmptySelection = NO;
+    _table.dataSource = self;
+    _table.delegate = self;
+    _table.target = self;
+    _table.doubleAction = @selector(doubleClicked:);
+
+    _scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+    _scrollView.documentView = _table;
+    _scrollView.hasVerticalScroller = NO;
+    _scrollView.borderType = NSBezelBorder;
+    [_table reloadData];
+    [_table selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    return self;
+}
+
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView { return (NSInteger)self.names.count; }
+
+- (NSView *)tableView:(NSTableView *)tableView viewForTableColumn:(NSTableColumn *)column row:(NSInteger)row {
+    NSTextField *label = [tableView makeViewWithIdentifier:@"label" owner:self];
+    if (!label) {
+        label = [NSTextField labelWithString:@""];
+        label.identifier = @"label";
+    }
+    label.stringValue = self.names[(NSUInteger)row];
+    return label;
+}
+
+- (void)doubleClicked:(id)sender {
+    if (self.table.selectedRow >= 0 && self.chosen) self.chosen();
+}
+
+@end
+
 @implementation AppDelegate
 
 #pragma mark - Launch
@@ -1838,22 +1895,30 @@ static BOOL NppForwardToFieldEditor(SEL action, id sender) {
 - (void)offerLanguageChoices:(NSArray<NppLanguage *> *)choices {
     if (choices.count < 2 || !self.editor.window) return;
 
-    NSPopUpButton *list = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, 220, 26)];
-    for (NppLanguage *language in choices) [list addItemWithTitle:language.name];
+    // Every candidate in view at once, likeliest first and already selected:
+    // a click and Enter, or a double click, and nothing to open first.
+    NppLanguageChoiceList *list = [[NppLanguageChoiceList alloc] initWithNames:
+        [choices valueForKey:@"name"]];
 
     NSAlert *ask = [[NSAlert alloc] init];
     ask.messageText = @"Which language is this?";
     ask.informativeText = @"The name of this document does not say what it is. "
                           @"These are what its contents look like, likeliest first.";
-    ask.accessoryView = list;
+    ask.accessoryView = list.scrollView;
     [ask addButtonWithTitle:@"Use this one"];
     [ask addButtonWithTitle:@"Leave as text"];
+    ask.window.initialFirstResponder = list.table;
 
     __weak __typeof(self) weakSelf = self;
+    __weak NSAlert *weakAsk = ask;
+    list.chosen = ^{
+        // A double click is the choice made: close the sheet as "Use this one".
+        [weakSelf.editor.window endSheet:weakAsk.window returnCode:NSAlertFirstButtonReturn];
+    };
     [ask beginSheetModalForWindow:self.editor.window
                 completionHandler:^(NSModalResponse response) {
         if (response != NSAlertFirstButtonReturn) return;
-        NSInteger picked = list.indexOfSelectedItem;
+        NSInteger picked = list.table.selectedRow;
         if (picked < 0 || picked >= (NSInteger)choices.count) return;
         [weakSelf.editor chooseLanguageNamed:choices[(NSUInteger)picked].name];
     }];
