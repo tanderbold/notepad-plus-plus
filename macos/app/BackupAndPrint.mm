@@ -94,8 +94,13 @@
         target = [[self backupDirectory] stringByAppendingPathComponent:
                   [NSString stringWithFormat:@"%@.%@.bak", path.lastPathComponent,
                    [stamp stringFromDate:[NSDate date]]]];
+        // Two saves within one second get two backups, not one over the other.
+        NSString *stem = target.stringByDeletingPathExtension;
+        for (NSUInteger n = 2; [fm fileExistsAtPath:target]; ++n) {
+            target = [stem stringByAppendingFormat:@"-%lu.bak", (unsigned long)n];
+        }
     }
-    [fm removeItemAtPath:target error:NULL];
+    if (p.backupMode == NppBackupSimple) [fm removeItemAtPath:target error:NULL];
     return [existing writeToFile:target atomically:YES] ? target : nil;
 }
 
@@ -194,7 +199,15 @@ static const char kAutosaveTimerKey = 0;
     time.timeStyle = NSDateFormatterShortStyle;
     NSDate *now = [NSDate date];
 
+    NSDateFormatter *longDate = [[NSDateFormatter alloc] init];
+    longDate.dateStyle = NSDateFormatterLongStyle;
+    longDate.timeStyle = NSDateFormatterNoStyle;
+
     NSDictionary *values = @{
+        // The three names in Notepad++'s own default header and footer.
+        @"$(SHORT_DATE)":        [date stringFromDate:now],
+        @"$(LONG_DATE)":         [longDate stringFromDate:now],
+        @"$(TIME)":              [time stringFromDate:now],
         @"$(FULL_CURRENT_PATH)": doc.path ?: doc.displayName ?: @"",
         @"$(CURRENT_DIRECTORY)": doc.path.stringByDeletingLastPathComponent ?: @"",
         @"$(FILE_NAME)":         doc.displayName ?: @"",

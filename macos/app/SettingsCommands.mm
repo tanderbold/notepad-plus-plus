@@ -409,6 +409,15 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
 
 /// Writes the language in the same shape Notepad++ uses for userDefineLang.xml,
 /// so the file is recognisable to anyone who has seen the Windows one.
+static NSString *XMLEscaped(NSString *text) {
+    NSMutableString *out = [(text ?: @"") mutableCopy];
+    [out replaceOccurrencesOfString:@"&" withString:@"&amp;" options:0 range:NSMakeRange(0, out.length)];
+    [out replaceOccurrencesOfString:@"<" withString:@"&lt;" options:0 range:NSMakeRange(0, out.length)];
+    [out replaceOccurrencesOfString:@">" withString:@"&gt;" options:0 range:NSMakeRange(0, out.length)];
+    [out replaceOccurrencesOfString:@"\"" withString:@"&quot;" options:0 range:NSMakeRange(0, out.length)];
+    return out;
+}
+
 - (BOOL)defineUserLanguageNamed:(NSString *)name
                      extensions:(NSString *)extensions
                        keywords:(NSString *)keywords
@@ -427,7 +436,7 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
         @"        </KeywordLists>\n"
         @"    </UserLang>\n"
         @"</NotepadPlus>\n",
-        name, extensions ?: @"", commentLine ?: @"", keywords ?: @""];
+        XMLEscaped(name), XMLEscaped(extensions), XMLEscaped(commentLine), XMLEscaped(keywords)];
 
     if (![xml writeToFile:[self userDefinedLanguagePath] atomically:YES
                  encoding:NSUTF8StringEncoding error:NULL]) return NO;

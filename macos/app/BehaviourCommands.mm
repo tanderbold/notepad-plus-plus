@@ -356,24 +356,23 @@ static BOOL UrlLooksReal(NSString *candidate) {
     NppMatchFlags flags = NppMatchNone;
     if ([NppPreferences shared].smartHighlightMatchCase) flags |= NppMatchCase;
     if ([NppPreferences shared].smartHighlightWholeWord) flags |= NppMatchWholeWord;
-    if (flags == NppMatchNone) {
-        return [self markAllOccurrencesOfSelection:style matchCase:NO wholeWord:NO];
-    }
-
-    // With either refinement on, the match rules come from AdvancedEditCommands.
-    ScintillaView *view = self.sci;
-    NSUInteger before = (NSUInteger)[view message:SCI_GETSELECTIONS];
-    NSUInteger n = [self multiSelectAllOccurrences:flags];
-    [view message:SCI_SETSELECTION wParam:(uptr_t)a lParam:b];
-    (void)before;
-    return n;
+    // The same indicator whatever the refinements: a multi-selection that is
+    // then put back is no highlight at all.
+    return [self markAllOccurrencesOfSelection:style
+                                     matchCase:(flags & NppMatchCase) != 0
+                                     wholeWord:(flags & NppMatchWholeWord) != 0];
 }
 
 #pragma mark - Word characters and delimiters
 
 - (void)applyWordCharacters {
     NppPreferences *p = [NppPreferences shared];
-    if (!p.customWordCharsEnabled || !p.customWordChars.length) return;
+    if (!p.customWordCharsEnabled || !p.customWordChars.length) {
+        // The classes live in the document; turning the setting off has to
+        // put the defaults back, or the last custom set stays until relaunch.
+        [self.sci message:SCI_SETCHARSDEFAULT wParam:0 lParam:0];
+        return;
+    }
     static const char *base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
     NSString *chars = [@(base) stringByAppendingString:p.customWordChars];
     [self.sci setStringProperty:SCI_SETWORDCHARS parameter:0 value:chars];

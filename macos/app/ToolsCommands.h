@@ -28,6 +28,9 @@ typedef NS_ENUM(NSInteger, NppTabSort) {
 - (BOOL)playbackMacro:(NSUInteger)times;
 - (BOOL)saveRecordedMacroAs:(NSString *)name;
 - (NSArray<NSString *> *)savedMacroNames;
+
+/// Reads the saved macros back from macros.json, replacing what is held.
+- (void)reloadSavedMacros;
 /// Called from the notification handler for each recorded Scintilla action.
 - (void)recordMacroMessage:(int)message wParam:(unsigned long)wParam lParam:(long)lParam;
 - (void)rememberPreviousTab:(NppDocument *)doc;

@@ -518,7 +518,21 @@
 - (void)resetAll:(id)sender {
     [[NppPreferences shared] reset];
     [[NppPreferences shared] applyToEditor:self.editor];
+    [self rebuildPages];
     [self.panel orderOut:nil];
+}
+
+/// The controls are built once with the values of the moment; after a reset
+/// they have to be built again, or the next Apply writes the old values back.
+- (void)rebuildPages {
+    NSInteger shown = self.categories.selectedRow;
+    for (NSView *page in self.pages.allValues) [page removeFromSuperview];
+    [self.pageNames removeAllObjects];
+    [self.pages removeAllObjects];
+    [self.controls removeAllObjects];
+    [self buildPages];
+    [self.categories reloadData];
+    [self showPageAtIndex:MAX(0, shown)];
 }
 
 @end
@@ -662,9 +676,16 @@ static NSString *HexOfColour(NSColor *colour) {
     NSInteger row = self.table.selectedRow;
     if (row < 0 || row >= (NSInteger)self.styles.count) return;
 
+    // Only a colour the user actually changed is stored. Storing the shown
+    // default would pin the appearance's background into the override, and
+    // a keyword made bold in light mode would sit on white boxes in the
+    // dark theme.
+    NppStyle *style = self.styles[(NSUInteger)row];
     NSMutableDictionary *attrs = [NSMutableDictionary dictionary];
-    attrs[@"fg"] = HexOfColour(self.foregroundWell.color);
-    attrs[@"bg"] = HexOfColour(self.backgroundWell.color);
+    NSString *fg = HexOfColour(self.foregroundWell.color);
+    NSString *bg = HexOfColour(self.backgroundWell.color);
+    if (![fg isEqualToString:HexOfColour(style.foreground ?: [NSColor textColor])]) attrs[@"fg"] = fg;
+    if (![bg isEqualToString:HexOfColour(style.background ?: [NSColor textBackgroundColor])]) attrs[@"bg"] = bg;
     attrs[@"bold"] = @(self.boldBox.state == NSControlStateValueOn);
     attrs[@"italic"] = @(self.italicBox.state == NSControlStateValueOn);
     attrs[@"underline"] = @(self.underlineBox.state == NSControlStateValueOn);

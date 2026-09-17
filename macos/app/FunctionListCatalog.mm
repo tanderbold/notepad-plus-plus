@@ -304,6 +304,7 @@ static NSUInteger LineAtByte(NSData *data, NSUInteger offset) {
     NSUInteger line = 0;
     for (NSUInteger i = 0; i < offset && i < data.length; ++i) {
         if (bytes[i] == '\n') line++;
+        else if (bytes[i] == '\r' && (i + 1 >= data.length || bytes[i + 1] != '\n')) line++;
     }
     return line;
 }

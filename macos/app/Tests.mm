@@ -467,6 +467,136 @@ int NppMacRunTests(AppDelegate *app) {
                   [linear containsString:@"line one\nline two"] && ![linear containsString:@">\n"]);
         }
 
+        // Custom word characters can be turned off again.
+        {
+            NppPreferences *p = [NppPreferences shared];
+            BOOL wasOn = p.customWordCharsEnabled; NSString *wasChars = p.customWordChars;
+            [ed newDocument];
+            [ed setDocumentText:@"foo-bar baz"];
+            p.customWordCharsEnabled = YES; p.customWordChars = @"-";
+            [ed applyWordCharacters];
+            long withDash = [ed.sci message:SCI_WORDENDPOSITION wParam:0 lParam:1];
+            p.customWordCharsEnabled = NO;
+            [ed applyWordCharacters];
+            long withoutDash = [ed.sci message:SCI_WORDENDPOSITION wParam:0 lParam:1];
+            p.customWordCharsEnabled = wasOn; p.customWordChars = wasChars;
+            [ed applyWordCharacters];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_SETTING_PREFERENCE (word characters go back to the default)",
+                  @"with '-' a word runs across it, and without it the word stops there again",
+                  withDash == 7 && withoutDash == 3);
+        }
+
+        // Saved macros come back from disk.
+        {
+            NSString *macroPath = [ed.defaultSessionPath.stringByDeletingLastPathComponent
+                                   stringByAppendingPathComponent:@"macros.json"];
+            NSData *was = [NSData dataWithContentsOfFile:macroPath];
+            [@"{\"persisted\": [{\"msg\": 2170, \"w\": 0, \"l\": 0}]}" writeToFile:macroPath atomically:YES
+                                                                              encoding:NSUTF8StringEncoding error:NULL];
+            [ed reloadSavedMacros];
+            BOOL loaded = [[ed savedMacroNames] containsObject:@"persisted"];
+            if (was) [was writeToFile:macroPath atomically:YES]; else [[NSFileManager defaultManager] removeItemAtPath:macroPath error:NULL];
+            [ed reloadSavedMacros];
+            Check(@"IDM_MACRO_SAVECURRENTMACRO (saved macros survive a restart)",
+                  @"a macro written to macros.json is listed after it is read back",
+                  loaded);
+        }
+
+        // Print headers understand Notepad++'s own default names.
+        {
+            NSString *expanded = [ed expandPrintTemplate:@"$(LONG_DATE)|$(TIME)|$(SHORT_DATE)" page:1 of:1];
+            Check(@"IDM_FILE_PRINT (the default header's names)",
+                  @"$(LONG_DATE), $(TIME) and $(SHORT_DATE) are filled in",
+                  ![expanded containsString:@"$("] && [expanded componentsSeparatedByString:@"|"].count == 3);
+        }
+
+        // Two backups within one second are two files.
+        {
+            NppPreferences *p = [NppPreferences shared];
+            NSInteger wasMode = p.backupMode;
+            p.backupMode = NppBackupVerbose;
+            NSString *victim = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-backup-twice.txt"];
+            [@"one\n" writeToFile:victim atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            NSString *first = [ed writeBackupForPath:victim];
+            NSString *second = [ed writeBackupForPath:victim];
+            BOOL two = first && second && ![first isEqualToString:second] &&
+                       [[NSFileManager defaultManager] fileExistsAtPath:first] &&
+                       [[NSFileManager defaultManager] fileExistsAtPath:second];
+            for (NSString *path in @[victim, first ?: @"", second ?: @""]) {
+                if (path.length) [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+            }
+            p.backupMode = wasMode;
+            Check(@"IDM_SETTING_PREFERENCE (backups do not collide)",
+                  @"a second timestamped backup in the same second gets its own name",
+                  two);
+        }
+
+        // A user language with " or & in its name is still XML.
+        {
+            NSString *udlPath = [ed userDefinedLanguagePath];
+            NSData *was = [NSData dataWithContentsOfFile:udlPath];
+            [ed defineUserLanguageNamed:@"a\"b&c" extensions:@"x<y" keywords:@"k" commentLine:@"#"];
+            NSString *written = [NSString stringWithContentsOfFile:udlPath encoding:NSUTF8StringEncoding error:NULL];
+            BOOL escaped = [written containsString:@"name=\"a&quot;b&amp;c\""] && [written containsString:@"ext=\"x&lt;y\""];
+            if (was) [was writeToFile:udlPath atomically:YES];
+            Check(@"IDM_LANG_USER_DLG (the file stays well-formed)",
+                  @"a quote or ampersand in a user language's name is escaped in userDefineLang.xml",
+                  escaped);
+        }
+
+        // Auto-close as Windows does it: only before a blank, and the closer
+        // you then type is stepped over rather than doubled.
+        {
+            NppPreferences *p = [NppPreferences shared];
+            BOOL was = p.autoInsertParenthesis;
+            p.autoInsertParenthesis = YES;
+            [ed newDocument];
+            [ed setLanguageNamed:@"cpp"];
+            [ed setDocumentText:@""];
+            [ed.sci setStringProperty:SCI_INSERTTEXT parameter:0 value:@"("];
+            [ed.sci message:SCI_GOTOPOS wParam:1 lParam:0];
+            [ed handleCharacterAdded:'('];
+            BOOL paired = [[ed documentText] isEqualToString:@"()"];
+            [ed.sci setStringProperty:SCI_INSERTTEXT parameter:1 value:@"a"];
+            [ed.sci message:SCI_GOTOPOS wParam:2 lParam:0];
+            [ed handleCharacterAdded:'a'];
+            [ed.sci setStringProperty:SCI_INSERTTEXT parameter:2 value:@")"];
+            [ed.sci message:SCI_GOTOPOS wParam:3 lParam:0];
+            [ed handleCharacterAdded:')'];
+            BOOL steppedOver = [[ed documentText] isEqualToString:@"(a)"] && [ed.sci message:SCI_GETCURRENTPOS] == 3;
+            [ed setDocumentText:@"x"];
+            [ed.sci setStringProperty:SCI_INSERTTEXT parameter:0 value:@"("];
+            [ed.sci message:SCI_GOTOPOS wParam:1 lParam:0];
+            [ed handleCharacterAdded:'('];
+            BOOL notBeforeText = [[ed documentText] isEqualToString:@"(x"];
+            p.autoInsertParenthesis = was;
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_SETTING_PREFERENCE (auto-close pairs as Windows does)",
+                  @"a bracket is paired before a blank, not before text, and typing the "
+                  @"closer steps over the one put in",
+                  paired && steppedOver && notBeforeText);
+        }
+
+        // Smart highlighting highlights whatever the refinements.
+        {
+            NppPreferences *p = [NppPreferences shared];
+            BOOL wasOn = p.smartHighlightEnabled, wasWord = p.smartHighlightWholeWord;
+            p.smartHighlightEnabled = YES;
+            [ed newDocument];
+            [ed setDocumentText:@"foo foobar foo"];
+            [ed.sci message:SCI_SETSEL wParam:0 lParam:3];
+            p.smartHighlightWholeWord = YES;
+            NSUInteger whole = [ed updateSmartHighlight];
+            p.smartHighlightWholeWord = NO;
+            NSUInteger any = [ed updateSmartHighlight];
+            p.smartHighlightEnabled = wasOn; p.smartHighlightWholeWord = wasWord;
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_SETTING_PREFERENCE (smart highlighting with whole word)",
+                  @"with whole word on, two of the three are highlighted; with it off, all three",
+                  whole == 2 && any == 3);
+        }
+
         // A NUL byte inside a file is content, not the end of it.
         {
             NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];
@@ -4915,6 +5045,7 @@ int NppMacRunTests(AppDelegate *app) {
         [ed setLanguageNamed:@"html"];
         SetDoc(ed, @"<div>");
         [sci message:SCI_GOTOPOS wParam:5 lParam:0];
+        [ed setLanguageNamed:@"html"];
         NSString *closeTag = [ed closeTagAtCaret];
         SetDoc(ed, @"<img src=\"a.png\"/>");
         [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];

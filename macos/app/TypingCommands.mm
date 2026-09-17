@@ -1,4 +1,5 @@
 #import "TypingCommands.h"
+#import <objc/runtime.h>
 #import "ApiCatalog.h"
 #import "SettingsCommands.h"
 #import "AdvancedEditCommands.h"
@@ -82,9 +83,56 @@ static long Utf8Len(NSString *s) {
     }
 }
 
-/// After ">" is typed, the element that was just opened, if any.
+/// Whether a closer may be put in after `character` was typed at caret-1,
+/// as Notepad++ decides it: a bracket only before a blank, the end, or a
+/// closer; a quote only between blanks or inside a fresh pair of brackets.
+- (BOOL)autoCloseAllowedFor:(int)character {
+    ScintillaView *sci = self.sci;
+    long caret = [sci message:SCI_GETCURRENTPOS];
+    int next = caret < [sci message:SCI_GETLENGTH] ? (int)[sci message:SCI_GETCHARAT wParam:(uptr_t)caret lParam:0] : 0;
+    int prev = caret >= 2 ? (int)[sci message:SCI_GETCHARAT wParam:(uptr_t)(caret - 2) lParam:0] : 0;
+    BOOL nextBlank = next == 0 || next == ' ' || next == '\t' || next == '\n' || next == '\r';
+    BOOL prevBlank = prev == 0 || prev == ' ' || prev == '\t' || prev == '\n' || prev == '\r';
+    BOOL nextCloser = next == ')' || next == ']' || next == '}';
+    BOOL sandwiched = (prev == '(' && next == ')') || (prev == '[' && next == ']') || (prev == '{' && next == '}');
+    if (character == '(' || character == '[' || character == '{') return nextBlank || nextCloser;
+    return (prevBlank && nextBlank) || sandwiched;         // a quote
+}
+
+static const char kAutoCloseKey = 0;
+
+/// Typing the closer that was put in for you steps over it rather than
+/// doubling it. Only the closer put in last is remembered, and only while
+/// it is still where it was left.
+- (BOOL)steppedOverAutoCloserFor:(int)character {
+    ScintillaView *sci = self.sci;
+    NSDictionary *tracked = objc_getAssociatedObject(self, &kAutoCloseKey);
+    if (!tracked) return NO;
+    long caret = [sci message:SCI_GETCURRENTPOS];
+    long typedStart = [sci message:SCI_POSITIONBEFORE wParam:(uptr_t)caret lParam:0];
+    long closerAt = [tracked[@"at"] longValue];
+    int closer = [tracked[@"closer"] intValue];
+    if (typedStart <= closerAt) closerAt += caret - typedStart;     // it moved along with the typing
+    if (closerAt < caret || [sci message:SCI_GETCHARAT wParam:(uptr_t)closerAt lParam:0] != closer) {
+        objc_setAssociatedObject(self, &kAutoCloseKey, nil, OBJC_ASSOCIATION_RETAIN);
+        return NO;
+    }
+    if (closerAt == caret && character == closer) {
+        [sci message:SCI_DELETERANGE wParam:(uptr_t)caret lParam:1];
+        objc_setAssociatedObject(self, &kAutoCloseKey, nil, OBJC_ASSOCIATION_RETAIN);
+        return YES;
+    }
+    objc_setAssociatedObject(self, &kAutoCloseKey, @{@"at": @(closerAt), @"closer": @(closer)},
+                             OBJC_ASSOCIATION_RETAIN);
+    return NO;
+}
+
+/// After ">" is typed, the element that was just opened, if any. Only in
+/// HTML and XML, as on Windows, and never for an element that has no end.
 - (NSString *)closeTagAtCaret {
     if (![NppPreferences shared].autoInsertCloseTag) return nil;
+    NSString *language = self.currentDocument.language.name ?: @"";
+    if (![language isEqualToString:@"html"] && ![language isEqualToString:@"xml"]) return nil;
     ScintillaView *sci = self.sci;
     long pos = [sci message:SCI_GETCURRENTPOS];
     NSString *text = [sci string] ?: @"";
@@ -111,6 +159,14 @@ static long Utf8Len(NSString *s) {
                   (c >= '0' && c <= '9') || c == '-' || c == '_' || c == ':';
         if (!ok) return nil;
     }
+    static NSSet *voidElements;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        voidElements = [NSSet setWithArray:@[@"area", @"base", @"br", @"col", @"embed", @"hr", @"img",
+                                             @"input", @"link", @"meta", @"param", @"source",
+                                             @"track", @"wbr"]];
+    });
+    if ([language isEqualToString:@"html"] && [voidElements containsObject:tag.lowercaseString]) return nil;
     return [NSString stringWithFormat:@"</%@>", tag];
 }
 
@@ -183,13 +239,21 @@ static BOOL LanguageUsesBraces(NSString *name) {
     // in place when completion looks at it.
     [self maintainIndentationAfter:character];
 
+    if ([self steppedOverAutoCloserFor:character]) return;
+
     // Auto-insertion first: it does not depend on completion being on.
     NSString *closing = [self autoInsertionForCharacter:character];
+    if (closing && ![self autoCloseAllowedFor:character]) closing = nil;
     if (!closing && character == '>') closing = [self closeTagAtCaret];
     if (closing.length) {
         long pos = [sci message:SCI_GETCURRENTPOS];
         [sci setStringProperty:SCI_INSERTTEXT parameter:pos value:closing];
         [sci message:SCI_GOTOPOS wParam:(uptr_t)pos lParam:0];   // caret stays inside
+        if (closing.length == 1) {
+            objc_setAssociatedObject(self, &kAutoCloseKey,
+                                     @{@"at": @(pos), @"closer": @([closing characterAtIndex:0])},
+                                     OBJC_ASSOCIATION_RETAIN);
+        }
     }
 
     if (character == '(' && p.functionHintOnInput) {

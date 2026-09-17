@@ -139,13 +139,34 @@ static const char kSavedMacrosKey = 0;
     return YES;
 }
 
+- (NSString *)savedMacrosPath {
+    return [self.defaultSessionPath.stringByDeletingLastPathComponent
+            stringByAppendingPathComponent:@"macros.json"];
+}
+
 - (NSMutableDictionary *)savedMacros {
     NSMutableDictionary *saved = objc_getAssociatedObject(self, &kSavedMacrosKey);
     if (!saved) {
-        saved = [NSMutableDictionary dictionary];
-        objc_setAssociatedObject(self, &kSavedMacrosKey, saved, OBJC_ASSOCIATION_RETAIN);
+        // What was saved before this launch, read back: written and never
+        // read, a saved macro lasted exactly one session.
+        [self reloadSavedMacros];
+        saved = objc_getAssociatedObject(self, &kSavedMacrosKey);
     }
     return saved;
+}
+
+- (void)reloadSavedMacros {
+    NSMutableDictionary *saved = [NSMutableDictionary dictionary];
+    NSData *json = [NSData dataWithContentsOfFile:[self savedMacrosPath]];
+    id parsed = json ? [NSJSONSerialization JSONObjectWithData:json options:0 error:NULL] : nil;
+    if ([parsed isKindOfClass:[NSDictionary class]]) {
+        for (NSString *name in parsed) {
+            if ([name isKindOfClass:[NSString class]] && [parsed[name] isKindOfClass:[NSArray class]]) {
+                saved[name] = parsed[name];
+            }
+        }
+    }
+    objc_setAssociatedObject(self, &kSavedMacrosKey, saved, OBJC_ASSOCIATION_RETAIN);
 }
 
 - (BOOL)saveRecordedMacroAs:(NSString *)name {
@@ -153,8 +174,7 @@ static const char kSavedMacrosKey = 0;
     [self savedMacros][name] = [[self macroSteps] copy];
 
     // Persist alongside the session so macros survive a restart.
-    NSString *path = [self.defaultSessionPath.stringByDeletingLastPathComponent
-                      stringByAppendingPathComponent:@"macros.json"];
+    NSString *path = [self savedMacrosPath];
     NSData *json = [NSJSONSerialization dataWithJSONObject:[self savedMacros]
                                                    options:NSJSONWritingPrettyPrinted error:NULL];
     [json writeToFile:path options:NSDataWritingAtomic error:NULL];
