@@ -157,12 +157,17 @@
         body = quoted;
     }
 
-    if (spec.options & NppFindWholeWord) {
+    // Whole word is for the literal modes; in a regular expression it would
+    // rewrite what the user wrote, and Notepad++ greys it out there.
+    if ((spec.options & NppFindWholeWord) && spec.mode != NppSearchRegex) {
         body = [NSString stringWithFormat:@"\\b(?:%@)\\b", body];
     }
-    if (!(spec.options & NppFindMatchCase)) {
-        body = [@"(?i)" stringByAppendingString:body];
-    }
+    NSMutableString *flags = [NSMutableString string];
+    if (!(spec.options & NppFindMatchCase)) [flags appendString:@"i"];
+    // Whether '.' may cross a line ending is the dialog's box, off by
+    // default as on Windows; the engine's own default is overridden here.
+    [flags appendString:(spec.options & NppFindDotMatchesNewline) ? @"s" : @"-s"];
+    body = [NSString stringWithFormat:@"(?%@)%@", flags, body];
     return [NppRegex regexWithPattern:body];
 }
 
@@ -176,7 +181,7 @@
 }
 
 - (NSData *)documentBytes {
-    return [([self.sci string] ?: @"") dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
+    return [[self documentText] dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
 }
 
 #pragma mark - Matches
@@ -203,19 +208,23 @@
 
     ScintillaView *sci = self.sci;
     BOOL backward = (spec.options & NppFindBackward) != 0;
-    NSUInteger caret = backward
-        ? (NSUInteger)[sci message:SCI_GETSELECTIONSTART]
-        : (NSUInteger)[sci message:SCI_GETCURRENTPOS];
+    NSUInteger selStart = (NSUInteger)[sci message:SCI_GETSELECTIONSTART];
+    NSUInteger selEnd = (NSUInteger)[sci message:SCI_GETSELECTIONEND];
+    NSUInteger caret = backward ? selStart : (NSUInteger)[sci message:SCI_GETCURRENTPOS];
+    // The match that is already selected is not the next one. Without this
+    // an empty match - '$', '\b', a lookaround - sits at the caret and is
+    // found again and again.
+    NSRange selection = NSMakeRange(selStart, selEnd - selStart);
 
     NSValue *chosen = nil;
     if (backward) {
         for (NSValue *v in matches) {
-            if (NSMaxRange(v.rangeValue) <= caret) chosen = v;
+            if (NSMaxRange(v.rangeValue) <= caret && !NSEqualRanges(v.rangeValue, selection)) chosen = v;
         }
         if (!chosen && (spec.options & NppFindWrap)) chosen = matches.lastObject;
     } else {
         for (NSValue *v in matches) {
-            if (v.rangeValue.location >= caret) { chosen = v; break; }
+            if (v.rangeValue.location >= caret && !NSEqualRanges(v.rangeValue, selection)) { chosen = v; break; }
         }
         if (!chosen && (spec.options & NppFindWrap)) chosen = matches.firstObject;
     }
@@ -344,7 +353,10 @@
         NSRange r = ranges[(NSUInteger)i].rangeValue;
         [sci message:SCI_SETTARGETSTART wParam:(uptr_t)r.location];
         [sci message:SCI_SETTARGETEND wParam:(uptr_t)NSMaxRange(r)];
-        [sci setStringProperty:SCI_REPLACETARGET parameter:-1 value:texts[(NSUInteger)i]];
+        // By length: a replacement holding \0 must not end at it.
+        NSString *text = texts[(NSUInteger)i];
+        [sci setStringProperty:SCI_REPLACETARGET
+                     parameter:(long)[text lengthOfBytesUsingEncoding:NSUTF8StringEncoding] value:text];
     }
     [sci message:SCI_ENDUNDOACTION];
     return ranges.count;
@@ -362,21 +374,24 @@
         NSData *data = [self documentBytes];
         __block BOOL exact = NO;
         __block NSArray<NSValue *> *matched = nil;
+        // Matched over the rest of the document, not the selection alone: a
+        // pattern that looks past its match - foo(?=bar) - has to be able to.
         [regex enumerateMatchesWithGroupsInData:data
-                                          range:NSMakeRange((NSUInteger)from, (NSUInteger)(to - from))
+                                          range:NSMakeRange((NSUInteger)from, data.length - (NSUInteger)from)
                                      usingBlock:^(NSArray<NSValue *> *groups, BOOL *stop) {
             NSRange r = groups.firstObject.rangeValue;
             if (r.location == (NSUInteger)from && NSMaxRange(r) == (NSUInteger)to) {
                 exact = YES;
                 matched = groups;
-                *stop = YES;
             }
+            *stop = YES;
         }];
         if (exact) {
             NSString *text = [self replacementFor:spec groups:matched data:data];
             [sci message:SCI_SETTARGETSTART wParam:(uptr_t)from];
             [sci message:SCI_SETTARGETEND wParam:(uptr_t)to];
-            [sci setStringProperty:SCI_REPLACETARGET parameter:-1 value:text];
+            [sci setStringProperty:SCI_REPLACETARGET
+                         parameter:(long)[text lengthOfBytesUsingEncoding:NSUTF8StringEncoding] value:text];
             [sci message:SCI_GOTOPOS wParam:(uptr_t)(from + (long)[text lengthOfBytesUsingEncoding:NSUTF8StringEncoding])];
         }
     }
@@ -387,17 +402,54 @@
 
 #pragma mark - Across files
 
-+ (BOOL)name:(NSString *)name matchesFilters:(NSString *)filters {
+/// The filter split into what to take, what to leave out, and which folders
+/// to stay out of: "*.cpp *.h !*.min.js !\\build", as Notepad++ reads it.
+static void SplitFilters(NSString *filters, NSMutableArray *include, NSMutableArray *exclude,
+                         NSMutableArray *excludeFolders) {
     NSString *trimmed = [(filters ?: @"") stringByTrimmingCharactersInSet:
                          [NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    if (!trimmed.length) return YES;                 // no filter means every file
-
     for (NSString *pattern in [trimmed componentsSeparatedByCharactersInSet:
                                [NSCharacterSet characterSetWithCharactersInString:@" ,;"]]) {
         if (!pattern.length) continue;
-        // Notepad++ takes shell patterns here, and so does this.
-        NSPredicate *glob = [NSPredicate predicateWithFormat:@"SELF LIKE[c] %@", pattern];
-        if ([glob evaluateWithObject:name]) return YES;
+        if ([pattern hasPrefix:@"!\\"] || [pattern hasPrefix:@"!/"]) {
+            if (pattern.length > 2) [excludeFolders addObject:[pattern substringFromIndex:2]];
+        } else if ([pattern hasPrefix:@"!"]) {
+            if (pattern.length > 1) [exclude addObject:[pattern substringFromIndex:1]];
+        } else {
+            [include addObject:pattern];
+        }
+    }
+}
+
+static BOOL GlobMatches(NSString *pattern, NSString *name) {
+    // Notepad++ takes shell patterns here, and so does this.
+    return [[NSPredicate predicateWithFormat:@"SELF LIKE[c] %@", pattern] evaluateWithObject:name];
+}
+
++ (BOOL)name:(NSString *)name matchesFilters:(NSString *)filters {
+    NSMutableArray *include = [NSMutableArray array], *exclude = [NSMutableArray array],
+                   *folders = [NSMutableArray array];
+    SplitFilters(filters, include, exclude, folders);
+    for (NSString *pattern in exclude) {
+        if (GlobMatches(pattern, name)) return NO;
+    }
+    if (!include.count) return YES;                  // nothing asked for means every file
+    for (NSString *pattern in include) {
+        if (GlobMatches(pattern, name)) return YES;
+    }
+    return NO;
+}
+
++ (BOOL)relativePath:(NSString *)relative isInFolderExcludedByFilters:(NSString *)filters {
+    NSMutableArray *include = [NSMutableArray array], *exclude = [NSMutableArray array],
+                   *folders = [NSMutableArray array];
+    SplitFilters(filters, include, exclude, folders);
+    if (!folders.count) return NO;
+    NSArray<NSString *> *components = relative.pathComponents;
+    for (NSUInteger i = 0; i + 1 < components.count; ++i) {
+        for (NSString *pattern in folders) {
+            if (GlobMatches(pattern, components[i])) return YES;
+        }
     }
     return NO;
 }
@@ -434,6 +486,7 @@
             if ([component hasPrefix:@"."]) { hidden = YES; break; }
         }
         if (hidden && !includeHidden) continue;
+        if ([EditorController relativePath:relative isInFolderExcludedByFilters:filters]) continue;
 
         NSString *full = [folder stringByAppendingPathComponent:relative];
         BOOL isDirectory = NO;

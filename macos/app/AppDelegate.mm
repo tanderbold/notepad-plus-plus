@@ -69,6 +69,7 @@
 @property (nonatomic, strong) NSMatrix *modeRadios;
 @property (nonatomic, strong) NSButton *matchCaseBox;
 @property (nonatomic, strong) NSButton *wholeWordBox;
+@property (nonatomic, strong) NSButton *dotNewlineBox;
 @property (nonatomic, strong) NSButton *wrapBox;
 @property (nonatomic, strong) NSButton *backwardBox;
 @property (nonatomic, strong) NSButton *inSelectionBox;
@@ -2546,7 +2547,10 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     // Wide enough for the longest of them, which is otherwise cut short.
     [self.modeRadios setCellSize:NSMakeSize(250, 22)];
     [self.modeRadios selectCellAtRow:0 column:0];
+    self.modeRadios.target = self;
+    self.modeRadios.action = @selector(findModeChanged:);
     [content addSubview:self.modeRadios];
+    self.dotNewlineBox = [self findCheckbox:@". matches newline" at:NSMakePoint(16, 86) in:content];
 
     self.matchCaseBox   = [self findCheckbox:@"Match case"      at:NSMakePoint(285, 158) in:content];
     self.wholeWordBox   = [self findCheckbox:@"Whole word only" at:NSMakePoint(285, 136) in:content];
@@ -2558,6 +2562,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     [self.replaceViews addObjectsFromArray:@[self.backwardBox, self.inSelectionBox]];
 
     self.bookmarkLineBox = [self findCheckbox:@"Bookmark the line" at:NSMakePoint(455, 114) in:content];
+    [self findModeChanged:nil];
     [self.markViews addObject:self.bookmarkLineBox];
 
     // One row of buttons per tab, in the places Notepad++ puts them.
@@ -2650,10 +2655,19 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     if (self.wrapBox.state == NSControlStateValueOn)        options |= NppFindWrap;
     if (self.backwardBox.state == NSControlStateValueOn)    options |= NppFindBackward;
     if (self.inSelectionBox.state == NSControlStateValueOn) options |= NppFindInSelection;
+    if (self.dotNewlineBox.state == NSControlStateValueOn)  options |= NppFindDotMatchesNewline;
     spec.options = options;
     self.lastSearchTerm = spec.what;
     self.lastFindSpec = spec;
     return spec;
+}
+
+/// Whole word has no meaning in a regular expression, and ". matches
+/// newline" has none outside one: each is greyed out where it does not apply.
+- (void)findModeChanged:(id)sender {
+    BOOL regex = [self.modeRadios selectedRow] == NppSearchRegex;
+    self.wholeWordBox.enabled = !regex;
+    self.dotNewlineBox.enabled = regex;
 }
 
 - (void)findPanelNext:(id)sender {

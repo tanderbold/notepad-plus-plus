@@ -283,6 +283,135 @@ int NppMacRunTests(AppDelegate *app) {
                   flipped && back);
         }
 
+        // Search: an empty match is left behind, a lookahead survives Replace,
+        // '.' stays on its line unless asked, whole word leaves a regex alone,
+        // and a replacement may hold a NUL.
+        {
+            [ed newDocument];
+            [ed setDocumentText:@"ab\ncd\n"];
+            [ed.sci message:SCI_GOTOPOS wParam:0 lParam:0];
+            NppFindSpec *eol = [NppFindSpec specFor:@"$" mode:NppSearchRegex options:NppFindWrap];
+            NSMutableArray *stops = [NSMutableArray array];
+            for (int k = 0; k < 4; ++k) {
+                [ed findNext:eol];
+                [stops addObject:@([ed.sci message:SCI_GETSELECTIONSTART])];
+            }
+            BOOL advances = [stops isEqualToArray:@[@2, @5, @6, @2]];
+
+            [ed setDocumentText:@"foobar foobar"];
+            [ed.sci message:SCI_GOTOPOS wParam:0 lParam:0];
+            NppFindSpec *ahead = [NppFindSpec specFor:@"foo(?=bar)" mode:NppSearchRegex options:NppFindWrap];
+            ahead.replacement = @"X";
+            [ed findNext:ahead];
+            [ed replaceCurrentThenFindNext:ahead];
+            BOOL lookaheadReplaced = [[ed documentText] isEqualToString:@"Xbar foobar"] &&
+                                     [ed.sci message:SCI_GETSELECTIONSTART] == 5;
+
+            [ed setDocumentText:@"a\nb"];
+            NppFindSpec *dot = [NppFindSpec specFor:@"a.b" mode:NppSearchRegex options:0];
+            NSUInteger without = [ed countMatches:dot];
+            dot.options = NppFindDotMatchesNewline;
+            NSUInteger with = [ed countMatches:dot];
+            BOOL dotStays = without == 0 && with == 1;
+
+            [ed setDocumentText:@"a  b"];
+            NppFindSpec *spaces = [NppFindSpec specFor:@"\\s+" mode:NppSearchRegex options:NppFindWholeWord];
+            BOOL wholeWordLeavesRegex = [ed countMatches:spaces] == 1;
+
+            [ed setDocumentText:@"a-b"];
+            NppFindSpec *nul = [NppFindSpec specFor:@"-" mode:NppSearchExtended options:0];
+            nul.replacement = @"\\0";
+            [ed replaceAll:nul];
+            NSString *withNul = [ed documentText];
+            BOOL nulKept = withNul.length == 3 && [withNul characterAtIndex:1] == 0;
+
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_SEARCH_FINDNEXT (an empty match is left behind)",
+                  @"Find Next on '$' visits each line end in turn and wraps",
+                  advances);
+            Check(@"IDM_SEARCH_REPLACE (a lookahead survives Replace)",
+                  @"Replace on a match of foo(?=bar) replaces it and moves to the next",
+                  lookaheadReplaced);
+            Check(@"IDM_SEARCH_FIND (. matches newline is a choice)",
+                  @"'.' does not cross a line ending unless the box is ticked",
+                  dotStays);
+            Check(@"IDM_SEARCH_FIND (whole word leaves a regex alone)",
+                  @"whole word does not wrap a regular expression in \\b",
+                  wholeWordLeavesRegex);
+            Check(@"IDM_SEARCH_REPLACE (a replacement may hold a NUL)",
+                  @"an Extended replacement of \\0 puts a NUL byte in, not nothing",
+                  nulKept);
+        }
+
+        // Find in Files filters: "!" leaves files out, "!\\" leaves folders out.
+        {
+            BOOL filters =
+                [EditorController name:@"a.txt" matchesFilters:@"*.txt !*.log"] &&
+                ![EditorController name:@"a.log" matchesFilters:@"*.txt !*.log"] &&
+                ![EditorController name:@"a.log" matchesFilters:@"!*.log"] &&
+                [EditorController name:@"a.c" matchesFilters:@"!*.log"] &&
+                [EditorController relativePath:@"build/x/a.c" isInFolderExcludedByFilters:@"*.c !\\build"] &&
+                ![EditorController relativePath:@"src/a.c" isInFolderExcludedByFilters:@"*.c !\\build"];
+            Check(@"IDM_SEARCH_FINDINFILES (exclusions in the filter)",
+                  @"a pattern after ! leaves those files out, and !\\name leaves a folder out",
+                  filters);
+        }
+
+        // The last line of the file keeps the ending it had, even when the
+        // transform changed how many lines there are.
+        {
+            [ed newDocument];
+            [ed setDocumentText:@"a\n\nb"];
+            [ed removeEmptyLines:NO];
+            BOOL noTail = [[ed documentText] isEqualToString:@"a\nb"];
+            [ed setDocumentText:@"a\n\nb\n"];
+            [ed removeEmptyLines:NO];
+            BOOL tailKept = [[ed documentText] isEqualToString:@"a\nb\n"];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_EDIT_REMOVEEMPTYLINES (the end of the file stays as it was)",
+                  @"a file without a final line ending does not gain one, and one with keeps it",
+                  noTail && tailKept);
+        }
+
+        // Marking characters counts bytes by code point.
+        {
+            [ed newDocument];
+            [ed setDocumentText:@"\U0001F600 \u00E9"];
+            [ed markCharactersInRangeFrom:0xE9 to:0xE9];
+            BOOL afterEmoji = [ed.sci message:SCI_INDICATORALLONFOR wParam:5 lParam:0] != 0 &&
+                              [ed.sci message:SCI_INDICATORALLONFOR wParam:1 lParam:0] == 0;
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_SEARCH_MARK (marks after an emoji land on the right bytes)",
+                  @"the mark on the character after an emoji covers that character, not the emoji",
+                  afterEmoji);
+        }
+
+        // The Column Editor pads a short line to the column and replaces the block.
+        {
+            [ed newDocument];
+            [ed setDocumentText:@"abcdef\nab\nabcdef"];
+            [ed.sci message:SCI_SETVIRTUALSPACEOPTIONS wParam:SCVS_RECTANGULARSELECTION lParam:0];
+            [ed.sci message:SCI_SETRECTANGULARSELECTIONANCHOR wParam:4 lParam:0];
+            [ed.sci message:SCI_SETRECTANGULARSELECTIONCARET wParam:14 lParam:0];   // column 4 of the third line
+            // How far past "ab" the rectangle reaches is Scintilla's to say: it
+            // measures the column in pixels, so the count depends on the font.
+            NSString *spaces = [@"" stringByPaddingToLength:
+                (NSUInteger)[ed.sci message:SCI_GETSELECTIONNCARETVIRTUALSPACE wParam:1 lParam:0]
+                                                  withString:@" " startingAtIndex:0];
+            [ed columnInsertText:@"X"];
+            BOOL padded = [[ed documentText] isEqualToString:
+                [NSString stringWithFormat:@"abcdXef\nab%@X\nabcdXef", spaces]];
+            [ed setDocumentText:@"abcdef\nabcdef"];
+            [ed.sci message:SCI_SETRECTANGULARSELECTIONANCHOR wParam:1 lParam:0];
+            [ed.sci message:SCI_SETRECTANGULARSELECTIONCARET wParam:10 lParam:0];   // columns 1-3 of both lines
+            [ed columnInsertText:@"Z"];
+            BOOL replaced = [[ed documentText] isEqualToString:@"aZdef\naZdef"];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_EDIT_COLUMNMODE (the column editor fills the column)",
+                  @"a short line is padded to the column, and a selected block is replaced",
+                  padded && replaced);
+        }
+
         // A NUL byte inside a file is content, not the end of it.
         {
             NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];

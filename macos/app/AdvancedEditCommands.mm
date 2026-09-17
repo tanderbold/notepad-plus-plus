@@ -160,19 +160,34 @@ static const char kBeginEndAnchorKey = 0;
     long selections = [sci message:SCI_GETSELECTIONS];
     if (selections < 1) return NO;
 
-    NSMutableArray *positions = [NSMutableArray array];
+    // Each row: what it covers, and how far past the end of a short line the
+    // rectangle reaches (virtual space), which becomes real spaces.
+    NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
     for (long i = 0; i < selections; ++i) {
-        [positions addObject:@([sci message:SCI_GETSELECTIONNSTART wParam:(uptr_t)i])];
+        long start = [sci message:SCI_GETSELECTIONNSTART wParam:(uptr_t)i];
+        long end = [sci message:SCI_GETSELECTIONNEND wParam:(uptr_t)i];
+        long anchorSpace = [sci message:SCI_GETSELECTIONNANCHORVIRTUALSPACE wParam:(uptr_t)i];
+        long caretSpace = [sci message:SCI_GETSELECTIONNCARETVIRTUALSPACE wParam:(uptr_t)i];
+        long pad = start == end ? MIN(anchorSpace, caretSpace) : 0;
+        [rows addObject:@{@"start": @(start), @"end": @(end), @"pad": @(pad)}];
     }
-    [positions sortUsingSelector:@selector(compare:)];
+    [rows sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+        return [a[@"start"] compare:b[@"start"]];
+    }];
 
     [sci message:SCI_BEGINUNDOACTION];
-    // Bottom-up so earlier offsets stay valid.
-    for (NSUInteger i = positions.count; i > 0; --i) {
+    // Bottom-up so earlier offsets stay valid. The selected column is
+    // replaced, as the Column Editor does, not pushed along.
+    for (NSUInteger i = rows.count; i > 0; --i) {
         NSString *text = textForRow(i - 1);
         if (!text.length) continue;
-        [sci setStringProperty:SCI_INSERTTEXT
-                     parameter:[positions[i - 1] longValue] value:text];
+        NSDictionary *row = rows[i - 1];
+        NSString *padded = [[@"" stringByPaddingToLength:[row[@"pad"] unsignedIntegerValue]
+                                              withString:@" " startingAtIndex:0]
+                            stringByAppendingString:text];
+        [sci message:SCI_SETTARGETRANGE wParam:(uptr_t)[row[@"start"] longValue]
+                                        lParam:[row[@"end"] longValue]];
+        [sci setStringProperty:SCI_REPLACETARGET parameter:Utf8Len(padded) value:padded];
     }
     [sci message:SCI_ENDUNDOACTION];
     [self refreshChrome];

@@ -18,6 +18,7 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
     NppFindWrap        = 1 << 2,
     NppFindBackward    = 1 << 3,
     NppFindInSelection = 1 << 4,
+    NppFindDotMatchesNewline = 1 << 5,   ///< regular expressions only: '.' may match a line ending
 };
 
 /// What to look for, and what to put in its place.
@@ -104,6 +105,10 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
 
 /// Whether a file name is one the filter asks for.
 + (BOOL)name:(NSString *)name matchesFilters:(nullable NSString *)filters;
+
+/// Whether a folder on the way to the file is one the filter says to stay
+/// out of: "!\\build" in the filter keeps every build folder out.
++ (BOOL)relativePath:(NSString *)relative isInFolderExcludedByFilters:(nullable NSString *)filters;
 
 /// Byte ranges of every match; the others are built on this.
 - (NSArray<NSValue *> *)rangesOfMatches:(NppFindSpec *)spec;

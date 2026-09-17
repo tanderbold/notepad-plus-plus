@@ -111,10 +111,18 @@ static NSString *LineEnding(NSString *line) {
                   : self.currentDocument.eolMode == SC_EOL_CR   ? @"\r" : @"\n" copy];
     }
     for (NSUInteger i = 0; i < newBodies.count; ++i) {
-        NSString *ending = i < endings.count ? endings[i] : fallback;
-        BOOL isDocumentTail = (first + (long)i == (long)lines.count - 1) && i == newBodies.count - 1;
-        if (isDocumentTail && i < endings.count) ending = endings[i];
-        else if (!ending.length && !(isDocumentTail)) ending = fallback;
+        // The tail is the last line written when the range reached the last
+        // line of the file - judged by the output, since the transform may
+        // have changed how many lines there are - and it keeps whatever
+        // ending the file had, including none.
+        BOOL isDocumentTail = i == newBodies.count - 1 && last == (long)lines.count - 1;
+        NSString *ending;
+        if (isDocumentTail) {
+            ending = endings.lastObject ?: @"";
+        } else {
+            ending = i < endings.count ? endings[i] : fallback;
+            if (!ending.length) ending = fallback;
+        }
         [rebuilt addObject:[newBodies[i] stringByAppendingString:ending]];
     }
     if (last + 1 < (long)lines.count) {

@@ -639,17 +639,28 @@ static int IndicatorFor(NSInteger style) {
     [sci message:SCI_SETINDICATORCURRENT wParam:(uptr_t)ind lParam:0];
     [sci message:SCI_INDICATORCLEARRANGE wParam:0 lParam:[sci message:SCI_GETLENGTH]];
 
-    NSString *text = [sci string] ?: @"";
+    NSString *text = [self documentText];
     NSUInteger marked = 0;
     long bytePos = 0;
+    // Walked by code point: a character outside the BMP is two UTF-16 units
+    // and four bytes, and counting it as two characters of no bytes put
+    // every later mark four bytes early.
     for (NSUInteger i = 0; i < text.length; ++i) {
         unichar c = [text characterAtIndex:i];
-        long charBytes = Utf8Len([text substringWithRange:NSMakeRange(i, 1)]);
-        if (c >= from && c <= to) {
+        NSUInteger units = 1;
+        uint32_t scalar = c;
+        if (CFStringIsSurrogateHighCharacter(c) && i + 1 < text.length &&
+            CFStringIsSurrogateLowCharacter([text characterAtIndex:i + 1])) {
+            scalar = CFStringGetLongCharacterForSurrogatePair(c, [text characterAtIndex:i + 1]);
+            units = 2;
+        }
+        long charBytes = Utf8Len([text substringWithRange:NSMakeRange(i, units)]);
+        if (scalar >= from && scalar <= to) {
             [sci message:SCI_INDICATORFILLRANGE wParam:(uptr_t)bytePos lParam:charBytes];
             marked++;
         }
         bytePos += charBytes;
+        i += units - 1;
     }
     return marked;
 }

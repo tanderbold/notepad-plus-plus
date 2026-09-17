@@ -84,7 +84,10 @@ static void *CompilePattern(NSString *pattern, NSString **errorOut) {
     if (!code && errorOut) {
         uint8_t message[256] = {0};
         if (gErrorMessage) gErrorMessage(errorCode, message, sizeof message);
-        *errorOut = [NSString stringWithFormat:@"%s (at offset %zu)", message, errorOffset];
+        // Counted in the pattern as written, not with the convention prefix.
+        size_t prefix = strlen("(*ANYCRLF)");
+        *errorOut = [NSString stringWithFormat:@"%s (at offset %zu)", message,
+                     errorOffset >= prefix ? errorOffset - prefix : errorOffset];
     }
     return code;
 }
