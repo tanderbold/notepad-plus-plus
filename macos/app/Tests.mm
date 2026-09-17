@@ -412,6 +412,61 @@ int NppMacRunTests(AppDelegate *app) {
                   padded && replaced);
         }
 
+        // Shift-JIS is double-byte and goes through the system converter.
+        {
+            const unsigned char sjis[] = {0x93, 0xFA, 0x96, 0x7B};       // 日本
+            NSString *decoded = [EditorController stringFromData:[NSData dataWithBytes:sjis length:4] codepage:932];
+            NSData *back = [EditorController dataFromString:@"日本" codepage:932];
+            Check(@"IDM_FORMAT_SHIFT_JIS (a double-byte set decodes)",
+                  @"Japanese text in Shift-JIS reads and writes back as itself",
+                  [decoded isEqualToString:@"日本"] && [back isEqualToData:[NSData dataWithBytes:sjis length:4]]);
+        }
+
+        // What Run… splices from the document cannot become a command, and a
+        // plain path is left alone.
+        {
+            [ed newDocument];
+            [ed setDocumentText:@"a; touch /tmp/never $(x) `y`"];
+            NSString *bare = [ed expandRunVariables:@"echo $(CURRENT_LINESTR)"];
+            NSString *quoted = [ed expandRunVariables:@"echo \"$(CURRENT_LINESTR)\""];
+            NSString *single = [ed expandRunVariables:@"echo '$(CURRENT_LINESTR)'"];
+            NSString *plain = [ed expandRunVariables:@"$(CURRENT_LINE)"];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_EXECUTE (document text is quoted for the shell)",
+                  @"a line of the document is single-quoted outside quotes, escaped inside "
+                  @"double quotes, left alone inside single quotes; a number is left bare",
+                  [bare isEqualToString:@"echo 'a; touch /tmp/never $(x) `y`'"] &&
+                  [quoted isEqualToString:@"echo \"a; touch /tmp/never \\$(x) \\`y\\`\""] &&
+                  [single isEqualToString:@"echo 'a; touch /tmp/never $(x) `y`'"] &&
+                  [plain isEqualToString:@"0"]);
+        }
+
+        // FTP addresses: absolute, and safe for a URL.
+        {
+            NppFtpProfile *profile = [[NppFtpProfile alloc] init];
+            profile.host = @"h";
+            NSString *url = [profile urlForPath:@"/a b/c#d"];
+            NSArray *entries = [NppFtpClient parseListing:
+                @"sftp> ls -l \"/x\"\n-rw-r--r-- 1 u g 5 Jan 1 12:00 a.txt\n"];
+            Check(@"IDM_FTP (addresses are absolute and encoded, and sftp's echo is not a file)",
+                  @"a path becomes ftp://host:21/%2F... with its unsafe characters encoded, "
+                  @"and the sftp> echo line is skipped in a listing",
+                  [url isEqualToString:@"ftp://h:21/%2Fa%20b/c%23d"] &&
+                  entries.count == 1 && [[entries.firstObject name] isEqualToString:@"a.txt"]);
+        }
+
+        // Compare and Linearize leave line endings and text alone.
+        {
+            NSArray *lines = [EditorController linesForComparison:@"a\r\nb\rc\n"];
+            NSString *linear = [EditorController linearizeXML:@"<r>\n  <p>line one\nline two</p>\n</r>"];
+            Check(@"IDM_COMPARE (a CR is a line ending, not content)",
+                  @"CRLF, CR and LF all split lines the same way for Compare",
+                  [lines isEqualToArray:@[@"a", @"b", @"c", @""]]);
+            Check(@"IDM_XMLTOOLS_LINEARIZE (text keeps its line breaks)",
+                  @"only the whitespace between tags goes; a line break inside text stays",
+                  [linear containsString:@"line one\nline two"] && ![linear containsString:@">\n"]);
+        }
+
         // A NUL byte inside a file is content, not the end of it.
         {
             NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];
@@ -5305,7 +5360,7 @@ int NppMacRunTests(AppDelegate *app) {
               [read.username isEqualToString:@"tester"]);
 
         Check(@"FTP url", @"the URL carries host, port and path",
-              [[read urlForPath:@"dir/file.txt"] isEqualToString:@"ftp://127.0.0.1:21/dir/file.txt"]);
+              [[read urlForPath:@"dir/file.txt"] isEqualToString:@"ftp://127.0.0.1:21/%2Fdir/file.txt"]);
 
         // End to end against a real server, started for this test.
         NSString *script = [[NSBundle mainBundle] pathForResource:@"test-ftp-server" ofType:@"py"];
@@ -5500,7 +5555,8 @@ int NppMacRunTests(AppDelegate *app) {
             [[ed expandRunVariables:@"$(NAME_PART)"] isEqualToString:@"npp_run_test"];
         BOOL caret =
             [[ed expandRunVariables:@"$(CURRENT_WORD)"] isEqualToString:@"beta"] &&
-            [[ed expandRunVariables:@"$(CURRENT_LINESTR)"] isEqualToString:@"alpha beta"] &&
+            // A value with a space in it is quoted, so the shell keeps it whole.
+            [[ed expandRunVariables:@"$(CURRENT_LINESTR)"] isEqualToString:@"'alpha beta'"] &&
             [[ed expandRunVariables:@"$(CURRENT_LINE)"] isEqualToString:@"0"] &&
             [[ed expandRunVariables:@"$(CURRENT_COLUMN)"] isEqualToString:@"6"];
         BOOL npp =

@@ -60,7 +60,10 @@ def main():
     lines = []
     tables = {}
     covered = skipped = 0
-    for codepage in sorted(set(codepages)):
+    # A lead byte of a double-byte set means nothing on its own; the
+    # meanings listed here are for the one-byte sets only.
+    double_byte = {932, 936, 949, 950}
+    for codepage in sorted(set(codepages) - double_byte):
         codec = codec_for(codepage)
         if codec is None:
             skipped += 1

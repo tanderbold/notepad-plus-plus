@@ -137,10 +137,15 @@ static const char kFtpRemotePathsKey = 0;   // local temp path -> remote path
 
     // The file is edited locally and written back on save, so it needs a real
     // path on disk; the remote one is remembered alongside it.
-    NSString *cache = [[self supportDirectory] stringByAppendingPathComponent:@"ftp-cache"];
-    [[NSFileManager defaultManager] createDirectoryAtPath:cache
+    // Under the host and the whole remote path: two files called index.html
+    // in two folders must not share one cache file, or one is saved over
+    // the other on the server.
+    NSString *host = [(client.profile.host ?: @"host") stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+    NSString *cache = [[[self supportDirectory] stringByAppendingPathComponent:@"ftp-cache"]
+                       stringByAppendingPathComponent:host];
+    NSString *local = [cache stringByAppendingPathComponent:remote];
+    [[NSFileManager defaultManager] createDirectoryAtPath:local.stringByDeletingLastPathComponent
                              withIntermediateDirectories:YES attributes:nil error:NULL];
-    NSString *local = [cache stringByAppendingPathComponent:remote.lastPathComponent];
     if (![data writeToFile:local atomically:YES]) return NO;
 
     if (![self openFileAtPath:local error:NULL]) return NO;

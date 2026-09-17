@@ -105,9 +105,13 @@
     NSXMLDocument *doc = [self documentFromText:text];
     if (!doc) return nil;
     NSString *compact = [doc XMLStringWithOptions:NSXMLNodeCompactEmptyElement | NSXMLNodePreserveCDATA];
-    // The declaration keeps its own line in Notepad++ too; everything else joins up.
-    return [[compact componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]]
-            componentsJoinedByString:@""];
+    // Only the whitespace between one tag and the next goes: a line break
+    // inside a text node or an attribute value is content, and XML Tools
+    // leaves it alone.
+    NSRegularExpression *between = [NSRegularExpression regularExpressionWithPattern:
+        @">[ \\t]*\\r?\\n[ \\t\\r\\n]*<" options:0 error:NULL];
+    return [between stringByReplacingMatchesInString:compact options:0
+                                               range:NSMakeRange(0, compact.length) withTemplate:@"><"];
 }
 
 #pragma mark - XPath and XSL

@@ -27,6 +27,9 @@ typedef NS_ENUM(NSInteger, NppDiffKind) {
 @interface EditorController (CompareCommands)
 
 /// The line-by-line difference, using Myers' algorithm as ComparePlus does.
+/// The lines of a text as Compare sees them: split on CRLF, LF and CR alike.
++ (NSArray<NSString *> *)linesForComparison:(NSString *)text;
+
 + (NSArray<NppDiffLine *> *)diffBetween:(NSArray<NSString *> *)oldLines
                                     and:(NSArray<NSString *> *)newLines
                          ignoreCase:(BOOL)ignoreCase

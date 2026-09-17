@@ -188,13 +188,52 @@ static NSString *SliceBytes(NSData *data, long start, long end) {
     return nil;
 }
 
+/// A value made safe for /bin/sh at the point it is spliced in. Windows
+/// hands the command to ShellExecute, which reads none of it; here the shell
+/// reads all of it, and a line of the document must not become a command.
+/// Inside single quotes nothing is read but a quote; inside double quotes
+/// only $, `, " and \ are; outside, a value with anything the shell would
+/// read is single-quoted whole, and a plain path or number is left as it is.
+typedef NS_ENUM(NSInteger, NppShellContext) { NppShellBare, NppShellInSingle, NppShellInDouble };
+
+static NSString *QuotedForShell(NSString *value, NppShellContext context) {
+    if (context == NppShellInSingle) {
+        return [value stringByReplacingOccurrencesOfString:@"'" withString:@"'\\''"];
+    }
+    if (context == NppShellInDouble) {
+        NSMutableString *out = [NSMutableString stringWithCapacity:value.length];
+        for (NSUInteger i = 0; i < value.length; ++i) {
+            unichar c = [value characterAtIndex:i];
+            if (c == '$' || c == '`' || c == '"' || c == '\\') [out appendString:@"\\"];
+            [out appendFormat:@"%C", c];
+        }
+        return out;
+    }
+    static NSCharacterSet *safe;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        safe = [NSCharacterSet characterSetWithCharactersInString:
+                @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_./:@%+=,-"];
+    });
+    if ([value rangeOfCharacterFromSet:safe.invertedSet].location == NSNotFound) return value;
+    return [NSString stringWithFormat:@"'%@'",
+            [value stringByReplacingOccurrencesOfString:@"'" withString:@"'\\''"]];
+}
+
 - (NSString *)expandRunVariables:(NSString *)source {
     if (!source.length) return @"";
     NSMutableString *out = [NSMutableString string];
     NSUInteger length = source.length;
+    NppShellContext context = NppShellBare;
 
     for (NSUInteger i = 0; i < length; ++i) {
         unichar c = [source characterAtIndex:i];
+        BOOL escaped = i > 0 && [source characterAtIndex:i - 1] == '\\';
+        if (c == '\'' && context != NppShellInDouble && !escaped) {
+            context = context == NppShellInSingle ? NppShellBare : NppShellInSingle;
+        } else if (c == '"' && context != NppShellInSingle && !escaped) {
+            context = context == NppShellInDouble ? NppShellBare : NppShellInDouble;
+        }
         if (c != '$' || i + 1 >= length || [source characterAtIndex:i + 1] != '(') {
             [out appendFormat:@"%C", c];
             continue;
@@ -218,7 +257,7 @@ static NSString *SliceBytes(NSData *data, long start, long end) {
             [out appendString:@"$"];
             continue;
         }
-        [out appendString:value];
+        [out appendString:QuotedForShell(value, context)];
         i = close.location;
     }
     return out;

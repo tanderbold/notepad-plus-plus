@@ -32,10 +32,17 @@
 - (NSString *)urlForPath:(NSString *)path {
     NSString *clean = path.length ? path : @"/";
     if (![clean hasPrefix:@"/"]) clean = [@"/" stringByAppendingString:clean];
+    // Every character a URL reads - space, #, ?, % - is encoded, and an FTP
+    // path is made absolute: in ftp://host/dir the dir is relative to the
+    // login home, and only %2F in front of it means the root.
+    NSString *encoded = [[clean substringFromIndex:1]
+        stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]]
+        ?: [clean substringFromIndex:1];
     // libcurl takes ftp:// for both plain and TLS; TLS is requested separately.
     NSString *scheme = self.protocol == NppFtpSFTP ? @"sftp" : @"ftp";
-    return [NSString stringWithFormat:@"%@://%@:%ld%@",
-            scheme, self.host ?: @"", (long)[self effectivePort], clean];
+    NSString *root = self.protocol == NppFtpSFTP ? @"/" : @"/%2F";
+    return [NSString stringWithFormat:@"%@://%@:%ld%@%@",
+            scheme, self.host ?: @"", (long)[self effectivePort], root, encoded];
 }
 
 @end
@@ -103,6 +110,8 @@
     NSMutableArray *entries = [NSMutableArray array];
     for (NSString *raw in [listing componentsSeparatedByCharactersInSet:
                            [NSCharacterSet newlineCharacterSet]]) {
+        // sftp in batch mode echoes each command as "sftp> ..." - not an entry.
+        if ([raw hasPrefix:@"sftp>"]) continue;
         NSString *line = [raw stringByTrimmingCharactersInSet:
                           [NSCharacterSet whitespaceCharacterSet]];
         if (line.length < 4) continue;

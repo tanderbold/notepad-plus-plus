@@ -207,8 +207,16 @@ static const char kCurrentDiffKey = 0;
 
 #pragma mark - Commands
 
++ (NSArray<NSString *> *)linesForComparison:(NSString *)text {
+    // CRLF, LF and CR are all endings; a CR left on a line would make every
+    // line of a Windows file differ from a Unix one.
+    NSString *normalised = [[text stringByReplacingOccurrencesOfString:@"\r\n" withString:@"\n"]
+                            stringByReplacingOccurrencesOfString:@"\r" withString:@"\n"];
+    return [normalised componentsSeparatedByString:@"\n"];
+}
+
 - (NSArray<NSString *> *)linesOfCurrentDocument {
-    return [([self.sci string] ?: @"") componentsSeparatedByString:@"\n"];
+    return [EditorController linesForComparison:[self documentText]];
 }
 
 - (BOOL)compareWithFileAtPath:(NSString *)path {
@@ -218,7 +226,7 @@ static const char kCurrentDiffKey = 0;
                    ?: [[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
     if (!other) { NSBeep(); return NO; }
 
-    NSArray *oldLines = [other componentsSeparatedByString:@"\n"];
+    NSArray *oldLines = [EditorController linesForComparison:other];
     NSArray *newLines = [self linesOfCurrentDocument];
     NSArray *diff = [EditorController diffBetween:oldLines and:newLines
                                        ignoreCase:self.compareIgnoreCase
