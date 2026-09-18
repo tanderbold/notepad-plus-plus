@@ -688,8 +688,11 @@ static long SciColourOf(NSColor *c) {
         NSDictionary *attrs = udl.styles[styleID];
         uptr_t id = (uptr_t)styleID.intValue;
         NSColor *fg = ColourFromHex(attrs[@"fgColor"]), *bg = ColourFromHex(attrs[@"bgColor"]);
-        if (fg) [sci message:SCI_STYLESETFORE wParam:id lParam:SciColourOf(fg)];
-        if (bg) [sci message:SCI_STYLESETBACK wParam:id lParam:SciColourOf(bg)];
+        // colorStyle says which colours are the style's own; a transparent one
+        // is left as the default style has it (setSpecialStyle).
+        int colorStyle = attrs[@"colorStyle"] ? [attrs[@"colorStyle"] intValue] : 3;
+        if (fg && (colorStyle & 1)) [sci message:SCI_STYLESETFORE wParam:id lParam:SciColourOf(fg)];
+        if (bg && (colorStyle & 2)) [sci message:SCI_STYLESETBACK wParam:id lParam:SciColourOf(bg)];
         int fontStyle = [attrs[@"fontStyle"] intValue];
         if (fontStyle & 1) [sci message:SCI_STYLESETBOLD wParam:id lParam:1];
         if (fontStyle & 2) [sci message:SCI_STYLESETITALIC wParam:id lParam:1];

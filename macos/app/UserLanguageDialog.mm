@@ -473,7 +473,7 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
     if (!self.current) { NppBeep(); return; }
     int styleID = (int)sender.tag;
     NSDictionary *attrs = self.current.styles[@(styleID)] ?: @{};
-    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 420, styleID == SCE_USER_STYLE_DEFAULT ? 150 : 330)];
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 420, styleID == SCE_USER_STYLE_DEFAULT ? 150 : 376)];
     CGFloat top = NSHeight(view.frame) - 26;
 
     NSColorWell *fg = [[NSColorWell alloc] initWithFrame:NSMakeRect(110, top - 2, 44, 24)];
@@ -483,6 +483,16 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
     [self label:@"Foreground:" at:NSMakePoint(10, top + 2) width:95 in:view];
     [self label:@"Background:" at:NSMakePoint(200, top + 2) width:95 in:view];
     [view addSubview:fg]; [view addSubview:bg];
+    // "Transparent": the colour is not set, and what lies under shows (colorStyle's two bits).
+    int colorStyle = attrs[@"colorStyle"] ? [attrs[@"colorStyle"] intValue] : 3;
+    NSButton *fgClear = [NSButton checkboxWithTitle:@"" target:nil action:nil];
+    NSButton *bgClear = [NSButton checkboxWithTitle:@"" target:nil action:nil];
+    fgClear.toolTip = bgClear.toolTip = @"Transparent";
+    fgClear.state = (colorStyle & 1) ? NSControlStateValueOff : NSControlStateValueOn;
+    bgClear.state = (colorStyle & 2) ? NSControlStateValueOff : NSControlStateValueOn;
+    fgClear.frame = NSMakeRect(160, top, 22, 20);
+    bgClear.frame = NSMakeRect(350, top, 22, 20);
+    [view addSubview:fgClear]; [view addSubview:bgClear];
 
     int fontStyle = [attrs[@"fontStyle"] intValue];
     NSButton *bold = [NSButton checkboxWithTitle:@"Bold" target:nil action:nil];
@@ -515,11 +525,14 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
                                @"Delimiter 5", @"Delimiter 6", @"Delimiter 7", @"Delimiter 8",
                                @"Comment", @"Comment line", @"Keyword 1", @"Keyword 2", @"Keyword 3",
                                @"Keyword 4", @"Keyword 5", @"Keyword 6", @"Keyword 7", @"Keyword 8",
-                               @"Operators 1", @"Operators 2", @"Numbers"];
+                               @"Operators 1", @"Operators 2", @"Numbers",
+                               @"Code 2 open", @"Code 2 middle", @"Code 2 close",
+                               @"Comment open", @"Comment middle", @"Comment close"];
         // The bit of each, SCE_USER_MASK_NESTING_*.
         NSArray *nestBits = @[@0x1, @0x2, @0x4, @0x8, @0x10, @0x20, @0x40, @0x80, @0x100, @0x200,
                               @0x400, @0x800, @0x1000, @0x2000, @0x4000, @0x8000, @0x10000, @0x20000,
-                              @0x1000000, @0x2000000, @0x4000000];
+                              @0x1000000, @0x2000000, @0x4000000,
+                              @0x40000, @0x80000, @0x100000, @0x200000, @0x400000, @0x800000];
         BOOL nestable = styleID == SCE_USER_STYLE_COMMENT || styleID == SCE_USER_STYLE_COMMENTLINE ||
                         (styleID >= SCE_USER_STYLE_DELIMITER1 && styleID <= SCE_USER_STYLE_DELIMITER8);
         int nesting = [attrs[@"nesting"] intValue];
@@ -545,6 +558,7 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
         NSMutableDictionary *out = [attrs mutableCopy];
         out[@"fgColor"] = HexOf(fg.color);
         out[@"bgColor"] = HexOf(bg.color);
+        out[@"colorStyle"] = [@((fgClear.state == NSControlStateValueOn ? 0 : 1) | (bgClear.state == NSControlStateValueOn ? 0 : 2)) stringValue];
         int styleBits = (bold.state == NSControlStateValueOn ? 1 : 0) |
                         (italic.state == NSControlStateValueOn ? 2 : 0) |
                         (underline.state == NSControlStateValueOn ? 4 : 0);
@@ -554,7 +568,10 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
         if (size.integerValue > 0) out[@"fontSize"] = [@(size.integerValue) stringValue];
         else [out removeObjectForKey:@"fontSize"];
         if (nestBoxes.count) {
-            int nesting = 0;
+            // Bits with no box of their own stay as the file had them.
+            int shown = 0;
+            for (NSButton *box in nestBoxes) shown |= (int)box.tag;
+            int nesting = [attrs[@"nesting"] intValue] & ~shown;
             for (NSButton *box in nestBoxes) if (box.state == NSControlStateValueOn) nesting |= (int)box.tag;
             out[@"nesting"] = [@(nesting) stringValue];
         }

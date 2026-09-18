@@ -1154,6 +1154,15 @@ int NppMacRunTests(AppDelegate *app) {
                          [ed.sci message:SCI_GETSTYLEAT wParam:10 lParam:0] == SCE_USER_STYLE_COMMENTLINE &&
                          [ed.sci message:SCI_STYLEGETBOLD wParam:SCE_USER_STYLE_KEYWORD1 lParam:0] != 0;
 
+            // A transparent background (colorStyle without its second bit) is the
+            // default style's, whatever colour the file carries; the foreground is the style's own.
+            [dialog setStyle:SCE_USER_STYLE_COMMENTLINE attributes:@{@"fgColor": @"008000", @"bgColor": @"FF0000",
+                                                                      @"colorStyle": @"1", @"fontStyle": @"0", @"nesting": @"0"}];
+            long clearBack = [ed.sci message:SCI_STYLEGETBACK wParam:SCE_USER_STYLE_COMMENTLINE lParam:0];
+            shown = shown && clearBack == [ed.sci message:SCI_STYLEGETBACK wParam:STYLE_DEFAULT lParam:0] && clearBack != 0x0000FF &&
+                    [ed.sci message:SCI_STYLEGETFORE wParam:SCE_USER_STYLE_COMMENTLINE lParam:0] == 0x008000 &&
+                    [[NSString stringWithContentsOfFile:mainFile encoding:NSUTF8StringEncoding error:NULL] containsString:@"colorStyle=\"1\""];
+
             BOOL renamed = [dialog renameCurrentTo:@"DialogLang2"] && [doc.language.name isEqualToString:@"DialogLang2"] &&
                            ![catalog languageNamed:@"DialogLang"];
             BOOL copied = [dialog saveCurrentAs:@"DialogLang3"] && [catalog userLanguageNamed:@"DialogLang3"] &&
