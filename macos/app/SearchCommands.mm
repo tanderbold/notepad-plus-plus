@@ -4,6 +4,7 @@
 #import "EditCommands.h"
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
+#import <objc/runtime.h>
 
 #define NPPMAC_BOOKMARK_MARKER 1
 
@@ -390,17 +391,30 @@ static int IndicatorFor(NSInteger style) {
     return hits;
 }
 
+static const char kOlderResultsKey = 0;
+
+/// What the results tab held before the search now running: Notepad++ keeps
+/// earlier searches below the new one, folded, unless it is told to purge.
+- (NSString *)olderSearchResults { return objc_getAssociatedObject(self, &kOlderResultsKey) ?: @""; }
+
 - (void)showSearchResults:(NSString *)report {
     // Notepad++ docks a results panel; here the results are a tab of their own.
     // An earlier one is reused, so a search that reports as it goes does not
     // leave a trail of tabs behind it.
     NSInteger existing = [self searchResultsTabIndex];
-    if (existing >= 0) [self selectDocumentAtIndex:existing];
-    else [self newDocument];
+    NSString *older = @"";
+    if (existing >= 0) {
+        [self selectDocumentAtIndex:existing];
+        if (![NppPreferences shared].searchResultsPurge) older = [self.sci string] ?: @"";
+    } else {
+        [self newDocument];
+    }
+    objc_setAssociatedObject(self, &kOlderResultsKey, older, OBJC_ASSOCIATION_COPY);
     self.currentDocument.displayName = @"Search results";
-    [self.sci setString:report ?: @""];
+    [self.sci setString:[(report ?: @"") stringByAppendingString:older]];
     [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
+    [self foldSearchResults];
     [self refreshChrome];
 }
 
@@ -409,22 +423,145 @@ static int IndicatorFor(NSInteger style) {
     // matters more than a live count; the finished report still arrives.
     if (![self.currentDocument.displayName isEqualToString:@"Search results"]) return;
 
-    // Whether the view was at the bottom decides whether it follows the new
-    // hits down or stays where the user left it.
-    sptr_t lines = [self.sci message:SCI_GETLINECOUNT wParam:0 lParam:0];
+    // Whether the view was at the top decides whether it stays with the new
+    // search as it grows or stays where the user scrolled to.
     sptr_t first = [self.sci message:SCI_GETFIRSTVISIBLELINE wParam:0 lParam:0];
+    sptr_t lines = [self.sci message:SCI_GETLINECOUNT wParam:0 lParam:0];
     sptr_t onScreen = [self.sci message:SCI_LINESONSCREEN wParam:0 lParam:0];
     BOOL atBottom = (first + onScreen) >= lines - 1;
+    NSString *older = [self olderSearchResults];
 
-    [self.sci setString:report ?: @""];
+    [self.sci setString:[(report ?: @"") stringByAppendingString:older]];
     [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
-    if (atBottom) {
+    [self foldSearchResults];
+    if (atBottom && !older.length) {
         [self.sci message:SCI_GOTOPOS
                   wParam:(uptr_t)[self.sci message:SCI_GETLENGTH wParam:0 lParam:0] lParam:0];
     } else {
         [self.sci message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)first lParam:0];
     }
+}
+
+/// The fold structure of the results, as Notepad++'s searchResult lexer
+/// gives it: a search, then each file it found something in, then the hits.
+/// Every search but the newest is folded away.
+- (void)foldSearchResults {
+    ScintillaView *sci = self.sci;
+    long count = [sci message:SCI_GETLINECOUNT];
+    NSArray<NSString *> *lines = [([sci string] ?: @"") componentsSeparatedByString:@"\n"];
+    BOOL firstSearch = YES;
+    for (long i = 0; i < count && i < (long)lines.count; ++i) {
+        NSString *line = lines[(NSUInteger)i];
+        int level;
+        if ([line hasPrefix:@"Search \""]) level = SC_FOLDLEVELBASE | SC_FOLDLEVELHEADERFLAG;
+        else if (![line hasPrefix:@"\t"] && ([line hasSuffix:@" hit)"] || [line hasSuffix:@" hits)"]))
+            level = (SC_FOLDLEVELBASE + 1) | SC_FOLDLEVELHEADERFLAG;
+        else level = SC_FOLDLEVELBASE + 2;
+        [sci message:SCI_SETFOLDLEVEL wParam:(uptr_t)i lParam:level];
+    }
+    for (long i = 0; i < count && i < (long)lines.count; ++i) {
+        if (![lines[(NSUInteger)i] hasPrefix:@"Search \""]) continue;
+        [sci message:SCI_FOLDLINE wParam:(uptr_t)i lParam:firstSearch ? SC_FOLDACTION_EXPAND : SC_FOLDACTION_CONTRACT];
+        firstSearch = NO;
+    }
+}
+
+- (BOOL)showingSearchResults {
+    return [self.currentDocument.displayName isEqualToString:@"Search results"] && !self.currentDocument.path;
+}
+
+#pragma mark - The results tab's own commands
+
+- (void)foldAllSearchResults:(BOOL)fold {
+    if (![self showingSearchResults]) return;
+    [self.sci message:SCI_FOLDALL wParam:fold ? SC_FOLDACTION_CONTRACT : SC_FOLDACTION_EXPAND lParam:0];
+}
+
+/// The lines the selection touches.
+- (NSArray<NSString *> *)selectedSearchResultLines {
+    ScintillaView *sci = self.sci;
+    long from = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETSELECTIONSTART]];
+    long to = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETSELECTIONEND]];
+    NSArray<NSString *> *lines = [([sci string] ?: @"") componentsSeparatedByString:@"\n"];
+    NSMutableArray *out = [NSMutableArray array];
+    for (long i = from; i <= to && i < (long)lines.count; ++i) [out addObject:lines[(NSUInteger)i]];
+    return out;
+}
+
+/// Copy Selected Line(s): the text of the hits, without "Line n:".
+- (NSString *)selectedSearchResultText {
+    NSMutableArray *out = [NSMutableArray array];
+    for (NSString *line in [self selectedSearchResultLines]) {
+        if (![line hasPrefix:@"\t"]) continue;
+        NSRange colon = [line rangeOfString:@": "];
+        if ([EditorController searchResultLineInHitLine:line] && colon.location != NSNotFound) {
+            [out addObject:[line substringFromIndex:NSMaxRange(colon)]];
+        }
+    }
+    return [out componentsJoinedByString:@"\n"];
+}
+
+/// Copy Selected Pathname(s): the files the selected lines belong to, once each.
+- (NSArray<NSString *> *)selectedSearchResultPaths {
+    ScintillaView *sci = self.sci;
+    NSString *report = [sci string] ?: @"";
+    long from = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETSELECTIONSTART]];
+    long to = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETSELECTIONEND]];
+    NSMutableOrderedSet *paths = [NSMutableOrderedSet orderedSet];
+    for (long i = from; i <= to; ++i) {
+        NSString *path = [EditorController searchResultTargetInReport:report atLine:i fileLine:NULL];
+        if (path.length) [paths addObject:path];
+    }
+    return paths.array;
+}
+
+- (void)copySearchResultLines {
+    NSString *text = [self selectedSearchResultText];
+    if (!text.length) { NSBeep(); return; }
+    [[NSPasteboard generalPasteboard] clearContents];
+    [[NSPasteboard generalPasteboard] setString:text forType:NSPasteboardTypeString];
+}
+
+- (void)copySearchResultPaths {
+    NSArray *paths = [self selectedSearchResultPaths];
+    if (!paths.count) { NSBeep(); return; }
+    [[NSPasteboard generalPasteboard] clearContents];
+    [[NSPasteboard generalPasteboard] setString:[paths componentsJoinedByString:@"\n"] forType:NSPasteboardTypeString];
+}
+
+- (void)openSearchResultPaths {
+    for (NSString *path in [self selectedSearchResultPaths]) {
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path]) [self openFileAtPath:path error:NULL];
+    }
+}
+
+- (void)clearSearchResults {
+    if (![self showingSearchResults]) return;
+    objc_setAssociatedObject(self, &kOlderResultsKey, @"", OBJC_ASSOCIATION_COPY);
+    [self.sci setString:@""];
+    [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+    self.currentDocument.modified = NO;
+}
+
+/// Removes the search the caret is in, with all its hits.
+- (void)deleteSearchResultAtCaret {
+    if (![self showingSearchResults]) return;
+    ScintillaView *sci = self.sci;
+    NSArray<NSString *> *lines = [([sci string] ?: @"") componentsSeparatedByString:@"\n"];
+    long caretLine = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+    long start = caretLine;
+    while (start >= 0 && ![lines[(NSUInteger)start] hasPrefix:@"Search \""]) start--;
+    if (start < 0) { NSBeep(); return; }
+    long end = caretLine + 1;
+    while (end < (long)lines.count && ![lines[(NSUInteger)end] hasPrefix:@"Search \""]) end++;
+    long from = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)start];
+    long to = end < (long)lines.count ? [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)end] : [sci message:SCI_GETLENGTH];
+    [sci message:SCI_DELETERANGE wParam:(uptr_t)from lParam:to - from];
+    [sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+    self.currentDocument.modified = NO;
+    objc_setAssociatedObject(self, &kOlderResultsKey, [sci string] ?: @"", OBJC_ASSOCIATION_COPY);
+    [self foldSearchResults];
 }
 
 + (NSString *)searchResultTargetInHeading:(NSString *)head {

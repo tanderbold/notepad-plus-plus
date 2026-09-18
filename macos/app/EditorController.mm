@@ -13,6 +13,7 @@
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
+#import <objc/runtime.h>
 #import "TabBarView.h"
 #import "SettingsCommands.h"
 #import "SearchCommands.h"
@@ -1596,6 +1597,8 @@ static BOOL gCheckingFilesOnDisk;
     [self showCompletion:NppCompletionKindWords autoInsert:YES];
 }
 
+static const char kEditorMenuItemsKey = 0;
+
 /// Right-click menu, built from the commands listed in Preferences.
 - (void)rebuildContextMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Context"];
@@ -1616,8 +1619,53 @@ static BOOL gCheckingFilesOnDisk;
         copy.representedObject = found.representedObject;
         [menu addItem:copy];
     }
+    menu.delegate = (id<NSMenuDelegate>)self;
+    objc_setAssociatedObject(self, &kEditorMenuItemsKey, [menu.itemArray copy], OBJC_ASSOCIATION_COPY);
     self.sciView.menu = menu;
     self.secondaryView.menu = menu;
+}
+
+/// The results tab has the Search results panel's menu instead of the editor's.
+- (void)menuNeedsUpdate:(NSMenu *)menu {
+    if (menu != self.sciView.menu && menu != self.secondaryView.menu) return;
+    [menu removeAllItems];
+    if ([self showingSearchResults]) {
+        struct { NSString *title; SEL action; } items[] = {
+            {@"Fold all", @selector(resultsFoldAll:)}, {@"Unfold all", @selector(resultsUnfoldAll:)},
+            {nil, NULL},
+            {@"Copy Selected Line(s)", @selector(resultsCopyLines:)},
+            {@"Copy Selected Pathname(s)", @selector(resultsCopyPaths:)},
+            {@"Select all", @selector(resultsSelectAll:)},
+            {@"Clear all", @selector(resultsClearAll:)},
+            {@"Delete This Search", @selector(resultsDeleteSearch:)},
+            {nil, NULL},
+            {@"Open Selected Pathname(s)", @selector(resultsOpenPaths:)},
+            {nil, NULL},
+            {@"Purge for every search", @selector(resultsTogglePurge:)},
+        };
+        for (auto &it : items) {
+            if (!it.title) { [menu addItem:[NSMenuItem separatorItem]]; continue; }
+            NSMenuItem *item = [menu addItemWithTitle:it.title action:it.action keyEquivalent:@""];
+            item.target = self;
+            if (it.action == @selector(resultsTogglePurge:)) {
+                item.state = [NppPreferences shared].searchResultsPurge ? NSControlStateValueOn : NSControlStateValueOff;
+            }
+        }
+        return;
+    }
+    for (NSMenuItem *item in objc_getAssociatedObject(self, &kEditorMenuItemsKey)) [menu addItem:[item copy]];
+}
+
+- (void)resultsFoldAll:(id)sender   { [self foldAllSearchResults:YES]; }
+- (void)resultsUnfoldAll:(id)sender { [self foldAllSearchResults:NO]; }
+- (void)resultsCopyLines:(id)sender { [self copySearchResultLines]; }
+- (void)resultsCopyPaths:(id)sender { [self copySearchResultPaths]; }
+- (void)resultsSelectAll:(id)sender { [self.sci message:SCI_SELECTALL]; }
+- (void)resultsClearAll:(id)sender  { [self clearSearchResults]; }
+- (void)resultsDeleteSearch:(id)sender { [self deleteSearchResultAtCaret]; }
+- (void)resultsOpenPaths:(id)sender { [self openSearchResultPaths]; }
+- (void)resultsTogglePurge:(id)sender {
+    [NppPreferences shared].searchResultsPurge = ![NppPreferences shared].searchResultsPurge;
 }
 
 #pragma mark - Chrome refresh

@@ -118,8 +118,12 @@ port of Boost's `format_all` formatter, as Notepad++ calls it, so `$&`,
 `` $` ``, `$'`, `$$`, `$n`, `${n}`, `$+{name}`, `$MATCH` and friends,
 `\n` (one digit; `$10` for two), octal, `\x{…}`, parentheses and `?N…:…`
 conditionals give the same text as on Windows. Volatile Find was already
-there. Still open: the results panel's folding, collapse / expand and
-context menu (plan 2.2).
+there. The results tab now behaves as the Search results panel: searches
+stack newest first with the older ones folded (search, file, hit levels),
+and its context menu has Fold all, Unfold all, Copy Selected Line(s),
+Copy Selected Pathname(s), Select all, Clear all, Delete This Search, Open
+Selected Pathname(s) and Purge for every search. Still different: it is a
+tab rather than a docked panel (plan 2.7), and hits are not coloured.
 
 **Editing assist.** Done since the audit, following AutoCompletion.cpp,
 FunctionCallTip.cpp and maintainIndentation: Function Completion (⌃Space,

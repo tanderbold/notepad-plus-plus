@@ -120,6 +120,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// 0 off, 1 on losing focus, 2 always; the level is an alpha out of 255.
 @property (nonatomic) NSInteger findTransparencyMode;
 @property (nonatomic) NSInteger findTransparencyLevel;
+/// Search results: each search replaces the last instead of stacking up.
+@property (nonatomic) BOOL searchResultsPurge;
 
 /// New documents.
 @property (nonatomic, copy) NSString *defaultLanguage;

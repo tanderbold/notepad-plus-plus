@@ -156,6 +156,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"findHistory"): @[], Key(@"replaceHistory"): @[],
         Key(@"filterHistory"): @[], Key(@"directoryHistory"): @[],
         Key(@"findTransparencyMode"): @1, Key(@"findTransparencyLevel"): @150,
+        Key(@"searchResultsPurge"): @NO,
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -233,6 +234,7 @@ NPP_PREF_OBJ(filterHistory, setFilterHistory, NSArray, @"filterHistory")
 NPP_PREF_OBJ(directoryHistory, setDirectoryHistory, NSArray, @"directoryHistory")
 NPP_PREF_INT(findTransparencyMode, setFindTransparencyMode, @"findTransparencyMode")
 NPP_PREF_INT(findTransparencyLevel, setFindTransparencyLevel, @"findTransparencyLevel")
+NPP_PREF_BOOL(searchResultsPurge, setSearchResultsPurge, @"searchResultsPurge")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
 NPP_PREF_INT(fontSize, setFontSize, @"fontSize")

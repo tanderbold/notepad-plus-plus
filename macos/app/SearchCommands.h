@@ -71,6 +71,19 @@ NS_ASSUME_NONNULL_BEGIN
 /// Opens what the caret sits on in the results tab. This is what a double click
 /// there does, the way Notepad++ jumps from a result to the file.
 - (BOOL)openSearchResultAtCaret;
+
+// The results tab, as Notepad++'s Search results panel: searches stack up,
+// newest first and the older ones folded, and its context menu has these.
+- (BOOL)showingSearchResults;
+- (void)foldSearchResults;
+- (void)foldAllSearchResults:(BOOL)fold;
+- (NSString *)selectedSearchResultText;
+- (NSArray<NSString *> *)selectedSearchResultPaths;
+- (void)copySearchResultLines;
+- (void)copySearchResultPaths;
+- (void)openSearchResultPaths;
+- (void)clearSearchResults;
+- (void)deleteSearchResultAtCaret;
 - (BOOL)focusSearchResults;
 - (BOOL)goToSearchResult:(BOOL)forward;
 

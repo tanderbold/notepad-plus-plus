@@ -1696,6 +1696,56 @@ int NppMacRunTests(AppDelegate *app) {
         [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
     }
 
+    printf("\n== Search results panel ==\n");
+    {
+        // Searches stack up, newest first, the older ones folded; the panel's
+        // own menu folds, copies, clears and deletes.
+        NppPreferences *rp = [NppPreferences shared];
+        BOOL purgeBefore = rp.searchResultsPurge;
+        rp.searchResultsPurge = NO;
+        NSString *first = @"Search \"alpha\" (2 hits in 1 file of 1 searched)\n/tmp/a.txt (2 hits)\n\tLine 1: alpha one\n\tLine 4: alpha two\n";
+        NSString *second = @"Search \"beta\" (1 hit in 1 file of 1 searched)\n/tmp/b.txt (1 hit)\n\tLine 7: the beta line\n";
+        [ed showSearchResults:first];
+        [ed clearSearchResults];
+        [ed showSearchResults:first];
+        [ed showSearchResults:second];
+        ScintillaView *rs = ed.sci;
+        NSString *both = [rs string];
+        long olderHeader = 3;
+        BOOL stacked = [both hasPrefix:second] && [both hasSuffix:first] &&
+            ([rs message:SCI_GETFOLDLEVEL wParam:0] & SC_FOLDLEVELHEADERFLAG) &&
+            ([rs message:SCI_GETFOLDLEVEL wParam:1] & SC_FOLDLEVELNUMBERMASK) == SC_FOLDLEVELBASE + 1 &&
+            ([rs message:SCI_GETFOLDLEVEL wParam:2] & SC_FOLDLEVELNUMBERMASK) == SC_FOLDLEVELBASE + 2 &&
+            [rs message:SCI_GETFOLDEXPANDED wParam:0] && ![rs message:SCI_GETFOLDEXPANDED wParam:(uptr_t)olderHeader];
+        [ed foldAllSearchResults:NO];
+        BOOL unfolded = [rs message:SCI_GETFOLDEXPANDED wParam:(uptr_t)olderHeader] != 0;
+        [ed foldAllSearchResults:YES];
+        BOOL folded = ![rs message:SCI_GETFOLDEXPANDED wParam:0];
+        [ed foldAllSearchResults:NO];
+        Check(@"IDM_SEARCH_FINDINFILES (results stack and fold)",
+              @"a new search goes on top of the older ones, which fold away; fold and unfold all work",
+              stacked && unfolded && folded);
+
+        // Select the older search's lines and copy them.
+        [rs message:SCI_SETSEL wParam:(uptr_t)[rs message:SCI_POSITIONFROMLINE wParam:4]
+             lParam:[rs message:SCI_GETLINEENDPOSITION wParam:6]];
+        NSString *copiedLines = [ed selectedSearchResultText];
+        NSArray *copiedPaths = [ed selectedSearchResultPaths];
+        [rs message:SCI_GOTOLINE wParam:1 lParam:0];
+        [ed deleteSearchResultAtCaret];
+        BOOL deleted = [[rs string] isEqualToString:first];
+        [ed showSearchResults:second];
+        rp.searchResultsPurge = YES;
+        [ed showSearchResults:first];
+        BOOL purged = [[rs string] isEqualToString:first];
+        rp.searchResultsPurge = purgeBefore;
+        [ed clearSearchResults];
+        Check(@"IDM_SEARCH_FINDINFILES (results menu)",
+              @"copy lines gives the hit text, copy pathnames the files, a search can be deleted, and purging keeps only the newest",
+              [copiedLines isEqualToString:@"alpha one\nalpha two"] &&
+              [copiedPaths isEqualToArray:@[@"/tmp/a.txt"]] && deleted && purged);
+    }
+
     printf("\n== Search: going from a result to the file ==\n");
     {
         // Double clicking a line of the results opens that file at that line,
