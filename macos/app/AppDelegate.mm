@@ -3,6 +3,7 @@
 #import "UserLanguages.h"
 #import "UserLanguageDialog.h"
 #import "ShortcutMapper.h"
+#import "ProjectPanel.h"
 #import <objc/message.h>
 #import "EditorController.h"
 #import "EditCommands.h"
@@ -100,6 +101,8 @@
 @property (nonatomic, strong) NSMutableArray<NSView *> *replaceViews;
 @property (nonatomic, strong) NSMutableArray<NSView *> *inFilesViews;
 @property (nonatomic, strong) NSMutableArray<NSView *> *inProjectsViews;
+/// Which project panels Find in Projects searches, as the Windows tab has them.
+@property (nonatomic, strong) NSArray<NSButton *> *projectPanelBoxes;
 @property (nonatomic, strong) NSMutableArray<NSView *> *markViews;
 @end
 
@@ -396,6 +399,7 @@ static NSString *Ordinal(NSUInteger n) {
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)app {
     if (self.closingConfirmed) return NSTerminateNow;
+    if (![self.editor confirmDiscardingProjectChanges]) return NSTerminateCancel;
     // With the session snapshot on and the session restored at launch, the
     // unsaved text comes back next time, so nothing is asked - as on Windows.
     if ([self snapshotCoversEverything]) return NSTerminateNow;
@@ -419,6 +423,7 @@ static NSString *Ordinal(NSUInteger n) {
 }
 
 - (BOOL)windowShouldClose:(NSWindow *)sender {
+    if (![self.editor confirmDiscardingProjectChanges]) return NO;
     if ([self snapshotCoversEverything]) {
         self.closingConfirmed = YES;
         return YES;
@@ -2526,15 +2531,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 }
 
 - (void)toggleProjectPanel:(NSMenuItem *)sender {
-    NSInteger idx = sender.tag;
-    if (![self.editor projectPanelRoot:idx] && [self.editor activeProjectPanel] != idx) {
-        NSOpenPanel *panel = [NSOpenPanel openPanel];
-        panel.canChooseDirectories = YES;
-        panel.canChooseFiles = NO;
-        if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
-        [self.editor setProjectPanel:idx root:panel.URL.path];
-    }
-    [self.editor showProjectPanel:idx];
+    [self.editor showProjectPanel:sender.tag];
 }
 
 - (void)focusOtherView:(id)sender   { [self.editor focusOtherView]; }
@@ -2881,6 +2878,15 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
                                        action:@selector(findPanelFindInProjects:)
                                            at:NSMakePoint(16, 28) in:content];
     [self.inProjectsViews addObject:projectsFind];
+    NSMutableArray *boxes = [NSMutableArray array];
+    for (NSInteger i = 1; i <= 3; ++i) {
+        NSButton *box = [self findCheckbox:[NSString stringWithFormat:@"Project Panel %ld", (long)i]
+                                        at:NSMakePoint(110 + (CGFloat)(i - 1) * 140, 208) in:content];
+        box.state = i == 1 ? NSControlStateValueOn : NSControlStateValueOff;
+        [boxes addObject:box];
+        [self.inProjectsViews addObject:box];
+    }
+    self.projectPanelBoxes = boxes;
 
     NSButton *markAll = [self findButton:@"Mark All" action:@selector(findPanelMarkAll:)
                                       at:NSMakePoint(16, 28) in:content];
@@ -3127,60 +3133,45 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     if (self.runningSearch) return;
     NppFindSpec *spec = [self currentFindSpec];
 
-    NSMutableArray<NSString *> *roots = [NSMutableArray array];
+    // The files of the projects in the panels that are ticked - the panels
+    // are loaded with their last workspace if they were never opened.
+    NSMutableArray<NSString *> *files = [NSMutableArray array];
     for (NSInteger panel = 1; panel <= 3; ++panel) {
-        NSString *root = [self.editor projectPanelRoot:panel];
-        if (root.length) [roots addObject:root];
+        if (self.projectPanelBoxes[(NSUInteger)(panel - 1)].state != NSControlStateValueOn) continue;
+        NppProjectPanel *p = [self.editor projectPanel:panel];
+        if (!p.workspacePath && !p.root.children.count) {
+            NSString *last = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppMac.projectWorkspaces"]
+                             [[@(panel) stringValue]];
+            if (last.length) [p openWorkspace:last];
+        }
+        for (NSString *f in [p allFilePaths]) if (![files containsObject:f]) [files addObject:f];
     }
-    if (!roots.count) { self.findStatus.stringValue = @"No project panel has a folder"; return; }
+    if (!files.count) { self.findStatus.stringValue = @"The ticked project panels have no files"; return; }
 
     [self.editor showSearchResults:[NSString stringWithFormat:@"Search \"%@\" in the projects\n\nSearching...\n",
                                     spec.what]];
     [self beginSearchUI];
-    [self searchProjectRoots:roots spec:spec collected:[NSMutableString string] hits:0];
-}
-
-/// The project panels are searched one after another, each in the background,
-/// so the window stays live and Stop reaches whichever is running.
-- (void)searchProjectRoots:(NSMutableArray<NSString *> *)roots
-                      spec:(NppFindSpec *)spec
-                 collected:(NSMutableString *)collected
-                      hits:(NSUInteger)hits {
-    if (!roots.count || self.runningSearch.cancelled) {
-        BOOL stopped = self.runningSearch.cancelled;
-        [self endSearchUI];
-        [self.editor updateSearchResults:collected];
-        if (![self.editor.currentDocument.displayName isEqualToString:@"Search results"]) {
-            [self.editor showSearchResults:collected];
-        }
-        self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found%@",
-                                       (unsigned long)hits, stopped ? @" (stopped)" : @""];
-        return;
-    }
-
-    NSString *root = roots.firstObject;
-    [roots removeObjectAtIndex:0];
-    NSString *done = [collected copy];
     __weak __typeof(self) weakSelf = self;
     self.runningSearch =
-        [self.editor findInFilesInBackground:spec folder:root
+        [self.editor findInFilesInBackground:spec paths:files title:@"the projects"
                                      filters:self.filtersField.stringValue
-                                   recursive:YES includeHidden:NO
                                     progress:^(NSUInteger scanned, NSUInteger found, NSString *soFar) {
             __typeof(self) strongSelf = weakSelf;
-            strongSelf.findStatus.stringValue =
-                [NSString stringWithFormat:@"%lu file%@ searched, %lu found",
-                 (unsigned long)scanned, scanned == 1 ? @"" : @"s", (unsigned long)(hits + found)];
-            [strongSelf.editor updateSearchResults:[done stringByAppendingString:soFar]];
+            strongSelf.findStatus.stringValue = [NSString stringWithFormat:@"%lu file%@ searched, %lu found",
+                (unsigned long)scanned, scanned == 1 ? @"" : @"s", (unsigned long)found];
+            [strongSelf.editor updateSearchResults:soFar];
         }
                                   completion:^(NSUInteger found, NSString *report, BOOL stopped) {
             __typeof(self) strongSelf = weakSelf;
-            [collected appendString:report ?: @""];
-            if (stopped) [roots removeAllObjects];
-            [strongSelf searchProjectRoots:roots spec:spec collected:collected hits:hits + found];
+            [strongSelf endSearchUI];
+            [strongSelf.editor updateSearchResults:report];
+            if (![strongSelf.editor.currentDocument.displayName isEqualToString:@"Search results"]) {
+                [strongSelf.editor showSearchResults:report];
+            }
+            strongSelf.findStatus.stringValue = [NSString stringWithFormat:@"%lu found%@",
+                                                 (unsigned long)found, stopped ? @" (stopped)" : @""];
         }];
 }
-
 
 - (void)findPanelClearMarks:(id)sender {
     [self.editor clearStyle:NPPMAC_STYLE_COUNT];

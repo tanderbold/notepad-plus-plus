@@ -36,6 +36,7 @@
 #import "UserLanguages.h"
 #import "UserLanguageDialog.h"
 #import "ShortcutMapper.h"
+#import "ProjectPanel.h"
 #import "LanguageModel.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -4434,23 +4435,92 @@ int NppMacRunTests(AppDelegate *app) {
               [restoredText containsString:@"&#10;"] &&
               [readBack containsString:@"\n"]);
 
+        // The project panels: workspaces of projects, virtual folders and files.
+        NSFileManager *fm = [NSFileManager defaultManager];
         NSString *projDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_proj"];
-        [[NSFileManager defaultManager] removeItemAtPath:projDir error:NULL];
-        [[NSFileManager defaultManager] createDirectoryAtPath:projDir
-                                  withIntermediateDirectories:YES attributes:nil error:NULL];
-        [@"x\n" writeToFile:[projDir stringByAppendingPathComponent:@"proj.txt"]
-                  atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [fm removeItemAtPath:projDir error:NULL];
+        [fm createDirectoryAtPath:[projDir stringByAppendingPathComponent:@"src/sub"] withIntermediateDirectories:YES
+                       attributes:nil error:NULL];
+        [@"alpha needle\n" writeToFile:[projDir stringByAppendingPathComponent:@"src/a.c"] atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [@"beta\n" writeToFile:[projDir stringByAppendingPathComponent:@"src/sub/b.h"] atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [@"needle too\n" writeToFile:[projDir stringByAppendingPathComponent:@"notes.txt"] atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        NSDictionary *wasRemembered = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppMac.projectWorkspaces"];
         NSArray *projIDs = @[@"IDM_VIEW_PROJECT_PANEL_1", @"IDM_VIEW_PROJECT_PANEL_2", @"IDM_VIEW_PROJECT_PANEL_3"];
         for (NSInteger i = 1; i <= 3; ++i) {
-            [ed setProjectPanel:i root:projDir];
             [ed showProjectPanel:i];
-            BOOL shown = [ed activeProjectPanel] == i &&
-                         [[ed projectPanelRoot:i] isEqualToString:projDir] &&
-                         [[ed projectPanelNames:i] containsObject:@"proj.txt"];
+            BOOL shown = [ed activeProjectPanel] == i && [ed projectPanel:i].view.superview != nil &&
+                         [ed projectPanel:i].number == i;
             [ed showProjectPanel:i];               // same panel again hides it
-            Check(projIDs[i - 1], [NSString stringWithFormat:@"panel %ld opens on its own root", (long)i],
+            Check(projIDs[i - 1], [NSString stringWithFormat:@"panel %ld shows and hides", (long)i],
                   shown && [ed activeProjectPanel] == 0);
         }
+
+        NppProjectPanel *panel = [ed projectPanel:2];
+        [panel newWorkspace];
+        NppProjectNode *project = [panel addProjectNamed:@"Engine"];
+        NppProjectNode *folder = [panel addFolderNamed:@"Sources" to:project];
+        [panel addFiles:@[[projDir stringByAppendingPathComponent:@"src/a.c"]] to:folder];
+        NppProjectNode *fromDisk = [panel addDirectory:[projDir stringByAppendingPathComponent:@"src"] to:project];
+        NSArray *notes = [panel addFiles:@[[projDir stringByAppendingPathComponent:@"notes.txt"],
+                                           @"/nowhere/at/all.txt"] to:project];
+        BOOL built = project.children.count == 4 && [fromDisk.name isEqualToString:@"src"] &&
+                     fromDisk.children.count == 2 && [[fromDisk.children[1] name] isEqualToString:@"sub"] &&
+                     panel.dirty;
+        [panel rename:folder to:@"Code"];
+        BOOL moved = [panel moveDown:folder] && project.children[1] == folder && ![panel moveUp:project];
+        [panel modifyFilePath:notes.lastObject to:[projDir stringByAppendingPathComponent:@"missing.txt"]];
+        NSString *wsPath = [projDir stringByAppendingPathComponent:@"Workspace.xml"];
+        BOOL saved = [panel saveWorkspaceAs:wsPath copy:NO] && !panel.dirty;
+        NSString *xml = [NSString stringWithContentsOfFile:wsPath encoding:NSUTF8StringEncoding error:NULL];
+        BOOL relative = [xml containsString:@"<File name=\"src/a.c\"/>"] && [xml containsString:@"<Folder name=\"Code\">"] &&
+                        [xml containsString:@"<Project name=\"Engine\">"] && [xml containsString:@"<File name=\"src/sub/b.h\"/>"];
+
+        [panel newWorkspace];
+        BOOL reopened = [panel openWorkspace:wsPath] && [panel.root.children.firstObject.name isEqualToString:@"Engine"] &&
+                        [panel allFilePaths].count == 5 &&
+                        [[panel allFilePaths] containsObject:[projDir stringByAppendingPathComponent:@"src/sub/b.h"]];
+
+        // A workspace written on Windows: backslashes, a relative and an absolute path.
+        NSString *winPath = [projDir stringByAppendingPathComponent:@"FromWindows.xml"];
+        [@"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus>\n<Project name=\"W\">\n"
+         @"<Folder name=\"F\"><File name=\"src\\sub\\b.h\" /></Folder>\n<File name=\"notes.txt\" />\n"
+         @"</Project>\n</NotepadPlus>\n" writeToFile:winPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        BOOL windows = [panel openWorkspace:winPath] &&
+                       [[panel allFilePaths] isEqualToArray:@[[projDir stringByAppendingPathComponent:@"src/sub/b.h"],
+                                                             [projDir stringByAppendingPathComponent:@"notes.txt"]]];
+
+        // A changed workspace is asked about; Cancel keeps it.
+        [panel addProjectNamed:@"Extra"];
+        panel.scriptedAnswer = NSAlertThirdButtonReturn;
+        BOOL kept = ![panel openWorkspace:wsPath] && panel.dirty && [panel.workspacePath isEqualToString:winPath];
+        panel.scriptedAnswer = NSAlertSecondButtonReturn;
+        BOOL discarded = [panel openWorkspace:wsPath] && !panel.dirty;
+        panel.scriptedAnswer = 0;
+
+        // Find in Projects searches the project's files, not a folder.
+        __block NSString *report = nil;
+        [ed findInFilesInBackground:[NppFindSpec specFor:@"needle" mode:NppSearchNormal options:0]
+                              paths:[panel allFilePaths] title:@"the projects" filters:@""
+                           progress:nil completion:^(NSUInteger found, NSString *r, BOOL stopped) { report = r; }];
+        NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:10];
+        while (!report && [deadline timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+        }
+        BOOL searched = [report containsString:@"a.c (1 hit)"] && [report containsString:@"notes.txt (1 hit)"] &&
+                        [report containsString:@"2 hits in 2 files"];
+
+        [panel newWorkspace];
+        if (wasRemembered) [[NSUserDefaults standardUserDefaults] setObject:wasRemembered forKey:@"NppMac.projectWorkspaces"];
+        else [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"NppMac.projectWorkspaces"];
+        [fm removeItemAtPath:projDir error:NULL];
+        Check(@"IDM_VIEW_PROJECT_PANEL_2 (workspaces)",
+              @"projects, virtual folders and files are built, renamed, moved and saved with paths relative "
+              @"to the workspace, read back, and read from a Windows workspace",
+              built && moved && saved && relative && reopened && windows);
+        Check(@"IDM_VIEW_PROJECT_PANEL_2 (changes and searching)",
+              @"a changed workspace is asked about before another is opened, and Find in Projects searches "
+              @"the projects' files",
+              kept && discarded && searched);
     }
 
     printf("\n== Encoding + EOL ==\n");

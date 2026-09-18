@@ -6,6 +6,8 @@
 @class ScintillaView;
 @class NppLanguage;
 
+@class NppProjectPanel;
+
 NS_ASSUME_NONNULL_BEGIN
 
 /// Posted whenever the set of open documents changes, so panels listing them
@@ -201,9 +203,10 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 // Project panels 1..3, each keeping its own folder root.
 - (void)showProjectPanel:(NSInteger)index;        // 1..3; same index again hides it
 - (NSInteger)activeProjectPanel;                  // 0 when none is shown
-- (void)setProjectPanel:(NSInteger)index root:(nullable NSString *)path;
-- (nullable NSString *)projectPanelRoot:(NSInteger)index;
-- (NSArray<NSString *> *)projectPanelNames:(NSInteger)index;
+/// Project Panel 1, 2 or 3, with its workspace.
+- (nullable NppProjectPanel *)projectPanel:(NSInteger)index;
+/// Save, Don't Save or Cancel for every changed workspace; NO if cancelled.
+- (BOOL)confirmDiscardingProjectChanges;
 
 @end
 

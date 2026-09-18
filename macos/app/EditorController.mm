@@ -1,5 +1,6 @@
 #include <string>
 #import "EditorController.h"
+#import "ProjectPanel.h"
 #import "CharsetDetection.h"
 #import "UserLanguages.h"
 #import "LanguageCatalog.h"
@@ -51,7 +52,7 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @property (nonatomic, strong) ScintillaView *docMapView;
 /// The document the other pane shows, so that closing it can move the pane off it.
 @property (nonatomic, strong) NppDocument *secondaryDocument;
-@property (nonatomic, strong) NSMutableArray<WorkspacePanel *> *projects;
+@property (nonatomic, strong) NSMutableArray<NppProjectPanel *> *projects;
 @property (nonatomic) NSInteger activeProject;
 @property (nonatomic, strong) ScintillaView *sciView;
 @property (nonatomic, strong) NSView *container;
@@ -188,7 +189,8 @@ static long SciColor(NSColor *c) {
 
     _projects = [NSMutableArray array];
     for (int i = 0; i < 3; ++i) {
-        WorkspacePanel *p = [[WorkspacePanel alloc] initWithFrame:NSMakeRect(0, 0, 220, NSHeight(upper))];
+        NppProjectPanel *p = [[NppProjectPanel alloc] initWithNumber:i + 1
+                                                               frame:NSMakeRect(0, 0, 240, NSHeight(upper))];
         p.delegate = self;
         [_projects addObject:p];
     }
@@ -1816,24 +1818,27 @@ static BOOL gCheckingFilesOnDisk;
 
 - (NSInteger)activeProjectPanel { return self.activeProject; }
 
-- (void)setProjectPanel:(NSInteger)index root:(NSString *)path {
-    if (index < 1 || index > 3) return;
-    [self.projects[(NSUInteger)(index - 1)] setRootPath:path];
-}
-
-- (NSString *)projectPanelRoot:(NSInteger)index {
+- (NppProjectPanel *)projectPanel:(NSInteger)index {
     if (index < 1 || index > 3) return nil;
-    return self.projects[(NSUInteger)(index - 1)].rootPath;
+    return self.projects[(NSUInteger)(index - 1)];
 }
 
-- (NSArray<NSString *> *)projectPanelNames:(NSInteger)index {
-    if (index < 1 || index > 3) return @[];
-    return [self.projects[(NSUInteger)(index - 1)] topLevelNames];
+- (BOOL)confirmDiscardingProjectChanges {
+    for (NppProjectPanel *p in self.projects) {
+        if (![p confirmDiscardingChanges]) return NO;
+    }
+    return YES;
 }
 
 - (void)showProjectPanel:(NSInteger)index {
     if (index < 1 || index > 3) return;
-    WorkspacePanel *panel = self.projects[(NSUInteger)(index - 1)];
+    NppProjectPanel *panel = self.projects[(NSUInteger)(index - 1)];
+    // The workspace the panel had last time comes back the first time it opens.
+    if (!panel.workspacePath && !panel.root.children.count) {
+        NSString *last = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppMac.projectWorkspaces"]
+                         [[@(index) stringValue]];
+        if (last.length && [[NSFileManager defaultManager] fileExistsAtPath:last]) [panel openWorkspace:last];
+    }
 
     if (self.activeProject == index) {            // same panel again hides it
         [panel.view removeFromSuperview];
@@ -1841,11 +1846,11 @@ static BOOL gCheckingFilesOnDisk;
         [self.split adjustSubviews];
         return;
     }
-    for (WorkspacePanel *p in self.projects) [p.view removeFromSuperview];
+    for (NppProjectPanel *p in self.projects) [p.view removeFromSuperview];
     if ([self workspaceVisible]) [self openFolderAsWorkspace:nil];
 
     [self.split addSubview:panel.view positioned:NSWindowBelow relativeTo:self.editorArea];
-    [self.split setPosition:220 ofDividerAtIndex:0];
+    [self.split setPosition:240 ofDividerAtIndex:0];
     self.activeProject = index;
     [self.split adjustSubviews];
 }

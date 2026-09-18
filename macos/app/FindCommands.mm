@@ -614,52 +614,51 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
 
 #pragma mark - Across files, without holding on to the window
 
-- (NppFileSearch *)findInFilesInBackground:(NppFindSpec *)spec
-                                    folder:(NSString *)folder
-                                   filters:(NSString *)filters
-                                 recursive:(BOOL)recursive
-                             includeHidden:(BOOL)includeHidden
-                                  progress:(void (^)(NSUInteger, NSUInteger, NSString *))progress
-                                completion:(void (^)(NSUInteger, NSString *, BOOL))completion {
+/// The lines of one file that match, as the report writes them; how many.
+- (NSUInteger)appendMatchesOf:(NppRegex *)regex inFile:(NSString *)path contents:(NSString *)contents
+                        search:(NppFileSearch *)search to:(NSMutableString *)report {
+    NSArray<NSString *> *lines = [EditorController linesOfText:contents];
+    NSMutableString *block = [NSMutableString string];
+    NSUInteger inFile = 0;
+    for (NSUInteger i = 0; i < lines.count; ++i) {
+        if (search.cancelled) return 0;
+        NSData *line = [lines[i] dataUsingEncoding:NSUTF8StringEncoding];
+        if (!line.length) continue;
+        NSRange found = [regex firstMatchInData:line range:NSMakeRange(0, line.length)];
+        if (found.location == NSNotFound) continue;
+        inFile++;
+        // A file with CR or mixed line ends leaves carriage returns in
+        // what was read; written out as they are they would each start
+        // a fresh line in the report, and every line below would then
+        // stand for something other than what it says.
+        [block appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1),
+                            [EditorController singleReportLine:lines[i]]];
+    }
+    if (inFile) {
+        [report appendFormat:@"%@ (%lu hit%@)\n%@\n", path, (unsigned long)inFile,
+                             inFile == 1 ? @"" : @"s", block];
+    }
+    return inFile;
+}
+
+/// Runs a search over files handed out by `walk`, in the background.
+- (NppFileSearch *)searchInBackground:(NppFindSpec *)spec
+                                title:(NSString *)title
+                                 walk:(void (^)(NppFileSearch *, void (^)(NSString *, NSString *, NSUInteger)))walk
+                             progress:(void (^)(NSUInteger, NSUInteger, NSString *))progress
+                           completion:(void (^)(NSUInteger, NSString *, BOOL))completion {
     NppFileSearch *search = [[NppFileSearch alloc] init];
     NppRegex *regex = [self regexFor:spec];
-    if (!spec.what.length || !folder.length || !regex) {
+    if (!spec.what.length || !regex) {
         if (completion) completion(0, @"", NO);
         return search;
     }
-
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        NSMutableString *report = [NSMutableString stringWithFormat:@"Search \"%@\" (%@)\n\n",
-                                   spec.what, folder];
+        NSMutableString *report = [NSMutableString stringWithFormat:@"Search \"%@\" (%@)\n\n", spec.what, title];
         __block NSUInteger hits = 0, matchedFiles = 0;
-
-        [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
-                  search:search
-                   visit:^(NSString *path, NSString *contents, NSUInteger scanned) {
-            NSArray<NSString *> *lines = [EditorController linesOfText:contents];
-            NSMutableString *block = [NSMutableString string];
-            NSUInteger inFile = 0;
-            for (NSUInteger i = 0; i < lines.count; ++i) {
-                if (search.cancelled) return;
-                NSData *line = [lines[i] dataUsingEncoding:NSUTF8StringEncoding];
-                if (!line.length) continue;
-                NSRange found = [regex firstMatchInData:line range:NSMakeRange(0, line.length)];
-                if (found.location == NSNotFound) continue;
-                inFile++;
-                // A file with CR or mixed line ends leaves carriage returns in
-                // what was read; written out as they are they would each start
-                // a fresh line in the report, and every line below would then
-                // stand for something other than what it says.
-                [block appendFormat:@"\tLine %lu: %@\n", (unsigned long)(i + 1),
-                                    [EditorController singleReportLine:lines[i]]];
-            }
-            if (inFile) {
-                matchedFiles++;
-                hits += inFile;
-                [report appendFormat:@"%@ (%lu hit%@)\n%@\n", path, (unsigned long)inFile,
-                                     inFile == 1 ? @"" : @"s", block];
-            }
-
+        walk(search, ^(NSString *path, NSString *contents, NSUInteger scanned) {
+            NSUInteger inFile = [self appendMatchesOf:regex inFile:path contents:contents search:search to:report];
+            if (inFile) { matchedFiles++; hits += inFile; }
             // Often enough to be worth watching, seldom enough that the search
             // is not spent redrawing.
             if (progress && (inFile || scanned % 50 == 0)) {
@@ -669,8 +668,7 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
                     if (!search.cancelled) progress(scanned, hitsSoFar, snapshot);
                 });
             }
-        }];
-
+        });
         BOOL stopped = search.cancelled;
         [report appendFormat:@"\n%lu hit%@ in %lu file%@%@\n", (unsigned long)hits,
                              hits == 1 ? @"" : @"s", (unsigned long)matchedFiles,
@@ -682,6 +680,46 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
         });
     });
     return search;
+}
+
+- (NppFileSearch *)findInFilesInBackground:(NppFindSpec *)spec
+                                    folder:(NSString *)folder
+                                   filters:(NSString *)filters
+                                 recursive:(BOOL)recursive
+                             includeHidden:(BOOL)includeHidden
+                                  progress:(void (^)(NSUInteger, NSUInteger, NSString *))progress
+                                completion:(void (^)(NSUInteger, NSString *, BOOL))completion {
+    if (!folder.length) {
+        if (completion) completion(0, @"", NO);
+        return [[NppFileSearch alloc] init];
+    }
+    return [self searchInBackground:spec title:folder
+                               walk:^(NppFileSearch *search, void (^visit)(NSString *, NSString *, NSUInteger)) {
+        [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
+                  search:search visit:visit];
+    } progress:progress completion:completion];
+}
+
+- (NppFileSearch *)findInFilesInBackground:(NppFindSpec *)spec
+                                     paths:(NSArray<NSString *> *)paths
+                                     title:(NSString *)title
+                                   filters:(NSString *)filters
+                                  progress:(void (^)(NSUInteger, NSUInteger, NSString *))progress
+                                completion:(void (^)(NSUInteger, NSString *, BOOL))completion {
+    // A file listed twice - in two folders of a project, in two projects -
+    // is searched once.
+    NSArray *files = [[NSOrderedSet orderedSetWithArray:paths] array];
+    return [self searchInBackground:spec title:title
+                               walk:^(NppFileSearch *search, void (^visit)(NSString *, NSString *, NSUInteger)) {
+        NSUInteger scanned = 0;
+        for (NSString *path in files) {
+            if (search.cancelled) return;
+            if (![EditorController name:path.lastPathComponent matchesFilters:filters]) continue;
+            NSString *contents = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
+            if (!contents) continue;
+            visit(path, contents, ++scanned);
+        }
+    } progress:progress completion:completion];
 }
 
 - (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec

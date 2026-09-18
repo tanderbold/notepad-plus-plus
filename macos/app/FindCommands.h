@@ -73,6 +73,14 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
 /// The same search, off the main thread, so the window keeps answering while it
 /// runs. `progress` and `completion` are called on the main thread; `progress`
 /// carries what has been found so far, and the report grows as it goes.
+/// The same over a list of files - the files of the projects - rather than a folder.
+- (NppFileSearch *)findInFilesInBackground:(NppFindSpec *)spec
+                                     paths:(NSArray<NSString *> *)paths
+                                     title:(NSString *)title
+                                   filters:(nullable NSString *)filters
+                                  progress:(nullable void (^)(NSUInteger scanned, NSUInteger found, NSString *soFar))progress
+                                completion:(nullable void (^)(NSUInteger found, NSString *report, BOOL stopped))completion;
+
 - (NppFileSearch *)findInFilesInBackground:(NppFindSpec *)spec
                                     folder:(NSString *)folder
                                    filters:(nullable NSString *)filters
