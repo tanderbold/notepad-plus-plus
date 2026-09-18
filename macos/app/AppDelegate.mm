@@ -3047,10 +3047,51 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 - (void)nextSearchResult:(id)sender   { [self.editor goToSearchResult:YES]; }
 - (void)prevSearchResult:(id)sender   { [self.editor goToSearchResult:NO]; }
 
-- (void)selectAndFindNext:(id)sender { [self.editor findNextOccurrenceOfSelection:YES extendSelection:NO]; }
-- (void)selectAndFindPrev:(id)sender { [self.editor findNextOccurrenceOfSelection:NO extendSelection:NO]; }
-- (void)volatileFindNext:(id)sender  { [self.editor findNextOccurrenceOfSelection:YES extendSelection:NO]; }
-- (void)volatileFindPrev:(id)sender  { [self.editor findNextOccurrenceOfSelection:NO extendSelection:NO]; }
+/// IDM_SEARCH_SETANDFINDNEXT: the selection (or the word at the caret) becomes
+/// the Find dialog's "Find what", history and all, and is looked for with the
+/// dialog's own options, as a normal search.
+- (void)selectAndFind:(BOOL)forward {
+    NSString *term = [self.editor initialFindTerm];
+    if (!term.length) { NppBeep(); return; }
+    if (!self.findPanel) [self buildFindPanel];
+    self.findField.stringValue = term;
+    [self rememberFindFields:NO files:NO];
+    NppFindOptions options = forward ? NppFindNone : NppFindBackward;
+    if (self.matchCaseBox.state == NSControlStateValueOn) options |= NppFindMatchCase;
+    if (self.wholeWordBox.state == NSControlStateValueOn) options |= NppFindWholeWord;
+    if (self.wrapBox.state == NSControlStateValueOn) options |= NppFindWrap;
+    [self find:[NppFindSpec specFor:term mode:NppSearchNormal options:options] forward:forward];
+}
+
+/// IDM_SEARCH_VOLATILE_FINDNEXT: the selection only, any case, any word,
+/// wrapping, and nothing of it kept in the dialog.
+- (void)volatileFind:(BOOL)forward {
+    NSString *term = [self.editor.sci selectedString];
+    if (!term.length) return;
+    [self find:[NppFindSpec specFor:term mode:NppSearchNormal options:NppFindWrap | (forward ? NppFindNone : NppFindBackward)]
+       forward:forward];
+}
+
+/// Finds, and says in the dialog's status line when the search went round the
+/// end of the document, as both commands do upstream.
+- (void)find:(NppFindSpec *)spec forward:(BOOL)forward {
+    long before = [self.editor.sci message:SCI_GETSELECTIONSTART];
+    if (![self.editor findNext:spec]) {
+        self.findStatus.stringValue = NppLMessage(@"Find: Can't find the text \"$STR_REPLACE$\"", spec.what, 0);
+        NppBeep();
+        return;
+    }
+    long after = [self.editor.sci message:SCI_GETSELECTIONSTART];
+    BOOL wrapped = forward ? after <= before : after >= before;
+    self.findStatus.stringValue = !wrapped ? @""
+        : NppL(forward ? @"Find: Reached document end, first occurrence from the top found."
+                       : @"Find: Reached document beginning, first occurrence from the bottom found.");
+}
+
+- (void)selectAndFindNext:(id)sender { [self selectAndFind:YES]; }
+- (void)selectAndFindPrev:(id)sender { [self selectAndFind:NO]; }
+- (void)volatileFindNext:(id)sender  { [self volatileFind:YES]; }
+- (void)volatileFindPrev:(id)sender  { [self volatileFind:NO]; }
 
 - (void)incrementalSearch:(id)sender {
     // macOS already has a first-class incremental find bar; this drives the

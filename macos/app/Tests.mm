@@ -3702,6 +3702,35 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_SEARCH_VOLATILE_FINDPREV", @"volatile previous uses the selection",
               [ed findNextOccurrenceOfSelection:NO extendSelection:NO]);
 
+        // The two are different commands: Select and Find Next puts the word
+        // into the Find dialog and obeys its Match case; Volatile Find leaves
+        // the dialog alone, ignores case and says when it went round the end.
+        [app buildFindPanel];
+        NSTextField *findWhat = [app valueForKey:@"findField"];
+        NSButton *caseBox = [app valueForKey:@"matchCaseBox"];
+        NSTextField *findLine = [app valueForKey:@"findStatus"];
+        NSControlStateValue caseWas = caseBox.state;
+        NSString *whatWas = findWhat.stringValue;
+        SetDoc(ed, @"Word word Word\n");
+        caseBox.state = NSControlStateValueOn;
+        [sci message:SCI_SETSEL wParam:0 lParam:4];
+        [app performSelector:@selector(selectAndFindNext:) withObject:nil];
+        BOOL setAndFind = [findWhat.stringValue isEqualToString:@"Word"] && [sci message:SCI_GETSELECTIONSTART] == 10;
+        findWhat.stringValue = @"untouched";
+        [sci message:SCI_SETSEL wParam:10 lParam:14];
+        [app performSelector:@selector(volatileFindNext:) withObject:nil];
+        BOOL volatileFound = [findWhat.stringValue isEqualToString:@"untouched"] && [sci message:SCI_GETSELECTIONSTART] == 0 &&
+                             [findLine.stringValue hasPrefix:@"Find: Reached document end"];
+        [sci message:SCI_SETSEL wParam:0 lParam:4];
+        [app performSelector:@selector(volatileFindNext:) withObject:nil];
+        volatileFound = volatileFound && [sci message:SCI_GETSELECTIONSTART] == 5 && findLine.stringValue.length == 0;
+        caseBox.state = caseWas;
+        findWhat.stringValue = whatWas;
+        Check(@"IDM_SEARCH_VOLATILE_FINDNEXT (not Select and Find Next)",
+              @"Select and Find Next fills the dialog and obeys its options; Volatile Find does neither and reports wrapping",
+              setAndFind && volatileFound);
+        SetDoc(ed, @"aa bb aa cc aa\n");
+
         app.lastSearchTerm = @"cc";
         Check(@"IDM_SEARCH_FINDINCREMENT", @"incremental search drives the same state",
               [app searchFrom:0 forward:YES wrap:YES]);
