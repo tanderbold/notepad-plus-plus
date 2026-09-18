@@ -30,7 +30,9 @@
     for (NppLanguage *l in [LanguageCatalog sharedCatalog].allLanguages) {
         if (!l.userDefined && ![_hiddenLanguages containsObject:l.name]) [_shown addObject:l.name];
     }
-    [_shown sortUsingSelector:@selector(caseInsensitiveCompare:)];
+    [_shown sortUsingComparator:^NSComparisonResult(NSString *x, NSString *y) {
+        return [[LanguageCatalog menuTitleForLanguage:x] caseInsensitiveCompare:[LanguageCatalog menuTitleForLanguage:y]];
+    }];
     CGFloat w = (NSWidth(frame) - 60) / 2, h = NSHeight(frame) - 20;
     NSTableView *(^list)(CGFloat, NSString *) = ^NSTableView *(CGFloat x, NSString *title) {
         NSTextField *label = [NSTextField labelWithString:title];
@@ -64,7 +66,9 @@
     NSArray *picked = [src objectsAtIndexes:[from.selectedRowIndexes indexesPassingTest:^BOOL(NSUInteger i, BOOL *st) { return i < src.count; }]];
     [src removeObjectsInArray:picked];
     [dst addObjectsFromArray:picked];
-    [dst sortUsingSelector:@selector(caseInsensitiveCompare:)];
+    [dst sortUsingComparator:^NSComparisonResult(NSString *x, NSString *y) {
+        return [[LanguageCatalog menuTitleForLanguage:x] caseInsensitiveCompare:[LanguageCatalog menuTitleForLanguage:y]];
+    }];
     [self.shownTable reloadData];
     [self.hiddenTable reloadData];
 }
@@ -73,7 +77,7 @@
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv { return (NSInteger)(tv == self.shownTable ? self.shown : self.hiddenLanguages).count; }
 - (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)c row:(NSInteger)row {
     NSArray *a = tv == self.shownTable ? self.shown : self.hiddenLanguages;
-    return row >= 0 && row < (NSInteger)a.count ? a[(NSUInteger)row] : @"";
+    return row >= 0 && row < (NSInteger)a.count ? [LanguageCatalog menuTitleForLanguage:a[(NSUInteger)row]] : @"";
 }
 @end
 

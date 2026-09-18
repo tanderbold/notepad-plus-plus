@@ -1755,26 +1755,7 @@ static const NSInteger kUserLanguageItemTag = 0x55444C;
 
 static const NSInteger kBuiltInLanguageItemTag = 0x4C414E;
 
-/// The title upstream's Language menu gives a language: "C++", "None
-/// (Normal Text)"; the langs.model.xml name when it has no menu entry.
-static NSString *LanguageMenuTitle(NSString *name) {
-    static NSDictionary<NSString *, NSString *> *titles;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        NSMutableDictionary *m = [NSMutableDictionary dictionary];
-        for (int i = 0; i < kNppLangLexerCount; ++i) {
-            if (!kNppLangLexers[i].menuID || !*kNppLangLexers[i].menuID) continue;
-            for (int j = 0; j < kNppMenuCommandIDCount; ++j) {
-                if (!strcmp(kNppMenuCommandIDs[j].name, kNppLangLexers[i].menuID)) {
-                    m[@(kNppLangLexers[i].langName)] = @(kNppMenuCommandIDs[j].label);
-                    break;
-                }
-            }
-        }
-        titles = m;
-    });
-    return titles[name] ?: name;
-}
+static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog menuTitleForLanguage:name]; }
 
 /// The built-in languages at the top of the Language menu: Normal Text, then
 /// the others by title, in letter submenus when the menu is compact (the
@@ -3835,6 +3816,12 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     if (panel && !strncmp(panel, "find", 4)) {
         [self openFindPanelOnTab:strlen(panel) > 5 ? atoi(panel + 5) : 0];
         view = self.findPanel.contentView;
+    } else if (panel && !strncmp(panel, "prefs:", 6)) {
+        [self showPreferences:nil];
+        NSArray *names = [self.prefsWindow valueForKey:@"pageNames"];
+        NSUInteger index = [names indexOfObject:@(panel + 6)];
+        if (index != NSNotFound) [self.prefsWindow showPageAtIndex:(NSInteger)index];
+        view = [[self.prefsWindow valueForKey:@"panel"] contentView];
     } else if (panel && !strcmp(panel, "style")) {
         [self showStyleConfigurator:nil];
         view = [[self.styleWindow valueForKey:@"panel"] contentView];

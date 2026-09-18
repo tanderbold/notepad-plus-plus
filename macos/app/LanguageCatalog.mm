@@ -1,6 +1,7 @@
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #include "LangMap.h"
+#include "CommandIDs.h"
 
 @implementation NppLanguage
 @end
@@ -204,5 +205,27 @@ static NSString *LexerIDForLanguage(NSString *langName) {
     }
     return lang ?: self.byName[@"normal"];
 }
+
+/// The title upstream's Language menu gives a language: "C++", "None
+/// (Normal Text)"; the langs.model.xml name when it has no menu entry.
++ (NSString *)menuTitleForLanguage:(NSString *)name {
+    static NSDictionary<NSString *, NSString *> *titles;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSMutableDictionary *m = [NSMutableDictionary dictionary];
+        for (int i = 0; i < kNppLangLexerCount; ++i) {
+            if (!kNppLangLexers[i].menuID || !*kNppLangLexers[i].menuID) continue;
+            for (int j = 0; j < kNppMenuCommandIDCount; ++j) {
+                if (!strcmp(kNppMenuCommandIDs[j].name, kNppLangLexers[i].menuID)) {
+                    m[@(kNppLangLexers[i].langName)] = @(kNppMenuCommandIDs[j].label);
+                    break;
+                }
+            }
+        }
+        titles = m;
+    });
+    return titles[name] ?: name;
+}
+
 
 @end

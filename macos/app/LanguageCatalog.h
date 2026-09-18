@@ -23,6 +23,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface LanguageCatalog : NSObject
 /// Parses langs.model.xml from the app bundle. Never nil; empty if the file is missing.
+/// The title upstream's Language menu gives a language ("C++", "None (Normal Text)").
++ (NSString *)menuTitleForLanguage:(NSString *)name;
 + (instancetype)sharedCatalog;
 @property (nonatomic, readonly) NSArray<NppLanguage *> *allLanguages;
 @property (nonatomic, readonly) NSString *sourcePath;
