@@ -3946,7 +3946,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
             __typeof(self) strongSelf = weakSelf;
             [strongSelf endSearchUI];
             [strongSelf.editor updateSearchResults:report];
-            if (![strongSelf.editor.currentDocument.displayName isEqualToString:@"Search results"]) {
+            if (!strongSelf.editor.currentDocument.isSearchResults) {
                 [strongSelf.editor showSearchResults:report];
             }
             strongSelf.findStatus.stringValue =
@@ -4047,7 +4047,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
             __typeof(self) strongSelf = weakSelf;
             [strongSelf endSearchUI];
             [strongSelf.editor updateSearchResults:report];
-            if (![strongSelf.editor.currentDocument.displayName isEqualToString:@"Search results"]) {
+            if (!strongSelf.editor.currentDocument.isSearchResults) {
                 [strongSelf.editor showSearchResults:report];
             }
             strongSelf.findStatus.stringValue = [NSString stringWithFormat:@"%lu found%@",

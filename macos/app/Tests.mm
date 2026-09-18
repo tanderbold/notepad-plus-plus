@@ -1933,8 +1933,21 @@ int NppMacRunTests(AppDelegate *app) {
         NSInteger onlyOneTab = 0;
         [ed showSearchResults:report];
         for (NppDocument *doc in ed.documents) {
-            if ([doc.displayName isEqualToString:@"Search results"]) onlyOneTab++;
+            if (doc.isSearchResults) onlyOneTab++;
         }
+        // A document of the user's that merely has that name is not the results tab.
+        [ed newDocument];
+        ed.currentDocument.displayName = @"Search results";
+        SetDoc(ed, @"my own notes\n");
+        NppDocument *namesake = ed.currentDocument;
+        [ed showSearchResults:report];
+        BOOL namesakeKept = ed.currentDocument != namesake && [ed.documents containsObject:namesake] && !namesake.isSearchResults;
+        NSInteger back = (NSInteger)[ed.documents indexOfObject:namesake];
+        [ed selectDocumentAtIndex:back];
+        namesakeKept = namesakeKept && [DocText(ed) isEqualToString:@"my own notes\n"];
+        [ed closeDocumentAtIndex:back discardChanges:YES];
+        if (!namesakeKept) onlyOneTab = 99;
+        for (NSUInteger i = 0; i < ed.documents.count; ++i) if (ed.documents[i].isSearchResults) [ed selectDocumentAtIndex:(NSInteger)i];
         [ed.sci message:SCI_GOTOLINE wParam:(uptr_t)hitLine lParam:0];
         BOOL opened = [ed openSearchResultAtCaret];
         long caretLine = [ed.sci message:SCI_LINEFROMPOSITION

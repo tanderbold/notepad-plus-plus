@@ -819,7 +819,7 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
     NppDocument *previous = [self previousTab];
     NSArray<NppDocument *> *docs = [self.documents copy];
     for (NppDocument *doc in docs) {
-        if ([doc.displayName isEqualToString:@"Search results"] && !doc.path) continue;
+        if (doc.isSearchResults) continue;
         NSUInteger index = [self.documents indexOfObjectIdenticalTo:doc];
         if (index == NSNotFound) continue;
         [self selectDocumentAtIndex:(NSInteger)index];

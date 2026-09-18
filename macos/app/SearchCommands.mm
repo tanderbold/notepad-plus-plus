@@ -411,6 +411,7 @@ static const char kOlderResultsKey = 0;
     }
     objc_setAssociatedObject(self, &kOlderResultsKey, older, OBJC_ASSOCIATION_COPY);
     self.currentDocument.displayName = @"Search results";
+    self.currentDocument.isSearchResults = YES;
     [self.sci message:SCI_SETREADONLY wParam:0 lParam:0];
     [self.sci setString:[(report ?: @"") stringByAppendingString:older]];
     [self.sci message:SCI_SETREADONLY wParam:1 lParam:0];   // results are read, not edited, as the Finder is
@@ -423,7 +424,7 @@ static const char kOlderResultsKey = 0;
 - (void)updateSearchResults:(NSString *)report {
     // While the user is looking at something else, leaving their document alone
     // matters more than a live count; the finished report still arrives.
-    if (![self.currentDocument.displayName isEqualToString:@"Search results"]) return;
+    if (!self.currentDocument.isSearchResults) return;
 
     // Whether the view was at the top decides whether it stays with the new
     // search as it grows or stays where the user scrolled to.
@@ -472,7 +473,7 @@ static const char kOlderResultsKey = 0;
 }
 
 - (BOOL)showingSearchResults {
-    return [self.currentDocument.displayName isEqualToString:@"Search results"] && !self.currentDocument.path;
+    return self.currentDocument.isSearchResults;
 }
 
 #pragma mark - The results tab's own commands
@@ -660,7 +661,7 @@ static const char kOlderResultsKey = 0;
 }
 
 - (BOOL)openSearchResultAtCaret {
-    if (![self.currentDocument.displayName isEqualToString:@"Search results"]) return NO;
+    if (!self.currentDocument.isSearchResults) return NO;
 
     sptr_t position = [self.sci message:SCI_GETCURRENTPOS wParam:0 lParam:0];
     NSInteger line = (NSInteger)[self.sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)position lParam:0];
@@ -727,7 +728,7 @@ static const char kOlderResultsKey = 0;
 
 - (NSInteger)searchResultsTabIndex {
     for (NSUInteger i = 0; i < self.documents.count; ++i) {
-        if ([self.documents[i].displayName isEqualToString:@"Search results"]) return (NSInteger)i;
+        if (self.documents[i].isSearchResults) return (NSInteger)i;
     }
     return -1;
 }

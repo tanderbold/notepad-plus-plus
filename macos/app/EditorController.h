@@ -29,6 +29,8 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// NSStringEncoding of its own (currently only 720); 0 means use `encoding`.
 @property (nonatomic) unsigned int codepage;
 @property (nonatomic) int eolMode;                 // SC_EOL_CRLF / SC_EOL_LF / SC_EOL_CR
+/// The tab Find All and Find in Files report into; not a name a user's own document could have.
+@property (nonatomic) BOOL isSearchResults;
 @property (nonatomic) BOOL pinned;                 // survives Close All but Pinned
 @property (nonatomic) NSInteger tabColour;         // 0 = none, 1..5 as in Notepad++
 /// Set when the language was chosen from the menu rather than worked out from
