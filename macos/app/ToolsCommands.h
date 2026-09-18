@@ -28,6 +28,13 @@ typedef NS_ENUM(NSInteger, NppTabSort) {
 - (BOOL)playbackMacro:(NSUInteger)times;
 - (BOOL)saveRecordedMacroAs:(NSString *)name;
 - (NSArray<NSString *> *)savedMacroNames;
+/// Plays a saved macro, as the Macro menu entry does.
+- (BOOL)playSavedMacroNamed:(NSString *)name;
+- (BOOL)removeSavedMacroNamed:(NSString *)name;
+/// The steps of a saved macro: {msg, w, l, text?} each; nil when there is none.
+- (nullable NSArray<NSDictionary *> *)stepsOfSavedMacroNamed:(NSString *)name;
+/// Keeps steps under a name, written to macros.json.
+- (void)storeSavedMacro:(NSArray<NSDictionary *> *)steps named:(NSString *)name;
 
 /// Reads the saved macros back from macros.json, replacing what is held.
 - (void)reloadSavedMacros;

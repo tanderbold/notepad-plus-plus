@@ -35,6 +35,7 @@
 #import "LanguageDetection.h"
 #import "UserLanguages.h"
 #import "UserLanguageDialog.h"
+#import "ShortcutMapper.h"
 #import "LanguageModel.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -4988,15 +4989,147 @@ int NppMacRunTests(AppDelegate *app) {
         [p setStyleOverride:nil forLanguage:@"cpp" styleID:SCE_C_COMMENTLINE];
         [ed applyLanguage];
 
-        ShortcutMapperWindow *mapper = [[ShortcutMapperWindow alloc] initWithEditor:ed];
-        NSArray *titles = [mapper commandTitles];
-        NSMenuItem *probe = [[NSMenuItem alloc] initWithTitle:@"Probe" action:@selector(showAbout:)
-                                                keyEquivalent:@"z"];
-        ApplyShortcutSpec(probe, @"cmd+shift+k");
-        Check(@"IDM_SETTING_SHORTCUT_MAPPER", @"lists shortcuts and applies a new one",
-              titles.count > 20 && [probe.keyEquivalent isEqualToString:@"k"] &&
-              (probe.keyEquivalentModifierMask & NSEventModifierFlagCommand) &&
-              (probe.keyEquivalentModifierMask & NSEventModifierFlagShift));
+        // Keys, and what Windows calls them.
+        {
+            NppKeyCombo *k = [NppKeyCombo comboFromSpec:@"cmd+shift+k"];
+            NppKeyCombo *fromWindows = [NppKeyCombo comboWithWindowsCtrl:YES alt:NO shift:YES macControl:NO virtualKey:75];
+            NppKeyCombo *f5 = [NppKeyCombo comboWithWindowsCtrl:NO alt:YES shift:NO macControl:NO virtualKey:116];
+            NppKeyCombo *upper = [NppKeyCombo comboWithKey:@"K" modifiers:NSEventModifierFlagCommand];
+            BOOL keys = [k isEqual:fromWindows] && k.windowsVirtualKey == 75 && [k.displayString isEqualToString:@"⇧⌘K"] &&
+                        f5.windowsVirtualKey == 116 && [f5.displayString isEqualToString:@"⌥F5"] && [upper isEqual:k] &&
+                        ([k scintillaKeyDefinition] == ('K' | ((SCMOD_CTRL | SCMOD_SHIFT) << 16)));
+            Check(@"IDM_SETTING_SHORTCUT_MAPPER",
+                  @"a key reads the same from a spec, from shortcuts.xml's codes and from a menu key equivalent",
+                  keys);
+        }
+
+        // The store: every menu command listed with Notepad++'s id where it has one.
+        {
+            NppShortcutStore *store = app.shortcutStore;
+            NSArray *menu = [store commandsInCategory:NppShortcutMainMenu];
+            NSUInteger withID = 0;
+            NppShortcutCommand *newFile = nil, *findNext = nil;
+            for (NppShortcutCommand *c in menu) {
+                if (c.identifier) withID++;
+                if (c.identifier == 41001) newFile = c;          // IDM_FILE_NEW
+                if (c.identifier == 43002) findNext = c;         // IDM_SEARCH_FINDNEXT
+            }
+            NSArray *sci = [store commandsInCategory:NppShortcutScintilla];
+            Check(@"IDM_SETTING_SHORTCUT_MAPPER (commands)",
+                  @"the main menu is listed with Notepad++'s ids for most commands, and the Scintilla commands "
+                  @"Windows lists are there",
+                  menu.count > 400 && withID * 10 > menu.count * 7 && newFile && findNext && sci.count > 80);
+
+            // Assigning writes shortcuts.xml as Windows writes it, and reads back.
+            NSString *path = [store path];
+            NSData *was = [NSData dataWithContentsOfFile:path];
+            NppKeyCombo *combo = [NppKeyCombo comboFromSpec:@"cmd+opt+ctrl+j"];
+            NppKeyCombo *before = findNext.combo;
+            [store setCombo:combo forCommand:findNext];
+            NSMenuItem *item = nil;
+            NSMutableArray *queue = [NSMutableArray arrayWithArray:NSApp.mainMenu.itemArray];
+            while (queue.count) {
+                NSMenuItem *i = queue.firstObject; [queue removeObjectAtIndex:0];
+                if (i.submenu) [queue addObjectsFromArray:i.submenu.itemArray];
+                else if ([i.title isEqualToString:findNext.name] && i.keyEquivalent.length) item = i;
+            }
+            NSString *xml = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
+            BOOL written = [xml containsString:@"id=\"43002\" Ctrl=\"yes\" Alt=\"yes\" Shift=\"no\" Key=\"74\" MacCtrl=\"yes\""];
+            BOOL applied = item && [item.keyEquivalent isEqualToString:@"j"] &&
+                           item.keyEquivalentModifierMask == (NSEventModifierFlagCommand | NSEventModifierFlagOption |
+                                                              NSEventModifierFlagControl);
+            NSArray *conflicts = [store conflictsWith:combo except:nil];
+            BOOL conflictFound = conflicts.count == 1 && [[conflicts.firstObject name] isEqualToString:findNext.name];
+
+            // A file written on Windows: a menu key, a macro with its actions,
+            // a Run command, a Scintilla key with a second key.
+            NSString *windows =
+                @"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus>\n"
+                @"<InternalCommands><Shortcut id=\"41001\" Ctrl=\"yes\" Alt=\"yes\" Shift=\"no\" Key=\"78\" /></InternalCommands>\n"
+                @"<Macros><Macro name=\"From Windows\" Ctrl=\"no\" Alt=\"yes\" Shift=\"no\" Key=\"117\">"
+                @"<Action type=\"1\" message=\"2170\" wParam=\"0\" lParam=\"0\" sParam=\"hi\" />"
+                @"<Action type=\"2\" message=\"0\" wParam=\"42001\" lParam=\"0\" sParam=\"\" /></Macro></Macros>\n"
+                @"<UserDefinedCommands><Command name=\"Say hello\" Ctrl=\"no\" Alt=\"no\" Shift=\"no\" Key=\"0\">echo hello</Command></UserDefinedCommands>\n"
+                @"<PluginCommands><PluginCommand moduleName=\"x.dll\" internalID=\"1\" Ctrl=\"no\" Alt=\"no\" Shift=\"no\" Key=\"0\" /></PluginCommands>\n"
+                @"<ScintillaKeys><ScintKey ScintID=\"2338\" menuCmdID=\"0\" Ctrl=\"yes\" Alt=\"no\" Shift=\"yes\" Key=\"68\">"
+                @"<NextKey Ctrl=\"no\" Alt=\"yes\" Shift=\"no\" Key=\"68\" /></ScintKey></ScintillaKeys>\n"
+                @"</NotepadPlus>\n";
+            [windows writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            NppShortcutStore *reread = [[NppShortcutStore alloc] initWithEditor:ed];
+            [reread captureMenuDefaults];
+            [reread load];
+            NppShortcutCommand *newAgain = nil;
+            for (NppShortcutCommand *c in [reread commandsInCategory:NppShortcutMainMenu]) if (c.identifier == 41001) newAgain = c;
+            NppShortcutCommand *macro = nil, *run = nil, *lineDelete = nil;
+            for (NppShortcutCommand *c in [reread commandsInCategory:NppShortcutMacro]) if ([c.name isEqualToString:@"From Windows"]) macro = c;
+            for (NppShortcutCommand *c in [reread commandsInCategory:NppShortcutRunCommand]) if ([c.name isEqualToString:@"Say hello"]) run = c;
+            for (NppShortcutCommand *c in [reread commandsInCategory:NppShortcutScintilla]) if (c.identifier == SCI_LINEDELETE) lineDelete = c;
+            NSArray *steps = [ed stepsOfSavedMacroNamed:@"From Windows"];
+            BOOL readWindows = [newAgain.combo isEqual:[NppKeyCombo comboFromSpec:@"cmd+opt+n"]] &&
+                               [macro.combo isEqual:[NppKeyCombo comboWithWindowsCtrl:NO alt:YES shift:NO macControl:NO virtualKey:117]] &&
+                               macro.combo.windowsVirtualKey == 117 && run != nil &&
+                               steps.count == 1 && [steps.firstObject[@"text"] isEqualToString:@"hi"] &&
+                               [lineDelete.combo isEqual:[NppKeyCombo comboFromSpec:@"cmd+shift+d"]] &&
+                               lineDelete.extraCombos.count == 1;
+
+            // The Scintilla key reaches the editor: Cmd+Shift+D deletes the line.
+            [ed newDocument];
+            [ed setDocumentText:@"one\ntwo\n"];
+            [ed.sci message:SCI_GOTOPOS wParam:0 lParam:0];
+            NSEvent *press = [NSEvent keyEventWithType:NSEventTypeKeyDown location:NSZeroPoint
+                                         modifierFlags:NSEventModifierFlagCommand | NSEventModifierFlagShift
+                                             timestamp:0 windowNumber:ed.window.windowNumber context:nil
+                                            characters:@"D" charactersIgnoringModifiers:@"D" isARepeat:NO keyCode:2];
+            [[ed.sci content] keyDown:press];
+            BOOL scintillaKey = [[ed documentText] isEqualToString:@"two\n"];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+
+            // Written back: the plugin command is kept as it was.
+            [reread save];
+            NSString *rewritten = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
+            BOOL kept = ![rewritten containsString:@"lParam=\"43"] && [rewritten containsString:@"moduleName=\"x.dll\""] && [rewritten containsString:@"<NextKey"] &&
+                        [rewritten containsString:@"name=\"Say hello\""];
+
+            // Everything back as it was.
+            [ed removeSavedMacroNamed:@"From Windows"];
+            [ed removeSavedCommandNamed:@"Say hello"];
+            if (was) [was writeToFile:path atomically:YES]; else [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+            [store setCombo:before forCommand:findNext];
+            if (!was) [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+            NppShortcutStore *fresh = [[NppShortcutStore alloc] initWithEditor:ed];
+            [fresh captureMenuDefaults];
+            [fresh load];
+            for (NppShortcutCommand *c in [fresh commandsInCategory:NppShortcutScintilla]) {
+                if (c.identifier == SCI_LINEDELETE) [fresh setCombo:[NppKeyCombo comboFromScintillaKey:'L' modifiers:SCMOD_CTRL | SCMOD_SHIFT] forCommand:c];
+            }
+            [app.shortcutStore load];
+            if (!was) [[NSFileManager defaultManager] removeItemAtPath:path error:NULL];
+
+            Check(@"IDM_SETTING_SHORTCUT_MAPPER (assigning)",
+                  @"a new key is applied to its menu item, written to shortcuts.xml under Notepad++'s id, and "
+                  @"found as a conflict",
+                  written && applied && conflictFound);
+            Check(@"IDM_SETTING_SHORTCUT_MAPPER (a file from Windows)",
+                  @"shortcuts.xml written on Windows gives its menu, macro, Run and Scintilla keys here, "
+                  @"brings the macro and the command across, and a Scintilla key works in the editor",
+                  readWindows && scintillaKey && kept);
+        }
+
+        // Saved macros are in the Macro menu, as on Windows.
+        {
+            [ed storeSavedMacro:@[@{@"msg": @2170, @"w": @0, @"l": @0, @"text": @"x"}] named:@"Menu macro"];
+            [app rebuildMacroMenu];
+            NSMenuItem *entry = [app.macroMenu itemWithTitle:@"Menu macro"];
+            [ed newDocument];
+            if (entry) [NSApp sendAction:entry.action to:entry.target from:entry];
+            BOOL played = [[ed documentText] isEqualToString:@"x"];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            [ed removeSavedMacroNamed:@"Menu macro"];
+            [app rebuildMacroMenu];
+            Check(@"IDM_MACRO_PLAYBACKRECORDEDMACRO (saved macros in the menu)",
+                  @"a saved macro is listed in the Macro menu and plays from it",
+                  entry != nil && played && ![app.macroMenu itemWithTitle:@"Menu macro"]);
+        }
 
         NSString *plugin = TempFile(@"t_plugin.bundle", @"fake plugin\n");
         NSUInteger copiedPlugins = [ed importFiles:@[plugin] intoSubdirectory:@"plugins"];

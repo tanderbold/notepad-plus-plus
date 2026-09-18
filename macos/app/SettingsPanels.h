@@ -5,7 +5,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// Applies a "cmd+shift+k" style specification to a menu item.
-void ApplyShortcutSpec(NSMenuItem *item, NSString *spec);
 
 @interface PreferencesWindow : NSObject
 - (instancetype)initWithEditor:(EditorController *)editor;
@@ -29,12 +28,5 @@ void ApplyShortcutSpec(NSMenuItem *item, NSString *spec);
 @property (nonatomic, readonly) NSInteger styleCount;
 @end
 
-@interface ShortcutMapperWindow : NSObject
-- (instancetype)initWithEditor:(EditorController *)editor;
-- (void)toggle;
-@property (nonatomic, readonly) BOOL visible;
-/// Menu commands that carry a keyboard shortcut.
-@property (nonatomic, readonly) NSArray<NSString *> *commandTitles;
-@end
 
 NS_ASSUME_NONNULL_END

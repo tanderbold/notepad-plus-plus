@@ -2,6 +2,7 @@
 #import "AppDelegate.h"
 #import "UserLanguages.h"
 #import "UserLanguageDialog.h"
+#import "ShortcutMapper.h"
 #import <objc/message.h>
 #import "EditorController.h"
 #import "EditCommands.h"
@@ -49,7 +50,10 @@
 @property (nonatomic, strong) ClipboardHistoryPanel *clipPanel;
 @property (nonatomic, strong) PreferencesWindow *prefsWindow;
 @property (nonatomic, strong) StyleConfiguratorWindow *styleWindow;
-@property (nonatomic, strong) ShortcutMapperWindow *shortcutWindow;
+@property (nonatomic, strong) NppShortcutStore *shortcutStore;
+@property (nonatomic, strong) NppShortcutMapper *shortcutMapper;
+@property (nonatomic, strong) NSMenu *macroMenu;
+@property (nonatomic) NSInteger fixedMacroItemCount;
 @property (nonatomic, strong) NppToolbar *toolbar;
 @property (nonatomic, strong) NSMenu *recentMenu;
 @property (nonatomic, strong) NSPanel *jsonTreePanel;
@@ -155,6 +159,13 @@
 }
 
 @end
+
+/// 1st, 2nd, 3rd, 4th... as the Windows menus write them.
+static NSString *Ordinal(NSUInteger n) {
+    NSString *suffix = (n % 100 >= 11 && n % 100 <= 13) ? @"th"
+        : n % 10 == 1 ? @"st" : n % 10 == 2 ? @"nd" : n % 10 == 3 ? @"rd" : @"th";
+    return [NSString stringWithFormat:@"%lu%@", (unsigned long)n, suffix];
+}
 
 @implementation AppDelegate
 
@@ -329,6 +340,8 @@
     [self rebuildUserLanguageMenuItems];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(userLanguagesChanged:)
                                                  name:NppUserLanguagesDidChangeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(savedCommandsChanged:)
+                                                 name:@"NppSavedCommandsDidChange" object:nil];
 
     // Imported themes join the bundled ones in the Preferences picker.
     [StyleCatalog setImportedThemesDirectory:
@@ -766,10 +779,10 @@
         struct { NSMenu *menu; SEL sel; NSString *title; } rows[] = {
             {markAllMenu, @selector(markAllStyle:), styleNames[i]},
             {markOneMenu, @selector(markOneStyle:), styleNames[i]},
-            {clearMenu,   @selector(clearStyle:),   [NSString stringWithFormat:@"Clear %luth Style", (unsigned long)i + 1]},
-            {upMenu,      @selector(jumpUpStyle:),  [NSString stringWithFormat:@"%luth Style", (unsigned long)i + 1]},
-            {downMenu,    @selector(jumpDownStyle:),[NSString stringWithFormat:@"%luth Style", (unsigned long)i + 1]},
-            {copyMenu,    @selector(copyStyle:),    [NSString stringWithFormat:@"%luth Style", (unsigned long)i + 1]},
+            {clearMenu,   @selector(clearStyle:),   [NSString stringWithFormat:@"Clear %@ Style", Ordinal(i + 1)]},
+            {upMenu,      @selector(jumpUpStyle:),  [NSString stringWithFormat:@"%@ Style", Ordinal(i + 1)]},
+            {downMenu,    @selector(jumpDownStyle:),[NSString stringWithFormat:@"%@ Style", Ordinal(i + 1)]},
+            {copyMenu,    @selector(copyStyle:),    [NSString stringWithFormat:@"%@ Style", Ordinal(i + 1)]},
         };
         for (size_t r = 0; r < sizeof(rows)/sizeof(rows[0]); ++r) {
             NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:rows[r].title action:rows[r].sel keyEquivalent:@""];
@@ -926,7 +939,7 @@
     // --- Tab navigation and colouring
     NSMenu *tabMenu = [[NSMenu alloc] initWithTitle:@"Tab"];
     for (NSInteger i = 1; i <= 9; ++i) {
-        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"%ldth Tab", (long)i]
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:[NSString stringWithFormat:@"%@ Tab", Ordinal((NSUInteger)i)]
                                                     action:@selector(goToTabNumber:)
                                              keyEquivalent:[NSString stringWithFormat:@"%ld", (long)i]];
         mi.target = self; mi.tag = i;
@@ -1085,6 +1098,9 @@
     [self item:@"Save Current Recorded Macro…" action:@selector(macroSave:) key:@"" flags:0 menu:macroMenu];
     [self item:@"Run a Macro Multiple Times…" action:@selector(macroRunMultiple:) key:@"" flags:0 menu:macroMenu];
     macroItem.submenu = macroMenu;
+    self.macroMenu = macroMenu;
+    self.fixedMacroItemCount = macroMenu.numberOfItems;
+    [self rebuildMacroMenu];
 
     // ---- Run
     NSMenuItem *runItem = [[NSMenuItem alloc] init];
@@ -1236,7 +1252,11 @@
     NSApp.windowsMenu = windowMenu;
 
     NSApp.mainMenu = bar;
-    [self applyShortcutOverrides];
+    // The keys the menus were built with are the defaults; shortcuts.xml
+    // (or the older preference) says what the user changed.
+    self.shortcutStore = [[NppShortcutStore alloc] initWithEditor:self.editor];
+    [self.shortcutStore captureMenuDefaults];
+    [self.shortcutStore load];
     [self.editor rebuildContextMenu];
 }
 
@@ -1618,17 +1638,27 @@
 
 #pragma mark - Settings
 
-- (void)applyShortcutOverrides {
-    NSDictionary *overrides = [NppPreferences shared].shortcutOverrides;
-    if (!overrides.count) return;
-    NSMutableArray *queue = [NSMutableArray arrayWithArray:NSApp.mainMenu.itemArray];
-    while (queue.count) {
-        NSMenuItem *item = queue.firstObject;
-        [queue removeObjectAtIndex:0];
-        if (item.submenu) [queue addObjectsFromArray:item.submenu.itemArray];
-        NSString *spec = overrides[item.title];
-        if (spec) ApplyShortcutSpec(item, spec);
+/// The saved macros at the end of the Macro menu, as Windows lists them.
+- (void)rebuildMacroMenu {
+    NSMenu *menu = self.macroMenu;
+    if (!menu) return;
+    while (menu.numberOfItems > self.fixedMacroItemCount) [menu removeItemAtIndex:menu.numberOfItems - 1];
+    NSArray *names = [self.editor savedMacroNames];
+    if (names.count) [menu addItem:[NSMenuItem separatorItem]];
+    for (NSString *name in names) {
+        NSMenuItem *entry = [self item:name action:@selector(playSavedMacro:) key:@"" flags:0 menu:menu];
+        entry.representedObject = name;
     }
+    [self.shortcutStore applyToMenus];
+}
+
+- (void)playSavedMacro:(NSMenuItem *)sender {
+    [self.editor playSavedMacroNamed:sender.representedObject ?: sender.title];
+}
+
+- (void)savedCommandsChanged:(NSNotification *)note {
+    [self rebuildMacroMenu];
+    [self rebuildRunMenu];
 }
 
 - (void)showPreferences:(id)sender {
@@ -1642,8 +1672,10 @@
 }
 
 - (void)showShortcutMapper:(id)sender {
-    if (!self.shortcutWindow) self.shortcutWindow = [[ShortcutMapperWindow alloc] initWithEditor:self.editor];
-    [self.shortcutWindow toggle];
+    if (!self.shortcutMapper) {
+        self.shortcutMapper = [[NppShortcutMapper alloc] initWithStore:self.shortcutStore editor:self.editor];
+    }
+    [self.shortcutMapper toggle];
 }
 
 - (void)importPlugins:(id)sender { [self importInto:@"plugins" title:@"Import plugin(s)"]; }
@@ -1773,7 +1805,10 @@ static const NSInteger kUserLanguageItemTag = 0x55444C;
 
 - (void)macroSave:(id)sender {
     NSString *name = [self promptForString:@"Save macro as" default:@"macro"];
-    if (name.length) [self.editor saveRecordedMacroAs:name];
+    if (name.length && [self.editor saveRecordedMacroAs:name]) {
+        [self rebuildMacroMenu];
+        [self.shortcutStore save];                 // shortcuts.xml lists macros too, as on Windows
+    }
 }
 
 - (void)macroRunMultiple:(id)sender {
@@ -1858,6 +1893,7 @@ static const NSInteger kUserLanguageItemTag = 0x55444C;
         entry.representedObject = c.command;
         entry.toolTip = c.command;
     }
+    [self.shortcutStore applyToMenus];
 }
 
 - (void)validateShortcuts:(id)sender {

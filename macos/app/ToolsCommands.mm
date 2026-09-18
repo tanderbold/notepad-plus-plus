@@ -118,12 +118,17 @@ static const char kSavedMacrosKey = 0;
 }
 
 - (BOOL)playbackMacro:(NSUInteger)times {
-    NSArray *steps = [[self macroSteps] copy];
+    return [self playSteps:[[self macroSteps] copy] times:times];
+}
+
+- (BOOL)playSteps:(NSArray *)steps times:(NSUInteger)times {
     if (!steps.count || times == 0) { NSBeep(); return NO; }
     ScintillaView *sci = self.sci;
     [sci message:SCI_BEGINUNDOACTION];
     for (NSUInteger t = 0; t < times; ++t) {
         for (NSDictionary *step in steps) {
+            // Steps read from a file are checked before they reach Scintilla.
+            if (![step isKindOfClass:[NSDictionary class]] || ![step[@"msg"] isKindOfClass:[NSNumber class]]) continue;
             int msg = [step[@"msg"] intValue];
             NSString *text = step[@"text"];
             if (text.length) {
@@ -179,6 +184,36 @@ static const char kSavedMacrosKey = 0;
                                                    options:NSJSONWritingPrettyPrinted error:NULL];
     [json writeToFile:path options:NSDataWritingAtomic error:NULL];
     return YES;
+}
+
+- (NSArray<NSDictionary *> *)stepsOfSavedMacroNamed:(NSString *)name {
+    id steps = [self savedMacros][name];
+    return [steps isKindOfClass:[NSArray class]] ? steps : nil;
+}
+
+- (BOOL)playSavedMacroNamed:(NSString *)name {
+    NSArray *steps = [self stepsOfSavedMacroNamed:name];
+    if (!steps.count) { NSBeep(); return NO; }
+    return [self playSteps:steps times:1];
+}
+
+- (void)writeSavedMacros {
+    NSData *json = [NSJSONSerialization dataWithJSONObject:[self savedMacros]
+                                                   options:NSJSONWritingPrettyPrinted error:NULL];
+    [json writeToFile:[self savedMacrosPath] options:NSDataWritingAtomic error:NULL];
+}
+
+- (BOOL)removeSavedMacroNamed:(NSString *)name {
+    if (![self savedMacros][name]) return NO;
+    [[self savedMacros] removeObjectForKey:name];
+    [self writeSavedMacros];
+    return YES;
+}
+
+- (void)storeSavedMacro:(NSArray<NSDictionary *> *)steps named:(NSString *)name {
+    if (!name.length || !steps) return;
+    [self savedMacros][name] = [steps copy];
+    [self writeSavedMacros];
 }
 
 - (NSArray<NSString *> *)savedMacroNames {

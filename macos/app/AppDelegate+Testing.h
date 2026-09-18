@@ -1,3 +1,4 @@
+#import "ShortcutMapper.h"
 // Surface used by the built-in test suite (NPPMAC_TEST=1). These are the very
 // code paths the menu items drive; tests call them directly so no modal panel
 // is involved.
@@ -47,4 +48,7 @@
 /// The command line, parsed and applied; here so the suite can drive them.
 - (NSDictionary *)parseCommandLine:(NSArray<NSString *> *)arguments;
 - (void)applyCommandLine:(NSDictionary *)options;
+@property (nonatomic, readonly) NppShortcutStore *shortcutStore;
+@property (nonatomic, readonly) NSMenu *macroMenu;
+- (void)rebuildMacroMenu;
 @end
