@@ -81,6 +81,12 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (NSString *)documentText;
 - (void)setDocumentText:(NSString *)text;
 /// Files at least this big are mapped and handed to Scintilla as bytes; for tests.
+/// A file's text read the way Open reads it - BOM, UTF-16, UTF-8, then the
+/// character set uchardet finds - for searching files that are not open.
+/// Nil for a binary file.
++ (nullable NSString *)textOfFileAtPath:(NSString *)path encoding:(nullable NSStringEncoding *)encoding
+                                 hasBOM:(nullable BOOL *)hasBOM;
++ (NSData *)dataForText:(NSString *)text encoding:(NSStringEncoding)encoding hasBOM:(BOOL)hasBOM;
 + (void)setStreamingThreshold:(unsigned long long)bytes;
 
 /// Looks at every open file on disk: one changed by another program is

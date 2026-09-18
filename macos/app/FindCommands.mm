@@ -485,9 +485,8 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
         if ([EditorController relativePath:relative isInFolderExcludedByFilters:filters]) continue;
         if (![EditorController name:relative.lastPathComponent matchesFilters:filters]) continue;
 
-        NSString *contents = [NSString stringWithContentsOfFile:full
-                                                       encoding:NSUTF8StringEncoding error:NULL];
-        if (!contents) continue;                     // binary, or another encoding
+        NSString *contents = [EditorController textOfFileAtPath:full encoding:NULL hasBOM:NULL];
+        if (!contents) continue;                     // binary
         visit(full, contents, ++scanned);
     }
 }
@@ -566,7 +565,17 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
         NSData *piece = [texts[(NSUInteger)i] dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
         [updated replaceBytesInRange:range withBytes:piece.bytes length:piece.length];
     }
-    return [updated writeToFile:path atomically:YES] ? ranges.count : 0;
+    // Back in the encoding the file was read in, with its BOM if it had one.
+    NSStringEncoding encoding = NSUTF8StringEncoding;
+    BOOL bom = NO;
+    [EditorController textOfFileAtPath:path encoding:&encoding hasBOM:&bom];
+    NSData *written = updated;
+    if (encoding != NSUTF8StringEncoding || bom) {
+        NSString *text = [[NSString alloc] initWithData:updated encoding:NSUTF8StringEncoding];
+        written = text && [text canBeConvertedToEncoding:encoding] ? [EditorController dataForText:text encoding:encoding hasBOM:bom] : nil;
+        if (!written.length) return 0;               // a replacement the encoding cannot hold leaves the file alone
+    }
+    return [written writeToFile:path atomically:YES] ? ranges.count : 0;
 }
 
 - (NSUInteger)replaceInFiles:(NppFindSpec *)spec
@@ -694,7 +703,7 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
         for (NSString *path in files) {
             if (search.cancelled) return;
             if (![EditorController name:path.lastPathComponent matchesFilters:filters]) continue;
-            NSString *contents = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
+            NSString *contents = [EditorController textOfFileAtPath:path encoding:NULL hasBOM:NULL];
             if (!contents) continue;
             visit(path, contents, ++scanned);
         }
@@ -761,7 +770,7 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
         for (NSString *path in files) {
             if (search.cancelled) return;
             if (![EditorController name:path.lastPathComponent matchesFilters:filters]) continue;
-            NSString *contents = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
+            NSString *contents = [EditorController textOfFileAtPath:path encoding:NULL hasBOM:NULL];
             if (!contents) continue;
             visit(path, contents, ++scanned);
         }

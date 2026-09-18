@@ -1664,6 +1664,33 @@ int NppMacRunTests(AppDelegate *app) {
               replaced == 2 && changedFiles == 2 &&
               [afterOne isEqualToString:@"alpha N\nbeta\n"] &&
               [untouched isEqualToString:@"alpha 7\n"]);
+
+        // A file in a code page is found in, and stays in its code page when
+        // Replace in Files rewrites it; a UTF-8 BOM stays too.
+        NSString *russianText = @"Привет, мир. Это обычный русский текст в старой кодировке, которых ещё много.\nстрока вторая: поиск по файлам должен находить и такие.\n";
+        NSString *cyrPath = [root stringByAppendingPathComponent:@"cyr.txt"];
+        [[russianText dataUsingEncoding:NSWindowsCP1251StringEncoding] writeToFile:cyrPath atomically:YES];
+        NSMutableData *bomFile = [NSMutableData dataWithBytes:"\xEF\xBB\xBF" length:3];
+        [bomFile appendData:[@"поиск с меткой\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        NSString *bomPath = [root stringByAppendingPathComponent:@"bom.txt"];
+        [bomFile writeToFile:bomPath atomically:YES];
+        NSString *cyrReport = nil;
+        NSUInteger cyrHits = [ed findInFiles:[NppFindSpec specFor:@"поиск" mode:NppSearchNormal options:NppFindNone]
+                                      folder:root filters:@"*.txt" recursive:YES includeHidden:NO report:&cyrReport];
+        NppFindSpec *swap = [NppFindSpec specFor:@"поиск" mode:NppSearchNormal options:NppFindNone];
+        swap.replacement = @"розыск";
+        NSUInteger cyrFiles = 0;
+        NSUInteger cyrReplaced = [ed replaceInFiles:swap folder:root filters:@"*.txt" recursive:YES includeHidden:NO changedFiles:&cyrFiles];
+        NSString *cyrAfter = [[NSString alloc] initWithData:[NSData dataWithContentsOfFile:cyrPath] encoding:NSWindowsCP1251StringEncoding];
+        NSData *bomAfter = [NSData dataWithContentsOfFile:bomPath];
+        BOOL codePages = cyrHits == 2 && [cyrReport containsString:@"cyr.txt"] && cyrReplaced == 2 && cyrFiles == 2 &&
+                         [cyrAfter isEqualToString:[russianText stringByReplacingOccurrencesOfString:@"поиск" withString:@"розыск"]] &&
+                         bomAfter.length > 3 && !memcmp(bomAfter.bytes, "\xEF\xBB\xBF", 3) &&
+                         [[[NSString alloc] initWithData:[bomAfter subdataWithRange:NSMakeRange(3, bomAfter.length - 3)] encoding:NSUTF8StringEncoding] isEqualToString:@"розыск с меткой\n"];
+        printf("    code pages: hits=%lu replaced=%lu files=%lu\n", (unsigned long)cyrHits, (unsigned long)cyrReplaced, (unsigned long)cyrFiles);
+        Check(@"IDM_SEARCH_FINDINFILES (code pages)",
+              @"a file that is not UTF-8 is searched in its own character set and rewritten in it; a BOM is kept",
+              codePages);
         [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
     }
 

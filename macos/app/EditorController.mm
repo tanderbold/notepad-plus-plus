@@ -596,6 +596,26 @@ static long SciColor(NSColor *c) {
     return text ?: ([self.sciView string] ?: @"");
 }
 
++ (NSString *)textOfFileAtPath:(NSString *)path encoding:(NSStringEncoding *)encoding hasBOM:(BOOL *)hasBOM {
+    NSData *data = [NSData dataWithContentsOfFile:path options:NSDataReadingMappedIfSafe error:NULL];
+    if (!data) return nil;
+    NSStringEncoding used = NSUTF8StringEncoding;
+    BOOL bom = NO;
+    // A NUL in what is not UTF-16 means a binary file, which a search passes over.
+    const unsigned char *b = (const unsigned char *)data.bytes;
+    BOOL wide = data.length >= 2 && ((b[0] == 0xFF && b[1] == 0xFE) || (b[0] == 0xFE && b[1] == 0xFF));
+    if (!wide && ![NppCharsetDetection utf16EncodingWithoutMarkForData:data] &&
+        memchr(b, 0, MIN(data.length, (NSUInteger)8192))) return nil;
+    NSString *text = DecodeText(data, &used, &bom);
+    if (encoding) *encoding = used;
+    if (hasBOM) *hasBOM = bom;
+    return text;
+}
+
++ (NSData *)dataForText:(NSString *)text encoding:(NSStringEncoding)encoding hasBOM:(BOOL)hasBOM {
+    return EncodeText(text, encoding, hasBOM);
+}
+
 + (void)setStreamingThreshold:(unsigned long long)bytes { gStreamingThreshold = bytes ?: 64ULL * 1024 * 1024; }
 
 /// Adds UTF-8 bytes in pieces, with room made for all of them first.
