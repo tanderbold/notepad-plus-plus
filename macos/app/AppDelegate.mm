@@ -413,6 +413,13 @@ static NSString *Ordinal(NSUInteger n) {
 
     __weak __typeof(self) weakApp = self;
     self.editor.tabContextMenu = ^NSMenu *{ return [weakApp buildTabContextMenu]; };
+    // Macro steps that are menu commands (shortcuts.xml's type 2) find their command here.
+    self.editor.menuCommandByIdentifier = ^BOOL(int identifier) {
+        NSMenuItem *item = [weakApp.shortcutStore menuItemsByIdentifier][@(identifier)];
+        if (!item.action) return NO;
+        [item.menu update];
+        return item.isEnabled && [NSApp sendAction:item.action to:item.target from:item];
+    };
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(findInFolderRequested:)
                                                  name:@"NppFindInFolderRequested" object:nil];
     // The interface in the language chosen: menus now, windows as they come up.

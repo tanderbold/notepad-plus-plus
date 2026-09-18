@@ -670,17 +670,18 @@ static void AddComboAttributes(NSXMLElement *e, NppKeyCombo *combo) {
         NppKeyCombo *combo = ComboFromElement(m);
         if (combo) self.macroCombos[name] = combo;
         if (![self.editor stepsOfSavedMacroNamed:name]) {
-            // A macro written on Windows: the steps that are Scintilla
-            // messages come across; menu commands and searches do not.
+            // A macro written on Windows, every kind of step: Scintilla
+            // messages (0, 1), menu commands (2) and the Find dialog's (3).
             NSMutableArray *steps = [NSMutableArray array];
             for (NSXMLElement *a in [m elementsForName:@"Action"]) {
                 int type = [a attributeForName:@"type"].stringValue.intValue;
-                if (type != 0 && type != 1) continue;
+                if (type < 0 || type > 3) continue;
                 NSMutableDictionary *step = [@{@"msg": @([a attributeForName:@"message"].stringValue.intValue),
                                                @"w": @([a attributeForName:@"wParam"].stringValue.longLongValue),
                                                @"l": @([a attributeForName:@"lParam"].stringValue.longLongValue)} mutableCopy];
                 NSString *text = [a attributeForName:@"sParam"].stringValue;
-                if (type == 1 && text.length) step[@"text"] = text;
+                if (type >= 2) { step[@"type"] = @(type); step[@"text"] = text ?: @""; }
+                else if (type == 1 && text.length) step[@"text"] = text;
                 [steps addObject:step];
             }
             if (steps.count) [self.editor storeSavedMacro:steps named:name];
@@ -771,6 +772,17 @@ static void AddComboAttributes(NSXMLElement *e, NppKeyCombo *combo) {
             if (![step isKindOfClass:[NSDictionary class]]) continue;
             NSXMLElement *a = [NSXMLElement elementWithName:@"Action"];
             NSString *text = step[@"text"];
+            int type = [step[@"type"] intValue];
+            if (type >= 2) {
+                // Menu commands and Find steps go back as they came.
+                [a addAttribute:[NSXMLNode attributeWithName:@"type" stringValue:@(type).stringValue]];
+                [a addAttribute:[NSXMLNode attributeWithName:@"message" stringValue:[step[@"msg"] description]]];
+                [a addAttribute:[NSXMLNode attributeWithName:@"wParam" stringValue:[step[@"w"] ?: @0 description]]];
+                [a addAttribute:[NSXMLNode attributeWithName:@"lParam" stringValue:[step[@"l"] ?: @0 description]]];
+                [a addAttribute:[NSXMLNode attributeWithName:@"sParam" stringValue:text ?: @""]];
+                [m addChild:a];
+                continue;
+            }
             [a addAttribute:[NSXMLNode attributeWithName:@"type" stringValue:text.length ? @"1" : @"0"]];
             [a addAttribute:[NSXMLNode attributeWithName:@"message" stringValue:[step[@"msg"] description]]];
             [a addAttribute:[NSXMLNode attributeWithName:@"wParam" stringValue:[step[@"w"] ?: @0 description]]];

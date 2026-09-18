@@ -42,6 +42,8 @@ typedef NS_ENUM(NSInteger, NppTabSort) {
 - (void)reloadSavedMacros;
 /// Called from the notification handler for each recorded Scintilla action.
 - (void)recordMacroMessage:(int)message wParam:(unsigned long)wParam lParam:(long)lParam;
+/// Performs a menu command by Notepad++'s id, for macro steps of type 2; set by the application.
+@property (nonatomic, copy, nullable) BOOL (^menuCommandByIdentifier)(int identifier);
 - (void)rememberPreviousTab:(NppDocument *)doc;
 
 /// The tab Recent Window would step back to, or nil.

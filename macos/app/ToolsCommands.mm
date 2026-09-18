@@ -1,5 +1,6 @@
 #import "ToolsCommands.h"
 #import "EditCommands.h"
+#import "FindCommands.h"
 #import "InfoWindows.h"
 #import "SettingsCommands.h"
 #import "UpdateChecker.h"
@@ -133,12 +134,25 @@ static BOOL gPlayingMacro = NO;
     ScintillaView *sci = self.sci;
     [sci message:SCI_BEGINUNDOACTION];
     gPlayingMacro = YES;
+    NSMutableDictionary *findState = [NSMutableDictionary dictionary];
     for (NSUInteger t = 0; t < times; ++t) {
         for (NSDictionary *step in steps) {
             // Steps read from a file are checked before they reach Scintilla.
             if (![step isKindOfClass:[NSDictionary class]] || ![step[@"msg"] isKindOfClass:[NSNumber class]]) continue;
             int msg = [step[@"msg"] intValue];
             NSString *text = step[@"text"];
+            int type = [step[@"type"] intValue];
+            if (type == 2) {
+                // A menu command, by Notepad++'s id (recordable ones only get here).
+                BOOL (^perform)(int) = self.menuCommandByIdentifier;
+                if (perform) perform((int)[step[@"w"] longValue]);
+                sci = self.sci;                                   // the command may have changed the view in front
+                continue;
+            }
+            if (type == 3) {
+                [self playFindStep:msg value:[step[@"l"] longValue] text:text ?: @"" into:findState];
+                continue;
+            }
             if (text.length) {
                 [sci setStringProperty:msg parameter:[step[@"w"] longValue] value:text];
             } else {
@@ -151,6 +165,52 @@ static BOOL gPlayingMacro = NO;
     [sci message:SCI_ENDUNDOACTION];
     [self refreshChrome];
     return YES;
+}
+
+static const char kMenuCommandKey = 0;
+- (BOOL (^)(int))menuCommandByIdentifier { return objc_getAssociatedObject(self, &kMenuCommandKey); }
+- (void)setMenuCommandByIdentifier:(BOOL (^)(int))block {
+    objc_setAssociatedObject(self, &kMenuCommandKey, block, OBJC_ASSOCIATION_COPY);
+}
+
+/// One step of a recorded search, as FindReplaceDlg::execSavedCommand reads
+/// them: the options gather until IDC_FRCOMMAND_EXEC says what to do.
+- (void)playFindStep:(int)message value:(long)value text:(NSString *)text into:(NSMutableDictionary *)state {
+    enum { FindWhat = 1601, ReplaceWith = 1602, SearchMode = 1625, Init = 1700, Exec = 1701, Booleans = 1702 };
+    switch (message) {
+        case Init: [state removeAllObjects]; return;
+        case FindWhat: state[@"what"] = text; return;
+        case ReplaceWith: state[@"with"] = text; return;
+        case SearchMode: state[@"mode"] = @(value); return;
+        case Booleans: state[@"flags"] = @(value); return;
+        case Exec: break;
+        default: return;
+    }
+    long flags = [state[@"flags"] longValue];
+    NppFindOptions options = NppFindNone;
+    if (flags & 1) options |= NppFindWholeWord;
+    if (flags & 2) options |= NppFindMatchCase;
+    if (flags & 128) options |= NppFindInSelection;
+    if (flags & 256) options |= NppFindWrap;
+    if (!(flags & 512)) options |= NppFindBackward;       // IDF_WHICH_DIRECTION set means down
+    if (flags & 1024) options |= NppFindDotMatchesNewline;
+    long mode = [state[@"mode"] longValue];
+    NppFindSpec *spec = [NppFindSpec specFor:state[@"what"] ?: @""
+                                        mode:mode == 2 ? NppSearchRegex : mode == 1 ? NppSearchExtended : NppSearchNormal
+                                     options:options];
+    spec.replacement = state[@"with"] ?: @"";
+    if (!spec.what.length) return;
+    switch (value) {
+        case 1: [self findNext:spec]; break;                                     // IDOK
+        case 1723: spec.options &= ~NppFindBackward; [self findNext:spec]; break; // IDC_FINDNEXT
+        case 1721: spec.options |= NppFindBackward; [self findNext:spec]; break;  // IDC_FINDPREV
+        case 1608: [self replaceCurrentThenFindNext:spec]; break;                 // IDREPLACE
+        case 1609: [self replaceAll:spec]; break;                                 // IDREPLACEALL
+        case 1614: [self countMatches:spec]; break;                               // IDCCOUNTALL
+        case 1615: [self markAll:spec purge:(flags & 4) != 0]; break;             // IDCMARKALL
+        case 1635: [self replaceAllInOpenDocuments:spec]; break;                  // IDC_REPLACE_OPENEDFILES
+        default: break;                                   // Find All and Find in Files show results; not replayed
+    }
 }
 
 - (NSString *)savedMacrosPath {

@@ -5755,8 +5755,14 @@ int NppMacRunTests(AppDelegate *app) {
                 @"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus>\n"
                 @"<InternalCommands><Shortcut id=\"41001\" Ctrl=\"yes\" Alt=\"yes\" Shift=\"no\" Key=\"78\" /></InternalCommands>\n"
                 @"<Macros><Macro name=\"From Windows\" Ctrl=\"no\" Alt=\"yes\" Shift=\"no\" Key=\"117\">"
-                @"<Action type=\"1\" message=\"2170\" wParam=\"0\" lParam=\"0\" sParam=\"hi\" />"
-                @"<Action type=\"2\" message=\"0\" wParam=\"42001\" lParam=\"0\" sParam=\"\" /></Macro></Macros>\n"
+                @"<Action type=\"1\" message=\"2170\" wParam=\"0\" lParam=\"0\" sParam=\"hi hi\" />"
+                @"<Action type=\"3\" message=\"1700\" wParam=\"0\" lParam=\"0\" sParam=\"\" />"
+                @"<Action type=\"3\" message=\"1601\" wParam=\"0\" lParam=\"0\" sParam=\"hi\" />"
+                @"<Action type=\"3\" message=\"1625\" wParam=\"0\" lParam=\"0\" sParam=\"\" />"
+                @"<Action type=\"3\" message=\"1602\" wParam=\"0\" lParam=\"0\" sParam=\"yo\" />"
+                @"<Action type=\"3\" message=\"1702\" wParam=\"0\" lParam=\"768\" sParam=\"\" />"
+                @"<Action type=\"3\" message=\"1701\" wParam=\"0\" lParam=\"1609\" sParam=\"\" />"
+                @"<Action type=\"2\" message=\"0\" wParam=\"42007\" lParam=\"0\" sParam=\"\" /></Macro></Macros>\n"
                 @"<UserDefinedCommands><Command name=\"Say hello\" Ctrl=\"no\" Alt=\"no\" Shift=\"no\" Key=\"0\">echo hello</Command></UserDefinedCommands>\n"
                 @"<PluginCommands><PluginCommand moduleName=\"x.dll\" internalID=\"1\" Ctrl=\"no\" Alt=\"no\" Shift=\"no\" Key=\"0\" /></PluginCommands>\n"
                 @"<ScintillaKeys><ScintKey ScintID=\"2338\" menuCmdID=\"0\" Ctrl=\"yes\" Alt=\"no\" Shift=\"yes\" Key=\"68\">"
@@ -5773,10 +5779,16 @@ int NppMacRunTests(AppDelegate *app) {
             for (NppShortcutCommand *c in [reread commandsInCategory:NppShortcutRunCommand]) if ([c.name isEqualToString:@"Say hello"]) run = c;
             for (NppShortcutCommand *c in [reread commandsInCategory:NppShortcutScintilla]) if (c.identifier == SCI_LINEDELETE) lineDelete = c;
             NSArray *steps = [ed stepsOfSavedMacroNamed:@"From Windows"];
+            // Played: typed, replaced through the Find steps, selected through the menu command.
+            [ed newDocument];
+            [ed playSavedMacroNamed:@"From Windows"];
+            BOOL macroPlayed = [[ed documentText] isEqualToString:@"yo yo"] &&
+                               [ed.sci message:SCI_GETSELECTIONEND] - [ed.sci message:SCI_GETSELECTIONSTART] == 5;
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
             BOOL readWindows = [newAgain.combo isEqual:[NppKeyCombo comboFromSpec:@"cmd+opt+n"]] &&
                                [macro.combo isEqual:[NppKeyCombo comboWithWindowsCtrl:NO alt:YES shift:NO macControl:NO virtualKey:117]] &&
                                macro.combo.windowsVirtualKey == 117 && run != nil &&
-                               steps.count == 1 && [steps.firstObject[@"text"] isEqualToString:@"hi"] &&
+                               steps.count == 8 && [steps.firstObject[@"text"] isEqualToString:@"hi hi"] && macroPlayed &&
                                [lineDelete.combo isEqual:[NppKeyCombo comboFromSpec:@"cmd+shift+d"]] &&
                                lineDelete.extraCombos.count == 1;
 
@@ -5802,7 +5814,10 @@ int NppMacRunTests(AppDelegate *app) {
             [reread save];
             NSString *rewritten = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
             BOOL kept = ![rewritten containsString:@"lParam=\"43"] && [rewritten containsString:@"moduleName=\"x.dll\""] && [rewritten containsString:@"<NextKey"] &&
-                        [rewritten containsString:@"name=\"Say hello\""];
+                        [rewritten containsString:@"name=\"Say hello\""] &&
+                        [rewritten containsString:@"type=\"2\" message=\"0\" wParam=\"42007\""] &&
+                        [rewritten containsString:@"type=\"3\" message=\"1701\" wParam=\"0\" lParam=\"1609\""] &&
+                        [rewritten containsString:@"sParam=\"yo\""];
 
             // Everything back as it was.
             [ed removeSavedMacroNamed:@"From Windows"];
