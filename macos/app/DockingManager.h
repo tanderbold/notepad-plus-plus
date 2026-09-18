@@ -43,6 +43,9 @@ FOUNDATION_EXPORT NSNotificationName const NppDockPanelVisibilityDidChangeNotifi
 /// After the panels of the last launch are shown again: the tab that was in
 /// front of each container is put in front.
 - (void)restoreFronts;
+/// Where a panel let go at a point of the screen would go, in screen
+/// coordinates: what the drag shows before the button is released.
+- (NSRect)previewRectForPanel:(NSString *)identifier atScreenPoint:(NSPoint)point;
 /// Where a drop at a point on screen docks a panel: an edge of the main
 /// window, or floating anywhere else.
 - (NppDockPlace)placeForDropAtScreenPoint:(NSPoint)point;

@@ -27,11 +27,14 @@ static const CGFloat kHeader = 22;
 @property (nonatomic, strong) NSMutableArray<NSString *> *order;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NppDockContainerView *> *containers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSPanel *> *floats;
+@property (nonatomic, strong, nullable) NSWindow *dragPreview;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSString *> *fronts;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSNumber *> *sizes;
 @property (nonatomic) BOOL arranging;
 - (void)containerClickedPanel:(NSString *)identifier;
 - (void)dragOfPanel:(NSString *)identifier endedAtScreenPoint:(NSPoint)point;
+- (void)dragOfPanel:(NSString *)identifier movedToScreenPoint:(NSPoint)point;
+- (void)endDragPreview;
 - (NSMenu *)menuForPanel:(NSString *)identifier;
 - (NSString *)titleOf:(NSString *)identifier;
 @end
@@ -132,11 +135,14 @@ static const CGFloat kHeader = 22;
         self.dragMoved = YES;
         [[NSCursor closedHandCursor] set];
     }
+    // Where it would land, shown while it is dragged, as upstream's gripper draws its rectangle.
+    if (self.dragMoved) [self.manager dragOfPanel:self.dragging movedToScreenPoint:[self.window convertPointToScreen:event.locationInWindow]];
 }
 
 - (void)mouseUp:(NSEvent *)event {
     NSString *moved = self.dragMoved ? self.dragging : nil;
     self.dragging = nil;
+    [self.manager endDragPreview];
     [[NSCursor arrowCursor] set];
     if (!moved) return;
     NSPoint screen = [self.window convertPointToScreen:event.locationInWindow];
@@ -309,6 +315,47 @@ static const CGFloat kHeader = 22;
     if (fy < 0.25) return NppDockTop;
     if (fy > 0.75) return NppDockBottom;
     return NppDockFloating;
+}
+
+/// The rectangle, in screen coordinates, a panel dropped at `point` would
+/// take: the container's share of the window, or the floating frame.
+- (NSRect)previewRectForPanel:(NSString *)identifier atScreenPoint:(NSPoint)point {
+    NppDockPlace place = [self placeForDropAtScreenPoint:point];
+    NSWindow *window = self.split.window;
+    NppDockPanelRecord *r = self.records[identifier];
+    if (place == NppDockFloating || !window) {
+        NSRect frame = r.floatFrame;
+        frame.origin = NSMakePoint(point.x - 40, point.y - NSHeight(frame) + 10);
+        return frame;
+    }
+    NSRect area = [window convertRectToScreen:[self.split convertRect:self.split.bounds toView:nil]];
+    CGFloat size = [self sizeOfPlace:place] ?: (place == NppDockLeft || place == NppDockRight ? 220 : 160);
+    switch (place) {
+        case NppDockLeft:   return NSMakeRect(NSMinX(area), NSMinY(area), MIN(size, NSWidth(area)), NSHeight(area));
+        case NppDockRight:  return NSMakeRect(NSMaxX(area) - MIN(size, NSWidth(area)), NSMinY(area), MIN(size, NSWidth(area)), NSHeight(area));
+        case NppDockTop:    return NSMakeRect(NSMinX(area), NSMaxY(area) - MIN(size, NSHeight(area)), NSWidth(area), MIN(size, NSHeight(area)));
+        default:            return NSMakeRect(NSMinX(area), NSMinY(area), NSWidth(area), MIN(size, NSHeight(area)));
+    }
+}
+
+- (void)dragOfPanel:(NSString *)identifier movedToScreenPoint:(NSPoint)point {
+    NSRect rect = [self previewRectForPanel:identifier atScreenPoint:point];
+    if (!self.dragPreview) {
+        NSWindow *w = [[NSWindow alloc] initWithContentRect:rect styleMask:NSWindowStyleMaskBorderless
+                                                    backing:NSBackingStoreBuffered defer:NO];
+        w.opaque = NO;
+        w.ignoresMouseEvents = YES;
+        w.level = NSFloatingWindowLevel;
+        w.releasedWhenClosed = NO;
+        w.backgroundColor = [[NSColor controlAccentColor] colorWithAlphaComponent:0.25];
+        self.dragPreview = w;
+    }
+    [self.dragPreview setFrame:rect display:YES];
+    [self.dragPreview orderFront:nil];
+}
+
+- (void)endDragPreview {
+    [self.dragPreview orderOut:nil];
 }
 
 - (void)dragOfPanel:(NSString *)identifier endedAtScreenPoint:(NSPoint)point {

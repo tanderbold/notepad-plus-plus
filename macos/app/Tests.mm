@@ -7367,6 +7367,14 @@ int NppMacRunTests(AppDelegate *app) {
                      [dock placeForDropAtScreenPoint:NSMakePoint(NSMidX(w), NSMaxY(w) - 10)] == NppDockTop &&
                      [dock placeForDropAtScreenPoint:NSMakePoint(NSMidX(w), NSMinY(w) + 10)] == NppDockBottom &&
                      [dock placeForDropAtScreenPoint:NSMakePoint(NSMaxX(w) + 500, NSMidY(w))] == NppDockFloating;
+        // The drag shows where the panel would land: a strip at that edge of
+        // the window, or a floating frame under the pointer.
+        NSRect leftStrip = [dock previewRectForPanel:@"functionList" atScreenPoint:NSMakePoint(NSMinX(w) + 10, NSMidY(w))];
+        NSRect bottomStrip = [dock previewRectForPanel:@"functionList" atScreenPoint:NSMakePoint(NSMidX(w), NSMinY(w) + 10)];
+        NSRect afloat = [dock previewRectForPanel:@"functionList" atScreenPoint:NSMakePoint(NSMaxX(w) + 500, NSMidY(w))];
+        drops = drops && NSMinX(leftStrip) <= NSMinX(w) + 2 && NSWidth(leftStrip) < NSWidth(w) / 2 && NSHeight(leftStrip) > NSHeight(w) / 2 &&
+                NSWidth(bottomStrip) > NSWidth(w) / 2 && NSHeight(bottomStrip) < NSHeight(w) / 2 && NSMinY(bottomStrip) < NSMidY(w) &&
+                NSMinX(afloat) > NSMaxX(w);
         // What was moved is remembered.
         BOOL remembered = [[NppPreferences shared].dockLayout[@"places"][@"documentList"] integerValue] == NppDockBottom;
         [dock movePanel:@"documentList" to:NppDockLeft];
