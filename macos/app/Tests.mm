@@ -46,6 +46,8 @@
 #import "Localization.h"
 #import "DockingManager.h"
 #import "TagMatch.h"
+#import "InfoWindows.h"
+#import "UpdateChecker.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -5340,9 +5342,69 @@ int NppMacRunTests(AppDelegate *app) {
               [report containsString:@"shortcuts"]);
 
         NSString *dbg = [ed debugInfo];
-        Check(@"IDM_DEBUGINFO", @"reports version, architecture and OS",
-              [dbg containsString:@"NotepadMac"] && [dbg containsString:@"Architecture"] &&
-              [dbg containsString:@"macOS"]);
+        BOOL fields = YES;
+        for (NSString *field in @[@"Notepad++ v", @"Build time: ", @"Built with: Clang ", @"Scintilla/Lexilla included: 5.",
+                                  @"Path: ", @"Command Line: ", @"Admin mode: OFF", @"Local Conf mode: ", @"Cloud Config: ",
+                                  @"Periodic Backup: ", @"Multi-instance Mode: ", @"File Status Auto-Detection: ",
+                                  @"Dark Mode: ", @"Display Info:", @"primary monitor: ", @"OS Name: macOS", @"OS Version: ",
+                                  @"OS Build: ", @"Current ANSI codepage: ", @"Plugins: none"]) {
+            if (![dbg containsString:field]) { fields = NO; printf("    debug info lacks %s\n", field.UTF8String); }
+        }
+        NppDebugInfoWindow *dw = [NppDebugInfoWindow shared];
+        [dw showText:dbg];
+        [dw copyToClipboard:nil];
+        BOOL copied = [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] isEqualToString:dbg];
+        [dw.panel orderOut:nil];
+        Check(@"IDM_DEBUGINFO", @"upstream's fields, in a window that copies them to the clipboard",
+              fields && copied && [dbg rangeOfString:@"Build time"].location < [dbg rangeOfString:@"OS Name"].location);
+
+        // The updater: versions, GitHub's answer, the proxy and the schedule.
+        BOOL versions = [NppUpdateChecker compareVersion:@"v8.9.8" to:@"8.9.7"] == NSOrderedDescending &&
+                        [NppUpdateChecker compareVersion:@"8.10" to:@"8.9.8"] == NSOrderedDescending &&
+                        [NppUpdateChecker compareVersion:@"8.9" to:@"8.9.0"] == NSOrderedSame &&
+                        [NppUpdateChecker compareVersion:@"8.9.8-mac1" to:@"8.9.8-mac2"] == NSOrderedAscending;
+        NSData *json = [@"{\"tag_name\":\"v9.1.2\",\"name\":\"Notepad++ 9.1.2 for macOS\","
+                        @"\"html_url\":\"https://github.com/o/r/releases/tag/v9.1.2\",\"body\":\"notes\"}"
+                        dataUsingEncoding:NSUTF8StringEncoding];
+        NppRelease *rel = [NppUpdateChecker releaseFromJSON:json];
+        BOOL parsed = [rel.version isEqualToString:@"9.1.2"] && [rel.name hasSuffix:@"macOS"] &&
+                      [rel.pageURL.host isEqualToString:@"github.com"] &&
+                      ![NppUpdateChecker releaseFromJSON:[@"{\"message\":\"Not Found\"}" dataUsingEncoding:NSUTF8StringEncoding]];
+        NSDictionary *proxy = [NppUpdateChecker proxyDictionaryFor:@"http://proxy.example:8080/"];
+        BOOL proxied = [proxy[@"HTTPSProxy"] isEqualToString:@"proxy.example"] && [proxy[@"HTTPSPort"] intValue] == 8080 &&
+                       [NppUpdateChecker proxyDictionaryFor:@""].count == 0;
+        NppPreferences *up = [NppPreferences shared];
+        NSString *nextBefore = up.nextUpdateDate;
+        NSInteger intervalBefore = up.updateIntervalDays;
+        up.nextUpdateDate = @"";
+        up.updateIntervalDays = 15;
+        BOOL firstDue = [app takeScheduledUpdateCheck];
+        NSString *next = up.nextUpdateDate;
+        BOOL thenWaits = ![app takeScheduledUpdateCheck];
+        NSDate *in15 = [NSDate dateWithTimeIntervalSinceNow:15 * 86400 + 3600];
+        BOOL schedule = firstDue && thenWaits && next.length == 8 &&
+                        [NppUpdateChecker isDueOn:in15 next:next] && ![NppUpdateChecker isDueOn:[NSDate date] next:next] &&
+                        ![app automaticUpdateCheckAllowed];
+        up.nextUpdateDate = nextBefore ?: @"";
+        up.updateIntervalDays = intervalBefore;
+        // A fetch, from a file standing in for api.github.com.
+        NSString *answer = TempFile(@"t_release.json", [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding]);
+        NppUpdateChecker.latestReleaseURLOverride = [NSURL fileURLWithPath:answer];
+        __block NppRelease *fetched = nil;
+        __block BOOL fetchDone = NO;
+        [NppUpdateChecker fetchLatest:^(NppRelease *r, NSError *e) { fetched = r; fetchDone = YES; }];
+        NSDate *fetchLimit = [NSDate dateWithTimeIntervalSinceNow:5];
+        while (!fetchDone && [fetchLimit timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+        }
+        NppUpdateChecker.latestReleaseURLOverride = nil;
+        BOOL fetchedOK = [fetched.version isEqualToString:@"9.1.2"] &&
+                         [NppUpdateChecker compareVersion:fetched.version to:[NppUpdateChecker currentVersion]] == NSOrderedDescending &&
+                         [[NppUpdateChecker latestReleaseURL].absoluteString hasPrefix:@"https://api.github.com/repos/"];
+        printf("    update: versions=%d parsed=%d proxy=%d schedule=%d fetch=%d current=%s\n", versions, parsed, proxied,
+               schedule, fetchedOK, [NppUpdateChecker currentVersion].UTF8String);
+        Check(@"IDM_UPDATE_NPP", @"asks GitHub Releases through the proxy, compares versions and keeps upstream's interval",
+              versions && parsed && proxied && schedule && fetchedOK);
 
         Check(@"IDM_CMDLINEARGUMENTS", @"documents the accepted arguments",
               [[ed commandLineArgumentsHelp] containsString:@"NPPMAC_TEST"]);
@@ -5351,8 +5413,7 @@ int NppMacRunTests(AppDelegate *app) {
         NSDictionary *links = @{@"IDM_HOMESWEETHOME": @"https://notepad-plus-plus.org/",
                                 @"IDM_PROJECTPAGE":   @"https://github.com/notepad-plus-plus/notepad-plus-plus",
                                 @"IDM_ONLINEDOCUMENT":@"https://npp-user-manual.org/",
-                                @"IDM_FORUM":         @"https://community.notepad-plus-plus.org/",
-                                @"IDM_UPDATE_NPP":    @"https://github.com/notepad-plus-plus/notepad-plus-plus/releases"};
+                                @"IDM_FORUM":         @"https://community.notepad-plus-plus.org/"};
         for (NSString *cmd in links) {
             NSURL *u = [NSURL URLWithString:links[cmd]];
             Check(cmd, @"points at a valid https URL",
@@ -5371,8 +5432,22 @@ int NppMacRunTests(AppDelegate *app) {
                 if ([mi.title hasPrefix:@"About"]) about = mi;
             }
         }
-        Check(@"IDM_ABOUT", @"About is wired to the standard panel",
-              about != nil && about.action == @selector(showAbout:));
+        NppAboutWindow *aw = [NppAboutWindow shared];
+        [aw show];
+        BOOL versionShown = NO, licenceShown = NO, homeLink = NO;
+        NSMutableArray *views = [NSMutableArray arrayWithObject:aw.panel.contentView];
+        while (views.count) {
+            NSView *view = views.lastObject; [views removeLastObject];
+            [views addObjectsFromArray:view.subviews];
+            if ([view isKindOfClass:[NSTextField class]] && [((NSTextField *)view).stringValue isEqualToString:[NppAboutWindow versionLine]]) versionShown = YES;
+            if ([view isKindOfClass:[NSTextView class]] && [((NSTextView *)view).string isEqualToString:NppLicenceText]) licenceShown = YES;
+            if ([view isKindOfClass:[NSButton class]] && [view.identifier isEqualToString:@"https://notepad-plus-plus.org/"]) homeLink = YES;
+        }
+        BOOL shown = aw.panel.isVisible;
+        [aw.panel orderOut:nil];
+        Check(@"IDM_ABOUT", @"upstream's About box: version and bitness, build time, home page and the licence",
+              about != nil && about.action == @selector(showAbout:) && shown && versionShown && licenceShown && homeLink &&
+              [[NppAboutWindow versionLine] containsString:[NppAboutWindow bitness]]);
 
         NSString *pluginDir = [ed.defaultSessionPath.stringByDeletingLastPathComponent
                                stringByAppendingPathComponent:@"plugins"];

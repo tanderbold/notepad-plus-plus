@@ -188,9 +188,16 @@ English, and right-to-left languages are not mirrored.
 
 **Platform.** No plugin loading, no
 NPPM/NPPN messages, no Plugins Admin; the built-in stand-ins are JSON,
-Compare, XML Tools, FTP, Run and the Function List. Check for Updates opens
-the releases page; the stored proxy is never used. Debug Info lists four
-items. About is the stock Cocoa panel.
+Compare, XML Tools, FTP, Run and the Function List.
+
+**Updates, About, Debug Info.** Done since the audit: the auto-updater asks
+the port's GitHub Releases (the repository is a setting) through the stored
+proxy, on startup or on exit and at most every 15 days as upstream's
+`nextUpdateDate` rule has it; Check for Updates answers as WinGUp does. It
+offers the release page rather than installing: there is no signed package
+to install yet. About is upstream's box (chameleon, version and bitness,
+build time, links, licence) and Debug Info has upstream's fields in
+upstream's order, with the Mac's values and a Copy button.
 
 ## Where to start
 

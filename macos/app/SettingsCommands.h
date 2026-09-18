@@ -222,6 +222,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSDictionary *dockLayout;
 /// The nativeLang file the interface is shown in; empty for English.
 @property (nonatomic, copy) NSString *localizationFile;
+/// Auto-updater, as Windows has it: 0 disabled, 1 on startup, 2 on exit;
+/// checked no more often than every updateIntervalDays (upstream's 15).
+@property (nonatomic) NSInteger autoUpdateMode;
+@property (nonatomic) NSInteger updateIntervalDays;
+@property (nonatomic, copy) NSString *nextUpdateDate;     // "yyyyMMdd", empty = now
+/// The GitHub repository ("owner/name") whose releases are this port's.
+@property (nonatomic, copy) NSString *updateRepository;
 /// A Windows date/time picture ("yyyy-MM-dd HH:mm:ss tt") in NSDateFormatter's terms.
 + (NSString *)dateFormatFromWindowsPicture:(NSString *)picture;
 /// The tab width and tab/space choice in force for a language.
@@ -376,5 +383,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSDictionary *)userDefinedLanguage;
 
 @end
+
+/// Whether -settingsDir= moved the settings for this launch (Debug Info's "Local Conf mode").
+FOUNDATION_EXPORT BOOL NppSettingsDirectoryOverridden(void);
 
 NS_ASSUME_NONNULL_END

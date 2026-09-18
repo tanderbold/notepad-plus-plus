@@ -68,4 +68,7 @@
 - (BOOL)documentSwitcherShown;
 - (void)saveAll:(id)sender;
 @property (nonatomic, strong) NSMenu *languageMenu;
+/// The auto-updater's schedule: YES and the next date moved on when due.
+- (BOOL)takeScheduledUpdateCheck;
+- (BOOL)automaticUpdateCheckAllowed;
 @end

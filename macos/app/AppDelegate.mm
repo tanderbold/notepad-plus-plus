@@ -43,6 +43,8 @@
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #import "Tests.h"
+#import "InfoWindows.h"
+#import "UpdateChecker.h"
 
 @interface AppDelegate () <NSWindowDelegate>
 @property (nonatomic, strong) NSWindow *window;
@@ -449,6 +451,10 @@ static NSString *Ordinal(NSUInteger n) {
     if (getenv("NPPMAC_SNAPSHOT")) {
         [self performSelector:@selector(writeSnapshot) withObject:nil afterDelay:1.2];
     }
+    // The auto-updater, when it is set to run on startup and its interval is up.
+    if ([self automaticUpdateCheckAllowed] && [NppPreferences shared].autoUpdateMode == 1) {
+        [self performSelector:@selector(automaticUpdateCheck) withObject:nil afterDelay:3.0];
+    }
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)a { return YES; }
@@ -524,6 +530,7 @@ static NSString *Ordinal(NSUInteger n) {
 }
 
 - (void)applicationWillTerminate:(NSNotification *)note {
+    if ([self automaticUpdateCheckAllowed] && [NppPreferences shared].autoUpdateMode == 2) [self updateCheckAtExit];
     [self rememberFloatingPanels];
     [self.editor rememberPanelState];
     if (self.editor.sessionSavingDisabled) return;
@@ -552,7 +559,7 @@ static NSString *Ordinal(NSUInteger n) {
     [bar addItem:appItem];
     NSMenu *appMenu = [[NSMenu alloc] init];
     [appMenu addItemWithTitle:[@"About " stringByAppendingString:appName]
-                       action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
+                       action:@selector(showAbout:) keyEquivalent:@""];
     [appMenu addItem:[NSMenuItem separatorItem]];
     NSMenuItem *hide = [appMenu addItemWithTitle:[@"Hide " stringByAppendingString:appName]
                                           action:@selector(hide:) keyEquivalent:@"h"];
@@ -2031,13 +2038,87 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
 }
 
 - (void)showDebugInfo:(id)sender {
-    [self presentText:[self.editor debugInfo] title:@"Debug Info"];
+    [[NppDebugInfoWindow shared] showText:[self.editor debugInfo]];
+}
+
+#pragma mark - Updates
+
+/// Never from the test suite, a snapshot, or a launch that does one job and quits.
+- (BOOL)automaticUpdateCheckAllowed {
+    if (getenv("NPPMAC_TEST") || getenv("NPPMAC_SNAPSHOT") || getenv("NPPMAC_SELFTEST")) return NO;
+    NSDictionary *options = self.commandLine;
+    return ![options[@"-export=functionList"] boolValue] && ![options[@"-quickPrint"] boolValue];
+}
+
+/// Upstream's rule (winmain.cpp launchUpdater): run when today reaches the
+/// next date, then move the date on by the interval.
+- (BOOL)takeScheduledUpdateCheck {
+    NppPreferences *p = [NppPreferences shared];
+    NSDate *today = [NSDate date];
+    if (![NppUpdateChecker isDueOn:today next:p.nextUpdateDate]) return NO;
+    p.nextUpdateDate = [NppUpdateChecker dateString:today plusDays:p.updateIntervalDays];
+    return YES;
+}
+
+- (void)automaticUpdateCheck {
+    if (![self takeScheduledUpdateCheck]) return;
+    [NppUpdateChecker fetchLatest:^(NppRelease *release, NSError *error) {
+        // Quiet unless there is something to take, as WinGUp is when not verbose.
+        if (release) [self offerRelease:release verbose:NO];
+    }];
+}
+
+/// On exit the check has a few seconds; a newer release opens in the browser,
+/// as upstream hands over to the updater once Notepad++ has closed.
+- (void)updateCheckAtExit {
+    if (![self takeScheduledUpdateCheck]) return;
+    __block NppRelease *found = nil;
+    __block BOOL finished = NO;
+    [NppUpdateChecker fetchLatest:^(NppRelease *release, NSError *error) { found = release; finished = YES; }];
+    NSDate *limit = [NSDate dateWithTimeIntervalSinceNow:5];
+    while (!finished && [limit timeIntervalSinceNow] > 0) {
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+    }
+    if (found && [NppUpdateChecker compareVersion:found.version to:[NppUpdateChecker currentVersion]] == NSOrderedDescending) {
+        [[NSWorkspace sharedWorkspace] openURL:found.pageURL];
+    }
 }
 
 - (void)checkForUpdates:(id)sender {
-    // This build has no updater; point at where releases live.
-    [[NSWorkspace sharedWorkspace] openURL:
-        [NSURL URLWithString:@"https://github.com/notepad-plus-plus/notepad-plus-plus/releases"]];
+    [NppUpdateChecker fetchLatest:^(NppRelease *release, NSError *error) {
+        if (release) { [self offerRelease:release verbose:YES]; return; }
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = @"Notepad++ update";
+        alert.informativeText = [NSString stringWithFormat:@"%@\n\n%@", error.localizedDescription ?: @"",
+                                 [NppUpdateChecker latestReleaseURL].absoluteString];
+        [alert addButtonWithTitle:@"OK"];
+        [alert addButtonWithTitle:@"Open the Releases Page"];
+        if ([alert runModal] == NSAlertSecondButtonReturn) {
+            [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:[NSString stringWithFormat:
+                @"https://github.com/%@/releases", [NppPreferences shared].updateRepository]]];
+        }
+    }];
+}
+
+/// WinGUp's two answers: a newer package to download, or none.
+- (void)offerRelease:(NppRelease *)release verbose:(BOOL)verbose {
+    NSString *current = [NppUpdateChecker currentVersion];
+    BOOL newer = [NppUpdateChecker compareVersion:release.version to:current] == NSOrderedDescending;
+    if (!newer && !verbose) return;
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = @"Notepad++ update";
+    if (!newer) {
+        alert.informativeText = [NSString stringWithFormat:@"No update is available.\n\nThis is v%@; the latest release is %@.",
+                                 current, release.name];
+        [alert addButtonWithTitle:@"OK"];
+        [alert runModal];
+        return;
+    }
+    alert.informativeText = [NSString stringWithFormat:
+        @"An update package is available, do you want to download it?\n\n%@ (you have v%@)", release.name, current];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
+    if ([alert runModal] == NSAlertFirstButtonReturn) [[NSWorkspace sharedWorkspace] openURL:release.pageURL];
 }
 
 - (void)setUpdaterProxy:(id)sender {
@@ -2047,7 +2128,7 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
     if (proxy) [[NSUserDefaults standardUserDefaults] setObject:proxy forKey:@"NppMacUpdaterProxy"];
 }
 
-- (void)showAbout:(id)sender { [NSApp orderFrontStandardAboutPanel:sender]; }
+- (void)showAbout:(id)sender { [[NppAboutWindow shared] show]; }
 
 #pragma mark - Menu validation
 
@@ -3889,7 +3970,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     [self.editor.view displayIfNeeded];
 
     NSView *view = self.window.contentView;
-    // NPPMAC_SNAPSHOT_PANEL=find:<tab> or style captures that dialog instead.
+    // NPPMAC_SNAPSHOT_PANEL=find:<tab>, prefs:<page>, style, about or debug captures that dialog instead.
     const char *panel = getenv("NPPMAC_SNAPSHOT_PANEL");
     if (panel && !strncmp(panel, "find", 4)) {
         [self openFindPanelOnTab:strlen(panel) > 5 ? atoi(panel + 5) : 0];
@@ -3903,6 +3984,19 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     } else if (panel && !strcmp(panel, "style")) {
         [self showStyleConfigurator:nil];
         view = [[self.styleWindow valueForKey:@"panel"] contentView];
+    } else if (panel && !strcmp(panel, "about")) {
+        [self showAbout:nil];
+        view = [NppAboutWindow shared].panel.contentView;
+    } else if (panel && !strcmp(panel, "debug")) {
+        [self showDebugInfo:nil];
+        view = [NppDebugInfoWindow shared].panel.contentView;
+    }
+    if (panel && (!strcmp(panel, "about") || !strcmp(panel, "debug"))) {
+        // The window's frame draws its background, which a view capture leaves out.
+        view.wantsLayer = YES;
+        [view.effectiveAppearance performAsCurrentDrawingAppearance:^{
+            view.layer.backgroundColor = [NSColor windowBackgroundColor].CGColor;
+        }];
     }
     [view.window displayIfNeeded];
 

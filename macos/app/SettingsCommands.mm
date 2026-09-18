@@ -181,6 +181,8 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"toolbarColorizeComplete"): @NO,
         Key(@"tabDrawActiveBar"): @YES, Key(@"tabColourInactive"): @YES, Key(@"tabReduced"): @YES, Key(@"tabMaxLabelLength"): @0,
         Key(@"panelStateKeep"): @{}, Key(@"distractionFreeDivPart"): @4, Key(@"openAnsiAsUtf8"): @YES, Key(@"dockLayout"): @{}, Key(@"localizationFile"): @"",
+        Key(@"autoUpdateMode"): @1, Key(@"updateIntervalDays"): @15, Key(@"nextUpdateDate"): @"",
+        Key(@"updateRepository"): @"tanderbold/notepad-plus-plus",
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -323,6 +325,10 @@ NPP_PREF_INT(distractionFreeDivPart, setDistractionFreeDivPart, @"distractionFre
 NPP_PREF_BOOL(openAnsiAsUtf8, setOpenAnsiAsUtf8, @"openAnsiAsUtf8")
 NPP_PREF_OBJ(dockLayout, setDockLayout, NSDictionary, @"dockLayout")
 NPP_PREF_OBJ(localizationFile, setLocalizationFile, NSString, @"localizationFile")
+NPP_PREF_INT(autoUpdateMode, setAutoUpdateMode, @"autoUpdateMode")
+NPP_PREF_INT(updateIntervalDays, setUpdateIntervalDays, @"updateIntervalDays")
+NPP_PREF_OBJ(nextUpdateDate, setNextUpdateDate, NSString, @"nextUpdateDate")
+NPP_PREF_OBJ(updateRepository, setUpdateRepository, NSString, @"updateRepository")
 NPP_PREF_OBJ(customDateFormat, setCustomDateFormat, NSString, @"customDateFormat")
 NPP_PREF_INT(foldMarginStyle, setFoldMarginStyle, @"foldMarginStyle")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
@@ -553,6 +559,8 @@ static NSString *gSettingsDirectoryForThisLaunch;
 + (void)setSettingsDirectoryForThisLaunch:(NSString *)directory {
     gSettingsDirectoryForThisLaunch = [directory copy];
 }
+
+BOOL NppSettingsDirectoryOverridden(void) { return gSettingsDirectoryForThisLaunch.length > 0; }
 
 - (NSString *)supportDirectory {
     // -settingsDir= on the command line, for this launch only; then the

@@ -109,6 +109,15 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$OUT/NotepadMac" "$APP/Contents/MacOS/NotepadMac"
 cp "$SRC/Info.plist" "$APP/Contents/Info.plist"
+# The versions Debug Info reports, as upstream's About box has them.
+NPP_VERSION=$(sed -n 's/.*define NOTEPAD_PLUS_VERSION L"Notepad++ v\([0-9.]*\)".*/\1/p' "$ROOT/PowerEditor/src/resource.h")
+for pair in "NppUpstreamVersion:$NPP_VERSION" "NppScintillaVersion:$(cat "$SCI/version.txt")" \
+            "NppLexillaVersion:$(cat "$LEX/version.txt")" "NppBuildTime:$(LC_ALL=C date '+%b %e %Y - %H:%M:%S')"; do
+    /usr/libexec/PlistBuddy -c "Add :${pair%%:*} string '${pair#*:}'" "$APP/Contents/Info.plist" >/dev/null
+done
+# The About box's chameleon, light and dark, as upstream's resources have it.
+cp "$ROOT/PowerEditor/src/icons/standard/about/chameleon.ico" "$APP/Contents/Resources/chameleon.ico"
+cp "$ROOT/PowerEditor/src/icons/dark/about/chameleon.ico" "$APP/Contents/Resources/chameleon_dm.ico"
 # Notepad++'s own language and colour definitions, read at runtime.
 cp "$ROOT/PowerEditor/src/langs.model.xml"   "$APP/Contents/Resources/"
 cp "$ROOT/PowerEditor/src/stylers.model.xml" "$APP/Contents/Resources/"

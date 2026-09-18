@@ -1,5 +1,8 @@
 #import "ToolsCommands.h"
 #import "EditCommands.h"
+#import "InfoWindows.h"
+#import "SettingsCommands.h"
+#import "UpdateChecker.h"
 #import "ScintillaView.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <objc/runtime.h>
@@ -358,24 +361,73 @@ static const char kPreviousTabKey = 0;
 
 #pragma mark - Help / info
 
+/// Upstream's Debug Info fields in upstream's order, each read from what the
+/// port has in its place (AboutDlg.cpp, DebugInfoDlg).
 - (NSString *)debugInfo {
     NSProcessInfo *pi = [NSProcessInfo processInfo];
-#if defined(__arm64__)
-    NSString *arch = @"arm64";
-#elif defined(__x86_64__)
-    NSString *arch = @"x86_64";
-#else
-    NSString *arch = @"unknown";
-#endif
     NSDictionary *info = [NSBundle mainBundle].infoDictionary;
-    return [NSString stringWithFormat:
-        @"NotepadMac %@ (build %@)\n"
-        @"Architecture: %@\n"
-        @"macOS: %@\n"
-        @"Scintilla document count: %lu\n"
-        @"Language definitions: loaded from langs.model.xml\n",
-        info[@"CFBundleShortVersionString"] ?: @"?", info[@"CFBundleVersion"] ?: @"?",
-        arch, pi.operatingSystemVersionString, (unsigned long)self.documents.count];
+    NppPreferences *p = [NppPreferences shared];
+    NSMutableString *s = [NSMutableString string];
+    [s appendFormat:@"%@\n", [NppAboutWindow versionLine]];
+    [s appendFormat:@"macOS port: %@ (build %@)\n", info[@"CFBundleShortVersionString"] ?: @"?", info[@"CFBundleVersion"] ?: @"?"];
+    [s appendFormat:@"Build time: %@\n", info[@"NppBuildTime"] ?: @__DATE__ " - " __TIME__];
+#if defined(__clang__)
+    [s appendFormat:@"Built with: Clang %s\n", __clang_version__];
+#else
+    [s appendString:@"Built with: (unknown)\n"];
+#endif
+    NSString *(^dotted)(NSString *) = ^NSString *(NSString *digits) {
+        // version.txt holds "566" for 5.6.6.
+        NSString *d = [digits stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (d.length < 3) return d.length ? d : @"?";
+        return [NSString stringWithFormat:@"%@.%@.%@", [d substringToIndex:1], [d substringWithRange:NSMakeRange(1, 1)], [d substringFromIndex:2]];
+    };
+    [s appendFormat:@"Scintilla/Lexilla included: %@/%@\n", dotted(info[@"NppScintillaVersion"] ?: @""), dotted(info[@"NppLexillaVersion"] ?: @"")];
+    [s appendFormat:@"Path: %@\n", [NSBundle mainBundle].executablePath ?: pi.arguments.firstObject];
+    NSMutableArray *args = [NSMutableArray array];
+    for (NSString *a in pi.arguments) [args addObject:[a containsString:@" "] ? [NSString stringWithFormat:@"\"%@\"", a] : a];
+    [s appendFormat:@"Command Line: %@\n", [args componentsJoinedByString:@" "]];
+    [s appendFormat:@"Admin mode: %@\n", geteuid() == 0 ? @"ON" : @"OFF"];
+    [s appendFormat:@"Local Conf mode: %@\n", NppSettingsDirectoryOverridden() ? @"ON" : @"OFF"];
+    [s appendFormat:@"Cloud Config: %@\n", p.settingsDirectory.length ? p.settingsDirectory : @"OFF"];
+    NSString *updater = @[@"disabled", @"on startup", @"on exit"][(NSUInteger)MIN(MAX(p.autoUpdateMode, 0), 2)];
+    [s appendFormat:@"Auto-updater: %@ (GitHub Releases of %@)\n", updater, p.updateRepository];
+    [s appendFormat:@"Periodic Backup: %@\n", p.autosaveEnabled ? @"ON" : @"OFF"];
+    [s appendString:@"Placeholders: OFF\n"];
+    [s appendString:@"Scintilla Rendering Mode: Core Graphics\n"];
+    NSString *instances = @[@"monoInst", @"multiInst", @"multiInstOnSession"][(NSUInteger)MIN(MAX(p.multiInstanceMode, 0), 2)];
+    [s appendFormat:@"Multi-instance Mode: %@\n", instances];
+    [s appendString:@"asNotepad: OFF\n"];
+    NSMutableString *detect = [NSMutableString stringWithString:p.fileAutoDetection ? @"cdEnabledNew (for current file/tab only)" : @"cdDisabled"];
+    if (p.fileAutoDetection && p.fileAutoDetectionSilent) [detect appendString:@" + cdAutoUpdate"];
+    if (p.fileAutoDetection && p.fileAutoDetectionScrollToEnd) [detect appendString:@" + cdGo2end"];
+    [s appendFormat:@"File Status Auto-Detection: %@\n", detect];
+    [s appendFormat:@"Dark Mode: %@\n", [p.effectiveThemeName isEqualToString:p.darkThemeName] || (p.appearanceMode == 0 && p.systemIsDark) || p.appearanceMode == 2 ? @"ON" : @"OFF"];
+    [s appendString:@"Display Info:"];
+    NSScreen *main = NSScreen.screens.firstObject;
+    if (main) {
+        [s appendFormat:@"\n    primary monitor: %.0fx%.0f, scaling %.0f%%", main.frame.size.width * main.backingScaleFactor,
+                        main.frame.size.height * main.backingScaleFactor, main.backingScaleFactor * 100];
+    }
+    [s appendFormat:@"\n    visible monitors count: %lu\n", (unsigned long)NSScreen.screens.count];
+    NSOperatingSystemVersion v = pi.operatingSystemVersion;
+#if defined(__arm64__)
+    NSString *bits = @"ARM 64-bit";
+#else
+    NSString *bits = @"64-bit";
+#endif
+    [s appendFormat:@"OS Name: macOS (%@)\n", bits];
+    [s appendFormat:@"OS Version: %ld.%ld.%ld\n", (long)v.majorVersion, (long)v.minorVersion, (long)v.patchVersion];
+    NSRange build = [pi.operatingSystemVersionString rangeOfString:@"Build "];
+    if (build.location != NSNotFound) {
+        NSString *b = [pi.operatingSystemVersionString substringFromIndex:NSMaxRange(build)];
+        [s appendFormat:@"OS Build: %@\n", [b stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@")"]]];
+    }
+    // The system's legacy 8-bit encoding, by its Windows code page number.
+    CFStringEncoding system = CFStringGetSystemEncoding();
+    [s appendFormat:@"Current ANSI codepage: %u\n", (unsigned)CFStringConvertEncodingToWindowsCodepage(system)];
+    [s appendString:@"Plugins: none\n"];
+    return s;
 }
 
 - (NSString *)commandLineArgumentsHelp {

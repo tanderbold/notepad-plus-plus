@@ -742,6 +742,10 @@
                        on:p.workspaceSymlinks to:v atY:y];
     y = [self addField:@"Session file ext." key:@"sessionFileExtension" value:p.sessionFileExtension to:v atY:y];
     y = [self addField:@"Workspace file ext." key:@"workspaceFileExtension" value:p.workspaceFileExtension to:v atY:y];
+    y = [self addPopup:@"Auto-updater:" key:@"autoUpdateMode"
+                 items:@[@"Disable", @"Enable on Notepad++ startup", @"Enable on Notepad++ exit"]
+              selected:p.autoUpdateMode to:v atY:y];
+    y = [self addField:@"Releases repository" key:@"updateRepository" value:p.updateRepository to:v atY:y];
     [self endPage:@"MISC." atY:y];
 
     y = [self beginPage:@"Search Engine"]; v = [self page:@"Search Engine"];
@@ -943,6 +947,10 @@
     p.delimiterClose = [self.controls[@"delimiterClose"] stringValue];
     p.delimiterMultiline = [self.controls[@"delimiterMultiline"] state] == NSControlStateValueOn;
     p.multiInstanceMode = [self.controls[@"multiInstanceMode"] indexOfSelectedItem];
+    p.autoUpdateMode = MAX(0, [self.controls[@"autoUpdateMode"] indexOfSelectedItem]);
+    NSString *repository = [[self.controls[@"updateRepository"] stringValue]
+                            stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if ([repository componentsSeparatedByString:@"/"].count == 2) p.updateRepository = repository;
     p.reverseDateTimeOrder = [self.controls[@"reverseDateTimeOrder"] state] == NSControlStateValueOn;
     p.rememberPanelState = [self.controls[@"rememberPanelState"] state] == NSControlStateValueOn;
     p.settingsDirectory = [self.controls[@"settingsDirectory"] stringValue];
