@@ -77,6 +77,10 @@ static const char kSavedMacrosKey = 0;
     return steps;
 }
 
+static BOOL gPlayingMacro = NO;
+
+- (BOOL)playingMacro { return gPlayingMacro; }
+
 - (BOOL)recordingMacro {
     return [objc_getAssociatedObject(self, &kMacroRecordingKey) boolValue];
 }
@@ -125,6 +129,7 @@ static const char kSavedMacrosKey = 0;
     if (!steps.count || times == 0) { NSBeep(); return NO; }
     ScintillaView *sci = self.sci;
     [sci message:SCI_BEGINUNDOACTION];
+    gPlayingMacro = YES;
     for (NSUInteger t = 0; t < times; ++t) {
         for (NSDictionary *step in steps) {
             // Steps read from a file are checked before they reach Scintilla.
@@ -139,6 +144,7 @@ static const char kSavedMacrosKey = 0;
             }
         }
     }
+    gPlayingMacro = NO;
     [sci message:SCI_ENDUNDOACTION];
     [self refreshChrome];
     return YES;

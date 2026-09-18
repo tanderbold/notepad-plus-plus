@@ -3032,6 +3032,21 @@ int NppMacRunTests(AppDelegate *app) {
               pathComp && [sci message:SCI_AUTOCACTIVE] != 0);
         [sci message:SCI_AUTOCCANCEL];
 
+        // As upstream: the whole path from where it starts, even with a space
+        // in it, matched without regard to case, folders ending in a slash.
+        NSString *spaced = [dir stringByAppendingPathComponent:@"my dir"];
+        [[NSFileManager defaultManager] createDirectoryAtPath:[spaced stringByAppendingPathComponent:@"Sub"]
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        SetDoc(ed, [NSString stringWithFormat:@"cat \"%@/su", spaced]);
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        BOOL spacedComp = [ed showPathCompletion];
+        char chosen[1024] = {0};
+        [sci message:SCI_AUTOCGETCURRENTTEXT wParam:0 lParam:(sptr_t)chosen];
+        Check(@"IDM_EDIT_AUTOCOMPLETE_PATH (as upstream)",
+              @"a path with a space is completed whole, case aside, and a folder ends in a slash",
+              spacedComp && [@(chosen) isEqualToString:[spaced stringByAppendingString:@"/Sub/"]]);
+        [sci message:SCI_AUTOCCANCEL];
+
         SetDoc(ed, @"int helper(int a);\nint helper(int a, int b);\nhelper\n");
         [sci message:SCI_GOTOLINE wParam:2 lParam:0];
         BOOL tip = [ed showFunctionCallTip];
@@ -5892,13 +5907,39 @@ int NppMacRunTests(AppDelegate *app) {
               words.count == 2 && [keywords containsObject:@"return"] &&
               ![words containsObject:@"return"] && both.count > keywords.count);
 
-        p.autoCompleteBriefList = YES;
-        NSArray *brief = [ed completionCandidatesForPrefix:@"r"];
-        p.autoCompleteBriefList = NO;
-        NSArray *full = [ed completionCandidatesForPrefix:@"r"];
+        // Function Completion opens the language's whole list and lets
+        // Scintilla find the place; the brief one lists only what fits.
+        SetDoc(ed, @"ret");
+        [sci message:SCI_GOTOPOS wParam:3 lParam:0];
+        BOOL fullShown = [ed showCompletion:NppCompletionKindFunctions autoInsert:NO];
+        NSArray *full = [ed lastCompletionList];
+        [sci message:SCI_AUTOCCANCEL];
+        BOOL briefShown = [ed showCompletion:NppCompletionKindFunctionsBrief autoInsert:NO];
+        NSArray *brief = [ed lastCompletionList];
+        [sci message:SCI_AUTOCCANCEL];
+        BOOL briefFits = brief.count > 0;
+        for (NSString *w in brief) if (![w hasPrefix:@"ret"]) briefFits = NO;
         Check(@"IDM_SETTING_PREFERENCE (brief list)",
-              @"the brief list is capped and the full one is not",
-              brief.count <= 12 && full.count >= brief.count);
+              @"the full list is the language's whole list, the brief one only the names that fit",
+              fullShown && briefShown && briefFits && full.count > brief.count && [full containsObject:@"return"]);
+
+        // Word Completion types a lone candidate; plain text respects case,
+        // and a language whose API file says so does not.
+        [ed setLanguageNamed:@"normal"];
+        SetDoc(ed, @"alphabet Alpine\nalp");
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        BOOL inserted = [ed showCompletion:NppCompletionKindWords autoInsert:YES] &&
+                        [DocText(ed) isEqualToString:@"alphabet Alpine\nalphabet"] && ![sci message:SCI_AUTOCACTIVE];
+        [ed setLanguageNamed:@"sql"];
+        SetDoc(ed, @"alphabet Alpine\nalp");
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        BOOL anyCase = [ed completionIgnoresCase] && [ed showCompletion:NppCompletionKindWords autoInsert:YES] &&
+                       [sci message:SCI_AUTOCACTIVE] && [[ed lastCompletionList] isEqualToArray:(@[@"alphabet", @"Alpine"])];
+        [sci message:SCI_AUTOCCANCEL];
+        Check(@"IDM_EDIT_AUTOCOMPLETE_CURRENTFILE (as upstream)",
+              @"a single word is typed in at once, and case is ignored only where the language's file says so",
+              inserted && anyCase);
+        [ed setLanguageNamed:@"cpp"];
 
         p.autoCompleteIgnoreNumbers = YES;
         NSArray *numeric = [ed completionCandidatesForPrefix:@"12"];
@@ -5952,6 +5993,108 @@ int NppMacRunTests(AppDelegate *app) {
               @"typing an opening bracket closes it and leaves the caret between",
               [DocText(ed) isEqualToString:@"()"] && [sci message:SCI_GETCURRENTPOS] == 1);
         p.autoInsertParenthesis = NO;
+
+        // Typing into the document, as a key press does: insert, then notify.
+        void (^type)(NSString *) = ^(NSString *text) {
+            for (NSUInteger i = 0; i < text.length; ++i) {
+                unichar c = [text characterAtIndex:i];
+                [sci setStringProperty:SCI_REPLACESEL parameter:0 value:[NSString stringWithCharacters:&c length:1]];
+                [ed handleCharacterAdded:c];
+            }
+        };
+
+        // A quote after an opening bracket is closed too, as upstream.
+        p.autoInsertDoubleQuote = YES;
+        SetDoc(ed, @"f(");
+        [sci message:SCI_GOTOPOS wParam:2 lParam:0];
+        type(@"\"");
+        BOOL quoted = [DocText(ed) isEqualToString:@"f(\"\""];
+        p.autoInsertDoubleQuote = NO;
+
+        // The user's own pairs come first, and only before a blank.
+        p.userMatchedPairs = @[@"<>", @"*~"];
+        SetDoc(ed, @"");
+        type(@"<");
+        BOOL userPair = [DocText(ed) isEqualToString:@"<>"];
+        SetDoc(ed, @"x");
+        [sci message:SCI_GOTOPOS wParam:0 lParam:0];
+        type(@"<");
+        BOOL notBeforeText = [DocText(ed) isEqualToString:@"<x"];
+        p.userMatchedPairs = @[];
+        Check(@"IDM_SETTING_PREFERENCE (matched pairs)",
+              @"a quote after a bracket is paired, and the user's pairs are closed before a blank only",
+              quoted && userPair && notBeforeText);
+
+        // Nothing is added while a macro records.
+        p.autoInsertParenthesis = YES;
+        SetDoc(ed, @"");
+        [ed startRecordingMacro];
+        type(@"(");
+        [ed stopRecordingMacro];
+        BOOL untouched = [DocText(ed) isEqualToString:@"("];
+        p.autoInsertParenthesis = NO;
+        Check(@"IDM_MACRO_STARTRECORDINGMACRO (typing)",
+              @"a macro records what was typed, with no bracket or completion added to it", untouched);
+
+        // The parameter hint follows the typing: "(" opens it, "," moves on to
+        // the next parameter, ")" closes it; the arrows step between overloads.
+        BOOL hintBefore = p.functionHintOnInput;
+        p.functionHintOnInput = YES;
+        [ed setLanguageNamed:@"c"];
+        SetDoc(ed, @"f = ");
+        [sci message:SCI_GOTOPOS wParam:4 lParam:0];
+        type(@"fopen(");
+        NSDictionary *open = [ed apiCallTipState];
+        type(@"name, ");
+        NSDictionary *second = [ed apiCallTipState];
+        type(@"\"r\")");
+        BOOL closed = ![ed apiCallTipVisible];
+        [ed setLanguageNamed:@"perl"];
+        SetDoc(ed, @"$x = ");
+        [sci message:SCI_GOTOPOS wParam:5 lParam:0];
+        type(@"abs(");
+        NSInteger firstOverload = [[ed apiCallTipState][@"overload"] integerValue];
+        [ed callTipClicked:2];
+        NSInteger nextOverload = [[ed apiCallTipState][@"overload"] integerValue];
+        [sci message:SCI_CALLTIPCANCEL];
+        p.functionHintOnInput = hintBefore;
+        Check(@"IDM_EDIT_FUNCCALLTIP (typing)",
+              @"the hint opens on (, moves to the next parameter on a comma, closes on ), and its arrows change overload",
+              [open[@"name"] isEqualToString:@"fopen"] && [open[@"param"] integerValue] == 0 &&
+              [second[@"param"] integerValue] == 1 && closed && firstOverload == 0 && nextOverload == 1);
+
+        // Advanced auto-indent, rule for rule: one statement after a braceless
+        // if, a Python block after a colon, a closing brace under its opener.
+        NSInteger indentBefore = p.autoIndentMode;
+        p.autoIndentMode = 2;
+        [sci message:SCI_SETTABWIDTH wParam:4 lParam:0];
+        long (^indentHere)(void) = ^long {
+            return [sci message:SCI_GETLINEINDENTATION
+                         wParam:(uptr_t)[sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]]];
+        };
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"");
+        type(@"if (x)\n");
+        long afterIf = indentHere();
+        type(@"y();\n");
+        long afterStatement = indentHere();
+        SetDoc(ed, @"    {\n        x;\n        ");
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_GETLENGTH] lParam:0];
+        type(@"}");
+        long closer = indentHere();
+        [ed setLanguageNamed:@"python"];
+        SetDoc(ed, @"");
+        type(@"def f(a):  # note\n");
+        long pyBlock = indentHere();
+        SetDoc(ed, @"");
+        type(@"s = 'a:'\n");
+        long pyString = indentHere();
+        p.autoIndentMode = indentBefore;
+        Check(@"IDM_SETTING_PREFERENCE (advanced indent)",
+              @"C-like, braceless if, closing brace and Python colon indent as Notepad++ does",
+              afterIf == 4 && afterStatement == 0 && closer == 4 && pyBlock == 4 && pyString == 0);
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"");
     }
 
     printf("\n== New documents, recent files, directories ==\n");

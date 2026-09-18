@@ -42,6 +42,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSArray<NSString *> *)callTipsForLanguage:(NSString *)language
                                     function:(NSString *)name;
 
+/// The file's <Environment>: "start", "stop", "param" and "terminal" (one
+/// character each) and "wordChars", with upstream's defaults for what it
+/// leaves out. nil when no file is shipped for the language.
+- (nullable NSDictionary<NSString *, NSString *> *)callTipEnvironmentForLanguage:(NSString *)language;
+/// The first entry named `name`, when it is a function; nil when there is
+/// none or the first entry of that name is not one (loadFunction gives up).
+- (nullable NppApiEntry *)functionNamed:(NSString *)name inLanguage:(NSString *)language;
+
 @end
 
 NS_ASSUME_NONNULL_END

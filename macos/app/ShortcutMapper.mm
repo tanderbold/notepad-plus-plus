@@ -267,7 +267,6 @@ static NSDictionary<NSString *, NSString *> *PortRenamedCommands(void) {
         @"File/Open Containing Folder/Finder": @"IDM_FILE_OPENFOLDER",
         @"File/Open Containing Folder/Terminal": @"IDM_FILE_OPEN_CMD",
         @"Edit/Duplicate Line": @"IDM_EDIT_DUP_LINE", @"Edit/Toggle Line Comment": @"IDM_EDIT_BLOCK_COMMENT",
-        @"Edit/Complete Word": @"IDM_EDIT_AUTOCOMPLETE_CURRENTFILE",
         @"Edit/Line Operations/Sort Lines Lex. Ignoring Case Ascending": @"IDM_EDIT_SORTLINES_LEXICO_CASE_INSENS_ASCENDING",
         @"Edit/Line Operations/Sort Lines Lex. Ignoring Case Descending": @"IDM_EDIT_SORTLINES_LEXICO_CASE_INSENS_DESCENDING",
         @"Edit/On Selection/Open Containing Folder in Finder": @"IDM_EDIT_OPENINFOLDER",

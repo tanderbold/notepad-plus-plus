@@ -24,6 +24,8 @@ typedef NS_ENUM(NSInteger, NppTabSort) {
 - (void)startRecordingMacro;
 - (void)stopRecordingMacro;
 - (BOOL)recordingMacro;
+/// True while a macro is being played back.
+- (BOOL)playingMacro;
 - (NSUInteger)recordedStepCount;
 - (BOOL)playbackMacro:(NSUInteger)times;
 - (BOOL)saveRecordedMacroAs:(NSString *)name;

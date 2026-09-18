@@ -4,6 +4,9 @@
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
 #import <objc/runtime.h>
+#include <vector>
+
+static long Utf8Length(NSString *s) { return (long)[s lengthOfBytesUsingEncoding:NSUTF8StringEncoding]; }
 
 static long Utf8Len(NSString *s) {
     return (long)[s lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
@@ -436,6 +439,21 @@ static const char kSearchEngineKey = 0;
 
 #pragma mark - Auto-completion helpers
 
+/// Where a path being typed starts, as getRawPath finds a drive letter: a
+/// "/" or "~/" at the start of the line or after a blank, quote or bracket.
+static NSInteger PathStart(NSString *line) {
+    for (NSInteger i = (NSInteger)line.length - 1; i >= 0; --i) {
+        unichar c = [line characterAtIndex:(NSUInteger)i];
+        BOOL tilde = c == '~' && (NSUInteger)i + 1 < line.length && [line characterAtIndex:(NSUInteger)i + 1] == '/';
+        if (c != '/' && !tilde) continue;
+        if (c == '/' && i > 0 && [line characterAtIndex:(NSUInteger)i - 1] == '~') continue;   // the "~/" is found next
+        unichar before = i > 0 ? [line characterAtIndex:(NSUInteger)i - 1] : ' ';
+        if (before == '\'' || before == '"' || before == '(' ||
+            [[NSCharacterSet whitespaceCharacterSet] characterIsMember:before]) return i;
+    }
+    return NSNotFound;
+}
+
 - (BOOL)showPathCompletion {
     ScintillaView *sci = self.sci;
     long pos = [sci message:SCI_GETCURRENTPOS];
@@ -444,25 +462,41 @@ static const char kSearchEngineKey = 0;
     NSData *doc = [([sci string] ?: @"") dataUsingEncoding:NSUTF8StringEncoding];
     NSString *before = SliceBytes(doc, lineStart, pos);
 
-    NSRange sep = [before rangeOfString:@"/" options:NSBackwardsSearch];
-    if (sep.location == NSNotFound) { NSBeep(); return NO; }
-    NSUInteger start = [before rangeOfCharacterFromSet:[NSCharacterSet whitespaceCharacterSet]
-                                               options:NSBackwardsSearch
-                                                 range:NSMakeRange(0, sep.location)].location;
-    NSString *fragment = [before substringFromIndex:(start == NSNotFound ? 0 : start + 1)];
-    NSString *dir = fragment.stringByDeletingLastPathComponent.stringByExpandingTildeInPath;
-    NSString *prefix = fragment.lastPathComponent;
+    // What was typed, and the folder to list: the folder itself when the
+    // typing names one, otherwise the one its last "/" ends.
+    NSInteger start = PathStart(before);
+    if (start == NSNotFound) { NSBeep(); return NO; }
+    NSString *raw = [before substringFromIndex:(NSUInteger)start];
+    NSFileManager *fm = [NSFileManager defaultManager];
+    BOOL isDir = NO;
+    NSString *expanded = raw.stringByExpandingTildeInPath;
+    if ([fm fileExistsAtPath:expanded isDirectory:&isDir] && !isDir) { NSBeep(); return NO; }
+    NSString *typedFolder;
+    if (isDir) typedFolder = raw;
+    else {
+        NSRange slash = [raw rangeOfString:@"/" options:NSBackwardsSearch];
+        typedFolder = [raw substringToIndex:slash.location];
+        if (!typedFolder.length) typedFolder = @"/";
+    }
+    NSString *folder = typedFolder.stringByExpandingTildeInPath;
+    NSArray<NSString *> *names = [fm contentsOfDirectoryAtPath:folder error:NULL];
+    if (!names) { NSBeep(); return NO; }
 
-    NSArray *names = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:NULL];
-    if (!names.count) { NSBeep(); return NO; }
-    NSMutableArray *matches = [NSMutableArray array];
-    for (NSString *n in names) if (!prefix.length || [n hasPrefix:prefix]) [matches addObject:n];
-    if (!matches.count) { NSBeep(); return NO; }
+    NSString *withSlash = [typedFolder hasSuffix:@"/"] ? typedFolder : [typedFolder stringByAppendingString:@"/"];
+    NSMutableArray *entries = [NSMutableArray array];
+    for (NSString *name in [names sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]) {
+        if (entries.count >= 2000) break;           // a huge folder would look like a hang
+        BOOL dir = NO;
+        [fm fileExistsAtPath:[folder stringByAppendingPathComponent:name] isDirectory:&dir];
+        [entries addObject:[NSString stringWithFormat:@"%@%@%@", withSlash, name, dir ? @"/" : @""]];
+    }
+    if (!entries.count) { NSBeep(); return NO; }
 
-    [matches sortUsingSelector:@selector(compare:)];
     [sci message:SCI_AUTOCSETSEPARATOR wParam:(uptr_t)'\n' lParam:0];
-    [sci setStringProperty:SCI_AUTOCSHOW parameter:(long)prefix.length
-                     value:[matches componentsJoinedByString:@"\n"]];
+    [sci message:SCI_AUTOCSETIGNORECASE wParam:1 lParam:0];
+    [sci message:SCI_AUTOCSETCASEINSENSITIVEBEHAVIOUR wParam:SC_CASEINSENSITIVEBEHAVIOUR_IGNORECASE lParam:0];
+    [sci setStringProperty:SCI_AUTOCSHOW parameter:(long)[raw lengthOfBytesUsingEncoding:NSUTF8StringEncoding]
+                     value:[entries componentsJoinedByString:@"\n"]];
     return YES;
 }
 
@@ -490,8 +524,161 @@ static const char kSearchEngineKey = 0;
 }
 
 static const char kCallTipIndexKey = 0;
+static const char kApiCallTipKey = 0;
+
+#pragma mark - Call tips from the API files
+
+/// The function the caret is inside, and which of its parameters, found as
+/// FunctionCallTip::getCursorFunction does: the line up to the caret is cut
+/// into identifiers and single characters, and brackets are followed on a
+/// stack so that nested calls and plain parentheses are told apart.
+- (nullable NSDictionary *)functionAtCaretWithEnvironment:(NSDictionary<NSString *, NSString *> *)env {
+    ScintillaView *sci = self.sci;
+    long caret = [sci message:SCI_GETCURRENTPOS];
+    long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)caret];
+    long lineStart = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)line];
+    long lineEnd = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)line];
+    if (caret - lineStart < 2 || lineEnd - lineStart + 3 >= 256) return nil;
+    NSData *doc = [([sci string] ?: @"") dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *text = SliceBytes(doc, lineStart, caret);
+
+    unichar start = [env[@"start"] characterAtIndex:0], stop = [env[@"stop"] characterAtIndex:0];
+    unichar param = [env[@"param"] characterAtIndex:0], terminal = [env[@"terminal"] characterAtIndex:0];
+    NSString *wordChars = env[@"wordChars"] ?: @"";
+    BOOL (^isWordChar)(unichar) = ^BOOL(unichar c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' ||
+               (c < 128 && [wordChars rangeOfString:[NSString stringWithCharacters:&c length:1]].location != NSNotFound);
+    };
+
+    NSMutableArray<NSString *> *tokens = [NSMutableArray array];
+    NSMutableArray<NSNumber *> *isIdentifier = [NSMutableArray array];
+    for (NSUInteger i = 0; i < text.length; ++i) {
+        unichar c = [text characterAtIndex:i];
+        if (isWordChar(c)) {
+            NSUInteger j = i;
+            while (j < text.length && isWordChar([text characterAtIndex:j])) ++j;
+            [tokens addObject:[text substringWithRange:NSMakeRange(i, j - i)]];
+            [isIdentifier addObject:@YES];
+            i = j - 1;
+        } else if (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
+            [tokens addObject:[NSString stringWithCharacters:&c length:1]];
+            [isIdentifier addObject:@NO];
+        }
+    }
+
+    typedef struct { NSInteger lastIdentifier, lastFunction, param; } Values;
+    Values cur = {-1, -1, 0};
+    std::vector<Values> stack;
+    for (NSInteger i = 0; i < (NSInteger)tokens.count; ++i) {
+        if (isIdentifier[(NSUInteger)i].boolValue) { cur.lastIdentifier = i; continue; }
+        unichar c = [tokens[(NSUInteger)i] characterAtIndex:0];
+        if (c == start) {
+            stack.push_back(cur);
+            if (i > 0 && cur.lastIdentifier == i - 1) { cur.lastFunction = cur.lastIdentifier; cur.param = 0; }
+            else cur.lastFunction = -1;                       // "( x + y )" is no call
+        } else if (c == param && cur.lastFunction > -1) {
+            cur.param++;
+        } else if (c == stop) {
+            if (!stack.empty()) { cur = stack.back(); stack.pop_back(); }
+            else cur = Values{-1, -1, 0};
+        } else if (c == terminal) {
+            stack.clear();
+            cur = Values{-1, -1, 0};
+        }
+    }
+    while (cur.lastFunction == -1 && !stack.empty()) { cur = stack.back(); stack.pop_back(); }
+    if (cur.lastFunction < 0) return nil;
+    return @{@"name": tokens[(NSUInteger)cur.lastFunction], @"param": @(cur.param)};
+}
+
+- (void)closeApiCallTip {
+    if (objc_getAssociatedObject(self, &kApiCallTipKey)) [self.sci message:SCI_CALLTIPCANCEL];
+    objc_setAssociatedObject(self, &kApiCallTipKey, nil, OBJC_ASSOCIATION_RETAIN);
+}
+
+/// Draws the tip for the tracked function: the overload, arrows to step
+/// between overloads, and the current parameter highlighted.
+- (void)drawApiCallTip:(NSMutableDictionary *)state {
+    ScintillaView *sci = self.sci;
+    NppApiEntry *entry = state[@"entry"];
+    NSDictionary *env = state[@"env"];
+    NSUInteger overload = [state[@"overload"] unsignedIntegerValue];
+    NSUInteger param = [state[@"param"] unsignedIntegerValue];
+    if (overload >= entry.overloads.count) overload = 0;
+    // A parameter beyond this overload's picks the first overload that has it.
+    if (param >= entry.overloads[overload].params.count + 1) {
+        for (NSUInteger i = 0; i < entry.overloads.count; ++i) {
+            if (param < entry.overloads[i].params.count + 1) { overload = i; break; }
+        }
+    }
+    state[@"overload"] = @(overload);
+    NppApiOverload *o = entry.overloads[overload];
+
+    NSMutableString *tip = [NSMutableString string];
+    if (entry.overloads.count > 1) {
+        [tip appendFormat:@"\001%lu of %lu\002", (unsigned long)overload + 1, (unsigned long)entry.overloads.count];
+    }
+    [tip appendFormat:@"%@ %@ %@", o.returnValue, state[@"name"], env[@"start"]];
+    long hlStart = 0, hlEnd = 0;
+    for (NSUInteger i = 0; i < o.params.count; ++i) {
+        if (i == param) {
+            hlStart = Utf8Length(tip);
+            hlEnd = hlStart + Utf8Length(o.params[i]);
+        }
+        [tip appendString:o.params[i]];
+        if (i + 1 < o.params.count) [tip appendFormat:@"%@ ", env[@"param"]];
+    }
+    [tip appendString:env[@"stop"]];
+    if (o.descr.length) [tip appendFormat:@"\n%@", o.descr];
+
+    [sci message:SCI_CALLTIPCANCEL];
+    [sci setStringProperty:SCI_CALLTIPSHOW parameter:[state[@"startPos"] longValue] value:tip];
+    if (hlStart != hlEnd) [sci message:SCI_CALLTIPSETHLT wParam:(uptr_t)hlStart lParam:hlEnd];
+    objc_setAssociatedObject(self, &kApiCallTipKey, state, OBJC_ASSOCIATION_RETAIN);
+}
+
+- (BOOL)updateCallTipForCharacter:(int)ch force:(BOOL)needShown {
+    NSString *language = self.currentDocument.language.name ?: @"";
+    NSDictionary *env = [[ApiCatalog sharedCatalog] callTipEnvironmentForLanguage:language];
+    if (!env) return NO;
+    NSMutableDictionary *state = objc_getAssociatedObject(self, &kApiCallTipKey);
+    BOOL visible = state && [self.sci message:SCI_CALLTIPACTIVE] != 0;
+    if (!needShown && ch != [env[@"start"] characterAtIndex:0] &&
+        ch != [env[@"param"] characterAtIndex:0] && !visible) return NO;
+
+    NSDictionary *found = [self functionAtCaretWithEnvironment:env];
+    NppApiEntry *entry = found ? [[ApiCatalog sharedCatalog] functionNamed:found[@"name"] inLanguage:language] : nil;
+    if (!entry) { [self closeApiCallTip]; return NO; }
+
+    BOOL same = visible && [state[@"entry"] isEqual:entry];
+    NSMutableDictionary *next = [NSMutableDictionary dictionary];
+    next[@"entry"] = entry;
+    next[@"env"] = env;
+    next[@"name"] = found[@"name"];
+    next[@"param"] = found[@"param"];
+    next[@"overload"] = same ? state[@"overload"] : @0;
+    next[@"startPos"] = visible ? state[@"startPos"] : @([self.sci message:SCI_GETCURRENTPOS]);
+    [self drawApiCallTip:next];
+    return YES;
+}
+
+- (BOOL)apiCallTipVisible {
+    return objc_getAssociatedObject(self, &kApiCallTipKey) && [self.sci message:SCI_CALLTIPACTIVE] != 0;
+}
+
+- (nullable NSDictionary *)apiCallTipState {
+    return [self apiCallTipVisible] ? [objc_getAssociatedObject(self, &kApiCallTipKey) copy] : nil;
+}
+
+- (void)callTipClicked:(long)position {
+    if (position == 1) [self cycleFunctionCallTip:NO];
+    else if (position == 2) [self cycleFunctionCallTip:YES];
+}
 
 - (BOOL)showFunctionCallTip {
+    // The shipped signature of the function the caret is in, as Notepad++
+    // shows it; failing that, what callTipCandidates finds for the word.
+    if ([self updateCallTipForCharacter:0 force:YES]) return YES;
     NSArray *tips = [self callTipCandidates];
     if (!tips.count) { NSBeep(); return NO; }
     objc_setAssociatedObject(self, &kCallTipIndexKey, @0, OBJC_ASSOCIATION_RETAIN);
@@ -504,6 +691,18 @@ static const char kCallTipIndexKey = 0;
 }
 
 - (BOOL)cycleFunctionCallTip:(BOOL)forward {
+    NSMutableDictionary *state = objc_getAssociatedObject(self, &kApiCallTipKey);
+    if (state && [self.sci message:SCI_CALLTIPACTIVE] != 0) {
+        NppApiEntry *entry = state[@"entry"];
+        NSUInteger n = entry.overloads.count;
+        if (n < 2) { NSBeep(); return NO; }
+        NSUInteger cur = [state[@"overload"] unsignedIntegerValue];
+        state[@"overload"] = @(forward ? (cur + 1) % n : (cur + n - 1) % n);
+        // Stepping by hand chooses the overload; the parameter no longer does.
+        state[@"param"] = @0;
+        [self drawApiCallTip:state];
+        return YES;
+    }
     NSArray *tips = [self callTipCandidates];
     if (tips.count < 2) { NSBeep(); return NO; }
     NSNumber *stored = objc_getAssociatedObject(self, &kCallTipIndexKey);

@@ -110,6 +110,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL autoInsertSingleQuote;
 @property (nonatomic) BOOL autoInsertDoubleQuote;
 @property (nonatomic) BOOL autoInsertCloseTag;
+/// Up to three pairs of the user's own, each an opener and a closer ("<>").
+@property (nonatomic, copy) NSArray<NSString *> *userMatchedPairs;
 
 /// New documents.
 @property (nonatomic, copy) NSString *defaultLanguage;

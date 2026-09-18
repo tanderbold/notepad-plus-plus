@@ -361,6 +361,12 @@
                        on:p.autoInsertDoubleQuote to:v atY:y];
     y = [self addCheckbox:@"Close an HTML or XML tag" key:@"autoInsertCloseTag"
                        on:p.autoInsertCloseTag to:v atY:y];
+    for (NSInteger i = 0; i < 3; ++i) {
+        NSArray *pairs = p.userMatchedPairs ?: @[];
+        y = [self addField:[NSString stringWithFormat:@"Matched pair %ld (open, close)", (long)i + 1]
+                       key:[NSString stringWithFormat:@"userMatchedPair%ld", (long)i]
+                     value:(NSUInteger)i < pairs.count ? pairs[(NSUInteger)i] : @"" to:v atY:y];
+    }
     [self endPage:@"Auto-Completion" atY:y];
 
     y = [self beginPage:@"Multi-Instance & Date"]; v = [self page:@"Multi-Instance & Date"];
@@ -630,6 +636,17 @@
     p.autoInsertSingleQuote = [self.controls[@"autoInsertSingleQuote"] state] == NSControlStateValueOn;
     p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
     p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
+    NSMutableArray *pairs = [NSMutableArray array];
+    for (NSInteger i = 0; i < 3; ++i) {
+        NSString *pair = [[self.controls[[NSString stringWithFormat:@"userMatchedPair%ld", (long)i]] stringValue]
+                          stringByReplacingOccurrencesOfString:@" " withString:@""];
+        // Two plain characters, neither a letter nor a digit, as upstream allows.
+        if (pair.length == 2 && [pair characterAtIndex:0] < 128 && [pair characterAtIndex:1] < 128 &&
+            [pair rangeOfCharacterFromSet:[NSCharacterSet alphanumericCharacterSet]].location == NSNotFound) {
+            [pairs addObject:pair];
+        }
+    }
+    p.userMatchedPairs = pairs;
     [self.editor applyEditorPreferences];
     [self.editor setAutosaveEnabled:p.autosaveEnabled interval:p.autosaveInterval];
     [self.editor applyWordCharacters];

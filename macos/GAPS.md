@@ -121,16 +121,17 @@ replacements. Unverified: Find All / Replace All in All Opened Documents.
 The engine is PCRE2, a superset of what Boost offers, so regex syntax
 itself is not the gap.
 
-**Editing assist.** Ctrl+Space lists only document words; Windows separates
-function completion (Ctrl+Space, from the API files) and word completion
-(Ctrl+Enter, inserting a sole match). Document words are gathered by
-splitting on `[A-Za-z0-9_]` and matched case-sensitively; `SCI_AUTOCSETIGNORECASE`
-is never set. Calltips appear on `(` only and are not re-evaluated on `,`
-or closed on `)`. Path completion is case-sensitive and shows bare names.
-Auto-indent handles the newline only: no brace realignment, no
-indent-after-`if` for C-like languages, no Python `:`. No "no autocomplete
-while recording a macro". Defaults differ from Windows: completion off,
-threshold 3, hints off, spaces on, smart-highlight whole-word off.
+**Editing assist.** Done since the audit, following AutoCompletion.cpp,
+FunctionCallTip.cpp and maintainIndentation: Function Completion (⌃Space,
+the API list) and Word Completion (⌘Return, a sole match typed in) are
+separate; case is ignored where the API file says so and respected in
+plain text; the brief list means "only what fits". Parameter hints follow
+the typing (open on `(`, highlight the parameter on `,`, close on `)`,
+arrows step overloads). Path completion takes the whole path, spaces and
+all, ignoring case, folders with a trailing slash. Advanced auto-indent
+has the braceless `if/for/while`, `{`/`}` realignment and Python's `:`.
+Nothing is added while a macro records or plays; column mode gets no
+pairs; up to three user pairs. Defaults now match Windows.
 
 **Panels.** Document Map is a zoomed mirror without the view-zone overlay,
 click-to-scroll or scroll sync. Document List is one column (Windows: name,

@@ -53,6 +53,15 @@ typedef NS_OPTIONS(NSInteger, NppMatchFlags) {
 - (NSArray<NSString *> *)callTipCandidates;
 - (BOOL)showFunctionCallTip;
 - (BOOL)cycleFunctionCallTip:(BOOL)forward;
+/// FunctionCallTip::updateCalltip: after `ch` is typed (0 when asked for),
+/// shows or refreshes the shipped signature of the function the caret is in,
+/// with the current parameter highlighted; closes it when there is none.
+- (BOOL)updateCallTipForCharacter:(int)ch force:(BOOL)needShown;
+- (BOOL)apiCallTipVisible;
+/// name, param (index), overload (index) of the tip shown; for the tests.
+- (nullable NSDictionary *)apiCallTipState;
+/// SCN_CALLTIPCLICK: the arrows step between overloads.
+- (void)callTipClicked:(long)position;
 
 // File attribute
 - (BOOL)systemReadOnly;

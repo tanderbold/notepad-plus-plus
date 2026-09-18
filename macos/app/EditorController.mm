@@ -5,6 +5,7 @@
 #import "UserLanguages.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
+#import "AdvancedEditCommands.h"
 #import "ScintillaView.h"
 #import "WorkspacePanel.h"
 #import "EncodingCommands.h"
@@ -1591,26 +1592,8 @@ static BOOL gCheckingFilesOnDisk;
 }
 
 - (void)showAutoCompletion {
-    ScintillaView *sci = self.sciView;
-    long pos = [sci message:SCI_GETCURRENTPOS];
-    long start = [sci message:SCI_WORDSTARTPOSITION wParam:(uptr_t)pos lParam:1];
-    if (pos <= start) { NSBeep(); return; }
-    NSString *prefix = [self textAt:start length:pos - start];
-
-    // Candidates: distinct words already in the document, as Notepad++ does.
-    NSMutableSet *words = [NSMutableSet set];
-    NSString *all = [sci string] ?: @"";
-    NSCharacterSet *sep = [[NSCharacterSet characterSetWithCharactersInString:
-        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"] invertedSet];
-    for (NSString *w in [all componentsSeparatedByCharactersInSet:sep]) {
-        if (w.length > prefix.length && [w hasPrefix:prefix]) [words addObject:w];
-    }
-    if (!words.count) { NSBeep(); return; }
-
-    NSArray *sorted = [words.allObjects sortedArrayUsingSelector:@selector(compare:)];
-    [sci message:SCI_AUTOCSETSEPARATOR wParam:(uptr_t)' ' lParam:0];
-    [sci setStringProperty:SCI_AUTOCSHOW parameter:pos - start
-                     value:[sorted componentsJoinedByString:@" "]];
+    // Word Completion: the document's words, a lone one typed straight in.
+    [self showCompletion:NppCompletionKindWords autoInsert:YES];
 }
 
 /// Right-click menu, built from the commands listed in Preferences.
@@ -1923,6 +1906,9 @@ static BOOL gCheckingFilesOnDisk;
             break;
         case SCN_CHARADDED:
             [self handleCharacterAdded:n->ch];
+            break;
+        case SCN_CALLTIPCLICK:
+            [self callTipClicked:(long)n->position];
             break;
         case SCN_INDICATORRELEASE:
             [self openLinkAtPosition:(long)n->position];

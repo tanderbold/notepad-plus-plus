@@ -10,7 +10,23 @@ typedef NS_ENUM(NSInteger, NppCompletionSource) {
     NppCompletionBoth,
 };
 
+typedef NS_ENUM(NSInteger, NppCompletionKind) {
+    NppCompletionKindFunctions = 0,       // the language's whole list (Function Completion)
+    NppCompletionKindFunctionsBrief,      // only the names that fit what is typed
+    NppCompletionKindWords,               // words of the document (Word Completion)
+    NppCompletionKindFunctionsAndWords,
+};
+
 @interface EditorController (TypingCommands)
+
+/// Opens the completion list, as AutoCompletion::showAutoComplete. With
+/// autoInsert, Word Completion types a lone candidate instead. NO when there
+/// is nothing to offer.
+- (BOOL)showCompletion:(NppCompletionKind)kind autoInsert:(BOOL)autoInsert;
+/// Whether completion ignores case here: the API file says, and plain text does not.
+- (BOOL)completionIgnoresCase;
+/// What the last list offered; for the tests.
+- (nullable NSArray<NSString *> *)lastCompletionList;
 
 /// Called for every character typed; drives completion and auto-insertion.
 - (void)handleCharacterAdded:(int)character;

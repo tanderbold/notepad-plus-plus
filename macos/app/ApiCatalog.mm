@@ -10,6 +10,7 @@
 @interface NppApiLanguage : NSObject
 @property (nonatomic) BOOL ignoreCase;
 @property (nonatomic, strong) NSMutableArray<NppApiEntry *> *entries;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *environment;
 @end
 
 @implementation NppApiLanguage
@@ -72,6 +73,8 @@
     // Upstream's default is to ignore case unless the file says otherwise.
     lang.ignoreCase = YES;
     lang.entries = [NSMutableArray array];
+    lang.environment = [@{@"start": @"(", @"stop": @")", @"param": @",", @"terminal": @";",
+                          @"wordChars": @""} mutableCopy];
     self.current = lang;
     NSXMLParser *parser = [[NSXMLParser alloc] initWithData:data];
     parser.delegate = self;
@@ -129,6 +132,21 @@
     return tips;
 }
 
+- (NSDictionary<NSString *, NSString *> *)callTipEnvironmentForLanguage:(NSString *)language {
+    return [[self languageNamed:language].environment copy];
+}
+
+- (NppApiEntry *)functionNamed:(NSString *)name inLanguage:(NSString *)language {
+    NppApiLanguage *lang = [self languageNamed:language];
+    if (!lang || !name.length) return nil;
+    NSStringCompareOptions options = lang.ignoreCase ? NSCaseInsensitiveSearch : 0;
+    for (NppApiEntry *entry in lang.entries) {
+        if ([entry.name compare:name options:options] != NSOrderedSame) continue;
+        return (entry.isFunction && entry.overloads.count) ? entry : nil;
+    }
+    return nil;
+}
+
 #pragma mark - NSXMLParserDelegate
 
 - (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)element
@@ -139,6 +157,13 @@
     if ([element isEqualToString:@"Environment"]) {
         NSString *value = attrs[@"ignoreCase"];
         if (value) self.current.ignoreCase = ![value.lowercaseString isEqualToString:@"no"];
+        // Only the first character counts, as FunctionCallTip reads them.
+        NSDictionary *keys = @{@"startFunc": @"start", @"stopFunc": @"stop",
+                               @"paramSeparator": @"param", @"terminal": @"terminal"};
+        for (NSString *attr in keys) {
+            if ([attrs[attr] length]) self.current.environment[keys[attr]] = [attrs[attr] substringToIndex:1];
+        }
+        if (attrs[@"additionalWordChar"]) self.current.environment[@"wordChars"] = attrs[@"additionalWordChar"];
         return;
     }
     if ([element isEqualToString:@"KeyWord"]) {

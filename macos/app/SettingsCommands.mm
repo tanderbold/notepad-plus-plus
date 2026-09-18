@@ -24,7 +24,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"fontName"):        @"Menlo",
         Key(@"fontSize"):        @13,
         Key(@"tabWidth"):        @4,
-        Key(@"useSpaces"):       @YES,
+        Key(@"useSpaces"):       @NO,
         Key(@"wordWrap"):        @NO,
         Key(@"showWhitespace"):  @NO,
         Key(@"showIndentGuides"):@YES,
@@ -110,13 +110,13 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"paddingRight"): @0,
         Key(@"rightClickKeepsSelection"): @NO,
         Key(@"selectedTextDragDrop"): @YES,
-        Key(@"autoCompleteOnInput"): @NO,
+        Key(@"autoCompleteOnInput"): @YES,
         Key(@"autoCompleteSource"): @2,
-        Key(@"autoCompleteThreshold"): @3,
+        Key(@"autoCompleteThreshold"): @1,
         Key(@"autoCompleteBriefList"): @NO,
         Key(@"autoCompleteIgnoreNumbers"): @YES,
         Key(@"autoCompleteUseTab"): @YES,
-        Key(@"functionHintOnInput"): @NO,
+        Key(@"functionHintOnInput"): @YES,
         Key(@"autoInsertParenthesis"): @NO,
         Key(@"autoInsertBracket"): @NO,
         Key(@"autoInsertBrace"): @NO,
@@ -147,11 +147,12 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"replaceStaysOnOccurrence"): @NO,
         Key(@"confirmReplaceAll"): @YES,
         Key(@"smartHighlightMatchCase"): @NO,
-        Key(@"smartHighlightWholeWord"): @NO,
+        Key(@"smartHighlightWholeWord"): @YES,
         Key(@"lightThemeName"):  @"Default",
         Key(@"darkThemeName"):   @"DarkModeDefault",
         Key(@"styleOverrides"):  @{},
         Key(@"globalOverride"):  @{},
+        Key(@"userMatchedPairs"): @[],
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -222,6 +223,7 @@ NPP_PREF_BOOL(rightClickKeepsSelection, setRightClickKeepsSelection, @"rightClic
 NPP_PREF_BOOL(selectedTextDragDrop, setSelectedTextDragDrop, @"selectedTextDragDrop")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(globalOverride, setGlobalOverride, NSDictionary, @"globalOverride")
+NPP_PREF_OBJ(userMatchedPairs, setUserMatchedPairs, NSArray, @"userMatchedPairs")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
 NPP_PREF_INT(fontSize, setFontSize, @"fontSize")

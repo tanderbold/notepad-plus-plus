@@ -584,8 +584,6 @@ static NSString *Ordinal(NSUInteger n) {
          flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:editMenu];
     [self item:@"Delete" action:@selector(deleteSelection:) key:@"" flags:0 menu:editMenu];
     [editMenu addItem:[NSMenuItem separatorItem]];
-    [self item:@"Complete Word" action:@selector(showAutoComplete:) key:@" "
-         flags:NSEventModifierFlagControl menu:editMenu];
     [editMenu addItem:[NSMenuItem separatorItem]];
 
     // --- Insert
@@ -708,11 +706,18 @@ static NSString *Ordinal(NSUInteger n) {
     [self item:@"Clipboard History" action:@selector(toggleClipboardHistory:) key:@"" flags:0 menu:editMenu];
 
     NSMenu *acMenu = [[NSMenu alloc] initWithTitle:@"Auto-Completion"];
-    [self item:@"Word Completion" action:@selector(showAutoComplete:) key:@"" flags:0 menu:acMenu];
-    [self item:@"Path Completion" action:@selector(pathCompletion:) key:@"" flags:0 menu:acMenu];
-    [self item:@"Function Parameters Hint" action:@selector(callTip:) key:@"" flags:0 menu:acMenu];
-    [self item:@"Function Parameters Next Hint" action:@selector(callTipNext:) key:@"" flags:0 menu:acMenu];
+    // Upstream's order and keys: Ctrl+Space, Ctrl+Enter, Ctrl+Shift+Space,
+    // Ctrl+Alt+Space. Cmd+Space is Spotlight's, so the space keys keep Control.
+    [self item:@"Function Completion" action:@selector(functionCompletion:) key:@" "
+         flags:NSEventModifierFlagControl menu:acMenu];
+    [self item:@"Word Completion" action:@selector(showAutoComplete:) key:@"\r"
+         flags:NSEventModifierFlagCommand menu:acMenu];
+    [self item:@"Function Parameters Hint" action:@selector(callTip:) key:@" "
+         flags:NSEventModifierFlagControl | NSEventModifierFlagShift menu:acMenu];
     [self item:@"Function Parameters Previous Hint" action:@selector(callTipPrev:) key:@"" flags:0 menu:acMenu];
+    [self item:@"Function Parameters Next Hint" action:@selector(callTipNext:) key:@"" flags:0 menu:acMenu];
+    [self item:@"Path Completion" action:@selector(pathCompletion:) key:@" "
+         flags:NSEventModifierFlagControl | NSEventModifierFlagOption menu:acMenu];
     [editMenu addItemWithTitle:@"Auto-Completion" action:nil keyEquivalent:@""].submenu = acMenu;
 
     NSMenu *pasteMenu = [[NSMenu alloc] initWithTitle:@"Paste Special"];
@@ -2310,6 +2315,7 @@ static BOOL NppForwardToFieldEditor(SEL action, id sender) {
 - (void)toggleLineComment:(id)sender  { [self.editor toggleLineComment]; }
 - (void)toggleBlockComment:(id)sender { [self.editor toggleBlockComment]; }
 - (void)showAutoComplete:(id)sender   { [self.editor showAutoCompletion]; }
+- (void)functionCompletion:(id)sender { [self.editor showCompletion:NppCompletionKindFunctions autoInsert:NO]; }
 
 #pragma mark - Edit: case, lines, blanks
 
