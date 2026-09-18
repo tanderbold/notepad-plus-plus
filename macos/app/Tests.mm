@@ -5697,6 +5697,15 @@ int NppMacRunTests(AppDelegate *app) {
             BOOL opened = conf.visible && [conf selectLanguage:@"cpp"] && [conf selectStyleNamed:@"COMMENT LINE"];
             [conf setValue:@"FF0000" ofAttribute:@"fgColor"];
             BOOL previewed = [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE] == 0x0000FF && conf.dirty;
+            // A font from the system's font panel: family, size, bold and italic in one.
+            NSFont *chosen = [[NSFontManager sharedFontManager] fontWithFamily:@"Courier New" traits:NSBoldFontMask | NSItalicFontMask weight:9 size:17];
+            [conf applyChosenFont:chosen];
+            char fontName[128] = {0};
+            [sci message:SCI_STYLEGETFONT wParam:SCE_C_COMMENTLINE lParam:(sptr_t)fontName];
+            previewed = previewed && chosen != nil && !strcmp(fontName, "Courier New") &&
+                        [sci message:SCI_STYLEGETSIZE wParam:SCE_C_COMMENTLINE] == 17 &&
+                        [sci message:SCI_STYLEGETBOLD wParam:SCE_C_COMMENTLINE] && [sci message:SCI_STYLEGETITALIC wParam:SCE_C_COMMENTLINE] &&
+                        [conf respondsToSelector:@selector(changeFont:)];
             [conf cancel:nil];
             BOOL reverted = !conf.visible && [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE] == commentBefore;
             Check(@"IDM_LANGSTYLE_CONFIG_DLG (preview)",

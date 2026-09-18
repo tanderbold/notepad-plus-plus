@@ -25,6 +25,8 @@ FOUNDATION_EXPORT NSString *const NppGlobalStylesName;
 - (BOOL)selectStyleNamed:(NSString *)name;
 /// fgColor, bgColor ("RRGGBB"), fontName, fontSize, fontStyle (1 bold, 2 italic, 4 underline).
 - (void)setValue:(nullable NSString *)value ofAttribute:(NSString *)attribute;
+/// What the system font panel chose: family, size, bold and italic.
+- (void)applyChosenFont:(NSFont *)font;
 - (void)setUserExtensions:(NSString *)extensions;
 - (void)setUserKeywords:(NSString *)keywords;
 - (void)setGlobalOverride:(NSString *)flag enabled:(BOOL)on;   // fg bg font fontSize bold italic underline

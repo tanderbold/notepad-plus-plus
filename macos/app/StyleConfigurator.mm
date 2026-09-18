@@ -40,6 +40,7 @@ static NSArray<NSArray<NSString *> *> *OverrideFlags(void) {
 @property (nonatomic, strong) NSPopUpButton *fontPicker;
 @property (nonatomic, strong) NSPopUpButton *sizePicker;
 @property (nonatomic, strong) NSButton *boldBox, *italicBox, *underlineBox;
+@property (nonatomic, strong) NSButton *fontPanelButton;
 @property (nonatomic, strong) NSView *overrideGroup;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSButton *> *overrideBoxes;
 @property (nonatomic, strong) NSView *extensionGroup;
@@ -190,6 +191,11 @@ static NSTextView *KeywordView(NSRect frame, NSView *parent, BOOL editable) {
     _underlineBox = [NSButton checkboxWithTitle:@"Underline" target:self action:@selector(fontChanged:)];
     _underlineBox.frame = NSMakeRect(x + 160, top - 166, 100, 20);
     for (NSButton *b in @[_boldBox, _italicBox, _underlineBox]) [content addSubview:b];
+    // The system's font panel, for choosing by sight; what is chosen there
+    // lands in the same attributes the pop-ups write.
+    _fontPanelButton = [NSButton buttonWithTitle:@"Fonts…" target:self action:@selector(showFontPanel:)];
+    _fontPanelButton.frame = NSMakeRect(x + 270, top - 170, 100, 28);
+    [content addSubview:_fontPanelButton];
 
     // Only for the Global override style.
     _overrideGroup = [[NSView alloc] initWithFrame:NSMakeRect(x, 60, 380, top - 240)];
@@ -424,7 +430,7 @@ static NSTextView *KeywordView(NSRect frame, NSView *parent, BOOL editable) {
     self.backgroundWell.enabled = hasBg;
     self.foregroundWell.color = ColourOf(attr(@"fgColor")) ?: [NSColor textColor];
     self.backgroundWell.color = ColourOf(attr(@"bgColor")) ?: [NSColor textBackgroundColor];
-    for (NSControl *c in @[self.fontPicker, self.sizePicker, self.boldBox, self.italicBox, self.underlineBox]) {
+    for (NSControl *c in @[self.fontPicker, self.sizePicker, self.boldBox, self.italicBox, self.underlineBox, self.fontPanelButton]) {
         c.enabled = hasFont;
     }
     NSString *font = attr(@"fontName") ?: @"";
@@ -488,6 +494,37 @@ static NSTextView *KeywordView(NSRect frame, NSView *parent, BOOL editable) {
                    (self.underlineBox.state == NSControlStateValueOn ? 4 : 0);
         [self setValue:[@(bits) stringValue] ofAttribute:@"fontStyle"];
     }
+}
+
+- (void)showFontPanel:(id)sender {
+    NSFontManager *manager = [NSFontManager sharedFontManager];
+    NSString *family = self.fontPicker.titleOfSelectedItem;
+    CGFloat size = self.sizePicker.titleOfSelectedItem.doubleValue ?: 12;
+    NSFont *font = (family.length ? [manager fontWithFamily:family traits:0 weight:5 size:size] : nil)
+                   ?: [NSFont userFixedPitchFontOfSize:size];
+    if (self.boldBox.state == NSControlStateValueOn) font = [manager convertFont:font toHaveTrait:NSBoldFontMask];
+    if (self.italicBox.state == NSControlStateValueOn) font = [manager convertFont:font toHaveTrait:NSItalicFontMask];
+    manager.target = self;
+    [manager setSelectedFont:font isMultiple:NO];
+    [self.panel makeFirstResponder:nil];
+    [manager orderFrontFontPanel:self];
+}
+
+/// NSFontPanel's message, sent up the responder chain and to the manager's target.
+- (void)changeFont:(NSFontManager *)sender {
+    NSFont *current = [sender selectedFont] ?: [NSFont userFixedPitchFontOfSize:12];
+    [self applyChosenFont:[sender convertFont:current]];
+}
+
+- (void)applyChosenFont:(NSFont *)font {
+    if (!font) return;
+    NSFontTraitMask traits = [[NSFontManager sharedFontManager] traitsOfFont:font];
+    [self setValue:font.familyName ofAttribute:@"fontName"];
+    [self setValue:[@((int)lround(font.pointSize)) stringValue] ofAttribute:@"fontSize"];
+    int bits = ((traits & NSBoldFontMask) ? 1 : 0) | ((traits & NSItalicFontMask) ? 2 : 0) |
+               (self.underlineBox.state == NSControlStateValueOn ? 4 : 0);
+    [self setValue:[@(bits) stringValue] ofAttribute:@"fontStyle"];
+    [self styleSelected];                 // the controls show what was chosen
 }
 
 - (void)setUserExtensions:(NSString *)extensions {
