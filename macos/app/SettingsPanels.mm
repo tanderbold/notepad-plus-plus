@@ -1,5 +1,6 @@
 #import "NppPanel.h"
 #import "SettingsPanels.h"
+#import "Localization.h"
 #import "SettingsCommands.h"
 #import "EditorController.h"
 #import "LanguageCatalog.h"
@@ -156,6 +157,7 @@
 @property (nonatomic, strong) NSView *pageHost;
 @property (nonatomic, strong) NSScrollView *pageScroller;
 @property (nonatomic, copy, nullable) NSString *lastPrintField;
+@property (nonatomic, copy) NSArray<NSString *> *localizationFiles;
 @end
 
 @implementation PreferencesWindow
@@ -292,7 +294,8 @@
 - (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)column
             row:(NSInteger)row {
     if (row < 0 || row >= (NSInteger)self.pageNames.count) return @"";
-    return self.pageNames[(NSUInteger)row];
+    // Shown in the interface language; kept in English for the page lookups.
+    return [[NppLocalization shared] translateTitle:self.pageNames[(NSUInteger)row]];
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification *)notification {
@@ -305,6 +308,24 @@
     NSView *v; CGFloat y;
 
     y = [self beginPage:@"General"]; v = [self page:@"General"];
+    // Localization: upstream's translations, by the names they give themselves.
+    NSDictionary<NSString *, NSString *> *languages = [NppLocalization availableLanguages];
+    NSArray *files = [languages.allKeys sortedArrayUsingComparator:^NSComparisonResult(NSString *a, NSString *b) {
+        return [languages[a] localizedCaseInsensitiveCompare:languages[b]];
+    }];
+    NSMutableArray *names = [NSMutableArray array];
+    // NSPopUpButton drops repeated titles, which would shift every index after
+    // it (english.xml and english_customizable.xml both say "English").
+    NSCountedSet *seen = [[NSCountedSet alloc] initWithArray:languages.allValues];
+    for (NSString *f in files) {
+        NSString *name = languages[f];
+        [names addObject:[seen countForObject:name] > 1
+            ? [NSString stringWithFormat:@"%@ (%@)", name, f.stringByDeletingPathExtension] : name];
+    }
+    NSUInteger chosen = [files indexOfObject:p.localizationFile.length ? p.localizationFile : @"english.xml"];
+    y = [self addPopup:@"Localization" key:@"localizationFile" items:names
+              selected:chosen == NSNotFound ? 0 : (NSInteger)chosen to:v atY:y];
+    self.localizationFiles = files;
     y = [self addCheckbox:@"Restore the previous session on launch" key:@"restoreSession"
                        on:p.restoreSession to:v atY:y];
     y = [self addCheckbox:@"Remember which panels were open" key:@"rememberPanelState"
@@ -962,6 +983,11 @@
     p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
     p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
     p.statusBarHidden = on(@"statusBarHidden");
+    NSInteger languageIndex = [self.controls[@"localizationFile"] indexOfSelectedItem];
+    if (languageIndex >= 0 && languageIndex < (NSInteger)self.localizationFiles.count) {
+        NSString *file = self.localizationFiles[(NSUInteger)languageIndex];
+        p.localizationFile = [file isEqualToString:@"english.xml"] ? @"" : file;
+    }
     p.openAnsiAsUtf8 = on(@"openAnsiAsUtf8");
     NSMutableDictionary *keep = [NSMutableDictionary dictionary];
     for (NSString *key in self.controls) {
@@ -1033,6 +1059,9 @@
     // The toolbar lives on the window, so the delegate applies those three.
     if ([NSApp.delegate respondsToSelector:@selector(applyToolbarPreferences)]) {
         [NSApp.delegate performSelector:@selector(applyToolbarPreferences)];
+    }
+    if ([NSApp.delegate respondsToSelector:@selector(applyLocalization)]) {
+        [NSApp.delegate performSelector:@selector(applyLocalization)];
     }
     if ([NSApp.delegate respondsToSelector:@selector(rebuildLanguageMenu)]) {
         [NSApp.delegate performSelector:@selector(rebuildLanguageMenu)];

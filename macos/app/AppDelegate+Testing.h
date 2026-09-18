@@ -62,6 +62,7 @@
 - (void)rebuildMacroMenu;
 - (NSMenu *)buildTabContextMenu;
 - (void)rebuildLanguageMenu;
+- (void)applyLocalization;
 - (void)switchDocumentForward:(BOOL)forward;
 - (void)endDocumentSwitch;
 - (BOOL)documentSwitcherShown;

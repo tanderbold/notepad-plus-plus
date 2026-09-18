@@ -135,6 +135,9 @@ done
 # The user languages Notepad++ ships (Markdown, light and dark).
 mkdir -p "$APP/Contents/Resources/userDefineLangs"
 cp "$ROOT"/PowerEditor/bin/userDefineLangs/*.xml "$APP/Contents/Resources/userDefineLangs/"
+# Notepad++'s translations, read by Localization.mm.
+mkdir -p "$APP/Contents/Resources/nativeLang"
+cp "$ROOT"/PowerEditor/installer/nativeLang/*.xml "$APP/Contents/Resources/nativeLang/"
 
 mkdir -p "$APP/Contents/Resources/APIs"
 cp "$ROOT"/PowerEditor/installer/APIs/*.xml "$APP/Contents/Resources/APIs/"

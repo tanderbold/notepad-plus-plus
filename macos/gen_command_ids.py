@@ -83,6 +83,22 @@ def menu_commands():
             value = evaluate(mi.group(2), known)
             if value is not None:
                 rows.append((value, mi.group(2), "/".join(stack), label))
+    # Commands the menus build at run time (recent files, the tab menu...)
+    # are not in the resource script; english.xml names them by id.
+    english = open(os.path.join(SRC, "..", "installer", "nativeLang", "english.xml"),
+                   encoding="utf-8", errors="replace").read()
+    names = {}
+    for ident, label in re.findall(r'<Item (?:id|CMDID)="(\d+)" name="([^"]+)"', english):
+        names.setdefault(int(ident), label.replace("&amp;", "&").replace("&", "").split("\\t")[0].strip())
+    have = {r[0] for r in rows}
+    for name, raw in sorted(known.items()):
+        if not name.startswith("IDM_"):
+            continue
+        value = evaluate(name, known)
+        if value is None or value in have or value not in names:
+            continue
+        rows.append((value, name, "?", names[value]))
+        have.add(value)
     return rows, known
 
 

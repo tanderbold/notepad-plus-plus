@@ -21,6 +21,7 @@
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
 #include "CommandIDs.h"
+#import "Localization.h"
 #include "LangMap.h"
 #import "JsonCommands.h"
 #import "CompareCommands.h"
@@ -78,6 +79,7 @@
 @property (nonatomic, strong) NSMenu *languageMenu;
 @property (nonatomic, strong) NSPanel *findPanel;
 @property (nonatomic, strong) NSPanel *switcherPanel;
+@property (nonatomic, copy) NSDictionary<NSNumber *, NSMenuItem *> *menuIdentifiers;
 @property (nonatomic, strong) NSTableView *switcherTable;
 @property (nonatomic, copy) NSArray<NppDocument *> *switcherOrder;
 @property (nonatomic) BOOL switching;
@@ -399,6 +401,13 @@ static NSString *Ordinal(NSUInteger n) {
     self.editor.tabContextMenu = ^NSMenu *{ return [weakApp buildTabContextMenu]; };
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(findInFolderRequested:)
                                                  name:@"NppFindInFolderRequested" object:nil];
+    // The interface in the language chosen: menus now, windows as they come up.
+    self.menuIdentifiers = [self.shortcutStore menuItemsByIdentifier];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowBecameKey:)
+                                                 name:NSWindowDidBecomeKeyNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuWillShow:)
+                                                 name:NSMenuDidBeginTrackingNotification object:nil];
+    [self applyLocalization];
     [self installDocumentSwitcher];
     self.toolbar = [[NppToolbar alloc] initWithWindow:self.window target:self];
     [[NppPreferences shared] applyToEditor:self.editor];
@@ -3024,6 +3033,27 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     if ([note.object isKindOfClass:[NSString class]]) self.directoryField.stringValue = note.object;
 }
 
+#pragma mark - Localization
+
+- (void)applyLocalization {
+    NppLocalization *l = [NppLocalization shared];
+    NSString *file = [NppPreferences shared].localizationFile;
+    if (![file isEqualToString:l.languageFile ?: @""] || !file.length) [l loadLanguageFile:file];
+    [l localizeMenu:NSApp.mainMenu identifiers:self.menuIdentifiers ?: @{}];
+    for (NSWindow *w in NSApp.windows) [l localizeWindow:w];
+}
+
+- (void)windowBecameKey:(NSNotification *)note {
+    NppLocalization *l = [NppLocalization shared];
+    if (l.active) [l localizeWindow:note.object];
+}
+
+/// Menus rebuilt since (macros, recent files, languages) are translated as they open.
+- (void)menuWillShow:(NSNotification *)note {
+    NppLocalization *l = [NppLocalization shared];
+    if (l.active && note.object == NSApp.mainMenu) [l localizeMenu:NSApp.mainMenu identifiers:self.menuIdentifiers ?: @{}];
+}
+
 - (void)showFind:(id)sender    { [self openFindPanelOnTab:0]; }
 - (void)showReplace:(id)sender { [self openFindPanelOnTab:1]; }
 - (void)showMarkTab:(id)sender { [self openFindPanelOnTab:4]; }
@@ -3163,7 +3193,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
                                                  mode:NSRadioModeMatrix
                                             prototype:prototype
                                          numberOfRows:3 numberOfColumns:1];
-    NSArray *modeTitles = @[@"Normal", @"Extended (\\n, \\t, \\xHH)", @"Regular expression"];
+    NSArray *modeTitles = @[@"Normal", @"Extended (\\n, \\r, \\t, \\0, \\x...)", @"Regular expression"];
     for (NSUInteger i = 0; i < modeTitles.count; ++i) {
         [[self.modeRadios cellAtRow:(NSInteger)i column:0] setTitle:modeTitles[i]];
     }
@@ -3176,15 +3206,15 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     self.dotNewlineBox = [self findCheckbox:@". matches newline" at:NSMakePoint(16, 86) in:content];
 
     self.matchCaseBox   = [self findCheckbox:@"Match case"      at:NSMakePoint(285, 158) in:content];
-    self.wholeWordBox   = [self findCheckbox:@"Whole word only" at:NSMakePoint(285, 136) in:content];
+    self.wholeWordBox   = [self findCheckbox:@"Match whole word only" at:NSMakePoint(285, 136) in:content];
     self.wrapBox        = [self findCheckbox:@"Wrap around"     at:NSMakePoint(285, 114) in:content];
-    self.backwardBox    = [self findCheckbox:@"Backward"        at:NSMakePoint(475, 158) in:content];
+    self.backwardBox    = [self findCheckbox:@"Backward direction" at:NSMakePoint(475, 158) in:content];
     self.inSelectionBox = [self findCheckbox:@"In selection"    at:NSMakePoint(475, 136) in:content];
     self.wrapBox.state = NSControlStateValueOn;
     [self.findOnlyViews addObjectsFromArray:@[self.backwardBox, self.inSelectionBox]];
     [self.replaceViews addObjectsFromArray:@[self.backwardBox, self.inSelectionBox]];
 
-    self.bookmarkLineBox = [self findCheckbox:@"Bookmark the line" at:NSMakePoint(475, 114) in:content];
+    self.bookmarkLineBox = [self findCheckbox:@"Bookmark line" at:NSMakePoint(475, 114) in:content];
     self.purgeBox = [self findCheckbox:@"Purge for each search" at:NSMakePoint(475, 92) in:content];
     [self.markViews addObjectsFromArray:@[self.bookmarkLineBox, self.purgeBox, self.inSelectionBox]];
     [self findModeChanged:nil];

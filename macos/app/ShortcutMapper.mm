@@ -1,4 +1,5 @@
 #import "ShortcutMapper.h"
+#import "Localization.h"
 #import "NppPanel.h"
 #import "ScintillaView.h"
 #import "SettingsCommands.h"
@@ -264,7 +265,7 @@ static NSDictionary<NSString *, NSString *> *PortRenamedCommands(void) {
         @"File/Restore Last Closed File": @"IDM_FILE_RESTORELASTCLOSEDFILE",
         @"File/Open Recent/Open All Recent Files": @"IDM_OPEN_ALL_RECENT_FILE",
         @"File/Open Recent/Clear Menu": @"IDM_CLEAN_RECENT_FILE_LIST",
-        @"File/Open Containing Folder/Finder": @"IDM_FILE_OPENFOLDER",
+        @"File/Open Containing Folder/Finder": @"IDM_FILE_OPEN_FOLDER",
         @"File/Open Containing Folder/Terminal": @"IDM_FILE_OPEN_CMD",
         @"Edit/Duplicate Line": @"IDM_EDIT_DUP_LINE", @"Edit/Toggle Line Comment": @"IDM_EDIT_BLOCK_COMMENT",
         @"Edit/Line Operations/Sort Lines Lex. Ignoring Case Ascending": @"IDM_EDIT_SORTLINES_LEXICO_CASE_INSENS_ASCENDING",
@@ -280,6 +281,9 @@ static NSDictionary<NSString *, NSString *> *PortRenamedCommands(void) {
         @"Settings/Settings…": @"IDM_SETTING_PREFERENCE",
         @"Help/Check for Updates": @"IDM_UPDATE_NPP", @"Help/About NotepadMac": @"IDM_ABOUT",
         @"NotepadMac/About NotepadMac": @"IDM_ABOUT", @"NotepadMac/Quit NotepadMac": @"IDM_FILE_EXIT",
+        @"File/Pin Tab": @"IDM_PINTAB",
+        @"Edit/Read-Only/Read-Only Attribute on Disk": @"IDM_EDIT_TOGGLESYSTEMREADONLY",
+        @"Window/Recent Window": @"IDM_WINDOW_MRU_FIRST",
     };
 }
 
@@ -346,11 +350,12 @@ static NSString *LanguageCommand(NSString *name) {
         if (item.submenu) {
             if (item.submenu == NSApp.servicesMenu) continue;
             // A menu-bar item has no title of its own; its menu has.
-            NSString *title = item.submenu.title.length ? item.submenu.title : (item.title ?: @"");
+            // English titles: a translated menu is still found by what it was.
+            NSString *title = NppEnglishMenuTitle(item.submenu).length ? NppEnglishMenuTitle(item.submenu) : NppEnglishTitle(item);
             [self walkMenu:item.submenu path:[path arrayByAddingObject:title] block:block];
             continue;
         }
-        if (!item.action || !item.title.length) continue;
+        if (!item.action || !NppEnglishTitle(item).length) continue;
         block(item, path);
     }
 }
@@ -362,7 +367,7 @@ static BOOL IsListedElsewhere(NSMenuItem *item) {
 }
 
 static NSString *MenuKey(NSMenuItem *item, NSArray<NSString *> *path) {
-    return [[path arrayByAddingObject:item.title] componentsJoinedByString:@"/"];
+    return [[path arrayByAddingObject:NppEnglishTitle(item)] componentsJoinedByString:@"/"];
 }
 
 - (NSDictionary<NSNumber *, NSMenuItem *> *)menuItemsByIdentifier {
@@ -410,7 +415,7 @@ static NSString *MenuKey(NSMenuItem *item, NSArray<NSString *> *path) {
         byTopAndLabel = a;
         byLabel = b;
     });
-    NSString *label = NormalisedLabel(item.title);
+    NSString *label = NormalisedLabel(NppEnglishTitle(item));
     NSMutableArray *whole = [NSMutableArray array];
     for (NSUInteger i = 0; i < path.count; ++i) {
         [whole addObject:NormalisedLabel(i == 0 ? WindowsTopMenu(path[i]) : path[i])];
@@ -425,8 +430,8 @@ static NSString *MenuKey(NSMenuItem *item, NSArray<NSString *> *path) {
     if (candidates.count == 1) return [candidates.firstObject intValue];
     // Commands the port names in its own words, and the languages, which
     // it lists under Notepad++'s internal names.
-    NSString *idm = PortRenamedCommands()[[[path arrayByAddingObject:item.title] componentsJoinedByString:@"/"]];
-    if (!idm && [path.firstObject isEqualToString:@"Language"] && path.count == 1) idm = LanguageCommand(item.title);
+    NSString *idm = PortRenamedCommands()[[[path arrayByAddingObject:NppEnglishTitle(item)] componentsJoinedByString:@"/"]];
+    if (!idm && [path.firstObject isEqualToString:@"Language"] && path.count == 1) idm = LanguageCommand(NppEnglishTitle(item));
     if (idm) {
         for (int i = 0; i < kNppMenuCommandIDCount; ++i) {
             if (strcmp(kNppMenuCommandIDs[i].name, idm.UTF8String) == 0) return kNppMenuCommandIDs[i].identifier;
@@ -565,7 +570,7 @@ static NSString *MenuKey(NSMenuItem *item, NSArray<NSString *> *path) {
             combo = [c isKindOfClass:[NppKeyCombo class]] ? c : nil;
             decided = YES;
         } else if (item.action == NSSelectorFromString(@"runSavedCommand:")) {
-            id c = self.runCombos[item.title];
+            id c = self.runCombos[NppEnglishTitle(item)];
             combo = [c isKindOfClass:[NppKeyCombo class]] ? c : nil;
             decided = YES;
         } else if (!IsListedElsewhere(item)) {

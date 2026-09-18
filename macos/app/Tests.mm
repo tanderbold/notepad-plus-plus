@@ -43,6 +43,7 @@
 #import "DocumentListPanel.h"
 #import "WorkspacePanel.h"
 #import "EditorLook.h"
+#import "Localization.h"
 #import "DockingManager.h"
 #import "TagMatch.h"
 #import "ScintillaView.h"
@@ -7062,6 +7063,90 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_FILE_OPENFOLDERASWORKSPACE (roots)",
               @"the panel holds several roots, finds a file under them, and has upstream's menu",
               located && menu && [wp.rootPaths isEqualToArray:@[rootB]]);
+    }
+
+    printf("\n== Localization ==\n");
+    {
+        NppPreferences *lp = [NppPreferences shared];
+        NSString *before = lp.localizationFile;
+        NSUInteger idsBefore = [app.shortcutStore menuItemsByIdentifier].count;
+        lp.localizationFile = @"russian.xml";
+        [app applyLocalization];
+        NSMenuItem *fileTop = nil, *newItem = nil;
+        for (NSMenuItem *top in NSApp.mainMenu.itemArray) {
+            if ([NppEnglishTitle(top) isEqualToString:@"File"] || [NppEnglishMenuTitle(top.submenu) isEqualToString:@"File"]) fileTop = top;
+        }
+        for (NSMenuItem *it in fileTop.submenu.itemArray) if (it.action == NSSelectorFromString(@"newDocument:")) newItem = it;
+        BOOL menus = [fileTop.submenu.title isEqualToString:@"Файл"] && [newItem.title isEqualToString:@"Новый"];
+        if (getenv("NPPMAC_L10N_REPORT")) {
+            __block NSUInteger total = 0, same = 0;
+            __block void (^walk)(NSMenu *, NSString *);
+            void (^__block __weak weakWalk)(NSMenu *, NSString *);
+            walk = ^(NSMenu *m, NSString *path) {
+                for (NSMenuItem *it in m.itemArray) {
+                    if (it.isSeparatorItem) continue;
+                    if (it.submenu) { weakWalk(it.submenu, [path stringByAppendingFormat:@"/%@", NppEnglishTitle(it)]); continue; }
+                    if ([path hasPrefix:@"/Language"] || [path containsString:@"Recent"] || [path hasPrefix:@"/NotepadMac"]) continue;
+                    total++;
+                    if ([it.title isEqualToString:NppEnglishTitle(it)]) { same++; fprintf(stderr, "UNTRANSLATED %s/%s\n", path.UTF8String, it.title.UTF8String); }
+                }
+            };
+            weakWalk = walk;
+            walk(NSApp.mainMenu, @"");
+            fprintf(stderr, "L10N %lu of %lu menu items untranslated\n", (unsigned long)same, (unsigned long)total);
+        }
+        // The Shortcut Mapper still knows every command by its English title.
+        BOOL mapper = [app.shortcutStore menuItemsByIdentifier].count == idsBefore;
+        // A dialog's controls, by their English text.
+        [app buildFindPanel];
+        NSPanel *findDialog = [app valueForKey:@"findPanel"];
+        [[NppLocalization shared] localizeWindow:findDialog];
+        NSButton *matchCase = [app valueForKey:@"matchCaseBox"];
+        BOOL dialog = [matchCase.title isEqualToString:@"Учитывать регистр"];
+        BOOL message = [NppL(@"Match case") isEqualToString:@"Учитывать регистр"] && [NppL(@"no such text") isEqualToString:@"no such text"];
+        // A tab is named as upstream names the dialog ("Замена"), its button as
+        // the button ("Заменить"), and a longer title widens its button.
+        NSSegmentedControl *tabs = [app valueForKey:@"findTabs"];
+        NSButton *replaceAllButton = nil, *replaceButton = nil;
+        for (NSView *sub in findDialog.contentView.subviews) {
+            if (![sub isKindOfClass:[NSButton class]]) continue;
+            if (((NSButton *)sub).action == @selector(findPanelReplaceAll:)) replaceAllButton = (NSButton *)sub;
+            if (((NSButton *)sub).action == @selector(findPanelReplace:)) replaceButton = (NSButton *)sub;
+        }
+        BOOL names = [[tabs labelForSegment:1] isEqualToString:@"Замена"] &&
+                     [replaceButton.title isEqualToString:@"Заменить"] &&
+                     [replaceAllButton.title isEqualToString:@"Заменить все"] &&
+                     replaceAllButton.cell.cellSize.width <= NSWidth(replaceAllButton.frame) + 0.5;
+        // The language pop-up has one item per file, so its index is the file's.
+        PreferencesWindow *lpw = [[PreferencesWindow alloc] initWithEditor:ed];
+        NSPopUpButton *languagePopup = [lpw valueForKey:@"controls"][@"localizationFile"];
+        NSArray *languageFiles = [lpw valueForKey:@"localizationFiles"];
+        NSUInteger russianAt = [languageFiles indexOfObject:@"russian.xml"];
+        BOOL popup = languagePopup.numberOfItems == (NSInteger)languageFiles.count && russianAt != NSNotFound &&
+                     languagePopup.indexOfSelectedItem == (NSInteger)russianAt;
+        NSTableView *pageList = [lpw valueForKey:@"categories"];
+        BOOL pages = [[lpw.categoryNames firstObject] isEqualToString:@"General"] &&
+                     [[pageList.dataSource tableView:pageList objectValueForTableColumn:nil row:0] isEqualToString:@"Основные"];
+        BOOL oneLine = [[[NppLocalization shared] translate:@"Find All in Current Document"] isEqualToString:@"Найти все в Текущем Документе"] &&
+                       [[NppLocalization availableLanguages][@"russian.xml"] isEqualToString:@"Русский"];
+        printf("    l10n tabs=%s replaceAll=%s popup=%ld/%lu\n", [tabs labelForSegment:1].UTF8String,
+               replaceAllButton.title.UTF8String, (long)languagePopup.numberOfItems, (unsigned long)languageFiles.count);
+        Check(@"IDM_SETTING_PREFERENCE (localization names)",
+              @"tabs take the dialog's names, buttons fit their translation, and the language pop-up matches its files",
+              names && popup && pages && oneLine);
+        // And back to English, where it all was.
+        lp.localizationFile = @"";
+        [app applyLocalization];
+        [[NppLocalization shared] localizeWindow:findDialog];
+        BOOL english = [fileTop.submenu.title isEqualToString:@"File"] && [newItem.title isEqualToString:@"New"] &&
+                       [matchCase.title isEqualToString:@"Match case"];
+        lp.localizationFile = before ?: @"";
+        [app applyLocalization];
+        printf("    l10n: %d %d %d %d %d file=%s new=%s case=%s\n", menus, mapper, dialog, message, english,
+               fileTop.submenu.title.UTF8String, newItem.title.UTF8String, matchCase.title.UTF8String);
+        Check(@"IDM_SETTING_PREFERENCE (localization)",
+              @"russian.xml translates the menus by command id and dialogs by English text, and English comes back",
+              menus && mapper && dialog && message && english);
     }
 
     printf("\n== New documents, recent files, directories ==\n");

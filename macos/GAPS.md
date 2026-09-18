@@ -94,8 +94,8 @@ so left out on purpose: hiding the menu bar (it belongs to the system),
 dark-mode tones and custom dark colours (the system's dark appearance draws
 the chrome), the 3D border width, DirectWrite rendering modes, minimize /
 close to the tray, "alternate icons" and "show only pinned button" (the
-port's tabs draw no such buttons). The localisation picker waits for plan
-3.1.
+port's tabs draw no such buttons). The localisation picker lists every
+`nativeLang` file by the name it gives itself.
 
 **Style Configurator.** Done since the audit: the dialog edits a copy of
 the theme's XML, previews each change and writes the user's copy on Save &
@@ -177,7 +177,16 @@ back; places, floating frames and dock sizes are kept. Still different: the
 Search results stay a tab rather than a bottom panel, and the Document List
 has no "Group by View".
 
-**Platform.** English only, no `nativeLang` loading. No plugin loading, no
+**Localisation.** Done since the audit: upstream's `nativeLang` files load
+unchanged and switch without a restart. Menus are translated by command id
+and menu id (so `russian.xml` leaves only language names, code pages and
+Mac-only commands in English), dialogs and message boxes by their English
+text, tabs and windows by the titles upstream gives them. Push buttons widen
+to fit a longer translation. Still different: the port's own wording (most
+Preferences checkboxes, the port-only panels) has no upstream key and stays
+English, and right-to-left languages are not mirrored.
+
+**Platform.** No plugin loading, no
 NPPM/NPPN messages, no Plugins Admin; the built-in stand-ins are JSON,
 Compare, XML Tools, FTP, Run and the Function List. Check for Updates opens
 the releases page; the stored proxy is never used. Debug Info lists four
