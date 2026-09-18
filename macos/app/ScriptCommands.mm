@@ -87,6 +87,7 @@ static NSString *VariableKey(NSString *s) {
 @property (nonatomic) NSUInteger steps;
 @property (nonatomic) NSUInteger depth;
 @property (nonatomic) BOOL exitRequested;
+@property (nonatomic) BOOL exitEverything;      // EXIT 1 / EXIT -1: the calling scripts end too
 @end
 
 @implementation NppScriptEngine
@@ -219,9 +220,11 @@ static NSString *VariableKey(NSString *s) {
     self.depth++;
     BOOL ok = [self runLines:[text componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet]];
     self.depth--;
+    // A plain EXIT ends the script it is in and the caller goes on (NppExec's "soft" exit).
+    if (self.exitRequested && !self.exitEverything) self.exitRequested = NO;
     for (NSString *k in [self.variables.allKeys copy]) if ([k hasPrefix:@"ARGV"] || [k isEqualToString:@"ARGC"]) [self.variables removeObjectForKey:k];
     [self.variables addEntriesFromDictionary:savedArgs];
-    if (self.depth == 0) self.exitRequested = NO;
+    if (self.depth == 0) self.exitRequested = self.exitEverything = NO;
     return ok;
 }
 
@@ -468,7 +471,11 @@ static BOOL IsBlockIf(NSString *rest) {
         OnMain(^{ [[editor console] clear]; });
         return YES;
     }
-    if ([word isEqualToString:@"EXIT"]) { self.exitRequested = YES; return YES; }
+    if ([word isEqualToString:@"EXIT"]) {
+        self.exitRequested = YES;
+        self.exitEverything = Trimmed(rest).integerValue != 0;
+        return YES;
+    }
     if ([word isEqualToString:@"CD"]) {
         if (!rest.length) { [self print:[NSString stringWithFormat:@"Current directory: %@", self.directory]]; return YES; }
         NSString *dir = [self absolutePath:rest];

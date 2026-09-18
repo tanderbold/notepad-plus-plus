@@ -54,37 +54,38 @@ the shell's `$( )`); localisation put labels back to their first text,
 left context menus and column headers English, emptied the editor's context
 menu under a translation, and gave the main menu the tab menu's wording.
 
-Found and not yet fixed, most important first:
+The rest of what the reviews found was fixed on 2026-09-19, each with a
+test: macros from a Windows `shortcuts.xml` keep and play their menu-command
+and Find steps; big files in a code page are detected and converted piece by
+piece; a project workspace writes untouched paths as it read them and a
+renamed file renames its path; Find and Replace in Files read and keep a
+file's own character set; the UDL styler keeps every nesting bit and honours
+transparent colours, and shows a change while it is typed; monitoring
+follows a rotated log; messages, sheets and Find's status line use upstream's
+words with their placeholders, so translations apply; the Style Configurator
+opens the system font panel; the divider between the two views and the front
+tab of each dock container are kept; a column sort covers the rectangle's
+lines, thin selections included; Select and Find Next is no longer Volatile
+Find; a wrapped Document Map wraps where the editor does; a dragged panel
+shows where it would land; the results tab is known by a flag; `EXIT` in a
+nested NppExec script returns to its caller; the language model has examples
+of asn1, fortran77, gui4cli, hollywood and json5.
 
-1. **shortcuts.xml from Windows loses macro steps on the first save**: menu
-   command (type 2) and search (type 3) actions are not read, and the file
-   is rewritten from the port's own store (`ShortcutMapper.mm` load/save).
-2. **Files of 64 MB and more skip character-set detection** and are read as
-   Latin-1 when they are not UTF-8 (`EditorController.mm`, streaming path).
-3. **Project workspace save is not lossless**: a relative path outside the
-   workspace folder is written absolute, and a renamed file node keeps its
-   old path and loses the new name on reload (`ProjectPanel.mm`).
-4. **Find in Projects / Find in Files read UTF-8 only**; a cp1251 project
-   gives no hits and says nothing (`FindCommands.mm`).
-5. **UDL styler**: six nesting bits (folders in code 2 / comment) are dropped
-   when a style is edited, and `colorStyle` (transparent) is not applied.
-6. **Monitoring ends when the file is renamed or deleted**; log rotation
-   stops the tail (`ViewCommands.mm`).
-7. **Messages are mostly English under a translation**: alerts built with
-   a format never match a nativeLang entry, `$STR_REPLACE$`-style entries are
-   not used, sheets bypass the hook, Find's status line is not translated.
-8. Style Configurator picks fonts from a pop-up, not `NSFontPanel`; the
-   divider between the two views is not kept in the session; the Document
-   Map wraps at its own width; docking shows no drop preview, floats hold one
-   panel, and the front tab of a container is not saved; a rectangular sort
-   ignores thin selections; Volatile Find is Select and Find Next.
-9. The plan's wording was wrong in two places and nothing is missing:
-   `${name}` and two-digit `\10` are not Boost's syntax (`$+{name}` and
+What is left of that list, none of it a defect in what exists:
+
+1. A floating dock window holds one panel; upstream's can hold several as tabs.
+2. The Document List has no "Group by View".
+3. A macro recorded here records Scintilla actions only; menu commands and
+   Find steps play when they come from a file, but are not recorded.
+4. Messages the port has and Windows does not (JSON, Compare, XML, FTP,
+   NppExec, the update check) stay English under a translation: no
+   nativeLang file has them.
+5. The plan's wording was wrong in two places and nothing is missing:
+   `${name}` and two-digit `\\10` are not Boost's syntax (`$+{name}` and
    `$10` are, and work); Notepad++ has no "line context" in its results.
-10. The single-answer level of the language model came out equal to the
-    ordinary one on the present data, so the short list is never shown;
-    asn1, fortran77, gui4cli, hollywood and json5 still have under three
-    examples.
+6. The single-answer level of the language model comes out equal to the
+   ordinary one on the present data, so the short list is not shown; a
+   retrain on other data moves it without a code change.
 
 ## What the Windows version has and this does not
 

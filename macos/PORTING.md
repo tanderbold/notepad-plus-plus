@@ -483,13 +483,14 @@ built in three layers:
 1. **What the text says outright**: a shebang line, `<?php`, `<?xml`, an HTML
    doctype, an editor modeline, JSON that parses. Taken as given.
 2. **A trained model**, `macos/resources/language-model.bin`, read by
-   `app/LanguageModel.mm`. Eighty-five independent yes-or-no judgements, one
+   `app/LanguageModel.mm`. Ninety independent yes-or-no judgements, one
    per language, so that a text two languages could have written scores well
    for both and both are offered. Trained by `macos/train-language-model.py`
    from the Linguist samples, Rosetta Code, Lexilla's lexer examples, the
    function-list corpus, this repository's own files, examples written for the
-   languages none of those has (`macos/resources/language-samples`: AviSynth,
-   eScript, JSP, KiXtart, NFO, OScript, registry files, SPICE, txt2tags) and
+   languages none of those has (`macos/resources/language-samples`: ASN.1,
+   AviSynth, eScript, Fortran 77, GUI4CLI, Hollywood, JSON5, JSP, KiXtart, NFO,
+   OScript, registry files, SPICE, txt2tags) and
    generated Intel HEX, S-record and Tektronix hex images - and trained on
    pieces of three to forty lines as well as whole files, because pieces are
    what it is asked about. Features are byte n-grams, whole words, and the
@@ -505,29 +506,28 @@ built in three layers:
    rest of the text looks like: a PowerShell script whose body is shell
    commands reads as shell to the model, and the marks are what say otherwise.
 
-The old keyword-list rules remain for the few languages with fewer than three
-examples anywhere (ASN.1, Fortran 77 fixed form, GUI4CLI, Hollywood, JSON5 and
-the output-only lexers), and are only reached when the model has nothing to
-say.
+The old keyword-list rules remain for what has no examples at all (the
+output-only lexers: error lists, escape sequences, search results), and are
+only reached when the model has nothing to say.
 
 One language is applied on its own only when it reaches a second level, fitted
 after the first by the same measure; below it the best three are offered as a
 list instead. On the present data the fit puts that level at the first one
-(0.32): lone answers are already right 96-99% of the time, and turning the
+(0.40): lone answers are already right 96-99% of the time, and turning the
 unsure ones into lists costs more than it saves. The level is in the model
 file (format 5), so a retrain on other data moves it without a code change.
 
 Measured on files the model never saw (the half of the held-back files not
-used to fit the rule; 1,084 whole files and about 1,060 fragments of each
+used to fit the rule; 1,089 whole files and about 1,070 fragments of each
 length):
 
 | Text | Right first | Right in what is offered | One language | One and right | A list | Nothing |
 |---|---|---|---|---|---|---|
-| whole file | 95.0% | 95.6% | 85% | 99% | 11% | 4% |
-| 40 lines | 95.6% | 96.2% | 85% | 99% | 13% | 2% |
-| 20 lines | 94.3% | 95.8% | 80% | 98% | 18% | 2% |
-| 10 lines | 91.4% | 94.9% | 69% | 98% | 29% | 2% |
-| 5 lines | 85.8% | 93.7% | 47% | 96% | 51% | 2% |
+| whole file | 94.6% | 94.8% | 85% | 99% | 10% | 4% |
+| 40 lines | 95.1% | 95.1% | 85% | 99% | 12% | 3% |
+| 20 lines | 93.6% | 95.0% | 81% | 98% | 17% | 2% |
+| 10 lines | 90.6% | 93.8% | 71% | 98% | 26% | 3% |
+| 5 lines | 85.2% | 92.6% | 53% | 95% | 45% | 2% |
 
 By source, whole files: Linguist 86.9% first (the most varied, and the most
 telling), the repository's own files 89.8%, Rosetta Code 97.3%. What is

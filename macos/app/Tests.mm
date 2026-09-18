@@ -8489,6 +8489,16 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"NppExec (stop)", @"stopping a script ends the program it is running, and nothing after it runs",
               slowTook < 5 && ![slow.log containsString:@"not-reached"]);
 
+        // EXIT ends the script it is in; the caller goes on. EXIT 1 ends them all.
+        [ed saveScript:[NppSavedScript scriptNamed:@"t_inner" text:@"ECHO inner-start\nEXIT $(ARGV[1])\nECHO inner-not-reached"]];
+        NppScriptEngine *exiting = [[NppScriptEngine alloc] initWithEditor:ed];
+        [exiting runScript:@"NPP_EXEC t_inner 0\nECHO outer-goes-on\nNPP_EXEC t_inner 1\nECHO outer-not-reached\n" arguments:@[]];
+        [ed removeScriptNamed:@"t_inner"];
+        NSString *el = exiting.log;
+        Check(@"NppExec (EXIT)", @"EXIT returns to the calling script, EXIT 1 ends the calling scripts too",
+              [el containsString:@"outer-goes-on"] && ![el containsString:@"inner-not-reached"] && ![el containsString:@"outer-not-reached"] &&
+              [el componentsSeparatedByString:@"inner-start"].count == 3);
+
         // A runaway loop is stopped rather than hanging the editor.
         NppScriptEngine *loop = [[NppScriptEngine alloc] initWithEditor:ed];
         loop.stepLimit = 500;
