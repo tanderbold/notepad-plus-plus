@@ -422,8 +422,13 @@ static long SciColor(NSColor *c) {
 
 - (void)setDocumentText:(NSString *)text {
     NSData *utf8 = [text dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
+    // A read-only document takes no text; the flag is lifted for the
+    // replacement (a reload, a reread in another code page) and put back.
+    BOOL readOnly = [self.sciView message:SCI_GETREADONLY wParam:0 lParam:0] != 0;
+    if (readOnly) [self.sciView message:SCI_SETREADONLY wParam:0 lParam:0];
     [self.sciView message:SCI_CLEARALL wParam:0 lParam:0];
     [self.sciView message:SCI_ADDTEXT wParam:(uptr_t)utf8.length lParam:(sptr_t)utf8.bytes];
+    if (readOnly) [self.sciView message:SCI_SETREADONLY wParam:1 lParam:0];
 }
 
 - (BOOL)openFileAtPath:(NSString *)path error:(NSError **)error {
@@ -557,8 +562,13 @@ static long SciColor(NSColor *c) {
     NSMutableArray *docs = (NSMutableArray *)self.documents;
     if (from < 0 || to < 0 || from >= (NSInteger)docs.count || to >= (NSInteger)docs.count) return;
     NppDocument *moving = docs[(NSUInteger)from];
+    NppDocument *inFront = self.currentDocument;
     [docs removeObjectAtIndex:(NSUInteger)from];
     [docs insertObject:moving atIndex:(NSUInteger)to];
+    // The indexes moved, the documents did not: the one in front keeps its
+    // number updated, so that selecting the moved tab is a real switch from
+    // it (or none at all when the moved tab is the one in front).
+    self.currentIndex = inFront ? (NSInteger)[docs indexOfObject:inFront] : -1;
     [self selectDocumentAtIndex:to];
 }
 
@@ -629,9 +639,15 @@ static long SciColor(NSColor *c) {
 
 #pragma mark - Files changed on disk
 
+static BOOL gCheckingFilesOnDisk;
+
 - (void)checkFilesOnDisk {
     NppPreferences *p = [NppPreferences shared];
     if (!p.fileAutoDetection) return;
+    // Answering the question means leaving and returning to the
+    // application, which asks again: not while a check is under way.
+    if (gCheckingFilesOnDisk) return;
+    gCheckingFilesOnDisk = YES;
     NSFileManager *fm = [NSFileManager defaultManager];
     NppDocument *was = self.currentDocument;
     NppDocument *previous = [self previousTab];
@@ -641,6 +657,7 @@ static long SciColor(NSColor *c) {
         NSDate *onDisk = [[fm attributesOfItemAtPath:doc.path error:NULL] fileModificationDate];
 
         if (!onDisk) {
+            if (!doc.fileModificationDate) continue;      // already known to be gone, and kept
             // Gone. Kept as a modified document, or closed, as the user says.
             [self selectDocumentAtIndex:(NSInteger)[self.docs indexOfObject:doc]];
             NSInteger answer = self.scriptedCloseAnswer;
@@ -658,7 +675,9 @@ static long SciColor(NSColor *c) {
                 doc.fileModificationDate = nil;
                 [self refreshChrome];
             } else {
+                NSString *gone = doc.path;
                 [self closeDocumentAtIndex:(NSInteger)[self.docs indexOfObject:doc] discardChanges:YES];
+                [self forgetRecentFile:gone];             // there is nothing to reopen
             }
             continue;
         }
@@ -681,6 +700,7 @@ static long SciColor(NSColor *c) {
             answer = [ask runModal];
         }
         if (answer == NSAlertFirstButtonReturn) {
+            [self reselectDocument:doc];                  // the alert may have moved the front
             if ([self reloadCurrentDocument:NULL] && p.fileAutoDetectionScrollToEnd) {
                 [self.sciView message:SCI_DOCUMENTEND wParam:0 lParam:0];
             }
@@ -690,6 +710,7 @@ static long SciColor(NSColor *c) {
     }
     [self reselectDocument:was];
     [self rememberPreviousTab:previous];
+    gCheckingFilesOnDisk = NO;
 }
 
 - (BOOL)confirmClosingDocuments:(NSArray<NppDocument *> *)docs {
@@ -879,7 +900,9 @@ static long SciColor(NSColor *c) {
     }
     if (![[NSFileManager defaultManager] trashItemAtURL:[NSURL fileURLWithPath:doc.path]
                                        resultingItemURL:nil error:error]) return NO;
+    NSString *gone = doc.path;
     [self closeDocumentAtIndex:self.currentIndex discardChanges:YES];
+    [self forgetRecentFile:gone];             // as Windows takes a deleted file off the list
     return YES;
 }
 
@@ -1173,14 +1196,6 @@ static long SciColor(NSColor *c) {
     }
     if ([f[@"pinned"] isKindOfClass:[NSNumber class]]) doc.pinned = [f[@"pinned"] boolValue];
     if ([f[@"tabColour"] isKindOfClass:[NSNumber class]]) doc.tabColour = [f[@"tabColour"] integerValue];
-    NSArray *marks = f[@"bookmarks"];
-    if ([marks isKindOfClass:[NSArray class]]) {
-        for (NSNumber *line in marks) {
-            if ([line isKindOfClass:[NSNumber class]]) {
-                [self.sciView message:SCI_MARKERADD wParam:(uptr_t)line.longValue lParam:1];
-            }
-        }
-    }
     // A backup newer than the file is the unsaved text of the last session.
     NSString *backup = f[@"backup"];
     if ([backup isKindOfClass:[NSString class]] && doc.path) {
@@ -1190,6 +1205,16 @@ static long SciColor(NSColor *c) {
             ? [NSData dataWithContentsOfFile:backup] : nil;
         if (data) [self restoreBackupData:data forDocument:doc atPath:backup];
         else [[NSFileManager defaultManager] removeItemAtPath:backup error:NULL];
+    }
+    // The bookmarks go on once the text is final: replacing the text would
+    // have swept them all onto the first line.
+    NSArray *marks = f[@"bookmarks"];
+    if ([marks isKindOfClass:[NSArray class]]) {
+        for (NSNumber *line in marks) {
+            if ([line isKindOfClass:[NSNumber class]]) {
+                [self.sciView message:SCI_MARKERADD wParam:(uptr_t)line.longValue lParam:1];
+            }
+        }
     }
     long caret = [f[@"caret"] isKindOfClass:[NSNumber class]] ? [f[@"caret"] longValue] : 0;
     long anchor = [f[@"anchor"] isKindOfClass:[NSNumber class]] ? [f[@"anchor"] longValue] : caret;

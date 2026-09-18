@@ -72,6 +72,14 @@ static NSDictionary<NSString *, NSNumber *> *StyleIndexes(void) {
             @"DELIMITERS3": @(SCE_USER_STYLE_DELIMITER3), @"DELIMITERS4": @(SCE_USER_STYLE_DELIMITER4),
             @"DELIMITERS5": @(SCE_USER_STYLE_DELIMITER5), @"DELIMITERS6": @(SCE_USER_STYLE_DELIMITER6),
             @"DELIMITERS7": @(SCE_USER_STYLE_DELIMITER7), @"DELIMITERS8": @(SCE_USER_STYLE_DELIMITER8),
+            // The names files written before version 2.0 use.
+            @"COMMENT": @(SCE_USER_STYLE_COMMENT), @"COMMENT LINE": @(SCE_USER_STYLE_COMMENTLINE),
+            @"NUMBER": @(SCE_USER_STYLE_NUMBER), @"OPERATOR": @(SCE_USER_STYLE_OPERATOR),
+            @"KEYWORD1": @(SCE_USER_STYLE_KEYWORD1), @"KEYWORD2": @(SCE_USER_STYLE_KEYWORD2),
+            @"KEYWORD3": @(SCE_USER_STYLE_KEYWORD3), @"KEYWORD4": @(SCE_USER_STYLE_KEYWORD4),
+            @"FOLDEROPEN": @(SCE_USER_STYLE_FOLDER_IN_CODE1), @"FOLDERCLOSE": @(SCE_USER_STYLE_FOLDER_IN_CODE1),
+            @"DELIMINER1": @(SCE_USER_STYLE_DELIMITER1), @"DELIMINER2": @(SCE_USER_STYLE_DELIMITER2),
+            @"DELIMINER3": @(SCE_USER_STYLE_DELIMITER3),
         };
     });
     return map;
@@ -92,6 +100,7 @@ static BOOL YesAttribute(NSXMLElement *element, NSString *name) {
         if (!name.length) continue;
         NppUserLanguage *udl = [[NppUserLanguage alloc] init];
         udl.name = name;
+        NSString *udlVersion = [userLang attributeForName:@"udlVersion"].stringValue ?: @"";
         NSMutableArray *exts = [NSMutableArray array];
         for (NSString *e in [[userLang attributeForName:@"ext"].stringValue ?: @"" componentsSeparatedByString:@" "]) {
             if (e.length) [exts addObject:e.lowercaseString];
@@ -123,8 +132,41 @@ static BOOL YesAttribute(NSXMLElement *element, NSString *name) {
         for (int i = 0; i < SCE_USER_KWLIST_TOTAL; ++i) [lists addObject:@""];
         NSXMLElement *keywordLists = [userLang elementsForName:@"KeywordLists"].firstObject;
         for (NSXMLElement *keywords in [keywordLists elementsForName:@"Keywords"]) {
-            NSNumber *index = KeywordListIndexes()[[keywords attributeForName:@"name"].stringValue ?: @""];
-            if (index) lists[index.unsignedIntegerValue] = keywords.stringValue ?: @"";
+            NSString *listName = [keywords attributeForName:@"name"].stringValue ?: @"";
+            NSString *value = keywords.stringValue ?: @"";
+            // Files written before 2.0 packed the delimiters into one string
+            // and numbered the comment markers 0, 1, 2; both are rewritten
+            // into the 2.x shape, as feedUserKeywordList does.
+            if (!udlVersion.length && [listName isEqualToString:@"Delimiters"] && value.length >= 6) {
+                unichar k[6];
+                for (int i = 0; i < 6; ++i) k[i] = [value characterAtIndex:(NSUInteger)i];
+                NSMutableString *temp = [NSMutableString stringWithString:@"00"];
+                if (k[0] != '0') [temp appendFormat:@"%C", k[0]];
+                [temp appendString:@" 01 02"];
+                if (k[3] != '0') [temp appendFormat:@"%C", k[3]];
+                [temp appendString:@" 03"];
+                if (k[1] != '0') [temp appendFormat:@"%C", k[1]];
+                [temp appendString:@" 04 05"];
+                if (k[4] != '0') [temp appendFormat:@"%C", k[4]];
+                [temp appendString:@" 06"];
+                if (k[2] != '0') [temp appendFormat:@"%C", k[2]];
+                [temp appendString:@" 07 08"];
+                if (k[5] != '0') [temp appendFormat:@"%C", k[5]];
+                [temp appendString:@" 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23"];
+                lists[SCE_USER_KWLIST_DELIMITERS] = temp;
+                continue;
+            }
+            if ([listName isEqualToString:@"Comment"]) {
+                NSMutableString *temp = [NSMutableString stringWithFormat:@" %@", value];
+                [temp replaceOccurrencesOfString:@" 0" withString:@" 00" options:0 range:NSMakeRange(0, temp.length)];
+                [temp replaceOccurrencesOfString:@" 1" withString:@" 03" options:0 range:NSMakeRange(0, temp.length)];
+                [temp replaceOccurrencesOfString:@" 2" withString:@" 04" options:0 range:NSMakeRange(0, temp.length)];
+                lists[SCE_USER_KWLIST_COMMENTS] = [temp stringByTrimmingCharactersInSet:
+                                                  [NSCharacterSet whitespaceCharacterSet]];
+                continue;
+            }
+            NSNumber *index = KeywordListIndexes()[listName];
+            if (index) lists[index.unsignedIntegerValue] = value;
         }
         udl.keywordLists = lists;
 
@@ -167,6 +209,8 @@ static const char kUserLanguagesKey = 0;
         }
     }
     for (NSString *path in files) [found addObjectsFromArray:[NppUserLanguage languagesInFile:path]];
+    int identifier = 0;
+    for (NppUserLanguage *udl in found) udl.identifier = ++identifier;
 
     NSMutableArray<NppLanguage *> *entries = [NSMutableArray array];
     for (NppUserLanguage *udl in found) {
@@ -276,9 +320,11 @@ static NSString *KeywordListForScintilla(NSString *list) {
     }
     [sci setLexerProperty:@"userDefine.forcePureLC" value:[@(udl.forcePureLC) stringValue]];
     [sci setLexerProperty:@"userDefine.decimalSeparator" value:[@(udl.decimalSeparator) stringValue]];
-    [sci setLexerProperty:@"userDefine.udlName" value:[@((unsigned long)(uintptr_t)(__bridge void *)udl) stringValue]];
+    // Read back with atoi by the lexer, which keys its parsed keyword tables
+    // on them: small numbers, never pointers.
+    [sci setLexerProperty:@"userDefine.udlName" value:[@(udl.identifier) stringValue]];
     [sci setLexerProperty:@"userDefine.currentBufferID"
-                    value:[@((unsigned long)(uintptr_t)self.currentDocument.docPointer) stringValue]];
+                    value:[@((int)(((uintptr_t)self.currentDocument.docPointer >> 4) & 0x7FFFFFFF)) stringValue]];
     for (NSNumber *styleID in udl.styles) {
         NSString *nesting = udl.styles[styleID][@"nesting"];
         if (nesting.length) {

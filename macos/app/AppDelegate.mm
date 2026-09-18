@@ -333,7 +333,9 @@
     [self.editor setAutosaveEnabled:[NppPreferences shared].autosaveEnabled
                            interval:[NppPreferences shared].autosaveInterval];
     [self.editor restorePanelState];
-    if ([NppPreferences shared].restoreSession && ![self.commandLine[@"-nosession"] boolValue]) {
+    if ([self.commandLine[@"-nosession"] boolValue]) {
+        self.editor.sessionSavingDisabled = YES;      // neither loaded nor overwritten
+    } else if ([NppPreferences shared].restoreSession) {
         [self.editor loadSessionFrom:[self.editor defaultSessionPath] error:NULL];
     }
     // The documents this instance was launched with arrive through
@@ -376,18 +378,38 @@
     if (self.closingConfirmed) return NSTerminateNow;
     // With the session snapshot on and the session restored at launch, the
     // unsaved text comes back next time, so nothing is asked - as on Windows.
-    NppPreferences *p = [NppPreferences shared];
-    if (p.autosaveEnabled && p.restoreSession) {
-        [self.editor runAutosavePass];
-        return NSTerminateNow;
-    }
+    if ([self snapshotCoversEverything]) return NSTerminateNow;
     return [self.editor confirmClosingDocuments:self.editor.documents] ? NSTerminateNow
                                                                          : NSTerminateCancel;
 }
 
+/// With the session snapshot on and the session restored at launch, a
+/// backup pass keeps every unsaved document for the next launch and nothing
+/// need be asked - as on Windows. Unless a document could not be backed up
+/// (a large file, a failed write): those are asked about as usual.
+- (BOOL)snapshotCoversEverything {
+    NppPreferences *p = [NppPreferences shared];
+    if (!p.autosaveEnabled || !p.restoreSession || self.editor.sessionSavingDisabled) return NO;
+    [self.editor runAutosavePass];
+    NSMutableArray *uncovered = [NSMutableArray array];
+    for (NppDocument *doc in self.editor.documents) {
+        if (doc.modified && !doc.backupPath) [uncovered addObject:doc];
+    }
+    return uncovered.count == 0 || [self.editor confirmClosingDocuments:uncovered];
+}
+
 - (BOOL)windowShouldClose:(NSWindow *)sender {
+    if ([self snapshotCoversEverything]) {
+        self.closingConfirmed = YES;
+        return YES;
+    }
     if (![self.editor confirmClosingDocuments:self.editor.documents]) return NO;
-    self.closingConfirmed = YES;     // what was not saved was declined, not forgotten
+    // What was not saved was declined, not forgotten - and its backup goes
+    // with it, or the declined text would be back next launch.
+    for (NppDocument *doc in self.editor.documents) {
+        if (doc.modified) [self.editor dropBackupOfDocument:doc];
+    }
+    self.closingConfirmed = YES;
     return YES;
 }
 
@@ -418,6 +440,7 @@
 
 - (void)applicationWillTerminate:(NSNotification *)note {
     [self.editor rememberPanelState];
+    if (self.editor.sessionSavingDisabled) return;
     if ([NppPreferences shared].multiInstanceMode == 2 || [NppPreferences shared].restoreSession) {
         [self.editor saveSessionTo:[self.editor defaultSessionPath] error:NULL];
     }

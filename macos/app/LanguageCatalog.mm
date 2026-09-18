@@ -9,6 +9,7 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NppLanguage *> *byName;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NppLanguage *> *byExtension;
 @property (nonatomic, strong, nullable) NSDictionary<NSString *, NppLanguage *> *builtInByExtension;
+@property (nonatomic, strong, nullable) NSDictionary<NSString *, NppLanguage *> *builtInByName;
 @property (nonatomic, strong) NSArray<NppLanguage *> *userLanguages;
 // parse state
 @property (nonatomic, strong, nullable) NppLanguage *current;
@@ -139,16 +140,25 @@ static NSString *LexerIDForLanguage(NSString *langName) {
 
 - (void)registerUserLanguages:(NSArray<NppLanguage *> *)languages {
     if (!self.builtInByExtension) self.builtInByExtension = [self.byExtension copy];
-    for (NppLanguage *old in self.userLanguages) {
-        [self.languages removeObject:old];
-        if (self.byName[old.name] == old) [self.byName removeObjectForKey:old.name];
-    }
+    if (!self.builtInByName) self.builtInByName = [self.byName copy];
+    for (NppLanguage *old in self.userLanguages) [self.languages removeObject:old];
+    // Both tables start again from the built-in ones, so that a user language
+    // that took a built-in's name, or its extension, gives it back when it
+    // goes. Among user languages the first to claim an extension keeps it,
+    // as getUserDefinedLangNameFromExt finds it.
     self.byExtension = [self.builtInByExtension mutableCopy];
+    self.byName = [self.builtInByName mutableCopy];
     self.userLanguages = [languages copy];
+    NSMutableSet *claimed = [NSMutableSet set];
     for (NppLanguage *lang in languages) {
         [self.languages addObject:lang];
         self.byName[lang.name] = lang;
-        for (NSString *ext in lang.extensions) self.byExtension[ext.lowercaseString] = lang;
+        for (NSString *ext in lang.extensions) {
+            NSString *key = ext.lowercaseString;
+            if ([claimed containsObject:key]) continue;
+            [claimed addObject:key];
+            self.byExtension[key] = lang;
+        }
     }
 }
 

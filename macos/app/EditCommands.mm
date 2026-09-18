@@ -167,7 +167,7 @@ static NSString *ApplyCase(NSString *s, NppCaseMode mode) {
         case NppCaseLower: return s.lowercaseString;
 
         case NppCaseProperForce:
-            return s.lowercaseString.capitalizedString;
+            return ApplyCase(s.lowercaseString, NppCaseProperBlend);
         case NppCaseProperBlend: {
             // Capitalise word starts, leave the rest of each word as the user
             // typed it. A word is letters, digits and apostrophes, as on
@@ -196,20 +196,24 @@ static NSString *ApplyCase(NSString *s, NppCaseMode mode) {
             // that is not a letter or digit, or at a blank line; a lone "i"
             // is "I".
             NSCharacterSet *alnum = [NSCharacterSet alphanumericCharacterSet];
+            NSCharacterSet *space = [NSCharacterSet whitespaceAndNewlineCharacterSet];
             BOOL newSentence = YES, terminator = NO;
             NSUInteger newlines = 0;
             for (NSUInteger i = 0; i < out.length; ++i) {
                 unichar c = [out characterAtIndex:i];
                 BOOL isAlnum = [alnum characterIsMember:c];
-                if (terminator && !isAlnum) newSentence = YES;
+                // As Windows tests it: the stop has to be followed by
+                // whitespace, and a lone i has whitespace (or an edge) on
+                // both sides.
+                if (terminator && [space characterIsMember:c]) newSentence = YES;
                 terminator = NO;
                 if (c == '\n') { if (++newlines >= 2) newSentence = YES; }
                 else if (c != '\r') newlines = 0;
                 if (c == '.' || c == '!' || c == '?') terminator = YES;
                 if (isAlnum) {
                     BOOL lone = (c == 'i') &&
-                        (i == 0 || ![alnum characterIsMember:[out characterAtIndex:i - 1]]) &&
-                        (i + 1 >= out.length || ![alnum characterIsMember:[out characterAtIndex:i + 1]]);
+                        (i == 0 || [space characterIsMember:[out characterAtIndex:i - 1]]) &&
+                        (i + 1 >= out.length || [space characterIsMember:[out characterAtIndex:i + 1]]);
                     if ((newSentence || lone) && [[NSCharacterSet letterCharacterSet] characterIsMember:c]) {
                         [out replaceCharactersInRange:NSMakeRange(i, 1)
                                            withString:[[NSString stringWithCharacters:&c length:1] uppercaseString]];
@@ -367,17 +371,24 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
     ScintillaView *view = self.sci;
     NSRange columns = NSMakeRange(NSNotFound, 0);
     if ([view message:SCI_SELECTIONISRECTANGLE]) {
-        long a = [view message:SCI_GETCOLUMN wParam:(uptr_t)[view message:SCI_GETRECTANGULARSELECTIONANCHOR]]
+        // The offset inside the line, in bytes, as NppCommands.cpp takes it:
+        // a display column would count a tab as several.
+        long anchor = [view message:SCI_GETRECTANGULARSELECTIONANCHOR];
+        long caret = [view message:SCI_GETRECTANGULARSELECTIONCARET];
+        long a = anchor - [view message:SCI_POSITIONFROMLINE wParam:(uptr_t)[view message:SCI_LINEFROMPOSITION wParam:(uptr_t)anchor]]
                + [view message:SCI_GETRECTANGULARSELECTIONANCHORVIRTUALSPACE];
-        long c = [view message:SCI_GETCOLUMN wParam:(uptr_t)[view message:SCI_GETRECTANGULARSELECTIONCARET]]
+        long c = caret - [view message:SCI_POSITIONFROMLINE wParam:(uptr_t)[view message:SCI_LINEFROMPOSITION wParam:(uptr_t)caret]]
                + [view message:SCI_GETRECTANGULARSELECTIONCARETVIRTUALSPACE];
         columns = NSMakeRange((NSUInteger)MIN(a, c), (NSUInteger)labs(a - c));
     }
     NSString *(^keyOf)(NSString *) = ^NSString *(NSString *line) {
         if (columns.location == NSNotFound) return line;
-        if (columns.location >= line.length) return @"";
-        NSUInteger end = MIN(line.length, NSMaxRange(columns));
-        return [line substringWithRange:NSMakeRange(columns.location, end - columns.location)];
+        NSData *bytes = [line dataUsingEncoding:NSUTF8StringEncoding];
+        if (columns.location >= bytes.length) return @"";
+        NSUInteger end = MIN(bytes.length, NSMaxRange(columns));
+        NSData *slice = [bytes subdataWithRange:NSMakeRange(columns.location, end - columns.location)];
+        return [[NSString alloc] initWithData:slice encoding:NSUTF8StringEncoding]
+            ?: [[NSString alloc] initWithData:slice encoding:NSISOLatin1StringEncoding] ?: @"";
     };
 
     // The decimal sorts read each line as a number and refuse the whole sort if
@@ -547,7 +558,7 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
             NSMutableArray *trimmed = [NSMutableArray array];
             for (NSString *line in bodies) {
                 [trimmed addObject:(mode == NppTrimAll
-                    ? [line stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]
+                    ? [line stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@" \t"]]
                     : line)];
             }
             return @[[trimmed componentsJoinedByString:@" "]];

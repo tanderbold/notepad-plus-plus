@@ -89,6 +89,10 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// NSAlertThirdButtonReturn cancels. For the tests.
 @property (nonatomic) NSInteger scriptedCloseAnswer;
 
+/// -nosession on the command line: the session is neither loaded nor
+/// written, so the real last session is left for the next launch.
+@property (nonatomic) BOOL sessionSavingDisabled;
+
 - (instancetype)initWithFrame:(NSRect)frame;
 
 - (void)newDocument;

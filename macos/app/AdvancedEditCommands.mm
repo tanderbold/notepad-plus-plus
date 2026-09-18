@@ -173,7 +173,10 @@ static const char kBeginEndAnchorKey = 0;
         long lines = [sci message:SCI_GETLINECOUNT];
         for (long line = first; line < lines; ++line) {
             long at = [sci message:SCI_FINDCOLUMN wParam:(uptr_t)line lParam:column];
-            long pad = MAX(0, column - [sci message:SCI_GETCOLUMN wParam:(uptr_t)at]);
+            // Padded only when the line ends short of the column; inside a
+            // tab's span the text goes in at the tab, as Windows puts it.
+            long lineEnd = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)line];
+            long pad = at >= lineEnd ? MAX(0, column - [sci message:SCI_GETCOLUMN wParam:(uptr_t)at]) : 0;
             [rows addObject:@{@"start": @(at), @"end": @(at), @"pad": @(pad)}];
         }
         selections = 0;

@@ -21,6 +21,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSArray<NSString *> *keywordLists;
 /// SCE_USER_STYLE_* id -> {fg, bg, fontName, fontStyle, fontSize, nesting}.
 @property (nonatomic, copy) NSDictionary<NSNumber *, NSDictionary *> *styles;
+/// A small number of its own, for the lexer's cache; a pointer would not
+/// survive the lexer's int conversion.
+@property (nonatomic) int identifier;
 
 /// Every language in an XML file of Notepad++'s userDefineLang shape.
 + (NSArray<NppUserLanguage *> *)languagesInFile:(NSString *)path;

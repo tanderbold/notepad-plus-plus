@@ -886,6 +886,27 @@ int NppMacRunTests(AppDelegate *app) {
                   @"with a rectangular selection the lines are ordered by what is inside its columns", byColumn);
         }
 
+        // The column key is an offset in the line, so a tab before the block
+        // does not shift it; Proper Case (force) and Sentence Case as Windows.
+        {
+            [ed newDocument]; [ed setDocumentText:@"\tx c\n\ty a\n\tz b\n"];
+            [ed.sci message:SCI_SETRECTANGULARSELECTIONANCHOR wParam:3 lParam:0];    // after "\tx "
+            [ed.sci message:SCI_SETRECTANGULARSELECTIONCARET wParam:14 lParam:0];    // same offset, third line
+            [ed sortLines:NppSortLexicographic descending:NO];
+            BOOL afterTab = [[ed documentText] isEqualToString:@"\ty a\n\tz b\n\tx c\n"];
+            [ed setDocumentText:@"DON'T 3RD"];
+            [ed convertCase:NppCaseProperForce];
+            BOOL force = [[ed documentText] isEqualToString:@"Don't 3rd"];
+            [ed setDocumentText:@"\"go.\" she said (i) i am"];
+            [ed convertCase:NppCaseSentenceBlend];
+            BOOL sentence = [[ed documentText] isEqualToString:@"\"Go.\" she said (i) I am"];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_EDIT_SORTLINES_LEXICOGRAPHIC_ASCENDING (a tab before the column)",
+                  @"the column is an offset in the line, Proper Case keeps apostrophes when forcing, "
+                  @"and a sentence ends only before whitespace",
+                  afterTab && force && sentence);
+        }
+
         // Character sets are detected the way Windows detects them.
         {
             NSString *russian = @"Привет, это тестовый файл на русском языке. Он нужен для того, чтобы "

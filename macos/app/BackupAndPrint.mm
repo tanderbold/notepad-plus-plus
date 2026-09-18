@@ -174,7 +174,10 @@ static const char kAutosaveTimerKey = 0;
         [self selectDocumentAtIndex:i];
         if ([self largeFileRestrictionActive]) continue;
         NSString *text = [self documentText];
-        if (!d.path && !text.length) continue;
+        if (!d.path && !text.length) {
+            [self dropBackupOfDocument:d];             // emptied: nothing left to keep
+            continue;
+        }
         if (!d.backupPath) {
             NSString *name = [NSString stringWithFormat:@"%@@%@", d.displayName ?: @"new",
                               [stamp stringFromDate:[NSDate date]]];
@@ -191,7 +194,7 @@ static const char kAutosaveTimerKey = 0;
     }
     if (restore != NSNotFound) [self selectDocumentAtIndex:restore];
     [self rememberPreviousTab:previous];
-    [self saveSessionTo:[self defaultSessionPath] error:NULL];
+    if (!self.sessionSavingDisabled) [self saveSessionTo:[self defaultSessionPath] error:NULL];
     return written;
 }
 
