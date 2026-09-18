@@ -230,9 +230,17 @@ static int IndicatorFor(NSInteger style) {
 }
 
 - (NSString *)bookmarkedLinesText {
-    NSMutableArray *out = [NSMutableArray array];
-    for (NSNumber *line in [self bookmarkedLines]) [out addObject:[self lineText:line.longValue]];
-    return [out componentsJoinedByString:@"\n"];
+    // Each line with its own ending, as Windows copies them.
+    ScintillaView *sci = self.sci;
+    NSMutableString *out = [NSMutableString string];
+    NSData *data = [[self documentText] dataUsingEncoding:NSUTF8StringEncoding];
+    for (NSNumber *n in [self bookmarkedLines]) {
+        long line = n.longValue;
+        long start = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)line];
+        long end = start + [sci message:SCI_LINELENGTH wParam:(uptr_t)line];
+        [out appendString:SliceBytes(data, start, end)];
+    }
+    return out;
 }
 
 - (void)copyBookmarkedLines {
@@ -273,19 +281,19 @@ static int IndicatorFor(NSInteger style) {
 
 - (void)pasteOverBookmarkedLines {
     NSString *clip = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] ?: @"";
-    NSArray *replacement = [clip componentsSeparatedByString:@"\n"];
     NSArray *lines = [self bookmarkedLines];
     if (!lines.count) { NSBeep(); return; }
 
+    // Every marked line becomes the whole of the clipboard, as on Windows;
+    // a clipboard of several lines goes into each marked line whole.
     ScintillaView *sci = self.sci;
+    NSString *text = clip;
+    while ([text hasSuffix:@"\n"] || [text hasSuffix:@"\r"]) text = [text substringToIndex:text.length - 1];
     [sci message:SCI_BEGINUNDOACTION];
-    NSUInteger i = lines.count;
     for (NSNumber *n in lines.reverseObjectEnumerator) {
-        i--;
         long line = n.longValue;
         long start = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)line];
         long end = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)line];
-        NSString *text = i < replacement.count ? replacement[i] : @"";
         [sci message:SCI_SETTARGETSTART wParam:(uptr_t)start lParam:0];
         [sci message:SCI_SETTARGETEND wParam:(uptr_t)end lParam:0];
         [sci setStringProperty:SCI_REPLACETARGET parameter:Utf8Len(text) value:text];
@@ -332,7 +340,8 @@ static int IndicatorFor(NSInteger style) {
         match = [sci message:SCI_BRACEMATCH wParam:(uptr_t)pos lParam:0];
     }
     if (match < 0) { NSBeep(); return NO; }
-    long from = MIN(pos, match) + 1, to = MAX(pos, match);
+    // Both braces are part of it, as on Windows.
+    long from = MIN(pos, match), to = MAX(pos, match) + 1;
     [sci message:SCI_SETSEL wParam:(uptr_t)from lParam:to];
     [self refreshChrome];
     return YES;

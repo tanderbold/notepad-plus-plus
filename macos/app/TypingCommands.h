@@ -37,6 +37,8 @@ typedef NS_ENUM(NSInteger, NppCompletionSource) {
 // Recent files
 - (void)noteRecentFile:(NSString *)path;
 - (NSArray<NSString *> *)recentFiles;
+/// Takes a file off the list: it is open now, and the list is of what was closed.
+- (void)forgetRecentFile:(NSString *)path;
 - (NSString *)displayNameForRecentFile:(NSString *)path;
 - (void)clearRecentFiles;
 

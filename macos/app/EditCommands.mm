@@ -65,7 +65,7 @@ static NSString *LineEnding(NSString *line) {
 - (void)replaceDocumentText:(NSString *)text keepingLine:(long)line {
     ScintillaView *sci = self.sci;
     [sci message:SCI_BEGINUNDOACTION];
-    [sci setString:text];
+    [self setDocumentText:text];
     [sci message:SCI_ENDUNDOACTION];
     long last = [sci message:SCI_GETLINECOUNT] - 1;
     [sci message:SCI_GOTOLINE wParam:(uptr_t)MAX(0, MIN(line, last)) lParam:0];
@@ -153,7 +153,7 @@ static NSString *LineEnding(NSString *line) {
     NSString *replaced = transform(middle);
 
     [sci message:SCI_BEGINUNDOACTION];
-    [sci setString:[NSString stringWithFormat:@"%@%@%@", prefix, replaced, suffix]];
+    [self setDocumentText:[NSString stringWithFormat:@"%@%@%@", prefix, replaced, suffix]];
     [sci message:SCI_ENDUNDOACTION];
     [sci message:SCI_SETSEL wParam:(uptr_t)selStart lParam:selStart + Utf8Length(replaced)];
     [self refreshChrome];
@@ -169,13 +169,17 @@ static NSString *ApplyCase(NSString *s, NppCaseMode mode) {
         case NppCaseProperForce:
             return s.lowercaseString.capitalizedString;
         case NppCaseProperBlend: {
-            // Capitalise word starts, leave the rest of each word as the user typed it.
+            // Capitalise word starts, leave the rest of each word as the user
+            // typed it. A word is letters, digits and apostrophes, as on
+            // Windows: "don't" is one word and "3rd" starts with a digit.
             NSMutableString *out = [s mutableCopy];
             BOOL atStart = YES;
             for (NSUInteger i = 0; i < out.length; ++i) {
                 unichar c = [out characterAtIndex:i];
-                BOOL isWord = [[NSCharacterSet letterCharacterSet] characterIsMember:c];
-                if (isWord && atStart) {
+                BOOL letter = [[NSCharacterSet letterCharacterSet] characterIsMember:c];
+                BOOL isWord = letter || [[NSCharacterSet decimalDigitCharacterSet] characterIsMember:c] ||
+                              c == '\'';
+                if (letter && atStart) {
                     [out replaceCharactersInRange:NSMakeRange(i, 1)
                                        withString:[[NSString stringWithCharacters:&c length:1] uppercaseString]];
                 }
@@ -188,15 +192,29 @@ static NSString *ApplyCase(NSString *s, NppCaseMode mode) {
         case NppCaseSentenceBlend: {
             BOOL force = (mode == NppCaseSentenceForce);
             NSMutableString *out = [(force ? s.lowercaseString : s) mutableCopy];
-            BOOL newSentence = YES;
+            // As on Windows: a sentence ends at . ! or ? followed by something
+            // that is not a letter or digit, or at a blank line; a lone "i"
+            // is "I".
+            NSCharacterSet *alnum = [NSCharacterSet alphanumericCharacterSet];
+            BOOL newSentence = YES, terminator = NO;
+            NSUInteger newlines = 0;
             for (NSUInteger i = 0; i < out.length; ++i) {
                 unichar c = [out characterAtIndex:i];
-                if (newSentence && [[NSCharacterSet letterCharacterSet] characterIsMember:c]) {
-                    [out replaceCharactersInRange:NSMakeRange(i, 1)
-                                       withString:[[NSString stringWithCharacters:&c length:1] uppercaseString]];
+                BOOL isAlnum = [alnum characterIsMember:c];
+                if (terminator && !isAlnum) newSentence = YES;
+                terminator = NO;
+                if (c == '\n') { if (++newlines >= 2) newSentence = YES; }
+                else if (c != '\r') newlines = 0;
+                if (c == '.' || c == '!' || c == '?') terminator = YES;
+                if (isAlnum) {
+                    BOOL lone = (c == 'i') &&
+                        (i == 0 || ![alnum characterIsMember:[out characterAtIndex:i - 1]]) &&
+                        (i + 1 >= out.length || ![alnum characterIsMember:[out characterAtIndex:i + 1]]);
+                    if ((newSentence || lone) && [[NSCharacterSet letterCharacterSet] characterIsMember:c]) {
+                        [out replaceCharactersInRange:NSMakeRange(i, 1)
+                                           withString:[[NSString stringWithCharacters:&c length:1] uppercaseString]];
+                    }
                     newSentence = NO;
-                } else if (c == '.' || c == '!' || c == '?' || c == '\n' || c == '\r') {
-                    newSentence = YES;
                 }
             }
             return out;
@@ -520,7 +538,8 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
 
     [self transformSelectedLines:^NSArray *(NSArray *bodies) {
         NSMutableArray *out = [NSMutableArray array];
-        NSCharacterSet *ws = [NSCharacterSet whitespaceCharacterSet];
+        // Tabs and spaces, as Windows trims: a no-break space is content.
+        NSCharacterSet *ws = [NSCharacterSet characterSetWithCharactersInString:@" \t"];
         NSString *spaces = [@"" stringByPaddingToLength:(NSUInteger)tabWidth withString:@" " startingAtIndex:0];
         for (NSString *line in bodies) {
             NSString *r = line;
@@ -612,30 +631,37 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
 #pragma mark - Insert
 
 - (void)insertDateTimeShort:(BOOL)shortForm {
-    NSDateFormatter *f = [[NSDateFormatter alloc] init];
-    f.dateStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
-    f.timeStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
-    NSString *stamp = [f stringFromDate:[NSDate date]];
+    // As Windows writes it: the time (no seconds) and then the date, or the
+    // other way round with "Reverse default date time order"; and it goes in
+    // place of the selection.
+    NSDateFormatter *dateOnly = [[NSDateFormatter alloc] init];
+    dateOnly.dateStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
+    dateOnly.timeStyle = NSDateFormatterNoStyle;
+    NSDateFormatter *timeOnly = [[NSDateFormatter alloc] init];
+    timeOnly.dateStyle = NSDateFormatterNoStyle;
+    timeOnly.timeStyle = NSDateFormatterShortStyle;
+    NSDate *now = [NSDate date];
+    NSString *date = [dateOnly stringFromDate:now], *time = [timeOnly stringFromDate:now];
+    NSString *stamp = [NppPreferences shared].reverseDateTimeOrder
+        ? [NSString stringWithFormat:@"%@ %@", date, time]
+        : [NSString stringWithFormat:@"%@ %@", time, date];
+    [self replaceSelectionWith:stamp];
+}
 
-    // "Reverse default date time order" puts the time first, as upstream does.
-    if ([NppPreferences shared].reverseDateTimeOrder) {
-        NSDateFormatter *dateOnly = [[NSDateFormatter alloc] init];
-        dateOnly.dateStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
-        dateOnly.timeStyle = NSDateFormatterNoStyle;
-        NSDateFormatter *timeOnly = [[NSDateFormatter alloc] init];
-        timeOnly.dateStyle = NSDateFormatterNoStyle;
-        timeOnly.timeStyle = shortForm ? NSDateFormatterShortStyle : NSDateFormatterLongStyle;
-        NSDate *now = [NSDate date];
-        stamp = [NSString stringWithFormat:@"%@ %@",
-                 [timeOnly stringFromDate:now], [dateOnly stringFromDate:now]];
-    }
-    [self insertAtCaret:stamp];
+- (void)replaceSelectionWith:(NSString *)text {
+    ScintillaView *sci = self.sci;
+    long start = [sci message:SCI_GETSELECTIONSTART];
+    [sci message:SCI_BEGINUNDOACTION];
+    [sci setStringProperty:SCI_REPLACESEL parameter:0 value:text];
+    [sci message:SCI_ENDUNDOACTION];
+    [sci message:SCI_GOTOPOS wParam:(uptr_t)(start + Utf8Length(text)) lParam:0];
+    [self refreshChrome];
 }
 
 - (void)insertCustomDateTime:(NSString *)format {
     NSDateFormatter *f = [[NSDateFormatter alloc] init];
     f.dateFormat = format.length ? format : @"yyyy-MM-dd HH:mm:ss";
-    [self insertAtCaret:[f stringFromDate:[NSDate date]]];
+    [self replaceSelectionWith:[f stringFromDate:[NSDate date]]];
 }
 
 - (void)insertAtCaret:(NSString *)text {

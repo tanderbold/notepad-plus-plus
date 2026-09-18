@@ -1,4 +1,5 @@
 #import "BackupAndPrint.h"
+#import "BehaviourCommands.h"
 #import "SettingsCommands.h"
 #import "ScintillaView.h"
 #import <objc/runtime.h>
@@ -76,6 +77,8 @@
 }
 
 - (NSString *)writeBackupForPath:(NSString *)path {
+    // A large file is not copied about, as on Windows.
+    if ([self largeFileRestrictionActive]) return nil;
     NppPreferences *p = [NppPreferences shared];
     if (p.backupMode == NppBackupNone || !path.length) return nil;
 
@@ -158,6 +161,7 @@ static const char kAutosaveTimerKey = 0;
         NppDocument *d = self.documents[(NSUInteger)i];
         if (!d.path || !d.modified) continue;
         [self selectDocumentAtIndex:i];
+        if ([self largeFileRestrictionActive]) continue;
         if ([self writeCurrentToPath:d.path]) written++;
     }
     if (restore != NSNotFound) [self selectDocumentAtIndex:restore];

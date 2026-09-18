@@ -168,6 +168,8 @@
     self.editor = [[EditorController alloc] initWithFrame:frame];
     self.editor.window = self.window;
     self.window.delegate = self;
+    // Files dropped anywhere on the window open, as on Windows.
+    [self.window registerForDraggedTypes:@[NSPasteboardTypeFileURL]];
     // Opening a file whose name says nothing may turn up several languages that
     // fit; this is what puts them to the user.
     __weak __typeof(self) weakSelf = self;
@@ -323,6 +325,8 @@
     NSMenuItem *recentItem = [fileMenu addItemWithTitle:@"Open Recent" action:nil keyEquivalent:@""];
     recentItem.submenu = self.recentMenu;
     [self rebuildRecentMenu];
+    [self item:@"Restore Last Closed File" action:@selector(restoreLastClosedFile:) key:@"t"
+         flags:NSEventModifierFlagCommand | NSEventModifierFlagShift menu:fileMenu];
 
     [fileMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Save"     action:@selector(saveDocument:) key:@"s" flags:NSEventModifierFlagCommand menu:fileMenu];
@@ -1755,7 +1759,40 @@
         [self.recentMenu addItem:mi];
     }
     if (self.recentMenu.numberOfItems) [self.recentMenu addItem:[NSMenuItem separatorItem]];
+    [self item:@"Open All Recent Files" action:@selector(openAllRecentFiles:) key:@"" flags:0 menu:self.recentMenu];
     [self item:@"Clear Menu" action:@selector(clearRecentDocuments:) key:@"" flags:0 menu:self.recentMenu];
+}
+
+- (void)restoreLastClosedFile:(id)sender {
+    [self.editor restoreLastClosedFile];
+    [self rebuildRecentMenu];
+}
+
+- (void)openAllRecentFiles:(id)sender {
+    [self.editor openAllRecentFiles];
+    [self rebuildRecentMenu];
+}
+
+#pragma mark - Files dropped on the window
+
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender {
+    return [sender.draggingPasteboard canReadObjectForClasses:@[[NSURL class]]
+                                                      options:@{NSPasteboardURLReadingFileURLsOnlyKey: @YES}]
+        ? NSDragOperationCopy : NSDragOperationNone;
+}
+
+- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
+    NSArray<NSURL *> *urls = [sender.draggingPasteboard readObjectsForClasses:@[[NSURL class]]
+                                                                      options:@{NSPasteboardURLReadingFileURLsOnlyKey: @YES}];
+    BOOL opened = NO;
+    for (NSURL *url in urls) {
+        BOOL isDirectory = NO;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:url.path isDirectory:&isDirectory] && !isDirectory) {
+            if ([self.editor openFileAtPath:url.path error:NULL]) opened = YES;
+        }
+    }
+    [self rebuildRecentMenu];
+    return opened;
 }
 
 - (void)openRecentFile:(NSMenuItem *)sender {
@@ -2119,9 +2156,13 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         if (!from.length) return;
         NSString *step = [self promptForString:@"Increase by" default:@"1"];
         if (!step.length) return;
+        NSString *repeat = [self promptForString:@"Repeat each number" default:@"1"];
         NSString *pad = [self promptForString:@"Leading zeros? yes/no" default:@"no"];
+        NSString *format = [self promptForString:@"Format: dec, hex, oct or bin" default:@"dec"];
+        int base = [format hasPrefix:@"h"] ? 16 : [format hasPrefix:@"o"] ? 8 : [format hasPrefix:@"b"] ? 2 : 10;
         [self.editor columnInsertNumbersFrom:from.integerValue increment:step.integerValue
-                                  zeroPadded:[pad hasPrefix:@"y"] base:10];
+                                      repeat:MAX(1, repeat.integerValue)
+                                  zeroPadded:[pad hasPrefix:@"y"] base:base];
     } else {
         NSString *text = [self promptForString:@"Text to insert" default:@""];
         if (!text.length) return;
@@ -2986,11 +3027,26 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 }
 
 - (void)goToLine:(id)sender {
-    NSString *s = [self promptForString:@"Go to line" default:@""];
+    ScintillaView *sci = self.editor.sci;
+    long lines = [sci message:SCI_GETLINECOUNT];
+    long length = [sci message:SCI_GETLENGTH];
+    NSString *s = [self promptForString:
+        [NSString stringWithFormat:@"Go to line (1 to %ld), or @offset (0 to %ld)", lines, length]
+                                default:@""];
     if (!s.length) return;
-    long line = s.integerValue - 1;
-    if (line < 0) return;
-    [self.editor.sci message:SCI_GOTOLINE wParam:(uptr_t)line lParam:0];
+    // An offset, as the Windows dialog's second radio button: written with a
+    // leading @ here. Out of range is refused, not clamped.
+    if ([s hasPrefix:@"@"]) {
+        long offset = [s substringFromIndex:1].integerValue;
+        if (offset < 0 || offset > length) { NSBeep(); return; }
+        // Never inside a character or a CRLF.
+        offset = [sci message:SCI_POSITIONBEFORE wParam:(uptr_t)[sci message:SCI_POSITIONAFTER wParam:(uptr_t)offset]];
+        [sci message:SCI_GOTOPOS wParam:(uptr_t)offset lParam:0];
+    } else {
+        long line = s.integerValue;
+        if (line < 1 || line > lines) { NSBeep(); return; }
+        [sci message:SCI_GOTOLINE wParam:(uptr_t)(line - 1) lParam:0];
+    }
     [self.editor refreshChrome];
 }
 

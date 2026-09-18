@@ -163,6 +163,21 @@ static const char kBeginEndAnchorKey = 0;
     // Each row: what it covers, and how far past the end of a short line the
     // rectangle reaches (virtual space), which becomes real spaces.
     NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
+    if (selections == 1 && ![sci message:SCI_SELECTIONISRECTANGLE] &&
+        [sci message:SCI_GETSELECTIONSTART] == [sci message:SCI_GETSELECTIONEND]) {
+        // No block: the column at the caret, from its line to the last, as
+        // the Column Editor works on Windows.
+        long caret = [sci message:SCI_GETCURRENTPOS];
+        long column = [sci message:SCI_GETCOLUMN wParam:(uptr_t)caret];
+        long first = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)caret];
+        long lines = [sci message:SCI_GETLINECOUNT];
+        for (long line = first; line < lines; ++line) {
+            long at = [sci message:SCI_FINDCOLUMN wParam:(uptr_t)line lParam:column];
+            long pad = MAX(0, column - [sci message:SCI_GETCOLUMN wParam:(uptr_t)at]);
+            [rows addObject:@{@"start": @(at), @"end": @(at), @"pad": @(pad)}];
+        }
+        selections = 0;
+    }
     for (long i = 0; i < selections; ++i) {
         long start = [sci message:SCI_GETSELECTIONNSTART wParam:(uptr_t)i];
         long end = [sci message:SCI_GETSELECTIONNEND wParam:(uptr_t)i];
@@ -201,14 +216,26 @@ static const char kBeginEndAnchorKey = 0;
 
 - (BOOL)columnInsertNumbersFrom:(long)initial increment:(long)increment
                      zeroPadded:(BOOL)padded base:(int)base {
+    return [self columnInsertNumbersFrom:initial increment:increment repeat:1 zeroPadded:padded base:base];
+}
+
+- (BOOL)columnInsertNumbersFrom:(long)initial increment:(long)increment repeat:(long)repeat
+                     zeroPadded:(BOOL)padded base:(int)base {
     ScintillaView *sci = self.sci;
     long rows = [sci message:SCI_GETSELECTIONS];
     if (rows < 1) return NO;
+    if (rows == 1 && ![sci message:SCI_SELECTIONISRECTANGLE] &&
+        [sci message:SCI_GETSELECTIONSTART] == [sci message:SCI_GETSELECTIONEND]) {
+        rows = [sci message:SCI_GETLINECOUNT] -
+               [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
+    }
+    repeat = MAX(1, repeat);
 
     NSMutableArray *rendered = [NSMutableArray array];
     NSUInteger widest = 0;
     for (long i = 0; i < rows; ++i) {
-        long value = initial + increment * i;
+        // "Repeat" writes each number that many times before moving on.
+        long value = initial + increment * (i / repeat);
         NSString *s;
         switch (base) {
             case 16: s = [NSString stringWithFormat:@"%lX", value]; break;

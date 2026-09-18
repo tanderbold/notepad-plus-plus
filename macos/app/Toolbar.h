@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isActiveForCommand:(NSString *)command;
 /// What the button is actually showing, so a test can look at the picture rather
 /// than at the flag behind it.
-- (NSBitmapImageRep *)renderedImageForCommand:(NSString *)command;
+- (nullable NSBitmapImageRep *)renderedImageForCommand:(NSString *)command;
 
 /// Identifiers of the buttons currently on the bar; used by tests.
 - (NSArray<NSString *> *)itemIdentifiers;

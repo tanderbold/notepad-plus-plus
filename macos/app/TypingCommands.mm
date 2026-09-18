@@ -331,6 +331,14 @@ static BOOL LanguageUsesBraces(NSString *name) {
 
 - (NSArray<NSString *> *)recentFiles { return [NppPreferences shared].recentFiles ?: @[]; }
 
+- (void)forgetRecentFile:(NSString *)path {
+    NppPreferences *p = [NppPreferences shared];
+    if (![p.recentFiles containsObject:path]) return;
+    NSMutableArray *list = [p.recentFiles mutableCopy];
+    [list removeObject:path];
+    p.recentFiles = list;
+}
+
 - (void)clearRecentFiles { [NppPreferences shared].recentFiles = @[]; }
 
 /// 0 shows the file name, 1 the full path, both clipped to the configured length.

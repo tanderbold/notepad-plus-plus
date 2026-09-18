@@ -38,13 +38,18 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 @property (nonatomic, readonly) ScintillaView *sci;
 @property (nonatomic, readonly) NSView *view;           // tab bar + editor + status bar
 @property (nonatomic, readonly) NSArray<NppDocument *> *documents;
-@property (nonatomic, readonly) NppDocument *currentDocument;
+@property (nonatomic, readonly, nullable) NppDocument *currentDocument;
 @property (nonatomic, weak, nullable) NSWindow *window;
 
 /// The text of the document in front, and its replacement: read and written
 /// by length, so that a NUL byte inside a file is kept rather than ending it.
 - (NSString *)documentText;
 - (void)setDocumentText:(NSString *)text;
+
+/// Reopens the file closed last, from the recent list. NO when there is none.
+- (BOOL)restoreLastClosedFile;
+/// Opens every file on the recent list.
+- (NSUInteger)openAllRecentFiles;
 
 /// Asks, for every modified document among `docs`, whether to save it, not
 /// save it, or stop. Returns NO when the user stopped or a save failed; the

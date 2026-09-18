@@ -667,6 +667,155 @@ int NppMacRunTests(AppDelegate *app) {
                   otherTabUntouched);
         }
 
+        // The still-open bugs of the audit, batch one.
+        {
+            NSFileManager *fm = [NSFileManager defaultManager];
+
+            // Renaming an untitled document renames the tab and writes nothing.
+            [ed newDocument];
+            NSString *never = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-never-written.txt"];
+            [ed renameCurrentTo:never error:NULL];
+            BOOL tabOnly = ed.currentDocument.path == nil &&
+                           [ed.currentDocument.displayName isEqualToString:@"npp-never-written.txt"] &&
+                           ![fm fileExistsAtPath:never];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_FILE_RENAME (an untitled document)",
+                  @"only the tab is renamed; nothing is written to disk", tabOnly);
+
+            // The recent list is of what was closed; Restore Last Closed reopens it.
+            NSString *recentPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-recent-close.txt"];
+            [@"r\n" writeToFile:recentPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [ed openFileAtPath:recentPath error:NULL];
+            BOOL notWhileOpen = ![[ed recentFiles] containsObject:recentPath];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+            BOOL listedOnClose = [[ed recentFiles].firstObject isEqualToString:recentPath];
+            BOOL restored = [ed restoreLastClosedFile] && [ed.currentDocument.path isEqualToString:recentPath] &&
+                            ![[ed recentFiles] containsObject:recentPath];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+            [ed forgetRecentFile:recentPath];
+            [fm removeItemAtPath:recentPath error:NULL];
+            Check(@"IDM_FILE_RESTORELASTCLOSEDFILE",
+                  @"a file joins the recent list when closed, leaves it when opened, and the last "
+                  @"closed one comes back",
+                  notWhileOpen && listedOnClose && restored);
+
+            // Date and time: time first, no seconds, in place of the selection.
+            NppPreferences *p = [NppPreferences shared];
+            BOOL wasReversed = p.reverseDateTimeOrder;
+            p.reverseDateTimeOrder = NO;
+            [ed newDocument];
+            [ed setDocumentText:@"abc"];
+            [ed.sci message:SCI_SETSEL wParam:0 lParam:3];
+            NSDateFormatter *t = [[NSDateFormatter alloc] init];
+            t.dateStyle = NSDateFormatterNoStyle; t.timeStyle = NSDateFormatterShortStyle;
+            NSDateFormatter *d = [[NSDateFormatter alloc] init];
+            d.dateStyle = NSDateFormatterShortStyle; d.timeStyle = NSDateFormatterNoStyle;
+            NSDate *now = [NSDate date];
+            [ed insertDateTimeShort:YES];
+            NSString *stamp = [ed documentText];
+            BOOL timeFirst = ![stamp containsString:@"abc"] &&
+                             [stamp isEqualToString:[NSString stringWithFormat:@"%@ %@", [t stringFromDate:now], [d stringFromDate:now]]];
+            p.reverseDateTimeOrder = wasReversed;
+            Check(@"IDM_EDIT_INSERT_DATETIME_SHORT (as Windows writes it)",
+                  @"the time comes first, without seconds, and the selection is replaced", timeFirst);
+
+            // Braces are part of the selection between them.
+            [ed setDocumentText:@"x(a)y"];
+            [ed.sci message:SCI_GOTOPOS wParam:1 lParam:0];
+            [ed selectBetweenMatchingBraces];
+            BOOL inclusive = [ed.sci message:SCI_GETSELECTIONSTART] == 1 && [ed.sci message:SCI_GETSELECTIONEND] == 4;
+            Check(@"IDM_SEARCH_GOBRACE (both braces are selected)",
+                  @"Select All Between Matching Braces includes the braces themselves", inclusive);
+
+            // Bookmarked lines: copied with their endings, pasted whole.
+            [ed setDocumentText:@"a\nb\nc\n"];
+            [ed.sci message:SCI_MARKERADD wParam:0 lParam:1];
+            [ed.sci message:SCI_MARKERADD wParam:2 lParam:1];
+            BOOL copiedWithEndings = [[ed bookmarkedLinesText] isEqualToString:@"a\nc\n"];
+            NSPasteboard *board = [NSPasteboard generalPasteboard];
+            [board clearContents];
+            [board setString:@"X\nY" forType:NSPasteboardTypeString];
+            [ed pasteOverBookmarkedLines];
+            BOOL pastedWhole = [[ed documentText] isEqualToString:@"X\nY\nb\nX\nY\n"];
+            Check(@"IDM_SEARCH_COPYMARKEDLINES (as Windows copies and pastes)",
+                  @"each bookmarked line is copied with its ending, and the whole clipboard goes into each",
+                  copiedWithEndings && pastedWhole);
+
+            // Proper and sentence case, and trim, as Windows does them.
+            [ed setDocumentText:@"don't 3rd"];
+            [ed convertCase:NppCaseProperBlend];
+            BOOL proper = [[ed documentText] isEqualToString:@"Don't 3rd"];
+            [ed setDocumentText:@"hello. world\n\nnext i am"];
+            [ed convertCase:NppCaseSentenceBlend];
+            BOOL sentence = [[ed documentText] isEqualToString:@"Hello. World\n\nNext I am"];
+            [ed setDocumentText:@"a\u00A0 \t\n"];
+            [ed applyTrim:NppTrimTrailing];
+            BOOL trim = [[ed documentText] isEqualToString:@"a\u00A0\n"];
+            Check(@"IDM_EDIT_PROPERCASE_BLEND (apostrophes and digits)",
+                  @"don't stays one word, 3rd starts with a digit, a sentence ends at a stop or a blank line, "
+                  @"a lone i is I, and trim takes tabs and spaces only",
+                  proper && sentence && trim);
+
+            // The Column Editor from the caret, when nothing is selected.
+            [ed setDocumentText:@"ab\ncd\nef"];
+            [ed.sci message:SCI_GOTOPOS wParam:1 lParam:0];
+            [ed columnInsertText:@"X"];
+            BOOL fromCaret = [[ed documentText] isEqualToString:@"aXb\ncXd\neXf"];
+            [ed setDocumentText:@"a\nb\nc"];
+            [ed.sci message:SCI_GOTOPOS wParam:0 lParam:0];
+            [ed columnInsertNumbersFrom:1 increment:1 repeat:2 zeroPadded:NO base:16];
+            BOOL repeated = [[ed documentText] isEqualToString:@"1a\n1b\n2c"];
+            Check(@"IDM_EDIT_COLUMNMODE (from the caret, with repeat and base)",
+                  @"with nothing selected the column runs from the caret line down; numbers repeat and take a base",
+                  fromCaret && repeated);
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+
+            // Pinning moves the tab to the left, and Close All But Pinned keeps that run.
+            [ed newDocument]; NppDocument *pA = ed.currentDocument;
+            [ed newDocument]; NppDocument *pB = ed.currentDocument;
+            [ed newDocument]; NppDocument *pC = ed.currentDocument;
+            [ed togglePinCurrent];                                   // C pinned: first
+            BOOL movedLeft = ed.documents.firstObject == pC && ed.currentDocument == pC;
+            [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:pB]];
+            [ed togglePinCurrent];                                   // B pinned: after C
+            BOOL afterRun = ed.documents[1] == pB;
+            [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:pC]];
+            [ed togglePinCurrent];                                   // C unpinned: after B
+            BOOL movedBack = ed.documents.firstObject == pB && ed.documents[1] == pC;
+            [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:pB]];
+            [ed togglePinCurrent];
+            movedBack = movedBack && afterRun;
+            for (NppDocument *doc in @[pA, pB, pC]) {
+                if ([ed.documents containsObject:doc]) [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:doc] discardChanges:YES];
+            }
+            Check(@"IDM_FILE_PIN (pinned tabs sit on the left)", @"pinning moves the tab to the pinned run; unpinning moves it out",
+                  movedLeft && movedBack);
+
+            // A file that cannot be written opens read-only.
+            NSString *roPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-readonly-open.txt"];
+            [@"ro\n" writeToFile:roPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [fm setAttributes:@{NSFilePosixPermissions: @0444} ofItemAtPath:roPath error:NULL];
+            [ed openFileAtPath:roPath error:NULL];
+            BOOL readOnly = [ed isReadOnly];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+            [ed forgetRecentFile:roPath];
+            [fm setAttributes:@{NSFilePosixPermissions: @0644} ofItemAtPath:roPath error:NULL];
+            [fm removeItemAtPath:roPath error:NULL];
+            Check(@"IDM_EDIT_SETREADONLY (detected on open)", @"a file without write permission opens read-only", readOnly);
+
+            // The other pane is moved off a document that is closed.
+            [ed newDocument]; NppDocument *shown = ed.currentDocument;
+            [ed setDocumentText:@"shown\n"];
+            [ed cloneCurrentToOtherView];
+            [ed newDocument];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:shown] discardChanges:YES];
+            BOOL movedOff = (void *)[ed.secondarySci message:SCI_GETDOCPOINTER] == ed.currentDocument.docPointer;
+            [ed setSecondaryViewVisible:NO];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_VIEW_CLONE_TO_ANOTHER_VIEW (the pane survives a close)",
+                  @"closing the cloned document points the other pane at the document in front", movedOff);
+        }
+
         // A NUL byte inside a file is content, not the end of it.
         {
             NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];
@@ -2754,9 +2903,9 @@ int NppMacRunTests(AppDelegate *app) {
         [sci message:SCI_GOTOLINE wParam:2 lParam:0]; [ed toggleBookmark];
 
         [ed copyBookmarkedLines];
-        Check(@"IDM_SEARCH_COPYMARKEDLINES", @"copies just the bookmarked lines",
+        Check(@"IDM_SEARCH_COPYMARKEDLINES", @"copies just the bookmarked lines, each with its ending",
               [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
-                  isEqualToString:@"keep1\nkeep2"]);
+                  isEqualToString:@"keep1\nkeep2\n"]);
 
         [ed removeUnbookmarkedLines];
         Check(@"IDM_SEARCH_DELETEUNMARKEDLINES", @"keeps only bookmarked lines",

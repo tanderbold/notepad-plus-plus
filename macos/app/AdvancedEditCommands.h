@@ -27,6 +27,9 @@ typedef NS_OPTIONS(NSInteger, NppMatchFlags) {
 - (BOOL)columnInsertText:(NSString *)text;
 - (BOOL)columnInsertNumbersFrom:(long)initial increment:(long)increment
                     zeroPadded:(BOOL)padded base:(int)base;
+/// The same, each number repeated `repeat` times before the next.
+- (BOOL)columnInsertNumbersFrom:(long)initial increment:(long)increment repeat:(long)repeat
+                    zeroPadded:(BOOL)padded base:(int)base;
 
 // On selection
 - (nullable NSString *)selectionAsPath;

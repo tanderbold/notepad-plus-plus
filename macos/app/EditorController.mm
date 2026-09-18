@@ -47,6 +47,8 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @property (nonatomic) BOOL syncH;
 @property (nonatomic) BOOL syncZ;
 @property (nonatomic, strong) ScintillaView *docMapView;
+/// The document the other pane shows, so that closing it can move the pane off it.
+@property (nonatomic, strong) NppDocument *secondaryDocument;
 @property (nonatomic, strong) NSMutableArray<WorkspacePanel *> *projects;
 @property (nonatomic) NSInteger activeProject;
 @property (nonatomic, strong) ScintillaView *sciView;
@@ -413,6 +415,22 @@ static long SciColor(NSColor *c) {
         if ([self.docs[i].path isEqualToString:path]) { [self selectDocumentAtIndex:(NSInteger)i]; return YES; }
     }
 
+    // Decided on the size on disk, before anything is read: a file too big to
+    // hold is refused, and a large one is opened without styling from the
+    // start rather than styled and then unstyled.
+    unsigned long long size = [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL]
+                               fileSize];
+    if (size >= 2ULL * 1024 * 1024 * 1024) {
+        if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadTooLargeError
+                                            userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:@"%@ is too big to open (2 GB or more).",
+                                                 path.lastPathComponent]}];
+        return NO;
+    }
+    NppPreferences *prefs = [NppPreferences shared];
+    BOOL large = prefs.largeFileRestrictionEnabled &&
+                 size > (unsigned long long)prefs.largeFileThresholdMB * 1024 * 1024;
+
     NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
     if (!data) return NO;
 
@@ -428,7 +446,9 @@ static long SciColor(NSColor *c) {
     }
 
     NppDocument *doc = [[NppDocument alloc] init];
-    doc.docPointer = (void *)[self.sciView message:SCI_CREATEDOCUMENT wParam:0 lParam:SC_DOCUMENTOPTION_DEFAULT];
+    doc.docPointer = (void *)[self.sciView message:SCI_CREATEDOCUMENT wParam:0
+        lParam:large ? (SC_DOCUMENTOPTION_STYLES_NONE | SC_DOCUMENTOPTION_TEXT_LARGE)
+                     : SC_DOCUMENTOPTION_DEFAULT];
     doc.path = path;
     doc.displayName = path.lastPathComponent;
     doc.language = [[LanguageCatalog sharedCatalog] languageForFileName:path];
@@ -449,8 +469,13 @@ static long SciColor(NSColor *c) {
     doc.modified = NO;
 
     [self applyLanguage];
+    // A file that cannot be written is not edited until the user says so.
+    if (![[NSFileManager defaultManager] isWritableFileAtPath:path]) {
+        [self.sciView message:SCI_SETREADONLY wParam:1 lParam:0];
+    }
     [self refreshChrome];
-    [self noteRecentFile:path];
+    // The recent list holds what was closed, not what is open, as on Windows.
+    [self forgetRecentFile:path];
     [self rememberOpenDirectory:path];
 
     // A name with no extension says nothing, so the contents are asked instead.
@@ -512,6 +537,15 @@ static long SciColor(NSColor *c) {
     panel.nameFieldStringValue = doc.path.lastPathComponent ?: doc.displayName;
     if ([panel runModal] != NSModalResponseOK || !panel.URL) return NO;
     NSString *path = panel.URL.path;
+    for (NppDocument *other in self.docs) {
+        if (other != doc && [other.path isEqualToString:path]) {
+            NSAlert *alert = [[NSAlert alloc] init];
+            alert.messageText = @"That file is open in another tab.";
+            alert.informativeText = @"Close it first, or choose another name.";
+            [alert runModal];
+            return NO;
+        }
+    }
     if (![self writeCurrentToPath:path]) return NO;
     doc.path = path;
     doc.displayName = path.lastPathComponent;
@@ -613,6 +647,18 @@ static long SciColor(NSColor *c) {
     } else {
         [self selectDocumentAtIndex:MIN(index, (NSInteger)self.docs.count - 1)];
     }
+    if (doc.path) [self noteRecentFile:doc.path];
+    // The other pane must not be left on a document about to go.
+    if (self.secondaryDocument == doc) {
+        NppDocument *front = self.currentDocument;
+        if (front && [self secondaryViewVisible]) {
+            [self.secondaryView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)front.docPointer];
+            self.secondaryDocument = front;
+        } else {
+            [self.secondaryView message:SCI_SETDOCPOINTER wParam:0 lParam:0];
+            self.secondaryDocument = nil;
+        }
+    }
     // Safe only once the view no longer points at it.
     [self.sciView message:SCI_RELEASEDOCUMENT wParam:0 lParam:(sptr_t)doc.docPointer];
 }
@@ -671,9 +717,11 @@ static long SciColor(NSColor *c) {
     NSUInteger saved = 0;
     for (NSInteger i = 0; i < (NSInteger)self.docs.count; ++i) {
         NppDocument *d = self.docs[i];
-        if (!d.path || !d.modified) continue;      // Save As prompts; skip unsaved ones
+        if (!d.modified) continue;
+        if (!d.path && getenv("NPPMAC_TEST")) continue;  // the suite cannot answer a save panel
         [self selectDocumentAtIndex:i];
-        if ([self writeCurrentToPath:d.path]) saved++;
+        // An untitled document is asked where to go, as Windows asks.
+        if (d.path ? [self writeCurrentToPath:d.path] : [self saveCurrentDocumentAs]) saved++;
     }
     [self selectDocumentAtIndex:restore];
     return saved;
@@ -681,8 +729,12 @@ static long SciColor(NSColor *c) {
 
 - (BOOL)renameCurrentTo:(NSString *)newPath error:(NSError **)error {
     NppDocument *doc = self.currentDocument;
-    if (!doc.path) return [self saveCopyOfCurrentTo:newPath error:error] &&
-                           ({ doc.path = newPath; doc.displayName = newPath.lastPathComponent; YES; });
+    if (!doc.path) {
+        // Nothing on disk to move: only the tab is renamed, as on Windows.
+        doc.displayName = newPath.lastPathComponent;
+        [self refreshChrome];
+        return YES;
+    }
     if (![[NSFileManager defaultManager] moveItemAtPath:doc.path toPath:newPath error:error]) return NO;
     doc.path = newPath;
     doc.displayName = newPath.lastPathComponent;
@@ -763,6 +815,13 @@ static long SciColor(NSColor *c) {
     NppDocument *doc = self.currentDocument;
     if (!doc) return;
     doc.pinned = !doc.pinned;
+    // Pinned tabs sit at the left, as on Windows: pinning moves the tab to the
+    // end of that run, unpinning to just after it.
+    [self.docs removeObject:doc];
+    NSUInteger pinnedRun = 0;
+    while (pinnedRun < self.docs.count && self.docs[pinnedRun].pinned) pinnedRun++;
+    [self.docs insertObject:doc atIndex:pinnedRun];
+    self.currentIndex = (NSInteger)pinnedRun;
     [self refreshChrome];
 }
 
@@ -1383,7 +1442,22 @@ static long SciColor(NSColor *c) {
     // Sharing the document pointer is what makes it a clone: both panes edit
     // the same buffer, exactly as Notepad++'s Clone to Other View does.
     [self.secondaryView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    self.secondaryDocument = doc;
     return YES;
+}
+
+- (BOOL)restoreLastClosedFile {
+    NSString *last = [self recentFiles].firstObject;
+    if (!last.length) { NSBeep(); return NO; }
+    return [self openFileAtPath:last error:NULL];
+}
+
+- (NSUInteger)openAllRecentFiles {
+    NSUInteger opened = 0;
+    for (NSString *path in [[self recentFiles] copy]) {
+        if ([self openFileAtPath:path error:NULL]) opened++;
+    }
+    return opened;
 }
 
 - (BOOL)moveCurrentToOtherView {
