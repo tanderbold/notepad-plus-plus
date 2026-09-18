@@ -171,6 +171,12 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"npcCustomColour"): @NO, Key(@"npcIncludeCcUniEol"): @NO, Key(@"foldMarginStyle"): @3,
         Key(@"lineNumberShow"): @YES, Key(@"lineNumberDynamicWidth"): @YES,
         Key(@"changeHistoryMargin"): @YES, Key(@"changeHistoryText"): @NO,
+        Key(@"highlightMatchingTags"): @YES, Key(@"highlightTagAttributes"): @YES, Key(@"highlightNonHtmlZone"): @NO,
+        Key(@"smartHighlightUseFindSettings"): @NO, Key(@"smartHighlightOtherView"): @NO,
+        Key(@"customDateFormat"): @"yyyy-MM-dd HH:mm:ss", Key(@"printFormFeedPageBreak"): @NO,
+        Key(@"findDialogStaysOpen"): @NO, Key(@"confirmReplaceAllOpenDocs"): @YES, Key(@"inSelectionThreshold"): @1024,
+        Key(@"fillFindWhatThreshold"): @1024, Key(@"fillDirectoryFromActiveDocument"): @NO,
+        Key(@"findMatchCase"): @NO, Key(@"findWholeWord"): @NO, Key(@"findWrap"): @YES, Key(@"findMode"): @0,
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -285,6 +291,22 @@ NPP_PREF_BOOL(lineNumberShow, setLineNumberShow, @"lineNumberShow")
 NPP_PREF_BOOL(lineNumberDynamicWidth, setLineNumberDynamicWidth, @"lineNumberDynamicWidth")
 NPP_PREF_BOOL(changeHistoryMargin, setChangeHistoryMargin, @"changeHistoryMargin")
 NPP_PREF_BOOL(changeHistoryText, setChangeHistoryText, @"changeHistoryText")
+NPP_PREF_BOOL(highlightMatchingTags, setHighlightMatchingTags, @"highlightMatchingTags")
+NPP_PREF_BOOL(highlightTagAttributes, setHighlightTagAttributes, @"highlightTagAttributes")
+NPP_PREF_BOOL(highlightNonHtmlZone, setHighlightNonHtmlZone, @"highlightNonHtmlZone")
+NPP_PREF_BOOL(smartHighlightUseFindSettings, setSmartHighlightUseFindSettings, @"smartHighlightUseFindSettings")
+NPP_PREF_BOOL(smartHighlightOtherView, setSmartHighlightOtherView, @"smartHighlightOtherView")
+NPP_PREF_BOOL(printFormFeedPageBreak, setPrintFormFeedPageBreak, @"printFormFeedPageBreak")
+NPP_PREF_BOOL(findDialogStaysOpen, setFindDialogStaysOpen, @"findDialogStaysOpen")
+NPP_PREF_BOOL(confirmReplaceAllOpenDocs, setConfirmReplaceAllOpenDocs, @"confirmReplaceAllOpenDocs")
+NPP_PREF_BOOL(fillDirectoryFromActiveDocument, setFillDirectoryFromActiveDocument, @"fillDirectoryFromActiveDocument")
+NPP_PREF_BOOL(findMatchCase, setFindMatchCase, @"findMatchCase")
+NPP_PREF_BOOL(findWholeWord, setFindWholeWord, @"findWholeWord")
+NPP_PREF_BOOL(findWrap, setFindWrap, @"findWrap")
+NPP_PREF_INT(inSelectionThreshold, setInSelectionThreshold, @"inSelectionThreshold")
+NPP_PREF_INT(fillFindWhatThreshold, setFillFindWhatThreshold, @"fillFindWhatThreshold")
+NPP_PREF_INT(findMode, setFindMode, @"findMode")
+NPP_PREF_OBJ(customDateFormat, setCustomDateFormat, NSString, @"customDateFormat")
 NPP_PREF_INT(foldMarginStyle, setFoldMarginStyle, @"foldMarginStyle")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
@@ -408,6 +430,31 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
     // Settings written by the foreground-only version were a bare hex string.
     if ([stored isKindOfClass:[NSString class]]) return @{@"fg": stored};
     return nil;
+}
+
++ (NSString *)dateFormatFromWindowsPicture:(NSString *)picture {
+    // GetDateFormat / GetTimeFormat pictures mostly read the same; these do not.
+    NSMutableString *out = [NSMutableString string];
+    NSUInteger i = 0, n = picture.length;
+    while (i < n) {
+        unichar c = [picture characterAtIndex:i];
+        if (c == '\'') {                                    // quoted text passes through
+            NSRange close = [picture rangeOfString:@"'" options:0 range:NSMakeRange(i + 1, n - i - 1)];
+            NSUInteger end = close.location == NSNotFound ? n : NSMaxRange(close);
+            [out appendString:[picture substringWithRange:NSMakeRange(i, end - i)]];
+            i = end;
+            continue;
+        }
+        NSUInteger run = 1;
+        while (i + run < n && [picture characterAtIndex:i + run] == c) run++;
+        NSString *piece = [picture substringWithRange:NSMakeRange(i, run)];
+        if (c == 't') piece = @"a";                         // tt / t: AM or PM
+        else if (c == 'd' && run >= 3) piece = run == 3 ? @"EEE" : @"EEEE";
+        else if (c == 'g') piece = @"G";
+        [out appendString:piece];
+        i += run;
+    }
+    return out;
 }
 
 - (NSInteger)tabWidthForLanguage:(NSString *)language {

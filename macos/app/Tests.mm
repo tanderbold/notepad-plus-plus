@@ -43,6 +43,7 @@
 #import "DocumentListPanel.h"
 #import "WorkspacePanel.h"
 #import "EditorLook.h"
+#import "TagMatch.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -6654,6 +6655,86 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_SETTING_PREFERENCE (editing)",
               @"change history in the text, smooth font, no C0 typing, and fold commands that toggle",
               historyText && smooth && noC0 && toggledShut && toggledOpen);
+    }
+
+    printf("\n== Preferences: Highlighting, Date, Print, Searching ==\n");
+    {
+        NppPreferences *hp = [NppPreferences shared];
+        // Highlight Matching Tags, as XmlMatchedTagsHighlighter marks them.
+        [ed newDocument];
+        [ed setLanguageNamed:@"html"];
+        SetDoc(ed, @"<div class=\"a\" id='b'><p>x</p></div>\n<br/>");
+        hp.highlightMatchingTags = YES; hp.highlightTagAttributes = YES;
+        [sci message:SCI_GOTOPOS wParam:2 lParam:0];                   // in "div"
+        BOOL divMatched = [ed highlightMatchingTags];
+        NSArray *tagMarks = [ed rangesOfIndicator:NPPMAC_TAGMATCH_INDICATOR];
+        NSArray *attrMarks = [ed rangesOfIndicator:NPPMAC_TAGATTR_INDICATOR];
+        BOOL divRanges = tagMarks.count == 3 && NSEqualRanges([tagMarks[0] rangeValue], NSMakeRange(0, 4)) &&
+                         NSEqualRanges([tagMarks[1] rangeValue], NSMakeRange(21, 1)) &&
+                         NSEqualRanges([tagMarks[2] rangeValue], NSMakeRange(30, 6)) &&
+                         attrMarks.count == 2 && NSEqualRanges([attrMarks[0] rangeValue], NSMakeRange(5, 9)) &&
+                         NSEqualRanges([attrMarks[1] rangeValue], NSMakeRange(15, 6));
+        [sci message:SCI_GOTOPOS wParam:28 lParam:0];                  // in "</p>"
+        BOOL pMatched = [ed highlightMatchingTags];
+        NSArray *pMarks = [ed rangesOfIndicator:NPPMAC_TAGMATCH_INDICATOR];
+        // "<p" and its ">" touch, so they read as one mark.
+        BOOL pRanges = pMarks.count == 2 && NSEqualRanges([pMarks[0] rangeValue], NSMakeRange(22, 3)) &&
+                       NSEqualRanges([pMarks[1] rangeValue], NSMakeRange(26, 4));
+        [sci message:SCI_GOTOPOS wParam:40 lParam:0];                  // in "<br/>"
+        BOOL selfClosing = [ed highlightMatchingTags] && [ed rangesOfIndicator:NPPMAC_TAGMATCH_INDICATOR].count == 1 &&
+                           NSEqualRanges([[ed rangesOfIndicator:NPPMAC_TAGMATCH_INDICATOR][0] rangeValue], NSMakeRange(37, 5));
+        hp.highlightMatchingTags = NO;
+        BOOL off = ![ed highlightMatchingTags] && [ed rangesOfIndicator:NPPMAC_TAGMATCH_INDICATOR].count == 0;
+        hp.highlightMatchingTags = YES;
+        Check(@"IDM_SETTING_PREFERENCE (matching tags)",
+              @"the tag at the caret and its partner are marked, with the opener's attributes; a self-closing tag alone",
+              divMatched && divRanges && pMatched && pRanges && selfClosing && off);
+
+        // Smart highlighting in the other view too.
+        [ed setLanguageNamed:@"normal"];
+        SetDoc(ed, @"alpha beta alpha gamma alpha\n");
+        [ed cloneCurrentToOtherView];
+        hp.smartHighlightOtherView = YES;
+        [sci message:SCI_SETSEL wParam:0 lParam:5];
+        [ed updateSmartHighlight];
+        ScintillaView *other = ed.secondarySci;
+        NSUInteger inOther = 0;
+        for (long pos = 0; pos < [other message:SCI_GETLENGTH]; ++pos) {
+            if ([other message:SCI_INDICATORVALUEAT wParam:NPPMAC_STYLE_FIRST_INDICATOR + 4 lParam:pos] &&
+                (pos == 0 || ![other message:SCI_INDICATORVALUEAT wParam:NPPMAC_STYLE_FIRST_INDICATOR + 4 lParam:pos - 1])) inOther++;
+        }
+        hp.smartHighlightOtherView = NO;
+        [ed setSecondaryViewVisible:NO];
+        Check(@"IDM_SETTING_PREFERENCE (smart highlight another view)",
+              @"the selected word is marked in the second view as well", inOther == 3);
+
+        // Custom date pictures in Windows' terms; form feeds as page breaks.
+        NSString *converted = [NppPreferences dateFormatFromWindowsPicture:@"dddd, dd MMM yyyy 'at' hh:mm tt"];
+        SetDoc(ed, @"page one\fpage two\n");
+        hp.printFormFeedPageBreak = YES;
+        NSView *printed = [ed printOperationShowingPanel:NO].view;
+        CGFloat bottom = 700;
+        [printed adjustPageHeightNew:&bottom top:0 bottom:700 limit:600];
+        hp.printFormFeedPageBreak = NO;
+        CGFloat unbroken = 700;
+        [printed adjustPageHeightNew:&unbroken top:0 bottom:700 limit:600];
+        Check(@"IDM_SETTING_PREFERENCE (date, form feed)",
+              @"Windows date pictures are understood, and a form feed ends the printed page when asked",
+              [converted isEqualToString:@"EEEE, dd MMM yyyy 'at' hh:mm a"] && bottom < 100 && unbroken == 700);
+
+        // Searching: a long selection does not fill the Find field.
+        NSInteger thresholdBefore = hp.fillFindWhatThreshold;
+        hp.fillFindWhatThreshold = 3;
+        SetDoc(ed, @"abcdef");
+        [sci message:SCI_SETSEL wParam:0 lParam:6];
+        NSString *seedLong = [ed initialFindTerm];
+        [sci message:SCI_SETSEL wParam:0 lParam:2];
+        NSString *seedShort = [ed initialFindTerm];
+        hp.fillFindWhatThreshold = thresholdBefore;
+        [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        Check(@"IDM_SETTING_PREFERENCE (find field fill)",
+              @"the Find field is filled only from a selection within the limit",
+              ![seedLong isEqualToString:@"abcdef"] && [seedShort isEqualToString:@"ab"]);
     }
 
     printf("\n== New documents, recent files, directories ==\n");

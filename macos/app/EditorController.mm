@@ -6,6 +6,7 @@
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "EditorLook.h"
+#import "TagMatch.h"
 #import "AdvancedEditCommands.h"
 #import "ScintillaView.h"
 #import "WorkspacePanel.h"
@@ -2170,6 +2171,7 @@ static const char kEditorMenuItemsKey = 0;
             [self mirrorScrollToSecondary];
             [self updateBraceMatch];
             if (n->updated & SC_UPDATE_SELECTION) [self updateSmartHighlight];
+            if (n->updated & (SC_UPDATE_SELECTION | SC_UPDATE_CONTENT)) [self highlightMatchingTags];
             break;
         case SCN_CHARADDED:
             [self handleCharacterAdded:n->ch];

@@ -180,6 +180,28 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL lineNumberDynamicWidth;
 @property (nonatomic) BOOL changeHistoryMargin;
 @property (nonatomic) BOOL changeHistoryText;
+// Highlighting
+@property (nonatomic) BOOL highlightMatchingTags;
+@property (nonatomic) BOOL highlightTagAttributes;
+@property (nonatomic) BOOL highlightNonHtmlZone;      // kept, as upstream keeps it; nothing reads it there either
+@property (nonatomic) BOOL smartHighlightUseFindSettings;
+@property (nonatomic) BOOL smartHighlightOtherView;
+// Date, Print
+/// Edit > Insert > Date Time (customized), in Windows' date/time pictures.
+@property (nonatomic, copy) NSString *customDateFormat;
+@property (nonatomic) BOOL printFormFeedPageBreak;
+// Searching, and the Find dialog's own options, kept between launches
+@property (nonatomic) BOOL findDialogStaysOpen;
+@property (nonatomic) BOOL confirmReplaceAllOpenDocs;
+@property (nonatomic) NSInteger inSelectionThreshold;
+@property (nonatomic) NSInteger fillFindWhatThreshold;
+@property (nonatomic) BOOL fillDirectoryFromActiveDocument;
+@property (nonatomic) BOOL findMatchCase;
+@property (nonatomic) BOOL findWholeWord;
+@property (nonatomic) BOOL findWrap;
+@property (nonatomic) NSInteger findMode;
+/// A Windows date/time picture ("yyyy-MM-dd HH:mm:ss tt") in NSDateFormatter's terms.
++ (NSString *)dateFormatFromWindowsPicture:(NSString *)picture;
 /// The tab width and tab/space choice in force for a language.
 - (NSInteger)tabWidthForLanguage:(nullable NSString *)language;
 - (BOOL)useSpacesForLanguage:(nullable NSString *)language;

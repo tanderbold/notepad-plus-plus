@@ -628,7 +628,8 @@ static BOOL LanguageAlwaysBraces(NSString *name) {
     ScintillaView *sci = self.sci;
     long a = [sci message:SCI_GETSELECTIONSTART], b = [sci message:SCI_GETSELECTIONEND];
 
-    if (b > a && p.findFillWithSelection) {
+    // Upstream fills the field only from a selection shorter than the limit.
+    if (b > a && p.findFillWithSelection && (b - a) <= MAX(1, p.fillFindWhatThreshold)) {
         NSData *data = [([sci string] ?: @"") dataUsingEncoding:NSUTF8StringEncoding];
         if ((NSUInteger)b <= data.length) {
             return [[NSString alloc] initWithData:

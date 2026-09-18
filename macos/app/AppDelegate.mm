@@ -2460,10 +2460,11 @@ static BOOL NppForwardToFieldEditor(SEL action, id sender) {
 - (void)insertDateShort:(id)sender { [self.editor insertDateTimeShort:YES]; }
 - (void)insertDateLong:(id)sender  { [self.editor insertDateTimeShort:NO]; }
 
+/// As upstream: the format set in Preferences > Date, no question asked.
 - (void)insertDateCustom:(id)sender {
-    NSString *fmt = [self promptForString:@"Date/time format" default:@"yyyy-MM-dd HH:mm:ss"];
-    if (!fmt) return;
-    [self.editor insertCustomDateTime:fmt];
+    NSString *picture = [NppPreferences shared].customDateFormat.length ? [NppPreferences shared].customDateFormat
+                                                                         : @"yyyy-MM-dd HH:mm:ss";
+    [self.editor insertCustomDateTime:[NppPreferences dateFormatFromWindowsPicture:picture]];
 }
 
 #pragma mark - Edit: multi-select, columns, panels
@@ -2986,7 +2987,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 
     NSString *seed = [self.editor initialFindTerm];
     if (seed.length) self.findField.stringValue = seed;
-    if (tab == 2 && !self.directoryField.stringValue.length) {
+    if (tab == 2 && (!self.directoryField.stringValue.length || [NppPreferences shared].fillDirectoryFromActiveDocument)) {
         NSString *path = self.editor.currentDocument.path;
         if (path.length) self.directoryField.stringValue = path.stringByDeletingLastPathComponent;
     }
@@ -3241,6 +3242,12 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     self.transparencySlider.frame = NSMakeRect(556, 4, 128, 22);
     [content addSubview:self.transparencySlider];
 
+    // The options as they were left.
+    self.matchCaseBox.state = prefs.findMatchCase ? NSControlStateValueOn : NSControlStateValueOff;
+    self.wholeWordBox.state = prefs.findWholeWord ? NSControlStateValueOn : NSControlStateValueOff;
+    self.wrapBox.state = prefs.findWrap ? NSControlStateValueOn : NSControlStateValueOff;
+    [self.modeRadios selectCellAtRow:MIN(2, MAX(0, prefs.findMode)) column:0];
+    [self findModeChanged:nil];
     [self findTabChanged:nil];
     [self applyFindTransparency];
 }
@@ -3295,7 +3302,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     long length = [sci message:SCI_GETSELECTIONEND] - [sci message:SCI_GETSELECTIONSTART];
     self.inSelectionBox.enabled = length > 0;
     if (length <= 0) self.inSelectionBox.state = NSControlStateValueOff;
-    else if (length >= 1024) self.inSelectionBox.state = NSControlStateValueOn;
+    else if (length >= MAX(1, [NppPreferences shared].inSelectionThreshold)) self.inSelectionBox.state = NSControlStateValueOn;
 }
 
 - (void)findPanelFocusChanged:(NSNotification *)note {
@@ -3310,12 +3317,14 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     NSString *report = [self.editor findAllInOpenDocuments:spec hits:&hits];
     [self.editor showSearchResults:report];
     self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found in all opened documents", (unsigned long)hits];
+    // Find dialog remains open after search that outputs to results window, or not.
+    if (![NppPreferences shared].findDialogStaysOpen) [self.findPanel orderOut:nil];
 }
 
 - (void)findPanelReplaceAllInOpenDocuments:(id)sender {
     NppFindSpec *spec = [self currentFindSpec];
     [self rememberFindFields:YES files:NO];
-    if (!getenv("NPPMAC_TEST")) {
+    if (!getenv("NPPMAC_TEST") && [NppPreferences shared].confirmReplaceAllOpenDocs) {
         NSAlert *confirm = [[NSAlert alloc] init];
         confirm.messageText = @"Replace All in All Opened Documents";
         confirm.informativeText = @"Are you sure you want to replace all occurrences in all open documents?";
@@ -3418,6 +3427,12 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     if (self.inSelectionBox.state == NSControlStateValueOn) options |= NppFindInSelection;
     if (self.dotNewlineBox.state == NSControlStateValueOn)  options |= NppFindDotMatchesNewline;
     spec.options = options;
+    // The dialog's options are kept between launches, as config.xml keeps them.
+    NppPreferences *fp = [NppPreferences shared];
+    fp.findMatchCase = (options & NppFindMatchCase) != 0;
+    fp.findWholeWord = (options & NppFindWholeWord) != 0;
+    fp.findWrap = (options & NppFindWrap) != 0;
+    fp.findMode = spec.mode;
     self.lastSearchTerm = spec.what;
     self.lastFindSpec = spec;
     return spec;
@@ -3477,6 +3492,8 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     NSString *report = [self.editor findAllReport:[self currentFindSpec] hits:&hits];
     [self.editor showSearchResults:report];
     self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found", (unsigned long)hits];
+    // Find dialog remains open after search that outputs to results window, or not.
+    if (![NppPreferences shared].findDialogStaysOpen) [self.findPanel orderOut:nil];
 }
 
 - (void)findPanelFindInFiles:(id)sender {

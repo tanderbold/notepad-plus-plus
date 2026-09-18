@@ -1,4 +1,5 @@
 #import "BehaviourCommands.h"
+#include <string>
 #import "SettingsCommands.h"
 #import "SearchCommands.h"
 #import "AdvancedEditCommands.h"
@@ -353,14 +354,47 @@ static BOOL UrlLooksReal(NSString *candidate) {
     if (b <= a) return 0;                       // only a real selection highlights
     if (b - a > 100) return 0;                  // a whole-paragraph selection is not a token
 
-    NppMatchFlags flags = NppMatchNone;
-    if ([NppPreferences shared].smartHighlightMatchCase) flags |= NppMatchCase;
-    if ([NppPreferences shared].smartHighlightWholeWord) flags |= NppMatchWholeWord;
+    NppPreferences *p = [NppPreferences shared];
+    // "Use Find dialog settings": the dialog's Match case and Whole word.
+    BOOL matchCase = p.smartHighlightUseFindSettings ? p.findMatchCase : p.smartHighlightMatchCase;
+    BOOL wholeWord = p.smartHighlightUseFindSettings ? p.findWholeWord : p.smartHighlightWholeWord;
     // The same indicator whatever the refinements: a multi-selection that is
     // then put back is no highlight at all.
-    return [self markAllOccurrencesOfSelection:style
-                                     matchCase:(flags & NppMatchCase) != 0
-                                     wholeWord:(flags & NppMatchWholeWord) != 0];
+    NSUInteger count = [self markAllOccurrencesOfSelection:style matchCase:matchCase wholeWord:wholeWord];
+    if (p.smartHighlightOtherView && self.secondarySci) [self smartHighlightOtherViewMatchCase:matchCase wholeWord:wholeWord];
+    return count;
+}
+
+/// "Highlight another view": the same word marked in the second view, in
+/// the same indicator and look.
+- (NSUInteger)smartHighlightOtherViewMatchCase:(BOOL)matchCase wholeWord:(BOOL)wholeWord {
+    ScintillaView *sci = self.sci, *other = self.secondarySci;
+    int indicator = NPPMAC_STYLE_FIRST_INDICATOR + 4;
+    long a = [sci message:SCI_GETSELECTIONSTART], b = [sci message:SCI_GETSELECTIONEND];
+    NSData *mine = [([sci string] ?: @"") dataUsingEncoding:NSUTF8StringEncoding];
+    if (b <= a || (NSUInteger)b > mine.length) return 0;
+    NSData *word = [mine subdataWithRange:NSMakeRange((NSUInteger)a, (NSUInteger)(b - a))];
+    for (int prop : {SCI_INDICSETSTYLE, SCI_INDICSETFORE, SCI_INDICSETALPHA, SCI_INDICSETUNDER}) {
+        [other message:(unsigned int)prop wParam:(uptr_t)indicator lParam:[sci message:(unsigned int)(prop + 1) wParam:(uptr_t)indicator]];
+    }
+    long length = [other message:SCI_GETLENGTH];
+    [other message:SCI_SETINDICATORCURRENT wParam:(uptr_t)indicator lParam:0];
+    [other message:SCI_INDICATORCLEARRANGE wParam:0 lParam:length];
+    NSUInteger found = 0;
+    Sci_TextToFindFull search{};
+    std::string needle((const char *)word.bytes, word.length);
+    search.lpstrText = needle.c_str();
+    search.chrg.cpMin = 0;
+    search.chrg.cpMax = length;
+    int flags = (matchCase ? SCFIND_MATCHCASE : 0) | (wholeWord ? SCFIND_WHOLEWORD : 0);
+    while ([other message:SCI_FINDTEXTFULL wParam:(uptr_t)flags lParam:(sptr_t)&search] >= 0) {
+        [other message:SCI_INDICATORFILLRANGE wParam:(uptr_t)search.chrgText.cpMin
+                lParam:search.chrgText.cpMax - search.chrgText.cpMin];
+        found++;
+        search.chrg.cpMin = MAX(search.chrgText.cpMax, search.chrgText.cpMin + 1);
+        if (search.chrg.cpMin >= length) break;
+    }
+    return found;
 }
 
 #pragma mark - Word characters and delimiters

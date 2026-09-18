@@ -15,6 +15,26 @@
 
 - (BOOL)isFlipped { return YES; }
 
+/// Print formfeed as page break: a page ends after the line holding a form
+/// feed, if there is one on it.
+- (void)adjustPageHeightNew:(CGFloat *)newBottom top:(CGFloat)oldTop bottom:(CGFloat)oldBottom limit:(CGFloat)bottomLimit {
+    [super adjustPageHeightNew:newBottom top:oldTop bottom:oldBottom limit:bottomLimit];
+    if (![NppPreferences shared].printFormFeedPageBreak) return;
+    NSString *text = self.string;
+    NSLayoutManager *lm = self.layoutManager;
+    NSRange search = NSMakeRange(0, text.length);
+    while (YES) {
+        NSRange ff = [text rangeOfString:@"\f" options:0 range:search];
+        if (ff.location == NSNotFound) break;
+        NSRange glyphs = [lm glyphRangeForCharacterRange:ff actualCharacterRange:NULL];
+        NSRect line = [lm lineFragmentRectForGlyphAtIndex:glyphs.location effectiveRange:NULL];
+        CGFloat y = NSMaxY(line) + self.textContainerOrigin.y;
+        if (y > oldTop + 1 && y < *newBottom) { *newBottom = y; return; }
+        if (y >= *newBottom) return;
+        search = NSMakeRange(NSMaxRange(ff), text.length - NSMaxRange(ff));
+    }
+}
+
 - (void)drawPageBorderWithSize:(NSSize)borderSize {
     NppPreferences *p = [NppPreferences shared];
     NSPrintOperation *op = [NSPrintOperation currentOperation];

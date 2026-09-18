@@ -151,6 +151,7 @@
 @property (nonatomic, strong) NSTableView *categories;
 @property (nonatomic, strong) NSView *pageHost;
 @property (nonatomic, strong) NSScrollView *pageScroller;
+@property (nonatomic, copy, nullable) NSString *lastPrintField;
 @end
 
 @implementation PreferencesWindow
@@ -466,6 +467,13 @@
                        on:p.markAllCaseSensitive to:v atY:y];
     y = [self addCheckbox:@"Mark All matches whole words" key:@"markAllWordOnly"
                        on:p.markAllWordOnly to:v atY:y];
+    y = [self addCheckbox:@"Smart Highlighting: use Find dialog settings" key:@"smartHighlightUseFindSettings"
+                       on:p.smartHighlightUseFindSettings to:v atY:y];
+    y = [self addCheckbox:@"Smart Highlighting: highlight another view" key:@"smartHighlightOtherView"
+                       on:p.smartHighlightOtherView to:v atY:y];
+    y = [self addCheckbox:@"Highlight Matching Tags" key:@"highlightMatchingTags" on:p.highlightMatchingTags to:v atY:y];
+    y = [self addCheckbox:@"    Highlight tag attributes" key:@"highlightTagAttributes" on:p.highlightTagAttributes to:v atY:y];
+    y = [self addCheckbox:@"    Highlight comment/php/asp zone" key:@"highlightNonHtmlZone" on:p.highlightNonHtmlZone to:v atY:y];
     [self endPage:@"Highlighting" atY:y];
 
     y = [self beginPage:@"Print"]; v = [self page:@"Print"];
@@ -492,6 +500,18 @@
     y = [self addField:@"Margins: left, top, right, bottom (points)" key:@"printMargins"
                  value:[NSString stringWithFormat:@"%.0f %.0f %.0f %.0f", p.printMarginLeft, p.printMarginTop,
                         p.printMarginRight, p.printMarginBottom] to:v atY:y];
+    y = [self addCheckbox:@"Print formfeed as page break" key:@"printFormFeedPageBreak" on:p.printFormFeedPageBreak to:v atY:y];
+    y = [self addPopup:@"Variable" key:@"printVariable"
+                 items:@[@"Full file name path", @"File name", @"File directory", @"Page", @"Short date format",
+                         @"Long date format", @"Time"]
+              selected:0 to:v atY:y];
+    NSButton *addVariable = [NSButton buttonWithTitle:@"Add" target:self action:@selector(addPrintVariable:)];
+    addVariable.frame = NSMakeRect(450, y + 28, 60, 26);
+    [v addSubview:addVariable];
+    for (NSString *key in @[@"printHeaderLeft", @"printHeaderMiddle", @"printHeaderRight",
+                            @"printFooterLeft", @"printFooterMiddle", @"printFooterRight"]) {
+        [(NSTextField *)self.controls[key] setDelegate:(id<NSTextFieldDelegate>)self];
+    }
     [self endPage:@"Print" atY:y];
 
     y = [self beginPage:@"Backup"]; v = [self page:@"Backup"];
@@ -545,6 +565,15 @@
     y = [self beginPage:@"Multi-Instance & Date"]; v = [self page:@"Multi-Instance & Date"];
     y = [self addCheckbox:@"Reverse the date and time order" key:@"reverseDateTimeOrder"
                        on:p.reverseDateTimeOrder to:v atY:y];
+    y = [self addField:@"Custom format" key:@"customDateFormat" value:p.customDateFormat to:v atY:y];
+    NSTextField *preview = [NSTextField labelWithString:@""];
+    preview.frame = NSMakeRect(220, y, 280, 18);
+    preview.textColor = [NSColor secondaryLabelColor];
+    [v addSubview:preview];
+    self.controls[@"customDatePreview"] = preview;
+    [self updateDatePreview];
+    [(NSTextField *)self.controls[@"customDateFormat"] setDelegate:(id<NSTextFieldDelegate>)self];
+    y -= 26;
     [self endPage:@"Multi-Instance & Date" atY:y];
 
     y = [self beginPage:@"Delimiter"]; v = [self page:@"Delimiter"];
@@ -618,6 +647,16 @@
     y = [self addCheckbox:@"Compare: ignore spaces" key:@"compareIgnoreSpaces" on:p.compareIgnoreSpaces to:v atY:y];
     y = [self addCheckbox:@"Compare: ignore empty lines" key:@"compareIgnoreEmptyLines" on:p.compareIgnoreEmptyLines to:v atY:y];
     y = [self addCheckbox:@"Links: underline the whole box" key:@"linksFullBox" on:p.linksFullBox to:v atY:y];
+    y = [self addCheckbox:@"Find dialog remains open after search that outputs to results window" key:@"findDialogStaysOpen"
+                       on:p.findDialogStaysOpen to:v atY:y];
+    y = [self addCheckbox:@"Confirm Replace All in All Opened Documents" key:@"confirmReplaceAllOpenDocs"
+                       on:p.confirmReplaceAllOpenDocs to:v atY:y];
+    y = [self addCheckbox:@"Fill Find in Files Directory Field Based On Active Document" key:@"fillDirectoryFromActiveDocument"
+                       on:p.fillDirectoryFromActiveDocument to:v atY:y];
+    y = [self addField:@"Minimum Size for Auto-Checking \"In selection\"" key:@"inSelectionThreshold"
+                  value:[@(p.inSelectionThreshold) stringValue] to:v atY:y];
+    y = [self addField:@"Max Characters to Auto-Fill Find Field" key:@"fillFindWhatThreshold"
+                  value:[@(p.fillFindWhatThreshold) stringValue] to:v atY:y];
     [self endPage:@"Searching" atY:y];
 
     y = [self beginPage:@"Cloud & Link"]; v = [self page:@"Cloud & Link"];
@@ -655,6 +694,45 @@
     [v addSubview:example];
     y -= 26;
     [self endPage:@"Search Engine" atY:y];
+}
+
+/// Print's Variable list and Add: the chosen variable goes into the header or
+/// footer field that last had the caret.
+- (void)addPrintVariable:(id)sender {
+    NSArray *variables = @[@"$(FULL_CURRENT_PATH)", @"$(FILE_NAME)", @"$(CURRENT_DIRECTORY)", @"$(CURRENT_PRINTING_PAGE)",
+                           @"$(SHORT_DATE)", @"$(LONG_DATE)", @"$(TIME)"];
+    NSInteger index = [self.controls[@"printVariable"] indexOfSelectedItem];
+    if (index < 0 || index >= (NSInteger)variables.count) return;
+    NSString *variable = variables[(NSUInteger)index];
+    NSTextField *target = nil;
+    for (NSString *key in @[@"printHeaderLeft", @"printHeaderMiddle", @"printHeaderRight",
+                            @"printFooterLeft", @"printFooterMiddle", @"printFooterRight"]) {
+        NSTextField *field = self.controls[key];
+        if (field && (field.currentEditor || [self.lastPrintField isEqualToString:key])) { target = field; break; }
+    }
+    if (!target) target = self.controls[@"printHeaderMiddle"];
+    NSText *editor = target.currentEditor;
+    if (editor) [editor insertText:variable];
+    else target.stringValue = [target.stringValue stringByAppendingString:variable];
+}
+
+- (void)controlTextDidChange:(NSNotification *)note {
+    if (note.object == self.controls[@"customDateFormat"]) [self updateDatePreview];
+}
+
+- (void)controlTextDidBeginEditing:(NSNotification *)note {
+    for (NSString *key in @[@"printHeaderLeft", @"printHeaderMiddle", @"printHeaderRight",
+                            @"printFooterLeft", @"printFooterMiddle", @"printFooterRight"]) {
+        if (note.object == self.controls[key]) self.lastPrintField = key;
+    }
+}
+
+/// Upstream shows what the custom format gives beside it.
+- (void)updateDatePreview {
+    NSString *picture = [self.controls[@"customDateFormat"] stringValue] ?: @"";
+    NSDateFormatter *f = [[NSDateFormatter alloc] init];
+    f.dateFormat = [NppPreferences dateFormatFromWindowsPicture:picture];
+    [self.controls[@"customDatePreview"] setStringValue:[f stringFromDate:[NSDate date]] ?: @""];
 }
 
 - (CGFloat)addField:(NSString *)label key:(NSString *)key value:(NSString *)value
@@ -836,6 +914,18 @@
     p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
     p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
     p.statusBarHidden = on(@"statusBarHidden");
+    p.smartHighlightUseFindSettings = on(@"smartHighlightUseFindSettings");
+    p.smartHighlightOtherView = on(@"smartHighlightOtherView");
+    p.highlightMatchingTags = on(@"highlightMatchingTags");
+    p.highlightTagAttributes = on(@"highlightTagAttributes");
+    p.highlightNonHtmlZone = on(@"highlightNonHtmlZone");
+    p.printFormFeedPageBreak = on(@"printFormFeedPageBreak");
+    p.customDateFormat = text(@"customDateFormat");
+    p.findDialogStaysOpen = on(@"findDialogStaysOpen");
+    p.confirmReplaceAllOpenDocs = on(@"confirmReplaceAllOpenDocs");
+    p.fillDirectoryFromActiveDocument = on(@"fillDirectoryFromActiveDocument");
+    p.inSelectionThreshold = MAX(1, text(@"inSelectionThreshold").integerValue);
+    p.fillFindWhatThreshold = MAX(1, text(@"fillFindWhatThreshold").integerValue);
     p.smoothFont = on(@"smoothFont");
     p.selectedTextCustomForeground = on(@"selectedTextCustomForeground");
     p.multiEditing = on(@"multiEditing");

@@ -36,6 +36,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)rememberPanelState;
 - (void)restorePanelState;
 
+/// Highlight another view: the selected word marked in the second view.
+- (NSUInteger)smartHighlightOtherViewMatchCase:(BOOL)matchCase wholeWord:(BOOL)wholeWord;
 @end
 
 NS_ASSUME_NONNULL_END
