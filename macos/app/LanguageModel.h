@@ -23,6 +23,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// The most languages worth offering as a choice. Past this the text has not
 /// narrowed anything down, and nothing is offered.
 extern const NSUInteger NppMostLanguagesToOffer;
+/// How many languages are offered when one alone is not sure enough.
+extern const NSUInteger NppShortListLength;
 
 @interface NppLanguageModel : NSObject
 
@@ -40,6 +42,8 @@ extern const NSUInteger NppMostLanguagesToOffer;
 /// The level a language's likelihood has to reach to be offered, as the
 /// trainer chose it on held-back fragments.
 @property (nonatomic, readonly) double coverage;
+/// How sure one language must be to be offered alone (at least `coverage`).
+@property (nonatomic, readonly) double singleLevel;
 
 /// Every language the model knows, most likely first, with how likely each is.
 /// Empty when there is too little text to say anything, or when the text has

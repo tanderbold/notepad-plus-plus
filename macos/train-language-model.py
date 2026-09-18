@@ -149,7 +149,8 @@ OTHER_NAMES = {
     "motorola 68k assembly": "asm", "x86 assembly": "asm", "unix assembly": "asm",
     "gas": "asm", "text": "normal", "plain text": "normal",
     "sqlpl": "sql", "plsql": "sql", "tsql": "sql", "plpgsql": "sql",
-    "inno setup": "inno", "red": "rebol",
+    "inno setup": "inno", "red": "rebol", "windows registry entries": "registry",
+    "java server pages": "jsp", "javaserver pages": "jsp",
     # As Rosetta Code spells them.
     "c sharp": "cs", "c plus plus": "cpp", "unix shell": "bash",
     "bbc basic": "freebasic", "objective c": "objc", "free pascal": "pascal",
@@ -266,6 +267,21 @@ def gather(by_extension, names, linguist, rosetta):
         if raw:
             samples.append(Sample(language, raw, path, "corpus", path))
 
+    # Examples written for the languages no corpus has (language-samples/<name>/),
+    # and the hex formats, which are mechanical enough to generate.
+    written = os.path.join(HERE, "resources", "language-samples")
+    for language in sorted(os.listdir(written)) if os.path.isdir(written) else []:
+        directory = os.path.join(written, language)
+        if language not in known or not os.path.isdir(directory):
+            continue
+        for name in sorted(os.listdir(directory)):
+            path = os.path.join(directory, name)
+            raw = read_sample(path) if os.path.isfile(path) else None
+            if raw:
+                samples.append(Sample(language, raw, path, "samples", path))
+    for language, raw, path in generated_hex(known):
+        samples.append(Sample(language, raw, path, "generated", path))
+
     for directory, subdirectories, files in os.walk(ROOT):
         subdirectories[:] = [d for d in subdirectories if d not in SKIP_DIRECTORIES]
         for name in files:
@@ -283,6 +299,59 @@ def gather(by_extension, names, linguist, rosetta):
                 samples.append(Sample(language, raw, path, "repo", path))
 
     return samples
+
+
+def generated_hex(known, files=12):
+    """Intel HEX, Motorola S-records and Tektronix hex, with right checksums:
+    firmware images of a few hundred bytes to a few kilobytes."""
+    rng = random.Random(SEED)
+    out = []
+
+    def data_records(size, width):
+        address = rng.choice((0, 0x100, 0x8000, 0x08000000 & 0xFFFF))
+        for offset in range(0, size, width):
+            chunk = bytes(rng.randrange(256) if rng.random() < 0.8 else 0xFF
+                          for _ in range(min(width, size - offset)))
+            yield address + offset, chunk
+
+    for n in range(files):
+        size, width = rng.randrange(200, 3000), rng.choice((16, 32))
+        if "ihex" in known:
+            lines = []
+            if rng.random() < 0.5:
+                lines.append(":020000040800F2")
+            for address, chunk in data_records(size, width):
+                body = bytes([len(chunk), (address >> 8) & 0xFF, address & 0xFF, 0]) + chunk
+                lines.append(":" + body.hex().upper() + f"{(-sum(body)) & 0xFF:02X}")
+            lines.append(":00000001FF")
+            out.append(("ihex", ("\r\n" if n % 2 else "\n").join(lines).encode() + b"\n", f"generated/ihex/{n}"))
+        if "srec" in known:
+            lines = []
+            header = b"\x00\x00" + f"firmware_{n}.bin".encode()
+            body = bytes([len(header) + 1]) + header
+            lines.append("S0" + body.hex().upper() + f"{(~sum(body)) & 0xFF:02X}")
+            count = 0
+            for address, chunk in data_records(size, width):
+                body = bytes([len(chunk) + 3, (address >> 8) & 0xFF, address & 0xFF]) + chunk
+                lines.append("S1" + body.hex().upper() + f"{(~sum(body)) & 0xFF:02X}")
+                count += 1
+            body = bytes([3, (count >> 8) & 0xFF, count & 0xFF])
+            lines.append("S5" + body.hex().upper() + f"{(~sum(body)) & 0xFF:02X}")
+            lines.append("S9030000FC")
+            out.append(("srec", "\n".join(lines).encode() + b"\n", f"generated/srec/{n}"))
+        if "tehex" in known:
+            lines = []
+            for address, chunk in data_records(size, rng.choice((16, 30))):
+                fields = "6" + "4" + f"{address & 0xFFFF:04X}" + chunk.hex().upper()
+                length = len(fields) + 4                      # the two length and two checksum digits
+                digits = f"{length:02X}" + fields
+                check = sum(int(c, 16) for c in digits) & 0xFF
+                lines.append("%" + f"{length:02X}" + fields[0] + f"{check:02X}" + fields[1:])
+            end = "8" + "4" + "0000"
+            digits = f"{len(end) + 4:02X}" + end
+            lines.append("%" + f"{len(end) + 4:02X}" + end[0] + f"{sum(int(c, 16) for c in digits) & 0xFF:02X}" + end[1:])
+            out.append(("tehex", "\n".join(lines).encode() + b"\n", f"generated/tehex/{n}"))
+    return out
 
 
 def stable_hash(text):
@@ -604,12 +673,22 @@ def sorted_probabilities(scores, evidence, temperature, half):
     return order, np.take_along_axis(p, order, axis=1)
 
 
-def set_sizes(sorted_p, coverage):
+# A lone language below this is offered with the next best, as a short list,
+# rather than applied: fitted after the level, 0 until then.
+SINGLE_LEVEL = 0.0
+SHORT_LIST = 3
+
+
+def set_sizes(sorted_p, coverage, single=None):
     """How many languages each row offers: with independent judgements,
     those that reach the level; with one shared probability, the fewest whose
-    probabilities add up to it. Zero is possible only with the former."""
+    probabilities add up to it. Zero is possible only with the former. A lone
+    language not sure enough to be applied becomes a short list."""
     if MODEL_KIND == "independent":
-        return (sorted_p >= coverage - 1e-9).sum(axis=1)
+        size = (sorted_p >= coverage - 1e-9).sum(axis=1)
+        single = SINGLE_LEVEL if single is None else single
+        unsure = (size == 1) & (sorted_p[:, 0] < single - 1e-9)
+        return np.where(unsure, min(SHORT_LIST, sorted_p.shape[1]), size)
     reached = np.cumsum(sorted_p, axis=1) >= coverage - 1e-9
     return reached.argmax(axis=1) + 1
 
@@ -656,7 +735,22 @@ def fit_rule(scores, evidence, labels, weights):
                 value = inside - LIST_COST * listed
                 if best is None or value > best[0]:
                     best = (value, float(temperature), float(half), float(coverage))
-    return best[1], best[2], best[3]
+    _, temperature, half, coverage = best
+    # Then how sure one language has to be to be applied alone, by the same
+    # measure: a wrong language applied is a miss, a short list is a list.
+    single = coverage
+    if MODEL_KIND == "independent":
+        order, sorted_p = sorted_probabilities(scores, evidence, temperature, half)
+        rank = np.argmax(order == labels[:, None], axis=1)
+        best_value = None
+        for level in np.arange(coverage, 1.0, 0.005):
+            size = set_sizes(sorted_p, coverage, level)
+            inside = float((weights * ((rank < size) & (size <= MOST_TO_OFFER))).sum()) / total
+            listed = float((weights * ((size > 1) & (size <= MOST_TO_OFFER))).sum()) / total
+            value = inside - LIST_COST * listed
+            if best_value is None or value > best_value + 1e-9:
+                best_value, single = value, float(level)
+    return temperature, half, coverage, single
 
 
 def diagnose(held, scores, temperature, half):
@@ -699,14 +793,14 @@ def diagnose(held, scores, temperature, half):
 # The file
 # =============================================================================
 
-MAGIC = b"NPPLANG\x04"
+MAGIC = b"NPPLANG\x05"
 
 
-def write_model(path, languages, vocabulary, idf, W, b, temperature, half, coverage):
+def write_model(path, languages, vocabulary, idf, W, b, temperature, half, coverage, single):
     """
-        magic "NPPLANG" 4
+        magic "NPPLANG" 5
         u32 languages, u32 features, u8 n-gram count, u8 flags,
-        f32 temperature, f32 half-evidence, f32 coverage, n-gram sizes
+        f32 temperature, f32 half-evidence, f32 coverage, f32 single, n-gram sizes
         each language: u16 length, utf-8 name
         each feature: u64 key, ascending
         each feature: i16 idf in hundredths
@@ -716,8 +810,8 @@ def write_model(path, languages, vocabulary, idf, W, b, temperature, half, cover
     with open(path, "wb") as out:
         out.write(MAGIC)
         flags = 1 | (2 if MODEL_KIND == "independent" else 0)
-        out.write(struct.pack("<IIBBfff", len(languages), len(vocabulary),
-                              len(NGRAM_SIZES), flags, temperature, half, coverage))
+        out.write(struct.pack("<IIBBffff", len(languages), len(vocabulary),
+                              len(NGRAM_SIZES), flags, temperature, half, coverage, single))
         out.write(bytes(NGRAM_SIZES))
         for name in languages:
             raw = name.encode("utf-8")
@@ -736,13 +830,16 @@ class Model:
 
     def __init__(self, path):
         data = open(path, "rb").read()
-        assert data[:8] == MAGIC, "not a model file"
+        assert data[:7] == MAGIC[:7] and data[7] in (4, 5), "not a model file"
         at = 8
-        classes, features, sizes, flags, self.temperature, self.half, self.coverage = \
-            struct.unpack_from("<IIBBfff", data, at)
-        global MODEL_KIND
+        layout = "<IIBBffff" if data[7] == 5 else "<IIBBfff"
+        fields = struct.unpack_from(layout, data, at)
+        classes, features, sizes, flags, self.temperature, self.half, self.coverage = fields[:7]
+        self.single = fields[7] if len(fields) > 7 else self.coverage
+        global MODEL_KIND, SINGLE_LEVEL
         MODEL_KIND = "independent" if flags & 2 else "softmax"
-        at += struct.calcsize("<IIBBfff")
+        SINGLE_LEVEL = self.single
+        at += struct.calcsize(layout)
         self.ngram_sizes = tuple(data[at:at + sizes])
         at += sizes
         self.languages = []
@@ -788,6 +885,8 @@ class Model:
             cumulative += p[i]
             if cumulative >= self.coverage - 1e-9:
                 break
+        if MODEL_KIND == "independent" and len(chosen) == 1 and p[order[0]] < self.single - 1e-9:
+            chosen = [self.languages[i] for i in order[:SHORT_LIST]]
         ranked = [(self.languages[i], float(p[i])) for i in order]
         return ranked, example.evidence, (chosen if len(chosen) <= MOST_TO_OFFER else [])
 
@@ -912,13 +1011,15 @@ def main():
     # Rosetta Code is most of what is held back and the least like real files;
     # it counts for less when deciding how sure to be.
     weights = np.array([0.3 if e.source == "rosetta" else 1.0 for e in calibration], dtype=np.float32)
-    temperature, half, coverage = fit_rule(scores, evidence, labels, weights)
-    print(f"    scale {temperature:.2f} at half-evidence {half:.0f}, level {coverage:.2f} "
+    global SINGLE_LEVEL
+    temperature, half, coverage, SINGLE_LEVEL = fit_rule(scores, evidence, labels, weights)
+    print(f"    scale {temperature:.2f} at half-evidence {half:.0f}, level {coverage:.2f}, "
+          f"alone from {SINGLE_LEVEL:.3f} "
           f"(fitted on {len(calibration)} examples, measured on {len(check)} others)")
     held = check
     scores = scores_of(held, W, b)
 
-    write_model(args.out, languages, vocabulary, idf, W, b, temperature, half, coverage)
+    write_model(args.out, languages, vocabulary, idf, W, b, temperature, half, coverage, SINGLE_LEVEL)
     print(f"==> {len(languages)} languages, {len(vocabulary)} features, "
           f"{os.path.getsize(args.out) // 1024} KB -> {args.out} ({time.time() - started:.0f}s)")
 

@@ -10,6 +10,7 @@
 @end
 
 const NSUInteger NppMostLanguagesToOffer = 10;
+const NSUInteger NppShortListLength = 3;
 
 /// Only the beginning of a long text is read. It is enough to tell what the
 /// text is, and walking a large file to the end would slow opening it.
@@ -32,7 +33,7 @@ static const size_t kWordLength = 24, kFirstWordLength = 16;
     std::vector<int8_t> _weights;        // languages * features, row-major
     std::vector<uint8_t> _ngramSizes;
     uint32_t _featureCount;
-    float _temperature, _halfEvidence, _coverage;
+    float _temperature, _halfEvidence, _coverage, _single;
     BOOL _independent;   // one yes-or-no per language, rather than one choice among all
 }
 
@@ -53,15 +54,18 @@ static BOOL Take(const uint8_t *bytes, NSUInteger length, NSUInteger *at, void *
 
     char magic[8] = {0};
     if (!Take(bytes, length, &at, magic, sizeof(magic))) return nil;
-    if (memcmp(magic, "NPPLANG\x04", 8) != 0) return nil;
+    // Version 5 adds the level one language needs to be offered alone.
+    if (memcmp(magic, "NPPLANG", 7) != 0 || (magic[7] != 4 && magic[7] != 5)) return nil;
+    BOOL hasSingle = magic[7] == 5;
 
     uint32_t languageCount = 0, featureCount = 0;
     uint8_t ngramCount = 0, flags = 0;
-    float temperature = 1, half = 0, coverage = 0.9f;
+    float temperature = 1, half = 0, coverage = 0.9f, single = 0;
     if (!Take(bytes, length, &at, &languageCount, 4) || !Take(bytes, length, &at, &featureCount, 4) ||
         !Take(bytes, length, &at, &ngramCount, 1) || !Take(bytes, length, &at, &flags, 1) ||
         !Take(bytes, length, &at, &temperature, 4) || !Take(bytes, length, &at, &half, 4) ||
         !Take(bytes, length, &at, &coverage, 4)) return nil;
+    if (hasSingle && !Take(bytes, length, &at, &single, 4)) return nil;
     if (!languageCount || !featureCount || !ngramCount || ngramCount > 7) return nil;
 
     NppLanguageModel *model = [[NppLanguageModel alloc] init];
@@ -69,6 +73,7 @@ static BOOL Take(const uint8_t *bytes, NSUInteger length, NSUInteger *at, void *
     model->_temperature = temperature > 0 ? temperature : 1;
     model->_halfEvidence = MAX(0.0f, half);
     model->_coverage = coverage > 0 && coverage <= 1 ? coverage : 0.9f;
+    model->_single = single >= model->_coverage && single <= 1 ? single : model->_coverage;
     model->_independent = (flags & 2) != 0;
     model->_ngramSizes.resize(ngramCount);
     if (!Take(bytes, length, &at, model->_ngramSizes.data(), ngramCount)) return nil;
@@ -120,6 +125,7 @@ static BOOL Take(const uint8_t *bytes, NSUInteger length, NSUInteger *at, void *
 }
 
 - (double)coverage { return _coverage; }
+- (double)singleLevel { return _single; }
 
 #pragma mark - Measuring a piece of text, the way the trainer does
 
@@ -304,6 +310,15 @@ static inline uint64_t Keyed(uint64_t tag, const uint8_t *bytes, size_t length) 
         reached += guess.confidence;
         if (!_independent && reached >= _coverage - 1e-9) break;
         if (offered.count > NppMostLanguagesToOffer) return @[];
+    }
+    // One language not sure enough to be applied alone comes with the next
+    // best, as a short list to choose from.
+    if (_independent && offered.count == 1 && guesses.firstObject.confidence < _single - 1e-9) {
+        [offered removeAllObjects];
+        for (NppLanguageGuess *guess in guesses) {
+            if (offered.count == NppShortListLength) break;
+            [offered addObject:guess.name];
+        }
     }
     return offered.count > NppMostLanguagesToOffer ? @[] : offered;
 }

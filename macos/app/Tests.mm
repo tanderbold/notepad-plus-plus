@@ -4547,6 +4547,42 @@ int NppMacRunTests(AppDelegate *app) {
                   @"was trained on, and recognises a plain example of each",
                   modelAnswers && modelKeepsQuiet);
 
+            // The languages no corpus had, from the examples written for them
+            // and the generated hex formats; texts the trainer never saw.
+            NSDictionary<NSString *, NSString *> *added = @{
+                @"registry": @"Windows Registry Editor Version 5.00\n\n[HKEY_CURRENT_USER\\Software\\Example\\Viewer]\n"
+                             @"\"ShowToolbar\"=dword:00000001\n\"LastFolder\"=\"C:\\\\Users\\\\Public\"\n@=\"default\"\n",
+                @"kix":      @"; map the team drive\nIF INGROUP(\"Engineering\")\n    USE E: \"\\\\files\\engineering\"\n"
+                             @"    ? \"Mapped for \" + @USERID\nENDIF\nIF @ERROR <> 0\n    ? @SERROR\nENDIF\nEXIT\n",
+                @"spice":    @"Voltage divider\nV1 1 0 DC 9\nR1 1 2 10k\nR2 2 0 4.7k\nC1 2 0 100n\n.op\n.tran 1m 100m\n.end\n",
+                @"ihex":     @":10010000214601360121470136007EFE09D2190140\n:100110002146017E17C20001FF5F16002148011928\n"
+                             @":10012000194E79234623965778239EDA3F01B2CAA7\n:00000001FF\n",
+                @"srec":     @"S00F000068656C6C6F202020202000003C\nS11F00007C0802A6900100049421FFF07C6C1B787C8C23783C6000003863000026\n"
+                             @"S11F001C4BFFFFE5398000007D83637880010014382100107C0803A64E800020E9\nS5030002FA\nS9030000FC\n",
+            };
+            NSMutableArray *addedWrong = [NSMutableArray array];
+            for (NSString *want in added) {
+                NSArray<NppLanguageGuess *> *guesses = [trained guessesForText:added[want]];
+                if (![modelLanguages containsObject:want] || !guesses.count || ![guesses.firstObject.name isEqualToString:want]) {
+                    [addedWrong addObject:[NSString stringWithFormat:@"%@->%@", want, guesses.firstObject.name ?: @"-"]];
+                }
+            }
+            // A lone answer is one the model is sure of, past the level fitted for it.
+            BOOL aloneIsSure = trained.singleLevel >= trained.coverage;
+            for (NSString *text in [plain.allValues arrayByAddingObjectsFromArray:added.allValues]) {
+                NSArray *offer = [trained languagesOfferedForText:text];
+                if (offer.count == 1 && [trained guessesForText:text].firstObject.confidence < trained.singleLevel - 1e-9) aloneIsSure = NO;
+                if (offer.count > 1 && offer.count < NppShortListLength &&
+                    [trained guessesForText:text].firstObject.confidence < trained.coverage) aloneIsSure = NO;
+            }
+            printf("    model: %lu languages, level %.2f, alone from %.3f%s%s\n", (unsigned long)modelLanguages.count,
+                   trained.coverage, trained.singleLevel, addedWrong.count ? ", wrong: " : "",
+                   [addedWrong componentsJoinedByString:@" "].UTF8String);
+            Check(@"IDM_LANG_DETECT (languages without a corpus)",
+                  @"registry, KiXtart, SPICE, Intel HEX and S-records are learnt from the written and generated "
+                  @"examples, and one language is offered alone only past the level fitted for that",
+                  !addedWrong.count && aloneIsSure && modelLanguages.count >= 80);
+
             // A short piece of C-shaped code: what is offered is a choice of
             // no more than ten with C in it, whether C alone or a list. A
             // single answer that is not C, or a list without it, is the
