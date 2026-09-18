@@ -975,6 +975,32 @@ int NppMacRunTests(AppDelegate *app) {
                   loaded.count == 1 && listed && highlighted && bold);
         }
 
+        // Every setting that existed only as a property now has a control.
+        {
+            NppPreferences *p = [NppPreferences shared];
+            BOOL wasVertical = p.tabBarVertical; NSInteger wasMax = p.recentFilesMax;
+            PreferencesWindow *prefs = [[PreferencesWindow alloc] initWithEditor:ed];
+            NSDictionary *controls = [prefs valueForKey:@"controls"];
+            BOOL present = YES;
+            for (NSString *key in @[@"tabBarVertical", @"hideTabBar", @"defaultEOL", @"defaultLanguage",
+                                    @"recentFilesMax", @"recentFilesShowFullPath", @"defaultDirectoryMode",
+                                    @"fixedDirectory", @"findFillWithSelection", @"confirmReplaceAll",
+                                    @"printHeaderMiddle", @"printFooterLeft", @"printMargins",
+                                    @"largeFileDeactivateWordWrap", @"exitOnClosingLastTab"]) {
+                if (!controls[key]) { present = NO; break; }
+            }
+            [controls[@"tabBarVertical"] setState:NSControlStateValueOn];
+            [controls[@"recentFilesMax"] setStringValue:@"7"];
+            [prefs apply:nil];
+            BOOL applied = p.tabBarVertical && p.recentFilesMax == 7;
+            p.tabBarVertical = wasVertical; p.recentFilesMax = wasMax;
+            [ed applyEditorPreferences];
+            Check(@"IDM_SETTING_PREFERENCE (the pages Windows has)",
+                  @"Tab Bar, Recent Files History, Default Directory, Searching and the rest of New "
+                  @"Document, Print and Performance have controls, and Apply writes them",
+                  present && applied);
+        }
+
         // A NUL byte inside a file is content, not the end of it.
         {
             NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];

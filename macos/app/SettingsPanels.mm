@@ -258,6 +258,15 @@
     y = [self addCheckbox:@"Work the language out from the contents when the name does not say"
                       key:@"detectLanguageFromContent"
                        on:p.detectLanguageFromContent to:v atY:y];
+    y = [self addPopup:@"Line ending" key:@"defaultEOL"
+                 items:@[@"Windows (CR LF)", @"Classic Mac (CR)", @"Unix (LF)"]
+              selected:p.defaultEOL to:v atY:y];
+    y = [self addField:@"Default language (blank for none)" key:@"defaultLanguage"
+                 value:p.defaultLanguage ?: @"" to:v atY:y];
+    y = [self addCheckbox:@"Open a new document at startup" key:@"openNewDocumentAtStartup"
+                       on:p.openNewDocumentAtStartup to:v atY:y];
+    y = [self addCheckbox:@"Name an untitled tab after its first line" key:@"untitledFromFirstLine"
+                       on:p.untitledFromFirstLine to:v atY:y];
     [self endPage:@"New Document" atY:y];
 
     y = [self beginPage:@"Indentation"]; v = [self page:@"Indentation"];
@@ -298,6 +307,18 @@
                   value:p.printHeaderRight to:v atY:y];
     y = [self addField:@"Footer (middle)" key:@"printFooterMiddle"
                   value:p.printFooterMiddle to:v atY:y];
+    y = [self addField:@"Header middle" key:@"printHeaderMiddle" value:p.printHeaderMiddle ?: @"" to:v atY:y];
+    y = [self addField:@"Footer left" key:@"printFooterLeft" value:p.printFooterLeft ?: @"" to:v atY:y];
+    y = [self addField:@"Footer right" key:@"printFooterRight" value:p.printFooterRight ?: @"" to:v atY:y];
+    y = [self addField:@"Header font (blank for the editor's)" key:@"printHeaderFontName"
+                 value:p.printHeaderFontName ?: @"" to:v atY:y];
+    y = [self addField:@"Header font size" key:@"printHeaderFontSize"
+                 value:[@(p.printHeaderFontSize) stringValue] to:v atY:y];
+    y = [self addCheckbox:@"Header bold" key:@"printHeaderBold" on:p.printHeaderBold to:v atY:y];
+    y = [self addCheckbox:@"Header italic" key:@"printHeaderItalic" on:p.printHeaderItalic to:v atY:y];
+    y = [self addField:@"Margins: left, top, right, bottom (points)" key:@"printMargins"
+                 value:[NSString stringWithFormat:@"%.0f %.0f %.0f %.0f", p.printMarginLeft, p.printMarginTop,
+                        p.printMarginRight, p.printMarginBottom] to:v atY:y];
     [self endPage:@"Print" atY:y];
 
     y = [self beginPage:@"Backup"]; v = [self page:@"Backup"];
@@ -371,7 +392,54 @@
     y = [self addCheckbox:@"Allow clickable links above that size"
                       key:@"largeFileAllowClickableLinks"
                        on:p.largeFileAllowClickableLinks to:v atY:y];
+    y = [self addCheckbox:@"Deactivate word wrap above the threshold" key:@"largeFileDeactivateWordWrap"
+                       on:p.largeFileDeactivateWordWrap to:v atY:y];
+    y = [self addCheckbox:@"Allow auto-completion above the threshold" key:@"largeFileAllowAutoCompletion"
+                       on:p.largeFileAllowAutoCompletion to:v atY:y];
+    y = [self addCheckbox:@"Allow smart highlighting above the threshold" key:@"largeFileAllowSmartHighlighting"
+                       on:p.largeFileAllowSmartHighlighting to:v atY:y];
+    y = [self addCheckbox:@"Suppress the warning for files of 2 GB or more" key:@"suppressHugeFileWarning"
+                       on:p.suppressHugeFileWarning to:v atY:y];
     [self endPage:@"Performance" atY:y];
+
+    y = [self beginPage:@"Tab Bar"]; v = [self page:@"Tab Bar"];
+    y = [self addCheckbox:@"Hide the tab bar" key:@"hideTabBar" on:p.hideTabBar to:v atY:y];
+    y = [self addCheckbox:@"Lock the tabs (no drag to reorder)" key:@"tabBarLocked" on:p.tabBarLocked to:v atY:y];
+    y = [self addCheckbox:@"Vertical tab bar" key:@"tabBarVertical" on:p.tabBarVertical to:v atY:y];
+    y = [self addCheckbox:@"Several rows of tabs" key:@"tabBarMultiLine" on:p.tabBarMultiLine to:v atY:y];
+    y = [self addCheckbox:@"Show a close button on each tab" key:@"tabShowCloseButton" on:p.tabShowCloseButton to:v atY:y];
+    y = [self addCheckbox:@"Show the close button on inactive tabs too" key:@"tabCloseButtonOnInactive"
+                       on:p.tabCloseButtonOnInactive to:v atY:y];
+    y = [self addCheckbox:@"Double click on a tab closes it" key:@"tabDoubleClickCloses" on:p.tabDoubleClickCloses to:v atY:y];
+    y = [self addCheckbox:@"Allow tabs to be pinned" key:@"tabPinFeatureEnabled" on:p.tabPinFeatureEnabled to:v atY:y];
+    y = [self addCheckbox:@"Quit when the last tab is closed" key:@"exitOnClosingLastTab" on:p.exitOnClosingLastTab to:v atY:y];
+    [self endPage:@"Tab Bar" atY:y];
+
+    y = [self beginPage:@"Recent Files History"]; v = [self page:@"Recent Files History"];
+    y = [self addField:@"Files kept" key:@"recentFilesMax" value:[@(p.recentFilesMax) stringValue] to:v atY:y];
+    y = [self addCheckbox:@"Show the full path" key:@"recentFilesShowFullPath" on:p.recentFilesShowFullPath to:v atY:y];
+    y = [self addField:@"Longest name shown (0 for no limit)" key:@"recentFilesMaxLength"
+                 value:[@(p.recentFilesMaxLength) stringValue] to:v atY:y];
+    [self endPage:@"Recent Files History" atY:y];
+
+    y = [self beginPage:@"Default Directory"]; v = [self page:@"Default Directory"];
+    y = [self addPopup:@"Open and Save start in" key:@"defaultDirectoryMode"
+                 items:@[@"The current document's folder", @"The folder used last", @"A fixed folder"]
+              selected:p.defaultDirectoryMode to:v atY:y];
+    y = [self addField:@"Fixed folder" key:@"fixedDirectory" value:p.fixedDirectory ?: @"" to:v atY:y];
+    [self endPage:@"Default Directory" atY:y];
+
+    y = [self beginPage:@"Searching"]; v = [self page:@"Searching"];
+    y = [self addCheckbox:@"Fill Find with the selection" key:@"findFillWithSelection" on:p.findFillWithSelection to:v atY:y];
+    y = [self addCheckbox:@"Or with the word under the caret" key:@"findSelectWordUnderCaret" on:p.findSelectWordUnderCaret to:v atY:y];
+    y = [self addCheckbox:@"Replace stays on the occurrence replaced" key:@"replaceStaysOnOccurrence"
+                       on:p.replaceStaysOnOccurrence to:v atY:y];
+    y = [self addCheckbox:@"Confirm Replace All" key:@"confirmReplaceAll" on:p.confirmReplaceAll to:v atY:y];
+    y = [self addCheckbox:@"Compare: ignore case" key:@"compareIgnoreCase" on:p.compareIgnoreCase to:v atY:y];
+    y = [self addCheckbox:@"Compare: ignore spaces" key:@"compareIgnoreSpaces" on:p.compareIgnoreSpaces to:v atY:y];
+    y = [self addCheckbox:@"Compare: ignore empty lines" key:@"compareIgnoreEmptyLines" on:p.compareIgnoreEmptyLines to:v atY:y];
+    y = [self addCheckbox:@"Links: underline the whole box" key:@"linksFullBox" on:p.linksFullBox to:v atY:y];
+    [self endPage:@"Searching" atY:y];
 
     y = [self beginPage:@"Cloud & Link"]; v = [self page:@"Cloud & Link"];
     y = [self addCheckbox:@"Clickable links" key:@"linksEnabled" on:p.linksEnabled to:v atY:y];
@@ -433,6 +501,53 @@
 
 - (void)apply:(id)sender {
     NppPreferences *p = [NppPreferences shared];
+    BOOL (^on)(NSString *) = ^BOOL(NSString *key) { return [self.controls[key] state] == NSControlStateValueOn; };
+    NSString *(^text)(NSString *) = ^NSString *(NSString *key) { return [self.controls[key] stringValue] ?: @""; };
+    p.defaultEOL = [self.controls[@"defaultEOL"] indexOfSelectedItem];
+    p.defaultLanguage = text(@"defaultLanguage");
+    p.openNewDocumentAtStartup = on(@"openNewDocumentAtStartup");
+    p.untitledFromFirstLine = on(@"untitledFromFirstLine");
+    p.printHeaderMiddle = text(@"printHeaderMiddle");
+    p.printFooterLeft = text(@"printFooterLeft");
+    p.printFooterRight = text(@"printFooterRight");
+    p.printHeaderFontName = text(@"printHeaderFontName");
+    p.printHeaderFontSize = text(@"printHeaderFontSize").integerValue;
+    p.printHeaderBold = on(@"printHeaderBold");
+    p.printHeaderItalic = on(@"printHeaderItalic");
+    NSArray *margins = [text(@"printMargins") componentsSeparatedByCharactersInSet:
+                        [NSCharacterSet whitespaceCharacterSet]];
+    NSMutableArray *numbers = [NSMutableArray array];
+    for (NSString *m in margins) if (m.length) [numbers addObject:@(m.doubleValue)];
+    if (numbers.count == 4) {
+        p.printMarginLeft = [numbers[0] doubleValue]; p.printMarginTop = [numbers[1] doubleValue];
+        p.printMarginRight = [numbers[2] doubleValue]; p.printMarginBottom = [numbers[3] doubleValue];
+    }
+    p.largeFileDeactivateWordWrap = on(@"largeFileDeactivateWordWrap");
+    p.largeFileAllowAutoCompletion = on(@"largeFileAllowAutoCompletion");
+    p.largeFileAllowSmartHighlighting = on(@"largeFileAllowSmartHighlighting");
+    p.suppressHugeFileWarning = on(@"suppressHugeFileWarning");
+    p.hideTabBar = on(@"hideTabBar");
+    p.tabBarLocked = on(@"tabBarLocked");
+    p.tabBarVertical = on(@"tabBarVertical");
+    p.tabBarMultiLine = on(@"tabBarMultiLine");
+    p.tabShowCloseButton = on(@"tabShowCloseButton");
+    p.tabCloseButtonOnInactive = on(@"tabCloseButtonOnInactive");
+    p.tabDoubleClickCloses = on(@"tabDoubleClickCloses");
+    p.tabPinFeatureEnabled = on(@"tabPinFeatureEnabled");
+    p.exitOnClosingLastTab = on(@"exitOnClosingLastTab");
+    p.recentFilesMax = MAX(1, text(@"recentFilesMax").integerValue);
+    p.recentFilesShowFullPath = on(@"recentFilesShowFullPath");
+    p.recentFilesMaxLength = MAX(0, text(@"recentFilesMaxLength").integerValue);
+    p.defaultDirectoryMode = [self.controls[@"defaultDirectoryMode"] indexOfSelectedItem];
+    p.fixedDirectory = text(@"fixedDirectory");
+    p.findFillWithSelection = on(@"findFillWithSelection");
+    p.findSelectWordUnderCaret = on(@"findSelectWordUnderCaret");
+    p.replaceStaysOnOccurrence = on(@"replaceStaysOnOccurrence");
+    p.confirmReplaceAll = on(@"confirmReplaceAll");
+    p.compareIgnoreCase = on(@"compareIgnoreCase");
+    p.compareIgnoreSpaces = on(@"compareIgnoreSpaces");
+    p.compareIgnoreEmptyLines = on(@"compareIgnoreEmptyLines");
+    p.linksFullBox = on(@"linksFullBox");
     p.fontName = [self.controls[@"fontName"] stringValue];
     p.fontSize = [[self.controls[@"fontSize"] stringValue] integerValue];
     p.tabWidth = MAX(1, [[self.controls[@"tabWidth"] stringValue] integerValue]);

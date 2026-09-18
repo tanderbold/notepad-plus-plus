@@ -16,6 +16,9 @@ void ApplyShortcutSpec(NSMenuItem *item, NSString *spec);
 - (BOOL)hasControlForKey:(NSString *)key;
 - (void)showPageAtIndex:(NSInteger)index;
 @property (nonatomic, readonly) BOOL visible;
+/// Writes every control into the preferences and applies them, as the
+/// Apply button does; here so the suite can drive it.
+- (void)apply:(id)sender;
 @end
 
 @interface StyleConfiguratorWindow : NSObject
