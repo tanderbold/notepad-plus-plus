@@ -57,7 +57,10 @@ files" decides whether seven-bit files are UTF-8 or ANSI, as upstream's
 uni7Bit rule; files of 64 MB and more are mapped and handed to Scintilla as
 bytes without a string in between; files of 2 GB and more open after
 upstream's warning (which Performance can suppress) instead of being
-refused.
+refused. Plan 2.6: -export=functionList writes <file>.result.json in
+upstream's JSON and quits, -quickPrint prints and quits (both without a
+session), -x / -y place the window, -monitor watches every file given, and
+-pluginMessage= is accepted and reported as ignored, there being no plugins.
 
 **Session.** Done since the audit: caret, scroll, selection, bookmarks,
 pinned state, tab colour, encoding and code page, and untitled buffers

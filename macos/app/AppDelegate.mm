@@ -231,6 +231,14 @@ static NSString *Ordinal(NSUInteger n) {
         [files addObject:arg];
     }
     options[@"files"] = files;
+    // -pluginMessage="..." loses its quotes, as upstream strips them.
+    NSString *message = options[@"-pluginMessage="];
+    if (message.length >= 2 && [message hasPrefix:@"\""] && [message hasSuffix:@"\""]) {
+        options[@"-pluginMessage="] = [message substringWithRange:NSMakeRange(1, message.length - 2)];
+    }
+    // Exporting the function list or printing and quitting runs silently,
+    // with no session read or written, as upstream does.
+    if ([options[@"-export=functionList"] boolValue] || [options[@"-quickPrint"] boolValue]) options[@"-nosession"] = @YES;
     return options;
 }
 
@@ -306,12 +314,38 @@ static NSString *Ordinal(NSUInteger n) {
                 [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_FINDCOLUMN wParam:(uptr_t)line lParam:column] lParam:0];
             }
         }
+        // -monitor: every file given is watched, not just the last.
         if ([options[@"-monitor"] boolValue] || [options[@"-monitoringMode"] boolValue]) {
-            [self.editor setMonitoring:YES];
+            for (NppDocument *doc in opened) {
+                [self.editor selectDocumentAtIndex:(NSInteger)[self.editor.documents indexOfObject:doc]];
+                [self.editor setMonitoring:YES];
+            }
+            [self.editor selectDocumentAtIndex:(NSInteger)[self.editor.documents indexOfObject:opened.lastObject]];
         }
+    }
+    // -x and -y: where the window's top left corner goes, from the screen's.
+    if (options[@"-x"] || options[@"-y"]) {
+        NSRect visible = (self.window.screen ?: [NSScreen mainScreen]).frame;
+        NSRect frame = self.window.frame;
+        CGFloat x = options[@"-x"] ? visible.origin.x + [options[@"-x"] doubleValue] : frame.origin.x;
+        CGFloat top = options[@"-y"] ? NSMaxY(visible) - [options[@"-y"] doubleValue] : NSMaxY(frame);
+        [self.window setFrameTopLeftPoint:NSMakePoint(x, top)];
+    }
+    // -pluginMessage=: there are no plugins to hand it to.
+    if ([options[@"-pluginMessage="] length]) {
+        fprintf(stderr, "NotepadMac: -pluginMessage ignored, plugins are not supported: %s\n",
+                [options[@"-pluginMessage="] UTF8String]);
     }
     [self.editor refreshChrome];
     [self rebuildRecentMenu];
+    // -export=functionList and -quickPrint do their work and quit.
+    if (!getenv("NPPMAC_TEST") && ([options[@"-export=functionList"] boolValue] || [options[@"-quickPrint"] boolValue])) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if ([options[@"-export=functionList"] boolValue]) [FunctionListPanel exportFunctionListOf:self.editor to:nil];
+            if ([options[@"-quickPrint"] boolValue]) [self.editor printCurrentShowingPanel:NO];
+            [NSApp terminate:nil];
+        });
+    }
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)note {

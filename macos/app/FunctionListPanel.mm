@@ -147,4 +147,38 @@ static NSString *PatternForLanguage(NSString *lang) {
     return [NSString stringWithFormat:@"%@  (line %ld)", e[@"name"], [e[@"line"] longValue] + 1];
 }
 
++ (BOOL)exportFunctionListOf:(EditorController *)editor to:(NSString *)path {
+    NppDocument *doc = editor.currentDocument;
+    NSString *target = path;
+    if (!target.length) {
+        if (!doc.path.length || ![[NSFileManager defaultManager] fileExistsAtPath:doc.path]) return NO;
+        target = [doc.path stringByAppendingString:@".result.json"];
+    }
+    NSArray<NppFunctionEntry *> *entries =
+        [[FunctionListCatalog sharedCatalog] entriesInText:[editor.sci string] ?: @""
+                                               forLanguage:doc.language.name ?: @"" extension:doc.path.pathExtension];
+    NSMutableArray *leaves = [NSMutableArray array];
+    NSMutableArray<NSMutableDictionary *> *nodes = [NSMutableArray array];
+    for (NppFunctionEntry *e in entries) {
+        if (e.isClass) continue;                      // a class is its node, not a leaf
+        if (!e.container.length) { [leaves addObject:e.name]; continue; }
+        NSMutableDictionary *node = nil;
+        for (NSMutableDictionary *n in nodes) if ([n[@"name"] isEqualToString:e.container]) { node = n; break; }
+        if (!node) {
+            node = [@{@"leaves": [NSMutableArray array], @"name": e.container} mutableCopy];
+            [nodes addObject:node];
+        }
+        [node[@"leaves"] addObject:e.name];
+    }
+    NSMutableDictionary *json = [NSMutableDictionary dictionary];
+    json[@"root"] = doc.path.lastPathComponent ?: doc.displayName ?: @"";
+    if (leaves.count) json[@"leaves"] = leaves;
+    if (nodes.count) json[@"nodes"] = nodes;
+    // nlohmann::json writes keys in order and compactly, and so does this.
+    NSData *data = [NSJSONSerialization dataWithJSONObject:json
+                                                   options:NSJSONWritingSortedKeys | NSJSONWritingWithoutEscapingSlashes
+                                                     error:NULL];
+    return [data writeToFile:target atomically:YES];
+}
+
 @end

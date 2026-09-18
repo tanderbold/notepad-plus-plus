@@ -12,4 +12,8 @@
 @property (nonatomic, readonly) BOOL visible;
 /// Names found in the current document; exposed for tests.
 - (NSArray<NSString *> *)functionNames;
+/// FunctionListPanel::serialize, for -export=functionList: the document's
+/// functions as {"leaves":[...],"nodes":[{"leaves":[...],"name":class}],"root":name},
+/// written to <file>.result.json (or `path`). NO when there is no file.
++ (BOOL)exportFunctionListOf:(EditorController *)editor to:(nullable NSString *)path;
 @end

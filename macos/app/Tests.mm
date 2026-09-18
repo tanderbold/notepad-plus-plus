@@ -975,6 +975,46 @@ int NppMacRunTests(AppDelegate *app) {
                   parsedRight && oneName && applied && quoted);
         }
 
+        // -export=functionList, -quickPrint, -x / -y, -pluginMessage= and
+        // -monitor over several files.
+        {
+            NSDictionary *exportArgs = [app parseCommandLine:@[@"-export=functionList", @"-pluginMessage=\"hello\"", @"a.cpp"]];
+            BOOL silent = [exportArgs[@"-nosession"] boolValue] && [exportArgs[@"-export=functionList"] boolValue] &&
+                          [exportArgs[@"-pluginMessage="] isEqualToString:@"hello"];
+            NSString *source = TempFile(@"t_export.cpp",
+                @"class Shape {\npublic:\n  int area() { return 0; }\n};\nint helper(int a) { return a; }\n");
+            [ed openFileAtPath:source error:NULL];
+            NSString *result = [source stringByAppendingString:@".result.json"];
+            [[NSFileManager defaultManager] removeItemAtPath:result error:NULL];
+            BOOL exported = [FunctionListPanel exportFunctionListOf:ed to:nil];
+            NSString *json = [NSString stringWithContentsOfFile:result encoding:NSUTF8StringEncoding error:NULL];
+            BOOL exportRight = exported &&
+                [json isEqualToString:@"{\"leaves\":[\"helper\"],\"nodes\":[{\"leaves\":[\"area\"],\"name\":\"Shape\"}],\"root\":\"t_export.cpp\"}"];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+
+            NSRect before = app.window.frame;
+            [app applyCommandLine:[app parseCommandLine:@[@"-x40", @"-y60"]]];
+            NSRect screen = (app.window.screen ?: [NSScreen mainScreen]).frame;
+            BOOL placed = fabs(NSMinX(app.window.frame) - (NSMinX(screen) + 40)) < 1 &&
+                          fabs(NSMaxY(app.window.frame) - (NSMaxY(screen) - 60)) < 1;
+            [app.window setFrame:before display:NO];
+
+            NSString *m1 = TempFile(@"t_cl_m1.log", @"a\n"), *m2 = TempFile(@"t_cl_m2.log", @"b\n");
+            [app applyCommandLine:[app parseCommandLine:@[@"-monitor", m1, m2]]];
+            NSUInteger watched = 0;
+            for (NppDocument *d in [ed.documents copy]) {
+                if ([d.path isEqualToString:m1] || [d.path isEqualToString:m2]) {
+                    if (d.monitoring) watched++;
+                    [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:d]];
+                    [ed setMonitoring:NO];
+                    [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:d] discardChanges:YES];
+                }
+            }
+            Check(@"IDM_ABOUT (more command line switches)",
+                  @"-export=functionList writes upstream's JSON, -x/-y place the window, -monitor watches every file given",
+                  silent && exportRight && placed && watched == 2);
+        }
+
         // A user-defined language is read from its file and highlighted.
         {
             NSString *udlPath = [ed userDefinedLanguagePath];

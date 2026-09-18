@@ -9,6 +9,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *name;
 @property (nonatomic, copy, nullable) NSString *container;   // enclosing class, if any
 @property (nonatomic) NSUInteger line;                       // zero-based
+/// The row that heads a class, above its members; not a function itself.
+@property (nonatomic) BOOL isClass;
 @end
 
 @interface FunctionListCatalog : NSObject

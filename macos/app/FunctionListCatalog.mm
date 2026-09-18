@@ -416,6 +416,7 @@ static NSString *StringFromBytes(NSData *data, NSRange range) {
                     NppFunctionEntry *entry = [[NppFunctionEntry alloc] init];
                     entry.name = className;
                     entry.line = LineAtByte(subject, header.location);
+                    entry.isClass = YES;
                     [entries insertObject:entry atIndex:before];
                 }
                 [classBodies addObject:[NSValue valueWithRange:body]];
