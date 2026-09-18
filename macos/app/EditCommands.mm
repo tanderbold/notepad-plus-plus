@@ -91,6 +91,14 @@ static NSString *LineEnding(NSString *line) {
 
     long first = 0, last = (long)lines.count - 1;
     if (hasSelection) [self selectedFirstLine:&first lastLine:&last];
+    // A rectangle, or a caret in each of several lines, covers the lines from
+    // its anchor to its caret, whatever the main selection's own ends are.
+    if ([sci message:SCI_SELECTIONISRECTANGLE] || [sci message:SCI_GETSELECTIONMODE] == SC_SEL_THIN) {
+        long a = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETRECTANGULARSELECTIONANCHOR]];
+        long c = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETRECTANGULARSELECTIONCARET]];
+        first = MIN(a, c);
+        last = MAX(a, c);
+    }
     first = MAX(0, MIN(first, (long)lines.count - 1));
     last  = MAX(first, MIN(last, (long)lines.count - 1));
 
@@ -370,7 +378,8 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
     // as on Windows; the whole lines move.
     ScintillaView *view = self.sci;
     NSRange columns = NSMakeRange(NSNotFound, 0);
-    if ([view message:SCI_SELECTIONISRECTANGLE]) {
+    // (A thin selection - a caret in each line - counts too, as NppCommands.cpp has it.)
+    if ([view message:SCI_SELECTIONISRECTANGLE] || [view message:SCI_GETSELECTIONMODE] == SC_SEL_THIN) {
         // The offset inside the line, in bytes, as NppCommands.cpp takes it:
         // a display column would count a tab as several.
         long anchor = [view message:SCI_GETRECTANGULARSELECTIONANCHOR];

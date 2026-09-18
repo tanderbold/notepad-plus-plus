@@ -2541,7 +2541,15 @@ int NppMacRunTests(AppDelegate *app) {
             [sci message:SCI_SETSELECTIONMODE wParam:SC_SEL_STREAM];
             return r == NSNotFound && [DocText(ed) isEqualToString:want];
         };
-        BOOL columnUp = sortColumn(NO, @"c\t-1\tz\na\t2.5\tx\nd\t2.5\tw\nb\t10\ty\n");
+        // Only the lines the column reaches are sorted: here the middle two of four.
+        SetDoc(ed, @"z\t9\nb\t5\na\t1\ny\t0\n");
+        [sci message:SCI_SETSELECTIONMODE wParam:SC_SEL_RECTANGLE];
+        [sci message:SCI_SETRECTANGULARSELECTIONANCHOR wParam:6];      // line 2, after the tab
+        [sci message:SCI_SETRECTANGULARSELECTIONCARET wParam:10];      // line 3, after the tab
+        [ed sortLines:NppSortDecimalDot descending:NO];
+        [sci message:SCI_SETSELECTIONMODE wParam:SC_SEL_STREAM];
+        BOOL onlyThose = [DocText(ed) isEqualToString:@"z\t9\na\t1\nb\t5\ny\t0\n"];
+        BOOL columnUp = onlyThose && sortColumn(NO, @"c\t-1\tz\na\t2.5\tx\nd\t2.5\tw\nb\t10\ty\n");
         BOOL columnDown = sortColumn(YES, @"b\t10\ty\na\t2.5\tx\nd\t2.5\tw\nc\t-1\tz\n");
         SetDoc(ed, @"b 1\na 1\nc 0\n");
         [sci message:SCI_SETSEL wParam:0 lParam:0];
