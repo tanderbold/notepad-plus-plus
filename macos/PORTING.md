@@ -394,7 +394,8 @@ repositories were read to establish what the commands are and how they behave.
 
 - **Plugins cannot run.** The plugin ABI is a Windows DLL contract built on
   `HWND` and `SendMessage`. "Open Plugins Folder" works; loading a Notepad++
-  plugin binary does not and cannot without a new plugin system.
+  plugin binary does not and cannot without a new plugin system. NppExec-style
+  scripts are built in instead; see "Plugins: what was decided".
 - **Depth behind a command varies.** A setting exists here when the behaviour
   behind it exists, and that rule drove what was built: the toolbar, the theme
   engine including dark mode, backup and autosave, print options, the large-file
@@ -414,6 +415,62 @@ repositories were read to establish what the commands are and how they behave.
 - **The docked panel system is approximated.** Workspace, Document Map and
   Function List are a split view and floating panels rather than a dockable
   layout that can be rearranged and saved.
+
+### Plugins: what was decided
+
+Notepad++'s plugins are Windows DLLs. A plugin exports `setInfo`,
+`getFuncsArray`, `beNotified` and `messageProc`, receives the `HWND`s of the
+main window and both Scintilla views, and then drives the editor with
+`SendMessage`: 118 `NPPM_*` messages to Notepad++, the whole `SCI_*` set to
+Scintilla, and 33 `NPPN_*` notifications back. Most plugins also create Win32
+dialogs and docked windows of their own. None of that can load on macOS, and a
+recompiled plugin would still be Win32 code from its first `CreateWindow`.
+Three ways forward were weighed:
+
+1. **Nothing more**: the built-in stand-ins (JSON, Compare, XML Tools, FTP,
+   Run, the Function List) are the end state.
+2. **A plugin API of this port's own**: Objective-C bundles loaded from the
+   plugins folder, given a subset of the `NPPM_*` messages as methods (current
+   file, buffer text, open/save/switch, menu commands, the Scintilla views
+   themselves) and the `NPPN_*` notifications as a delegate. Plugins would have
+   to be written for it; none of the existing ones would work unchanged.
+3. **Scripts as NppExec runs them**: a language users already write, stored
+   in the same `npes_saved.txt`, reaching the editor through NppExec's own
+   commands and everything else through the shell.
+
+**Decision: (3) is built, (2) is deferred.** Scripts cover what most people use
+plugins for on a daily basis -- build, run, lint, transform the selection, open
+the result -- with nothing to install, and existing NppExec scripts carry over.
+A bundle API is a commitment to keep an interface stable for authors who do not
+exist yet; it is worth doing only when someone wants to write a plugin a script
+cannot express (a panel of its own, a lexer, per-keystroke behaviour).
+
+What (3) is, in `ScriptCommands.mm`:
+
+- Plugins > NppExec: Execute NppExec Script… (F6) with NppExec's dialog
+  (a saved script or a temporary one, Save…, Delete), Execute Previous
+  (Ctrl+F6), the console, and every saved script as a menu entry.
+- NppExec's commands: `ECHO`, `CLS`, `CD`, `SET` (and `SET x ~ expression`
+  for arithmetic), `UNSET`, `ENV_SET`/`ENV_UNSET`, `LABEL`/`:label`, `GOTO`,
+  `IF … GOTO`, `IF`/`ELSE IF`/`ELSE`/`ENDIF`, `EXIT`, `SLEEP`, `INPUTBOX`,
+  `NPP_OPEN` (with masks), `NPP_SWITCH`, `NPP_SAVE`, `NPP_SAVEAS`,
+  `NPP_SAVEALL`, `NPP_CLOSE`, `NPP_RUN`, `NPP_EXEC` with arguments,
+  `NPP_MENUCOMMAND` (by menu path), `NPP_CONSOLE`, `SEL_SETTEXT[+]` and
+  `SCI_SENDMSG` with numeric messages. Anything else is a program run in the
+  script's folder, its output in the console and in `$(OUTPUT)`, `$(OUTPUT1)`,
+  `$(OUTPUTL)`, its status in `$(EXITCODE)`.
+- Variables: the script's own, `$(ARGV)`, `$(ARGV[n])`, `$(ARGC)`,
+  `$(INPUT)`, `$(SYS.NAME)` for the environment, `$(#n)` for the open files,
+  `$(SELECTED_TEXT)`, `$(CLIPBOARD_TEXT)`, `$(PLUGINS_CONFIG_DIR)`, and every
+  Run-menu variable. Values spliced into a shell line are quoted for the
+  shell, as the Run dialog does.
+- A script runs off the main thread and comes back to it for the editor, so
+  the console fills while it runs; an endless loop is stopped after a step
+  limit instead of hanging the editor.
+
+Not carried over: `NPP_SENDMSG` and the other Windows-message commands
+(reported as unavailable, and the script goes on), the console's own input
+line for interactive programs, and NppExec's highlight filters.
 
 ### Working out a language from its contents
 
@@ -571,7 +628,7 @@ The realistic sequence, in dependency order:
 | 3 | Replace `NppBigSwitch.cpp` message dispatch with a platform-neutral command layer (530 commands) | Not started |
 | 4 | Rebuild 70 dialogs natively; ⌘-shortcuts; `NSMenu`; native tab bar | **Partly done** -- menu, shortcuts, tabs, find/replace and go-to-line exist; the remaining ~65 dialogs (Preferences, UDL editor, Style Configurator) do not |
 | 5 | Native dark mode (drop `uxtheme`), Services, sandbox, notarisation, `.dmg` | Not started |
-| 6 | New plugin ABI | Not started |
+| 6 | New plugin ABI | Decided against for now: NppExec-style scripts are built in; a bundle API waits for a plugin a script cannot express |
 
 Stages 2–4 are where essentially all the effort sits.
 

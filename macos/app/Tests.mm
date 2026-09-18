@@ -48,6 +48,7 @@
 #import "TagMatch.h"
 #import "InfoWindows.h"
 #import "UpdateChecker.h"
+#import "ScriptCommands.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -7931,6 +7932,136 @@ int NppMacRunTests(AppDelegate *app) {
 
         [[NSFileManager defaultManager] removeItemAtPath:runPath error:NULL];
         [[NSFileManager defaultManager] removeItemAtPath:plainPath error:NULL];
+    }
+
+    printf("\n== NppExec scripts ==\n");
+    {
+        NSString *execDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_exec"];
+        [[NSFileManager defaultManager] removeItemAtPath:execDir error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:execDir withIntermediateDirectories:YES attributes:nil error:NULL];
+        [@"alpha\n" writeToFile:[execDir stringByAppendingPathComponent:@"one.txt"] atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [@"beta\n" writeToFile:[execDir stringByAppendingPathComponent:@"two.txt"] atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+
+        // Variables, arithmetic, a loop by IF … GOTO, a block IF, and the shell.
+        NppScriptEngine *engine = [[NppScriptEngine alloc] initWithEditor:ed];
+        NSString *script = [NSString stringWithFormat:
+            @"// counts to three\n"
+            @"SET n = 0\n"
+            @":again\n"
+            @"SET n ~ $(n) + 1\n"
+            @"ECHO pass $(n)\n"
+            @"IF $(n) < 3 GOTO again\n"
+            @"IF \"$(n)\" == \"3\"\n"
+            @"  ECHO three\n"
+            @"ELSE IF $(n) == 4\n"
+            @"  ECHO four\n"
+            @"ELSE\n"
+            @"  ECHO other\n"
+            @"ENDIF\n"
+            @"SET half ~ 7 / 2\n"
+            @"CD %@\n"
+            @"ENV_SET GREETING = hello from env\n"
+            @"/bin/echo \"$(SYS.GREETING)\"; exit 3\n"
+            @"ECHO code=$(EXITCODE) out=$(OUTPUT)\n"
+            @"ls *.txt\n"
+            @"ECHO first=$(OUTPUT1) last=$(OUTPUTL)\n", execDir];
+        BOOL ran = [engine runScript:script arguments:@[]];
+        NSString *log = engine.log;
+        BOOL flow = ran && [log containsString:@"pass 1\npass 2\npass 3\n"] && ![log containsString:@"pass 4"] &&
+                    [log containsString:@"three\n"] && ![log containsString:@"four\n"] && ![log containsString:@"other\n"] &&
+                    [[engine valueOfVariable:@"half"] isEqualToString:@"3.5"];
+        BOOL shell = [log containsString:@"code=3 out=hello from env"] && [log containsString:@"first=one.txt last=two.txt"] &&
+                     [log containsString:@"<<< Process finished. (Exit code 3)"] &&
+                     [engine.directory isEqualToString:execDir.stringByStandardizingPath];
+        printf("    exec flow=%d shell=%d\n", flow, shell);
+        if (!(flow && shell)) printf("%s\n", log.UTF8String);
+        Check(@"NppExec (script)", @"SET and SET ~, IF…GOTO and IF/ELSE IF/ELSE/ENDIF, CD, ENV_SET, $(OUTPUT) and $(EXITCODE)",
+              flow && shell);
+
+        // The editor's commands: open by mask, switch, change, save, close.
+        NSUInteger docsBefore = ed.documents.count;
+        NppScriptEngine *editing = [[NppScriptEngine alloc] initWithEditor:ed];
+        editing.directory = execDir;
+        BOOL editOK = [editing runScript:@"NPP_OPEN *.txt\n"
+                                         @"NPP_SWITCH one.txt\n"
+                                         @"SET before = $(CURRENT_LINESTR)\n"
+                                         @"SCI_SENDMSG 2013\n"            // SCI_SELECTALL
+                                         @"SEL_SETTEXT+ gamma\\tdelta\\n\n"
+                                         @"NPP_SAVE\n"
+                                         @"NPP_SAVEAS copy.txt\n"
+                                         @"NPP_CLOSE copy.txt\n"
+                                         @"NPP_CLOSE two.txt\n"
+                                         @"NPP_SENDMSG 1234\n"
+                                 arguments:@[]];
+        NSString *saved = [NSString stringWithContentsOfFile:[execDir stringByAppendingPathComponent:@"one.txt"] encoding:NSUTF8StringEncoding error:NULL];
+        NSString *copy = [NSString stringWithContentsOfFile:[execDir stringByAppendingPathComponent:@"copy.txt"] encoding:NSUTF8StringEncoding error:NULL];
+        BOOL edited = editOK && [saved isEqualToString:@"gamma\tdelta\n"] && [copy isEqualToString:saved] &&
+                      [[editing valueOfVariable:@"before"] isEqualToString:@"alpha"] &&
+                      ed.documents.count == docsBefore && [editing.log containsString:@"NPP_SENDMSG is not available on macOS"];
+        printf("    exec edit=%d docs=%lu/%lu\n", edited, (unsigned long)ed.documents.count, (unsigned long)docsBefore);
+        if (!edited) printf("%s\n", editing.log.UTF8String);
+        Check(@"NppExec (editor commands)", @"NPP_OPEN with a mask, NPP_SWITCH, SEL_SETTEXT+, NPP_SAVE, NPP_SAVEAS, NPP_CLOSE",
+              edited);
+
+        // Saved scripts in npes_saved.txt, NPP_EXEC with arguments, INPUTBOX, NPP_MENUCOMMAND.
+        NSString *savedText = @"::greet\nECHO hi $(ARGV[1]) of $(ARGC)\n\n::other\nECHO x\n";
+        NSArray<NppSavedScript *> *parsed = [NppSavedScript scriptsFromSavedText:savedText];
+        BOOL format = parsed.count == 2 && [parsed[0].name isEqualToString:@"greet"] &&
+                      [parsed[0].text isEqualToString:@"ECHO hi $(ARGV[1]) of $(ARGC)"] &&
+                      [[NppSavedScript savedTextForScripts:parsed] isEqualToString:@"::greet\nECHO hi $(ARGV[1]) of $(ARGC)\n::other\nECHO x\n"];
+        NSUInteger scriptsBefore = [ed savedScripts].count;
+        [ed saveScript:[NppSavedScript scriptNamed:@"t_greet" text:@"ECHO hi $(ARGV[1]) of $(ARGC)"]];
+        [app rebuildExecMenu];
+        BOOL listed = [app.execMenu itemWithTitle:@"t_greet"] != nil;
+        NppScriptEngine *calling = [[NppScriptEngine alloc] initWithEditor:ed];
+        calling.inputProvider = ^NSString *(NSString *prompt, NSString *initial) {
+            return [prompt isEqualToString:@"Who?"] ? [initial stringByAppendingString:@" World"] : nil;
+        };
+        __block NSString *performed = nil;
+        calling.menuCommandPerformer = ^BOOL(NSString *path) { performed = path; return [app performMenuCommandAtPath:@"Edit|Select All"]; };
+        SetDoc(ed, @"abc");
+        BOOL callOK = [calling runScript:@"INPUTBOX \"Who?\" : Hello\n"
+                                         @"NPP_EXEC t_greet \"$(INPUT[2])\" two\n"
+                                         @"ECHO argc now [$(ARGC)]\n"
+                                         @"NPP_MENUCOMMAND Edit|Select All\n"
+                               arguments:@[]];
+        long selected = [ed.sci message:SCI_GETSELECTIONEND] - [ed.sci message:SCI_GETSELECTIONSTART];
+        BOOL nested = callOK && [calling.log containsString:@"hi World of 2"] && [calling.log containsString:@"argc now [0]"] &&
+                      [[calling valueOfVariable:@"INPUT"] isEqualToString:@"Hello World"] &&
+                      [performed isEqualToString:@"Edit|Select All"] && selected == 3 &&
+                      ![app performMenuCommandAtPath:@"Edit|No Such Command"];
+        [ed removeScriptNamed:@"t_greet"];
+        [app rebuildExecMenu];
+        BOOL removed = [ed savedScripts].count == scriptsBefore && ![app.execMenu itemWithTitle:@"t_greet"];
+        printf("    exec format=%d listed=%d nested=%d removed=%d\n", format, listed, nested, removed);
+        if (!nested) printf("%s\n", calling.log.UTF8String);
+        Check(@"NppExec (saved scripts)", @"npes_saved.txt's format, the menu of saved scripts, NPP_EXEC with arguments, INPUTBOX, NPP_MENUCOMMAND",
+              format && listed && nested && removed);
+
+        // A runaway loop is stopped rather than hanging the editor.
+        NppScriptEngine *loop = [[NppScriptEngine alloc] initWithEditor:ed];
+        loop.stepLimit = 500;
+        BOOL stopped = ![loop runScript:@":top\nGOTO top\n" arguments:@[]] && [loop.log containsString:@"too many steps"];
+        Check(@"NppExec (runaway)", @"an endless GOTO loop is stopped", stopped);
+
+        // From the menu a script runs off the main thread and comes back to it
+        // for the editor; the console fills while the app stays live.
+        NSString *lastBefore = [[NSUserDefaults standardUserDefaults] stringForKey:@"NppMac.execLastScript"];
+        SetDoc(ed, @"background");
+        [[ed console] clear];
+        [app performSelector:NSSelectorFromString(@"executeScriptText:") withObject:@"ECHO bg $(CURRENT_WORD)\nSLEEP 50\nNPP_MENUCOMMAND Edit|Select All"];
+        NSDate *bgLimit = [NSDate dateWithTimeIntervalSinceNow:5];
+        while ([app valueForKey:@"runningScript"] && [bgLimit timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+        }
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+        long bgSelected = [ed.sci message:SCI_GETSELECTIONEND] - [ed.sci message:SCI_GETSELECTIONSTART];
+        BOOL background = ![app valueForKey:@"runningScript"] && [[ed console].text containsString:@"bg background"] && bgSelected == 10;
+        if (!background) printf("    bg running=%d selected=%ld console=[%s]\n", [app valueForKey:@"runningScript"] != nil, bgSelected, [ed console].text.UTF8String);
+        [[NSUserDefaults standardUserDefaults] setObject:lastBefore ?: @"" forKey:@"NppMac.execLastScript"];
+        [[ed console] toggle];
+        Check(@"NppExec (background)", @"a script from the menu runs off the main thread and uses the editor through it", background);
+        [[NSFileManager defaultManager] removeItemAtPath:execDir error:NULL];
     }
 
     // ---- meta-test: nothing may be declared implemented without a test

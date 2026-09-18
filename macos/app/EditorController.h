@@ -122,6 +122,8 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// first when Preferences asks for one.
 - (BOOL)writeCurrentToPath:(NSString *)path;
 - (BOOL)saveCurrentDocumentAs;
+/// Save As without the panel; NO when another tab has that file.
+- (BOOL)saveCurrentDocumentAsPath:(NSString *)path;
 - (void)closeCurrentDocument;
 /// Non-interactive close used by the Close All family and by tests.
 - (void)closeDocumentAtIndex:(NSInteger)index discardChanges:(BOOL)discard;

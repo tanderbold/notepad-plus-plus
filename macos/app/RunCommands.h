@@ -26,6 +26,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithEditor:(EditorController *)editor;
 - (void)toggle;
 - (void)show;
+/// Shown, with the keyboard left where it was (a script's output).
+- (void)showWithoutFocus;
 - (void)appendText:(NSString *)text;
 - (void)clear;
 @property (nonatomic, readonly) BOOL visible;
@@ -37,12 +39,22 @@ NS_ASSUME_NONNULL_BEGIN
 /// Substitutes $(FULL_CURRENT_PATH) and the rest. A name that is not one of
 /// them is left in place, exactly as Notepad++ leaves it.
 - (NSString *)expandRunVariables:(NSString *)source;
+/// The same, asking `lookup` first (a script's own variables); unquoted when
+/// the text is not for the shell.
+- (NSString *)expandRunVariables:(NSString *)source
+                          lookup:(nullable NSString *_Nullable (^)(NSString *name))lookup
+                   quoteForShell:(BOOL)quote;
 /// The value of one variable, or nil if there is no such variable.
 - (nullable NSString *)runVariableNamed:(NSString *)name;
 
 /// Runs a command line through the shell, in the current document's directory.
 /// Blocks until it finishes; output reaches the console as it arrives.
 - (NppRunResult *)runCommandLine:(NSString *)command intoConsole:(BOOL)intoConsole;
+/// An expanded command in the given directory, with variables added to the
+/// environment; safe off the main thread when the console is not asked for.
+- (NppRunResult *)runExpandedCommandLine:(NSString *)expanded directory:(nullable NSString *)directory
+                             environment:(nullable NSDictionary<NSString *, NSString *> *)environment
+                             intoConsole:(BOOL)intoConsole;
 /// The same, off the main thread, so the console fills while the app stays live.
 - (void)runCommandLineInBackground:(NSString *)command
                         completion:(void (^_Nullable)(NppRunResult *))completion;

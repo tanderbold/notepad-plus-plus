@@ -188,7 +188,9 @@ English, and right-to-left languages are not mirrored.
 
 **Platform.** No plugin loading, no
 NPPM/NPPN messages, no Plugins Admin; the built-in stand-ins are JSON,
-Compare, XML Tools, FTP, Run and the Function List.
+Compare, XML Tools, FTP, Run, the Function List and NppExec-style scripts
+(Plugins > NppExec, with `npes_saved.txt`; see PORTING.md, "Plugins: what
+was decided").
 
 **Updates, About, Debug Info.** Done since the audit: the auto-updater asks
 the port's GitHub Releases (the repository is a setting) through the stored

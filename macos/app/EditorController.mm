@@ -904,6 +904,15 @@ static long SciColor(NSColor *c) {
             return NO;
         }
     }
+    return [self saveCurrentDocumentAsPath:path];
+}
+
+- (BOOL)saveCurrentDocumentAsPath:(NSString *)path {
+    NppDocument *doc = self.currentDocument;
+    if (!doc || !path.length) return NO;
+    for (NppDocument *other in self.docs) {
+        if (other != doc && [other.path isEqualToString:path]) return NO;   // open in another tab
+    }
     if (![self writeCurrentToPath:path]) return NO;
     doc.path = path;
     doc.displayName = path.lastPathComponent;

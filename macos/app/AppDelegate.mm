@@ -45,6 +45,8 @@
 #import "Tests.h"
 #import "InfoWindows.h"
 #import "UpdateChecker.h"
+#import "ScriptCommands.h"
+#import <objc/runtime.h>
 
 @interface AppDelegate () <NSWindowDelegate>
 @property (nonatomic, strong) NSWindow *window;
@@ -69,6 +71,9 @@
 @property (nonatomic, strong) NSArray *ftpEntries;
 @property (nonatomic) BOOL alwaysOnTop;
 @property (nonatomic, strong) NSMenu *runMenu;
+@property (nonatomic, strong) NSMenu *execMenu;
+@property (nonatomic) NSInteger fixedExecItemCount;
+@property (nonatomic, strong, nullable) NppScriptEngine *runningScript;
 @property (nonatomic) NSInteger fixedRunItemCount;
 /// Files handed over before the editor existed, opened once it does.
 @property (nonatomic, strong) NSMutableArray<NSString *> *pendingOpenPaths;
@@ -1246,6 +1251,20 @@ static NSString *Ordinal(NSUInteger n) {
     [self item:@"Upload Current File" action:@selector(ftpUpload:) key:@"" flags:0 menu:ftpMenu];
     [pluginsMenu addItemWithTitle:@"FTP" action:nil keyEquivalent:@""].submenu = ftpMenu;
 
+    // NppExec's scripts; its saved scripts follow, rebuilt as they change.
+    NSMenu *execMenu = [[NSMenu alloc] initWithTitle:@"NppExec"];
+    NSMenuItem *execute = [self item:@"Execute NppExec Script…" action:@selector(executeScriptDialog:) key:@"" flags:0 menu:execMenu];
+    execute.keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF6FunctionKey];
+    execute.keyEquivalentModifierMask = 0;
+    NSMenuItem *again = [self item:@"Execute Previous NppExec Script" action:@selector(executePreviousScript:) key:@"" flags:0 menu:execMenu];
+    again.keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF6FunctionKey];
+    again.keyEquivalentModifierMask = NSEventModifierFlagControl;
+    [self item:@"Show NppExec Console" action:@selector(toggleConsole:) key:@"" flags:0 menu:execMenu];
+    [pluginsMenu addItemWithTitle:@"NppExec" action:nil keyEquivalent:@""].submenu = execMenu;
+    self.execMenu = execMenu;
+    self.fixedExecItemCount = execMenu.numberOfItems;
+    [self rebuildExecMenu];
+
     [pluginsMenu addItem:[NSMenuItem separatorItem]];
     [self item:@"Open Plugins Folder…" action:@selector(openPluginsFolder:) key:@"" flags:0 menu:pluginsMenu];
     pluginsItem.submenu = pluginsMenu;
@@ -2015,6 +2034,166 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
         entry.toolTip = c.command;
     }
     [self.shortcutStore applyToMenus];
+}
+
+#pragma mark - NppExec scripts
+
+- (void)rebuildExecMenu {
+    NSMenu *menu = self.execMenu;
+    if (!menu) return;
+    while (menu.numberOfItems > self.fixedExecItemCount) [menu removeItemAtIndex:menu.numberOfItems - 1];
+    NSArray<NppSavedScript *> *saved = [self.editor savedScripts];
+    if (!saved.count) return;
+    [menu addItem:[NSMenuItem separatorItem]];
+    for (NppSavedScript *script in saved) {
+        NSMenuItem *entry = [self item:script.name action:@selector(executeSavedScript:) key:@"" flags:0 menu:menu];
+        entry.representedObject = script.name;
+        entry.toolTip = script.text;
+    }
+    [self.shortcutStore applyToMenus];
+}
+
+/// NPP_MENUCOMMAND's path: "Edit|Undo" or "Edit\Undo", by the English titles
+/// (or the shown ones), without "…" and without the shortcut.
+- (BOOL)performMenuCommandAtPath:(NSString *)path {
+    NSArray *parts = [path componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"|\\"]];
+    NSString *(^plain)(NSString *) = ^NSString *(NSString *t) {
+        NSString *x = [[t stringByReplacingOccurrencesOfString:@"…" withString:@""] stringByReplacingOccurrencesOfString:@"..." withString:@""];
+        x = [x stringByReplacingOccurrencesOfString:@"&" withString:@""];
+        NSRange tab = [x rangeOfString:@"\t"];
+        if (tab.location != NSNotFound) x = [x substringToIndex:tab.location];
+        return [x stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet].lowercaseString;
+    };
+    NSMenu *menu = NSApp.mainMenu;
+    NSMenuItem *found = nil;
+    for (NSUInteger i = 0; i < parts.count && menu; ++i) {
+        NSString *want = plain(parts[i]);
+        found = nil;
+        for (NSMenuItem *item in menu.itemArray) {
+            if (item.isSeparatorItem) continue;
+            NSString *english = item.submenu && menu == NSApp.mainMenu ? NppEnglishMenuTitle(item.submenu) : NppEnglishTitle(item);
+            if ([plain(english) isEqualToString:want] || [plain(item.title) isEqualToString:want]) { found = item; break; }
+        }
+        if (!found) return NO;
+        menu = i + 1 < parts.count ? found.submenu : nil;
+    }
+    if (!found || found.submenu || !found.action) return NO;
+    [found.menu update];   // validation decides whether it is enabled
+    if (!found.isEnabled) return NO;
+    // A command for the first responder means the editor's, not the console's.
+    if (!found.target && [self.window.firstResponder tryToPerform:found.action with:found]) return YES;
+    return [NSApp sendAction:found.action to:found.target from:found];
+}
+
+/// A script runs off the main thread, so the console fills and the editor
+/// stays live; the engine comes back to the main thread for the editor.
+- (void)executeScriptText:(NSString *)text {
+    if (self.runningScript) {
+        self.runningScript.cancelled = YES;   // one at a time, as NppExec asks
+    }
+    [[NSUserDefaults standardUserDefaults] setObject:text forKey:@"NppMac.execLastScript"];
+    NppScriptEngine *engine = [[NppScriptEngine alloc] initWithEditor:self.editor];
+    __weak AppDelegate *weakSelf = self;
+    engine.menuCommandPerformer = ^BOOL(NSString *menuPath) { return [weakSelf performMenuCommandAtPath:menuPath]; };
+    self.runningScript = engine;
+    [[self.editor console] showWithoutFocus];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        [engine runScript:text arguments:@[]];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (weakSelf.runningScript == engine) weakSelf.runningScript = nil;
+            [weakSelf rebuildExecMenu];
+        });
+    });
+}
+
+- (void)executeSavedScript:(NSMenuItem *)sender {
+    NppSavedScript *script = [self.editor savedScriptNamed:sender.representedObject ?: @""];
+    if (script) [self executeScriptText:script.text];
+}
+
+- (void)executePreviousScript:(id)sender {
+    NSString *last = [[NSUserDefaults standardUserDefaults] stringForKey:@"NppMac.execLastScript"];
+    if (last.length) [self executeScriptText:last]; else [self executeScriptDialog:sender];
+}
+
+/// NppExec's Execute dialog: a saved script or a temporary one, edited in place.
+- (void)executeScriptDialog:(id)sender {
+    NSPanel *panel = [[NSPanel alloc] initWithContentRect:NSMakeRect(0, 0, 520, 380)
+                                                styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskResizable
+                                                  backing:NSBackingStoreBuffered defer:NO];
+    panel.title = @"Execute NppExec Script";
+    NSView *v = panel.contentView;
+    NSPopUpButton *choice = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(16, 340, 488, 26)];
+    choice.autoresizingMask = NSViewWidthSizable | NSViewMinYMargin;
+    [choice addItemWithTitle:@"<temporary script>"];
+    NSArray<NppSavedScript *> *saved = [self.editor savedScripts];
+    for (NppSavedScript *s in saved) [choice.menu addItemWithTitle:s.name action:nil keyEquivalent:@""];
+    [v addSubview:choice];
+    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(16, 56, 488, 276)];
+    scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    scroll.hasVerticalScroller = YES;
+    scroll.borderType = NSBezelBorder;
+    NSTextView *text = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, 488, 276)];
+    text.font = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular];
+    text.autoresizingMask = NSViewWidthSizable;
+    text.automaticQuoteSubstitutionEnabled = NO;
+    text.automaticDashSubstitutionEnabled = NO;
+    text.string = [[NSUserDefaults standardUserDefaults] stringForKey:@"NppMac.execLastScript"] ?: @"";
+    scroll.documentView = text;
+    [v addSubview:scroll];
+    NSArray *titles = @[@"Save…", @"Delete", @"Cancel", @"OK"];
+    NSMutableArray<NSButton *> *buttons = [NSMutableArray array];
+    for (NSUInteger i = 0; i < titles.count; ++i) {
+        NSButton *b = [NSButton buttonWithTitle:titles[i] target:nil action:nil];
+        b.frame = NSMakeRect(i < 2 ? 16 + i * 96 : 520 - 16 - (titles.count - i) * 96, 14, 90, 30);
+        b.autoresizingMask = i < 2 ? NSViewMaxXMargin : NSViewMinXMargin;
+        b.tag = (NSInteger)i + 100;
+        [v addSubview:b];
+        [buttons addObject:b];
+    }
+    buttons[3].keyEquivalent = @"\r";
+    buttons[2].keyEquivalent = @"\e";
+    // The buttons end the modal session with their tag; the pop-up loads a script.
+    for (NSButton *b in buttons) { b.target = self; b.action = @selector(execDialogButton:); }
+    choice.target = self;
+    choice.action = @selector(execDialogChoice:);
+    objc_setAssociatedObject(choice, "text", text, OBJC_ASSOCIATION_RETAIN);
+    [panel center];
+    [[NppLocalization shared] localizeWindow:panel];
+    while (YES) {
+        NSModalResponse r = [NSApp runModalForWindow:panel];
+        if (r == 100) {   // Save…
+            NSString *initial = choice.indexOfSelectedItem > 0 ? choice.titleOfSelectedItem : @"";
+            NSString *name = [self promptForString:@"Script name" default:initial];
+            if (!name.length) continue;
+            [self.editor saveScript:[NppSavedScript scriptNamed:name text:text.string]];
+            if (![choice itemWithTitle:name]) [choice.menu addItemWithTitle:name action:nil keyEquivalent:@""];
+            [choice selectItemWithTitle:name];
+            [self rebuildExecMenu];
+            continue;
+        }
+        if (r == 101) {   // Delete
+            if (choice.indexOfSelectedItem > 0) {
+                [self.editor removeScriptNamed:choice.titleOfSelectedItem];
+                [choice removeItemAtIndex:choice.indexOfSelectedItem];
+                [choice selectItemAtIndex:0];
+                [self rebuildExecMenu];
+            }
+            continue;
+        }
+        [panel orderOut:nil];
+        if (r == 103) [self executeScriptText:text.string];
+        return;
+    }
+}
+
+- (void)execDialogButton:(NSButton *)sender { [NSApp stopModalWithCode:sender.tag]; }
+
+- (void)execDialogChoice:(NSPopUpButton *)sender {
+    NSTextView *text = objc_getAssociatedObject(sender, "text");
+    if (sender.indexOfSelectedItem <= 0) return;
+    NppSavedScript *script = [self.editor savedScriptNamed:sender.titleOfSelectedItem];
+    if (script) text.string = script.text;
 }
 
 - (void)validateShortcuts:(id)sender {

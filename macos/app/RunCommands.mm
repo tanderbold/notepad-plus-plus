@@ -87,6 +87,7 @@ static NSString *SliceBytes(NSData *data, long start, long end) {
 - (NSString *)text { return self.textView.string ?: @""; }
 
 - (void)show { [self.panel makeKeyAndOrderFront:nil]; }
+- (void)showWithoutFocus { [self.panel orderFront:nil]; }
 
 - (void)toggle {
     if (self.panel.isVisible) { [self.panel orderOut:nil]; return; }
@@ -221,6 +222,10 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
 }
 
 - (NSString *)expandRunVariables:(NSString *)source {
+    return [self expandRunVariables:source lookup:nil quoteForShell:YES];
+}
+
+- (NSString *)expandRunVariables:(NSString *)source lookup:(NSString *(^)(NSString *))lookup quoteForShell:(BOOL)quote {
     if (!source.length) return @"";
     NSMutableString *out = [NSMutableString string];
     NSUInteger length = source.length;
@@ -254,14 +259,14 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
         }
 
         NSString *name = [source substringWithRange:NSMakeRange(i + 2, close.location - i - 2)];
-        NSString *value = [self runVariableNamed:name];
+        NSString *value = (lookup ? lookup(name) : nil) ?: [self runVariableNamed:name];
         if (!value) {
             // An unknown name is left exactly as it was written, rather than
             // being swallowed -- it may well be meant for the shell.
             [out appendString:@"$"];
             continue;
         }
-        [out appendString:QuotedForShell(value, context)];
+        [out appendString:quote ? QuotedForShell(value, context) : value];
         i = close.location;
     }
     return out;
@@ -274,6 +279,15 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
 }
 
 - (NppRunResult *)runExpandedCommandLine:(NSString *)expanded intoConsole:(BOOL)intoConsole {
+    // A command usually means something relative to the file being edited, so
+    // that is where it runs.
+    return [self runExpandedCommandLine:expanded directory:[self runVariableNamed:@"CURRENT_DIRECTORY"]
+                            environment:nil intoConsole:intoConsole];
+}
+
+- (NppRunResult *)runExpandedCommandLine:(NSString *)expanded directory:(NSString *)directory
+                             environment:(NSDictionary<NSString *, NSString *> *)environment
+                             intoConsole:(BOOL)intoConsole {
     NppRunResult *result = [[NppRunResult alloc] init];
     result.output = @"";
     result.exitStatus = -1;
@@ -286,9 +300,11 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
     task.executableURL = [NSURL fileURLWithPath:@"/bin/sh"];
     task.arguments = @[@"-c", expanded];
 
-    // A command usually means something relative to the file being edited, so
-    // that is where it runs.
-    NSString *directory = [self runVariableNamed:@"CURRENT_DIRECTORY"];
+    if (environment) {
+        NSMutableDictionary *env = [[NSProcessInfo processInfo].environment mutableCopy];
+        [env addEntriesFromDictionary:environment];
+        task.environment = env;
+    }
     BOOL isDirectory = NO;
     if (directory.length &&
         [[NSFileManager defaultManager] fileExistsAtPath:directory isDirectory:&isDirectory] && isDirectory) {

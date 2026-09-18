@@ -71,4 +71,8 @@
 /// The auto-updater's schedule: YES and the next date moved on when due.
 - (BOOL)takeScheduledUpdateCheck;
 - (BOOL)automaticUpdateCheckAllowed;
+/// NppExec: a menu command by its path, and the menu of saved scripts.
+- (BOOL)performMenuCommandAtPath:(NSString *)path;
+- (void)rebuildExecMenu;
+@property (nonatomic, strong) NSMenu *execMenu;
 @end
