@@ -45,6 +45,7 @@
 #import "Tests.h"
 #import "InfoWindows.h"
 #import "UpdateChecker.h"
+#import "DockingManager.h"
 #import "ScriptCommands.h"
 #import <objc/runtime.h>
 
@@ -437,6 +438,7 @@ static NSString *Ordinal(NSUInteger n) {
                            interval:[NppPreferences shared].autosaveInterval];
     [self.editor restorePanelState];
     [self restoreFloatingPanels];
+    [[NppDockingManager shared] restoreFronts];
     if ([self.commandLine[@"-nosession"] boolValue]) {
         self.editor.sessionSavingDisabled = YES;      // neither loaded nor overwritten
     } else if ([NppPreferences shared].restoreSession) {

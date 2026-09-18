@@ -7276,6 +7276,16 @@ int NppMacRunTests(AppDelegate *app) {
         NSArray *right = [dock panelsIn:NppDockRight];
         BOOL tabbed = [right containsObject:@"documentMap"] && [right containsObject:@"functionList"] &&
                       [[dock frontPanelIn:NppDockRight] isEqualToString:@"functionList"];
+        // The tab clicked to the front is kept in the layout, and comes back in
+        // front after the panels are shown again in whatever order.
+        [dock performSelector:@selector(containerClickedPanel:) withObject:@"documentMap"];
+        BOOL frontKept = [[NppPreferences shared].dockLayout[@"fronts"][@(NppDockRight).stringValue] isEqualToString:@"documentMap"];
+        [dock showPanel:@"functionList"];                       // as a relaunch would: the last shown takes the front
+        BOOL stolen = [[dock frontPanelIn:NppDockRight] isEqualToString:@"functionList"];
+        [dock restoreFronts];
+        tabbed = tabbed && frontKept && stolen && [[dock frontPanelIn:NppDockRight] isEqualToString:@"documentMap"];
+        [dock performSelector:@selector(containerClickedPanel:) withObject:@"functionList"];
+
         // Moving: to the bottom dock, floating in a window, and back.
         [dock movePanel:@"documentList" to:NppDockBottom];
         BOOL bottom = [[dock panelsIn:NppDockBottom] isEqualToArray:@[@"documentList"]] &&

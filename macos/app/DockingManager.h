@@ -40,6 +40,9 @@ FOUNDATION_EXPORT NSNotificationName const NppDockPanelVisibilityDidChangeNotifi
 /// The shown panels in a container, in tab order, and the one in front.
 - (NSArray<NSString *> *)panelsIn:(NppDockPlace)place;
 - (nullable NSString *)frontPanelIn:(NppDockPlace)place;
+/// After the panels of the last launch are shown again: the tab that was in
+/// front of each container is put in front.
+- (void)restoreFronts;
 /// Where a drop at a point on screen docks a panel: an edge of the main
 /// window, or floating anywhere else.
 - (NppDockPlace)placeForDropAtScreenPoint:(NSPoint)point;

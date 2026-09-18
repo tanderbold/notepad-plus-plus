@@ -284,6 +284,18 @@ static const CGFloat kHeader = 22;
     if (!r || r.place == NppDockFloating) return;
     self.fronts[@(r.place)] = identifier;
     [self arrange];
+    [self saveLayout];
+}
+
+- (void)restoreFronts {
+    NSDictionary *fronts = [NppPreferences shared].dockLayout[@"fronts"];
+    if (![fronts isKindOfClass:[NSDictionary class]]) return;
+    for (NSString *placeKey in fronts) {
+        NppDockPlace place = (NppDockPlace)placeKey.integerValue;
+        NSString *identifier = fronts[placeKey];
+        if ([[self panelsIn:place] containsObject:identifier]) self.fronts[@(place)] = identifier;
+    }
+    [self arrange];
 }
 
 - (NppDockPlace)placeForDropAtScreenPoint:(NSPoint)point {
@@ -451,7 +463,14 @@ static const CGFloat kHeader = 22;
         floating[ident] = NSStringFromRect(window ? window.frame : r.floatFrame);
     }
     for (NSNumber *place in self.sizes) sizes[place.stringValue] = self.sizes[place];
-    [NppPreferences shared].dockLayout = @{@"places": places, @"docked": docked, @"floating": floating, @"sizes": sizes};
+    // Which tab of each container is in front.
+    NSMutableDictionary *fronts = [NSMutableDictionary dictionary];
+    for (NSNumber *place in @[@(NppDockLeft), @(NppDockRight), @(NppDockTop), @(NppDockBottom)]) {
+        NSString *front = [self frontPanelIn:(NppDockPlace)place.integerValue];
+        if (front) fronts[place.stringValue] = front;
+    }
+    [NppPreferences shared].dockLayout = @{@"places": places, @"docked": docked, @"floating": floating, @"sizes": sizes,
+                                           @"fronts": fronts};
 }
 
 /// A divider dragged: the container's new size is kept.
