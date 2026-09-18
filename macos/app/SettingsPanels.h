@@ -1,5 +1,6 @@
 // Preferences, Style Configurator and Shortcut Mapper windows.
 #import <Cocoa/Cocoa.h>
+#import "StyleConfigurator.h"
 @class EditorController;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -20,13 +21,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)apply:(id)sender;
 @end
 
-@interface StyleConfiguratorWindow : NSObject
-- (instancetype)initWithEditor:(EditorController *)editor;
-- (void)toggle;
-@property (nonatomic, readonly) BOOL visible;
-/// Number of styles listed for the language currently shown; used by tests.
-@property (nonatomic, readonly) NSInteger styleCount;
-@end
 
 
 NS_ASSUME_NONNULL_END

@@ -40,4 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL darkMode;
 @end
 
+/// Notepad++'s keyword set for a keywordClass ("instre1" is 0, "type1" 2 ...).
+FOUNDATION_EXPORT NSNumber *_Nullable NppKeywordSetIndex(NSString *attrName);
+
 NS_ASSUME_NONNULL_END

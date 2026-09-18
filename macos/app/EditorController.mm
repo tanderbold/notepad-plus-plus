@@ -1274,8 +1274,16 @@ static BOOL gCheckingFilesOnDisk;
     if (udl) {
         [self configureUserLexerFor:udl];
     } else {
-        for (NSNumber *idx in lang.keywordSets) {
-            [sci setStringProperty:SCI_SETKEYWORDS parameter:idx.integerValue value:lang.keywordSets[idx]];
+        // The words the user added in the Style Configurator join the
+        // language's own, set by set, as Notepad++ appends them.
+        NSMutableDictionary<NSNumber *, NSString *> *sets = [lang.keywordSets mutableCopy] ?: [NSMutableDictionary dictionary];
+        for (NppStyle *s in [[StyleCatalog sharedCatalog] stylesForLexerName:lang.name]) {
+            NSNumber *idx = s.keywordClass ? NppKeywordSetIndex(s.keywordClass) : nil;
+            if (!idx || !s.userKeywords.length) continue;
+            sets[idx] = sets[idx].length ? [NSString stringWithFormat:@"%@ %@", sets[idx], s.userKeywords] : s.userKeywords;
+        }
+        for (NSNumber *idx in sets) {
+            [sci setStringProperty:SCI_SETKEYWORDS parameter:idx.integerValue value:sets[idx]];
         }
     }
 
@@ -1302,6 +1310,31 @@ static BOOL gCheckingFilesOnDisk;
     [sci message:SCI_STYLESETSIZE wParam:STYLE_DEFAULT lParam:fontSize];
     if (def.foreground) [sci message:SCI_STYLESETFORE wParam:STYLE_DEFAULT lParam:SciColor(def.foreground)];
     if (def.background) [sci message:SCI_STYLESETBACK wParam:STYLE_DEFAULT lParam:SciColor(def.background)];
+
+    // Global override: each attribute ticked in the Style Configurator comes
+    // from the "Global override" style and beats every other style's own.
+    NSDictionary *goFlags = [NppPreferences shared].globalOverride;
+    NppStyle *go = styles.globalStyles[@"Global override"];
+    void (^applyOverride)(int) = ^(int styleID) {
+        if (!go) return;
+        if ([goFlags[@"fg"] boolValue] && go.foreground)
+            [sci message:SCI_STYLESETFORE wParam:(uptr_t)styleID lParam:SciColor(go.foreground)];
+        if ([goFlags[@"bg"] boolValue] && go.background)
+            [sci message:SCI_STYLESETBACK wParam:(uptr_t)styleID lParam:SciColor(go.background)];
+        if ([goFlags[@"font"] boolValue] && go.fontName.length) {
+            NSString *face = [go.fontName isEqualToString:@"Courier New"] ? @"Menlo" : go.fontName;
+            [sci setStringProperty:SCI_STYLESETFONT parameter:styleID value:face];
+        }
+        if ([goFlags[@"fontSize"] boolValue] && go.fontSize > 0)
+            [sci message:SCI_STYLESETSIZE wParam:(uptr_t)styleID lParam:go.fontSize];
+        if ([goFlags[@"bold"] boolValue])
+            [sci message:SCI_STYLESETBOLD wParam:(uptr_t)styleID lParam:(go.fontStyle & 1) ? 1 : 0];
+        if ([goFlags[@"italic"] boolValue])
+            [sci message:SCI_STYLESETITALIC wParam:(uptr_t)styleID lParam:(go.fontStyle & 2) ? 1 : 0];
+        if ([goFlags[@"underline"] boolValue])
+            [sci message:SCI_STYLESETUNDERLINE wParam:(uptr_t)styleID lParam:(go.fontStyle & 4) ? 1 : 0];
+    };
+    applyOverride(STYLE_DEFAULT);
     [sci message:SCI_STYLECLEARALL wParam:0 lParam:0];   // propagate default to all styles first
 
     void (^applyStyle)(NppStyle *, int) = ^(NppStyle *s, int styleID) {
@@ -1311,6 +1344,7 @@ static BOOL gCheckingFilesOnDisk;
         if (s.fontStyle & 2) [sci message:SCI_STYLESETITALIC wParam:styleID lParam:1];
         if (s.fontStyle & 4) [sci message:SCI_STYLESETUNDERLINE wParam:styleID lParam:1];
         if (s.fontName.length) [sci setStringProperty:SCI_STYLESETFONT parameter:styleID value:s.fontName];
+        if (s.fontSize > 0) [sci message:SCI_STYLESETSIZE wParam:(uptr_t)styleID lParam:s.fontSize];
     };
 
     for (NppStyle *s in [styles stylesForLexerName:langName]) applyStyle(s, s.styleID);
@@ -1350,6 +1384,8 @@ static BOOL gCheckingFilesOnDisk;
             [sci message:SCI_STYLESETSIZE wParam:(uptr_t)styleID lParam:[attrs[@"size"] intValue]];
         }
     }
+
+    for (NppStyle *s in [styles stylesForLexerName:langName]) applyOverride(s.styleID);
 
     NppStyle *lineNo = styles.globalStyles[@"Line number margin"];
     if (lineNo) applyStyle(lineNo, STYLE_LINENUMBER);

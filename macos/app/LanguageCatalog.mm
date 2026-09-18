@@ -1,4 +1,5 @@
 #import "LanguageCatalog.h"
+#import "StyleCatalog.h"
 #include "LangMap.h"
 
 @implementation NppLanguage
@@ -30,7 +31,7 @@
 }
 
 /// Notepad++'s LANG_INDEX_* order (see MISC/Common/NppConstants.h).
-static NSNumber *KeywordSetIndex(NSString *attrName) {
+NSNumber *NppKeywordSetIndex(NSString *attrName) {
     static NSDictionary<NSString *, NSNumber *> *map;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
@@ -95,7 +96,7 @@ static NSString *LexerIDForLanguage(NSString *langName) {
         self.currentKeywords = [NSMutableDictionary dictionary];
 
     } else if ([element isEqualToString:@"Keywords"] && self.current) {
-        self.currentKeywordIndex = KeywordSetIndex(attrs[@"name"] ?: @"");
+        self.currentKeywordIndex = NppKeywordSetIndex(attrs[@"name"] ?: @"");
         self.currentText = self.currentKeywordIndex ? [NSMutableString string] : nil;
     }
 }
@@ -178,11 +179,24 @@ static NSString *LexerIDForLanguage(NSString *langName) {
     return candidates.firstObject;
 }
 
+/// Extensions given to a language in the Style Configurator come before the
+/// built-in ones, as NppParameters::getLangFromExt checks them first.
+- (NppLanguage *)stylerLanguageForExtension:(NSString *)ext {
+    StyleCatalog *styles = [StyleCatalog sharedCatalog];
+    for (NSString *lexer in styles.lexerNames) {
+        if (![[styles userExtensionsForLexer:lexer] containsObject:ext]) continue;
+        NppLanguage *lang = self.builtInByName ? self.builtInByName[lexer] : self.byName[lexer];
+        if (lang) return lang;
+    }
+    return nil;
+}
+
 - (NppLanguage *)languageNamed:(NSString *)name { return self.byName[name]; }
 
 - (NppLanguage *)languageForFileName:(NSString *)fileName {
     NSString *ext = fileName.pathExtension.lowercaseString;
-    NppLanguage *lang = ext.length ? ([self userLanguageForExtension:ext] ?: self.byExtension[ext]) : nil;
+    NppLanguage *lang = ext.length ? ([self userLanguageForExtension:ext] ?: [self stylerLanguageForExtension:ext]
+                                      ?: self.byExtension[ext]) : nil;
     if (!lang) {
         // Extension-less files Notepad++ still recognises by full name (e.g. "makefile").
         NSString *whole = fileName.lastPathComponent.lowercaseString;

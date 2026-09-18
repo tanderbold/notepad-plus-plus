@@ -76,12 +76,15 @@ Auto-Detection, Document Switcher MRU, Document Peeker, auto-updater
 settings, mute sounds, file-name-only title bar, Save All confirmation.
 The dialog has Apply and Reset but no Cancel.
 
-**Style Configurator.** Present: language and style pickers, fg/bg, bold /
-italic / underline, font name and size, live application. Absent: the seven
-global overrides, default and user extensions, default and user keywords,
-theme picker in the dialog, Save & Close / Cancel (changes are immediate and
-irreversible), writing back to the theme XML (overrides live only in
-`NSUserDefaults`).
+**Style Configurator.** Done since the audit: the dialog edits a copy of
+the theme's XML, previews each change and writes the user's copy on Save &
+Close (`stylers.xml` for the default theme, `themes/<name>.xml` otherwise),
+which is read in preference to the shipped one; Cancel restores the theme.
+It has the theme picker, Global Styles, the seven Global override switches,
+default and user extensions (user ones win, as in `getLangFromExt`),
+default and user-defined keywords, font family and size pickers, and
+transparency. Older overrides kept in `NSUserDefaults` are folded into the
+theme the first time it is saved.
 
 **User Defined Language.** Done since the audit: `userDefineLang.xml` and
 `userDefineLangs/*.xml` are read, listed, claim their extensions and drive

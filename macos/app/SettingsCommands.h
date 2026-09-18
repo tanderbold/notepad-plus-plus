@@ -220,6 +220,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// font (name) and size. A bare string is read as a foreground colour, so
 /// settings written by the earlier foreground-only version still load.
 @property (nonatomic, copy) NSDictionary<NSString *, id> *styleOverrides;
+/// Which Global override attributes are on: fg, bg, font, fontSize, bold,
+/// italic, underline (config.xml's GUIConfig name="globalOverride").
+@property (nonatomic, copy) NSDictionary<NSString *, NSNumber *> *globalOverride;
 - (nullable NSDictionary *)styleOverrideForLanguage:(NSString *)language styleID:(int)styleID;
 - (void)setStyleOverride:(nullable NSDictionary *)attributes
              forLanguage:(NSString *)language styleID:(int)styleID;

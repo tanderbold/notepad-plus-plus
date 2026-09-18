@@ -39,6 +39,7 @@
 #import "ProjectPanel.h"
 #import "LanguageModel.h"
 #import "StyleCatalog.h"
+#import "StyleConfigurator.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -5058,6 +5059,76 @@ int NppMacRunTests(AppDelegate *app) {
 
         [p setStyleOverride:nil forLanguage:@"cpp" styleID:SCE_C_COMMENTLINE];
         [ed applyLanguage];
+
+        // The Style Configurator edits the theme itself, as WordStyleDlg does.
+        {
+            [ed setLanguageNamed:@"cpp"];
+            long commentBefore = [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE];
+            StyleConfiguratorWindow *conf = [[StyleConfiguratorWindow alloc] initWithEditor:ed];
+            [conf show];
+            BOOL opened = conf.visible && [conf selectLanguage:@"cpp"] && [conf selectStyleNamed:@"COMMENT LINE"];
+            [conf setValue:@"FF0000" ofAttribute:@"fgColor"];
+            BOOL previewed = [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE] == 0x0000FF && conf.dirty;
+            [conf cancel:nil];
+            BOOL reverted = !conf.visible && [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE] == commentBefore;
+            Check(@"IDM_LANGSTYLE_CONFIG_DLG (preview)",
+                  @"a colour changed in the configurator shows at once, and Cancel takes it back",
+                  opened && previewed && reverted);
+
+            // Global override: the ticked attributes of its style beat every other style.
+            [conf show];
+            NppStyle *go = [StyleCatalog sharedCatalog].globalStyles[@"Global override"];
+            BOOL found = [conf selectLanguage:NppGlobalStylesName] && [conf selectStyleNamed:@"Global override"];
+            [conf setGlobalOverride:@"fg" enabled:YES];
+            [conf setGlobalOverride:@"bold" enabled:YES];
+            NSColor *goFg = [go.foreground colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
+            long want = goFg ? (lround(goFg.redComponent * 255) | (lround(goFg.greenComponent * 255) << 8) |
+                                (lround(goFg.blueComponent * 255) << 16)) : -1;
+            BOOL overridden = found && want >= 0 &&
+                [sci message:SCI_STYLEGETFORE wParam:SCE_C_WORD] == want &&
+                [sci message:SCI_STYLEGETFORE wParam:STYLE_DEFAULT] == want &&
+                [sci message:SCI_STYLEGETBOLD wParam:SCE_C_WORD] == ((go.fontStyle & 1) ? 1 : 0);
+            [conf cancel:nil];
+            BOOL overrideReverted = ![p.globalOverride[@"fg"] boolValue] &&
+                [sci message:SCI_STYLEGETFORE wParam:SCE_C_COMMENTLINE] == commentBefore;
+            Check(@"IDM_LANGSTYLE_CONFIG_DLG (global override)",
+                  @"Global override's switches colour every style, and Cancel turns them off again",
+                  overridden && overrideReverted);
+
+            // User keywords and user extensions, then Save & Close writes the
+            // user's copy of the theme, which is read back in preference.
+            NSString *userPath = [StyleCatalog userPathForThemeNamed:conf.themeName];
+            NSData *userBefore = userPath ? [NSData dataWithContentsOfFile:userPath] : nil;
+            [conf show];
+            [conf selectLanguage:@"cpp"];
+            [conf selectStyleNamed:@"INSTRUCTION WORD"];
+            [conf setUserKeywords:@"  nppmacword\n  nppmacother "];
+            [conf setUserExtensions:@" nppx  NPPY "];
+            [sci setString:@"nppmacword x;"];
+            [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+            BOOL keywords = [sci message:SCI_GETSTYLEAT wParam:0] == SCE_C_WORD;
+            BOOL extensions = [[[LanguageCatalog sharedCatalog] languageForFileName:@"a.nppx"].name isEqualToString:@"cpp"] &&
+                              [[[LanguageCatalog sharedCatalog] languageForFileName:@"b.NPPY"].name isEqualToString:@"cpp"];
+            [conf saveAndClose:nil];
+            NSString *written = userPath ? [NSString stringWithContentsOfFile:userPath encoding:NSUTF8StringEncoding error:NULL] : nil;
+            [StyleCatalog loadThemeNamed:conf.themeName];
+            NppStyle *instre = nil;
+            for (NppStyle *st in [[StyleCatalog sharedCatalog] stylesForLexerName:@"cpp"]) {
+                if (st.styleID == SCE_C_WORD) instre = st;
+            }
+            BOOL saved = [written containsString:@"nppmacword nppmacother"] &&
+                         [instre.userKeywords isEqualToString:@"nppmacword nppmacother"] &&
+                         [[[StyleCatalog sharedCatalog] userExtensionsForLexer:@"cpp"] containsObject:@"nppy"];
+            Check(@"IDM_LANGSTYLE_CONFIG_DLG (keywords)",
+                  @"user-defined keywords are highlighted, as are files with a user extension, and both are saved",
+                  keywords && extensions && saved);
+
+            if (userBefore) [userBefore writeToFile:userPath atomically:YES];
+            else if (userPath) [[NSFileManager defaultManager] removeItemAtPath:userPath error:NULL];
+            [StyleCatalog loadThemeNamed:conf.themeName];
+            [sci setString:@""];
+            [ed applyLanguage];
+        }
 
         // Keys, and what Windows calls them.
         {

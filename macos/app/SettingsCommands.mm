@@ -151,6 +151,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"lightThemeName"):  @"Default",
         Key(@"darkThemeName"):   @"DarkModeDefault",
         Key(@"styleOverrides"):  @{},
+        Key(@"globalOverride"):  @{},
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -220,6 +221,7 @@ NPP_PREF_INT(paddingRight, setPaddingRight, @"paddingRight")
 NPP_PREF_BOOL(rightClickKeepsSelection, setRightClickKeepsSelection, @"rightClickKeepsSelection")
 NPP_PREF_BOOL(selectedTextDragDrop, setSelectedTextDragDrop, @"selectedTextDragDrop")
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
+NPP_PREF_OBJ(globalOverride, setGlobalOverride, NSDictionary, @"globalOverride")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
 NPP_PREF_INT(fontSize, setFontSize, @"fontSize")
