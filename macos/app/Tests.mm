@@ -832,6 +832,21 @@ int NppMacRunTests(AppDelegate *app) {
                   @"switching away and back leaves the selection where it was", back);
         }
 
+        // Closing the tab in front puts the neighbour's own caret back.
+        {
+            [ed newDocument]; [ed setDocumentText:@"neighbour\n"];
+            NppDocument *stays = ed.currentDocument;
+            [ed.sci message:SCI_SETSEL wParam:3 lParam:5];
+            [ed newDocument]; [ed setDocumentText:@"going\n"];
+            [ed.sci message:SCI_GOTOPOS wParam:0 lParam:0];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+            BOOL own = ed.currentDocument == stays &&
+                       [ed.sci message:SCI_GETANCHOR] == 3 && [ed.sci message:SCI_GETCURRENTPOS] == 5;
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:stays] discardChanges:YES];
+            Check(@"IDM_FILE_CLOSE (the neighbour keeps its caret)",
+                  @"after closing the front tab, the tab that takes its place shows its own selection", own);
+        }
+
         // Files changed or removed by another program are noticed when the
         // application comes to the front.
         {

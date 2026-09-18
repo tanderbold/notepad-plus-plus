@@ -758,6 +758,10 @@ static long SciColor(NSColor *c) {
         self.currentIndex = (NSInteger)[self.docs indexOfObject:inFront];
         [self refreshChrome];
     } else {
+        // The closed document was the one in front: nothing of it is worth
+        // keeping, and the index no longer names it, so the neighbour is
+        // entered as a fresh switch and gets its own caret back.
+        self.currentIndex = -1;
         [self selectDocumentAtIndex:MIN(index, (NSInteger)self.docs.count - 1)];
     }
     if (doc.path) [self noteRecentFile:doc.path];
