@@ -7151,6 +7151,22 @@ int NppMacRunTests(AppDelegate *app) {
         [ed openFileAtPath:bigBom error:NULL];
         BOOL bomOk = [DocText(ed) isEqualToString:bigText] && ed.currentDocument.hasBOM;
         [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        // A big file in a code page: detected as a small one is, and converted
+        // in pieces - here one that ends inside a two-byte character.
+        NSMutableString *japanese = [NSMutableString stringWithString:@"a"];
+        NSString *sentence = @"これは日本語の文章です。吾輩は猫である。名前はまだ無い。\n";
+        while (japanese.length < 2600000) [japanese appendString:sentence];
+        NSStringEncoding sjis = CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingDOSJapanese);
+        NSData *sjisBytes = [japanese dataUsingEncoding:sjis];
+        NSString *bigSjis = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_big_sjis.txt"];
+        [sjisBytes writeToFile:bigSjis atomically:YES];
+        [ed openFileAtPath:bigSjis error:NULL];
+        BOOL sjisOk = sjisBytes.length > (4 << 20) + 1000 && [DocText(ed) isEqualToString:japanese] &&
+                      ed.currentDocument.encoding != NSISOLatin1StringEncoding;
+        [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        [[NSFileManager defaultManager] removeItemAtPath:bigSjis error:NULL];
+        printf("    big sjis: %lu bytes ok=%d\n", (unsigned long)sjisBytes.length, sjisOk);
+        latinOk = latinOk && sjisOk;
         [EditorController setStreamingThreshold:0];
         Check(@"IDM_FILE_OPEN (big files)",
               @"a big file is mapped and read as UTF-8, Latin-1 or UTF-8 with a BOM without a string in between",

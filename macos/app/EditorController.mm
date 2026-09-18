@@ -206,7 +206,37 @@ static NSData *DirectBytesForLargeFile(NSData *data, NSStringEncoding *outEnc, B
         // No copy: a sub-range of mapped data that starts at 0 is the data itself.
         return start ? [NSData dataWithBytesNoCopy:(void *)(b + start) length:n - start freeWhenDone:NO] : data;
     }
-    // Not UTF-8: ANSI, each byte its Latin-1 character.
+    // Not UTF-8: uchardet is asked, as for a file of any size - of the first
+    // megabyte, which is what it needs - and the file is converted piece by
+    // piece. A piece may end inside a character of two to four bytes; it is
+    // then cut a little shorter, and what was left opens the next.
+    if ([NppPreferences shared].autoDetectCharacterEncoding) {
+        NSData *sample = n > (1 << 20) ? [NSData dataWithBytesNoCopy:(void *)b length:1 << 20 freeWhenDone:NO] : data;
+        NSStringEncoding guessed = [NppCharsetDetection encodingGuessedForData:sample];
+        if (guessed && guessed != NSISOLatin1StringEncoding && guessed != NSUTF8StringEncoding) {
+            NSMutableData *converted = [NSMutableData dataWithCapacity:n + n / 2];
+            const NSUInteger piece = 4 << 20;
+            NSUInteger at = 0;
+            BOOL ok = YES;
+            while (at < n && ok) {
+                NSUInteger want = MIN(piece, n - at);
+                NSString *decoded = nil;
+                for (NSUInteger shorter = 0; shorter <= 4 && shorter < want && !decoded; ++shorter) {
+                    if (shorter && at + want == n) break;                  // the end of the file is not a cut
+                    @autoreleasepool {
+                        decoded = [[NSString alloc] initWithBytes:b + at length:want - shorter encoding:guessed];
+                        if (decoded) {
+                            [converted appendData:[decoded dataUsingEncoding:NSUTF8StringEncoding]];
+                            at += want - shorter;
+                        }
+                    }
+                }
+                ok = decoded != nil;
+            }
+            if (ok) { *outEnc = guessed; return converted; }
+        }
+    }
+    // ANSI, each byte its Latin-1 character.
     *outEnc = NSISOLatin1StringEncoding;
     NSMutableData *out = [NSMutableData dataWithCapacity:n + n / 8];
     unsigned char buffer[8192];
