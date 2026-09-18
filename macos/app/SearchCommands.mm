@@ -411,7 +411,9 @@ static const char kOlderResultsKey = 0;
     }
     objc_setAssociatedObject(self, &kOlderResultsKey, older, OBJC_ASSOCIATION_COPY);
     self.currentDocument.displayName = @"Search results";
+    [self.sci message:SCI_SETREADONLY wParam:0 lParam:0];
     [self.sci setString:[(report ?: @"") stringByAppendingString:older]];
+    [self.sci message:SCI_SETREADONLY wParam:1 lParam:0];   // results are read, not edited, as the Finder is
     [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
     [self foldSearchResults];
@@ -431,7 +433,9 @@ static const char kOlderResultsKey = 0;
     BOOL atBottom = (first + onScreen) >= lines - 1;
     NSString *older = [self olderSearchResults];
 
+    [self.sci message:SCI_SETREADONLY wParam:0 lParam:0];
     [self.sci setString:[(report ?: @"") stringByAppendingString:older]];
+    [self.sci message:SCI_SETREADONLY wParam:1 lParam:0];   // results are read, not edited, as the Finder is
     [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
     [self foldSearchResults];
@@ -539,7 +543,9 @@ static const char kOlderResultsKey = 0;
 - (void)clearSearchResults {
     if (![self showingSearchResults]) return;
     objc_setAssociatedObject(self, &kOlderResultsKey, @"", OBJC_ASSOCIATION_COPY);
+    [self.sci message:SCI_SETREADONLY wParam:0 lParam:0];
     [self.sci setString:@""];
+    [self.sci message:SCI_SETREADONLY wParam:1 lParam:0];   // results are read, not edited, as the Finder is
     [self.sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
 }
@@ -557,7 +563,9 @@ static const char kOlderResultsKey = 0;
     while (end < (long)lines.count && ![lines[(NSUInteger)end] hasPrefix:@"Search \""]) end++;
     long from = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)start];
     long to = end < (long)lines.count ? [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)end] : [sci message:SCI_GETLENGTH];
+    [sci message:SCI_SETREADONLY wParam:0 lParam:0];
     [sci message:SCI_DELETERANGE wParam:(uptr_t)from lParam:to - from];
+    [sci message:SCI_SETREADONLY wParam:1 lParam:0];   // results are read, not edited, as the Finder is
     [sci message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
     objc_setAssociatedObject(self, &kOlderResultsKey, [sci string] ?: @"", OBJC_ASSOCIATION_COPY);

@@ -228,6 +228,13 @@ static NSString *Ordinal(NSUInteger n) {
         if (arg.length > 2 && [arg hasPrefix:@"-"]) {
             unichar which = [arg characterAtIndex:1];
             NSString *rest = [arg substringFromIndex:2];
+            // A window position may be negative (a screen to the left), as atoi reads it on Windows.
+            if ((which == 'x' || which == 'y') && rest.length > 1 && [rest hasPrefix:@"-"] &&
+                [[NSCharacterSet decimalDigitCharacterSet] isSupersetOfSet:
+                    [NSCharacterSet characterSetWithCharactersInString:[rest substringFromIndex:1]]]) {
+                options[[NSString stringWithFormat:@"-%C", which]] = @(rest.integerValue);
+                continue;
+            }
             if ((which == 'n' || which == 'c' || which == 'p' || which == 'x' || which == 'y') &&
                 [[NSCharacterSet decimalDigitCharacterSet] isSupersetOfSet:
                     [NSCharacterSet characterSetWithCharactersInString:rest]]) {

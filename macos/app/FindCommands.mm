@@ -1,4 +1,5 @@
 #import "FindCommands.h"
+#import "ToolsCommands.h"
 #import "BoostFormat.h"
 #import "SearchCommands.h"
 #import "NppRegex.h"
@@ -804,6 +805,9 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
 /// tab - and puts back the one that was in front.
 - (void)forEachOpenDocument:(void (^)(NppDocument *doc))body {
     NppDocument *front = self.currentDocument;
+    // A search is not a visit: the Ctrl+Tab order and Recent Window stay the user's.
+    NSArray<NppDocument *> *recent = [self documentsInRecentOrder];
+    NppDocument *previous = [self previousTab];
     NSArray<NppDocument *> *docs = [self.documents copy];
     for (NppDocument *doc in docs) {
         if ([doc.displayName isEqualToString:@"Search results"] && !doc.path) continue;
@@ -814,6 +818,8 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
     }
     NSUInteger back = front ? [self.documents indexOfObjectIdenticalTo:front] : NSNotFound;
     if (back != NSNotFound) [self selectDocumentAtIndex:(NSInteger)back];
+    [self setValue:[recent mutableCopy] forKey:@"mru"];
+    if (previous) [self rememberPreviousTab:previous];
 }
 
 - (NSString *)findAllInOpenDocuments:(NppFindSpec *)spec hits:(NSUInteger *)hits {

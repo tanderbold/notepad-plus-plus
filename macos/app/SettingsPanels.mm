@@ -844,6 +844,9 @@
 
 - (void)toggle {
     if (self.panel.isVisible) { [self.panel orderOut:nil]; return; }
+    // Settings change outside this window too (View > Word wrap, "Always yes"
+    // in Save All): the controls take today's values, or Apply writes old ones back.
+    [self rebuildPages];
     [self.panel makeKeyAndOrderFront:nil];
 }
 

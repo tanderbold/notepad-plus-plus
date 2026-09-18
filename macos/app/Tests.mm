@@ -1217,6 +1217,18 @@ int NppMacRunTests(AppDelegate *app) {
             [controls[@"recentFilesMax"] setStringValue:@"7"];
             [prefs apply:nil];
             BOOL applied = p.tabBarVertical && p.recentFilesMax == 7;
+            // A setting changed elsewhere while the window was closed is what
+            // the window shows when it opens again, and what Apply then keeps.
+            BOOL confirmBefore = p.confirmSaveAll;
+            p.confirmSaveAll = YES;
+            [prefs toggle]; [prefs toggle];
+            p.confirmSaveAll = NO;
+            [prefs toggle];
+            [prefs apply:nil];
+            [prefs toggle];
+            applied = applied && !p.confirmSaveAll;
+            p.confirmSaveAll = confirmBefore;
+            controls = [prefs valueForKey:@"controls"];
             p.tabBarVertical = wasVertical; p.recentFilesMax = wasMax;
             [ed applyEditorPreferences];
             Check(@"IDM_SETTING_PREFERENCE (the pages Windows has)",
@@ -2707,9 +2719,11 @@ int NppMacRunTests(AppDelegate *app) {
             SetDoc(ed, @"second zqx\n");
             NppDocument *second = ed.currentDocument;
             NSUInteger hits = 0;
+            NSArray<NppDocument *> *recentBefore = [ed documentsInRecentOrder];
             NSString *all = [ed findAllInOpenDocuments:[NppFindSpec specFor:@"zqx" mode:NppSearchNormal options:NppFindNone]
                                                   hits:&hits];
-            BOOL listed = hits == 4 && [all containsString:@"(4 hits in 2 files of"] &&
+            // Searching every tab is not visiting it: the Ctrl+Tab order stays.
+            BOOL listed = [[ed documentsInRecentOrder] isEqualToArray:recentBefore] && hits == 4 && [all containsString:@"(4 hits in 2 files of"] &&
                           [all containsString:@"(3 hits)\n\tLine 1: zqx first\n\tLine 2: zqx again zqx\n"] &&
                           ed.currentDocument == second;
             what.stringValue = @"zqx";
