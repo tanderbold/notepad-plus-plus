@@ -230,6 +230,8 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
     NSMutableString *out = [NSMutableString string];
     NSUInteger length = source.length;
     NppShellContext context = NppShellBare;
+    // Open command substitutions: [parentheses still open inside (-1 for backticks), the context outside].
+    NSMutableArray<NSArray<NSNumber *> *> *substitutions = [NSMutableArray array];
 
     for (NSUInteger i = 0; i < length; ++i) {
         unichar c = [source characterAtIndex:i];
@@ -238,6 +240,28 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
         NSUInteger backslashes = 0;
         for (NSUInteger k = i; k > 0 && [source characterAtIndex:k - 1] == '\\'; --k) backslashes++;
         BOOL escaped = context != NppShellInSingle && (backslashes % 2) == 1;
+        // Inside the shell's own $( ) or backticks the words are read afresh,
+        // whatever quotes are open outside: a value spliced there is quoted
+        // as a bare word, or a ';' in a file name would be a command.
+        if (c == '`' && context != NppShellInSingle && !escaped) {
+            if (substitutions.count && [substitutions.lastObject[0] intValue] == -1) {
+                context = (NppShellContext)[substitutions.lastObject[1] integerValue];
+                [substitutions removeLastObject];
+            } else {
+                [substitutions addObject:@[@(-1), @(context)]];
+                context = NppShellBare;
+            }
+        } else if (substitutions.count && [substitutions.lastObject[0] intValue] >= 0 && context == NppShellBare && !escaped) {
+            NSInteger depth = [substitutions.lastObject[0] integerValue];
+            if (c == '(') substitutions[substitutions.count - 1] = @[@(depth + 1), substitutions.lastObject[1]];
+            else if (c == ')') {
+                if (depth > 0) substitutions[substitutions.count - 1] = @[@(depth - 1), substitutions.lastObject[1]];
+                else {
+                    context = (NppShellContext)[substitutions.lastObject[1] integerValue];
+                    [substitutions removeLastObject];
+                }
+            }
+        }
         if (c == '\'' && context != NppShellInDouble && !escaped) {
             context = context == NppShellInSingle ? NppShellBare : NppShellInSingle;
         } else if (c == '"' && context != NppShellInSingle && !escaped) {
@@ -262,8 +286,13 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
         NSString *value = (lookup ? lookup(name) : nil) ?: [self runVariableNamed:name];
         if (!value) {
             // An unknown name is left exactly as it was written, rather than
-            // being swallowed -- it may well be meant for the shell.
-            [out appendString:@"$"];
+            // being swallowed -- it may well be meant for the shell, whose
+            // command substitution it then opens.
+            if (context == NppShellInSingle) { [out appendString:@"$"]; continue; }
+            [out appendString:@"$("];
+            [substitutions addObject:@[@0, @(context)]];
+            context = NppShellBare;
+            i += 1;
             continue;
         }
         [out appendString:quote ? QuotedForShell(value, context) : value];
@@ -288,6 +317,14 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
 - (NppRunResult *)runExpandedCommandLine:(NSString *)expanded directory:(NSString *)directory
                              environment:(NSDictionary<NSString *, NSString *> *)environment
                              intoConsole:(BOOL)intoConsole {
+    return [self runExpandedCommandLine:expanded directory:directory environment:environment
+                            intoConsole:intoConsole timeout:30 stopWhen:nil];
+}
+
+- (NppRunResult *)runExpandedCommandLine:(NSString *)expanded directory:(NSString *)directory
+                             environment:(NSDictionary<NSString *, NSString *> *)environment
+                             intoConsole:(BOOL)intoConsole timeout:(NSTimeInterval)timeout
+                                stopWhen:(BOOL (^)(void))stopWhen {
     NppRunResult *result = [[NppRunResult alloc] init];
     result.output = @"";
     result.exitStatus = -1;
@@ -326,11 +363,41 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
 
     // Terminating the task is what a timeout means here: killing it closes the
     // pipe, which is what ends the read loop below.
+    // The shell's children hold the pipe open after the shell is gone, so
+    // ending a command means ending them first, deepest last.
+    void (^endTask)(void) = ^{
+        NSMutableArray<NSNumber *> *family = [NSMutableArray arrayWithObject:@(task.processIdentifier)];
+        for (NSUInteger at = 0; at < family.count && family.count < 256; ++at) {
+            NSTask *list = [[NSTask alloc] init];
+            list.executableURL = [NSURL fileURLWithPath:@"/usr/bin/pgrep"];
+            list.arguments = @[@"-P", family[at].stringValue];
+            NSPipe *found = [NSPipe pipe];
+            list.standardOutput = found;
+            if (![list launchAndReturnError:NULL]) break;
+            NSData *data = [found.fileHandleForReading readDataToEndOfFile];
+            [list waitUntilExit];
+            for (NSString *pid in [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] componentsSeparatedByString:@"\n"]) {
+                if (pid.intValue > 0) [family addObject:@(pid.intValue)];
+            }
+        }
+        for (NSNumber *pid in family.reverseObjectEnumerator) if (pid.intValue != task.processIdentifier) kill(pid.intValue, SIGTERM);
+        [task terminate];
+    };
     __block BOOL timedOut = NO;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(30 * NSEC_PER_SEC)),
-                   dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
-        if (task.isRunning) { timedOut = YES; [task terminate]; }
-    });
+    if (timeout > 0) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC)),
+                       dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+            if (task.isRunning) { timedOut = YES; endTask(); }
+        });
+    }
+    // A build may take as long as it takes; what ends it early is being told to stop.
+    dispatch_source_t watch = nil;
+    if (stopWhen) {
+        watch = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(QOS_CLASS_UTILITY, 0));
+        dispatch_source_set_timer(watch, DISPATCH_TIME_NOW, (uint64_t)(0.2 * NSEC_PER_SEC), (uint64_t)(0.05 * NSEC_PER_SEC));
+        dispatch_source_set_event_handler(watch, ^{ if (task.isRunning && stopWhen()) endTask(); });
+        dispatch_resume(watch);
+    }
 
     // Read chunk by chunk rather than to the end, so the console fills while the
     // command is still going. This blocks on the pipe, never on the run loop --
@@ -349,6 +416,7 @@ static NSString *QuotedForShell(NSString *value, NppShellContext context) {
     }
 
     [task waitUntilExit];   // the pipe is closed by now, so this returns at once
+    if (watch) dispatch_source_cancel(watch);
     result.output = [[NSString alloc] initWithData:collected encoding:NSUTF8StringEncoding] ?: @"";
     result.exitStatus = task.terminationStatus;
     result.timedOut = timedOut;

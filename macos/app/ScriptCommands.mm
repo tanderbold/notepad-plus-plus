@@ -78,6 +78,11 @@ static NSString *VariableKey(NSString *s) {
 @property (nonatomic, weak) EditorController *editor;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *variables;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *environment;
+/// Variables whose text is the script author's own (SET from literals and from
+/// other such variables): they go into a command line as written, the way
+/// NppExec substitutes, so "SET flags = -O2 -Wall" is two arguments. Anything
+/// that came from the document, the clipboard, a program or the user is quoted.
+@property (nonatomic, strong) NSMutableSet<NSString *> *plainVariables;
 @property (nonatomic, strong) NSMutableString *output;
 @property (nonatomic) NSUInteger steps;
 @property (nonatomic) NSUInteger depth;
@@ -91,6 +96,7 @@ static NSString *VariableKey(NSString *s) {
         _editor = editor;
         _variables = [NSMutableDictionary dictionary];
         _environment = [NSMutableDictionary dictionary];
+        _plainVariables = [NSMutableSet set];
         _output = [NSMutableString string];
         _stepLimit = 100000;
         __block NSString *dir = nil;
@@ -104,6 +110,12 @@ static NSString *VariableKey(NSString *s) {
 
 - (NSString *)log {
     @synchronized (self) { return [self.output copy]; }
+}
+
+/// Into the log only: the console has it already.
+- (void)record:(NSString *)text {
+    NSString *line = [text hasSuffix:@"\n"] ? text : [text stringByAppendingString:@"\n"];
+    @synchronized (self) { [self.output appendString:line]; }
 }
 
 - (void)print:(NSString *)text {
@@ -120,7 +132,10 @@ static NSString *VariableKey(NSString *s) {
     NSString *mine = self.variables[name];
     if (mine) return mine;
     if ([name hasPrefix:@"SYS."]) {
-        NSString *key = [Trimmed(rawName) substringFromIndex:4];
+        // The environment's names keep their case; "$(SYS.PATH)" and "SYS.PATH" both ask for PATH.
+        NSString *written = Trimmed(rawName);
+        if ([written hasPrefix:@"$("] && [written hasSuffix:@")"]) written = [written substringWithRange:NSMakeRange(2, written.length - 3)];
+        NSString *key = [written substringFromIndex:4];
         return self.environment[key] ?: [NSProcessInfo processInfo].environment[key] ?: @"";
     }
     // $(#0) is the program, $(#N) the Nth open file.
@@ -151,7 +166,35 @@ static NSString *VariableKey(NSString *s) {
 
 /// $(…) in a line, by the script's variables first and then Notepad++'s;
 /// quoted for the shell only when the line goes to the shell.
-- (NSString *)expand:(NSString *)text forShell:(BOOL)shell {
+- (BOOL)isWrittenByTheAuthor:(NSString *)raw {
+    NSRegularExpression *reference = [NSRegularExpression regularExpressionWithPattern:@"\\$\\(([^)]*)\\)" options:0 error:NULL];
+    for (NSTextCheckingResult *m in [reference matchesInString:raw options:0 range:NSMakeRange(0, raw.length)]) {
+        if (![self.plainVariables containsObject:VariableKey([raw substringWithRange:[m rangeAtIndex:1]])]) return NO;
+    }
+    return YES;
+}
+
+- (NSString *)expand:(NSString *)written forShell:(BOOL)shell {
+    NSString *text = written;
+    if (shell && self.plainVariables.count) {
+        // The author's own variables first, as plain text.
+        NSMutableString *filled = [text mutableCopy];
+        for (NSUInteger pass = 0; pass < 8; ++pass) {
+            BOOL changed = NO;
+            for (NSString *key in self.plainVariables) {
+                NSString *value = self.variables[key];
+                if (!value) continue;
+                NSRange r;
+                NSString *token = [NSString stringWithFormat:@"$(%@)", key];
+                while ((r = [filled rangeOfString:token options:NSCaseInsensitiveSearch]).location != NSNotFound) {
+                    [filled replaceCharactersInRange:r withString:value];
+                    changed = YES;
+                }
+            }
+            if (!changed) break;
+        }
+        text = filled;
+    }
     __block NSString *out = text;
     EditorController *editor = self.editor;
     NSString *(^lookup)(NSString *) = ^NSString *(NSString *name) {
@@ -309,12 +352,37 @@ static BOOL IsBlockIf(NSString *rest) {
 }
 
 /// "a == b" and the rest of NppExec's comparisons; numbers compare as numbers.
-- (NSNumber *)evaluateCondition:(NSString *)condition {
-    NSString *c = [self expand:condition forShell:NO];
-    for (NSString *op in @[@"==", @"!=", @"<>", @">=", @"<=", @"=", @">", @"<"]) {
-        NSRange r = [c rangeOfString:op];
-        if (r.location == NSNotFound) continue;
-        NSString *a = Unquoted([c substringToIndex:r.location]), *b = Unquoted([c substringFromIndex:NSMaxRange(r)]);
+- (NSNumber *)evaluateCondition:(NSString *)written {
+    // NppExec's block form ends in THEN.
+    NSString *condition = Trimmed(written);
+    if (condition.length > 5 && [[condition substringFromIndex:condition.length - 5].uppercaseString isEqualToString:@" THEN"]) {
+        condition = Trimmed([condition substringToIndex:condition.length - 5]);
+    }
+    // The operator is found in what was written, outside quotes and $( ),
+    // and only then are the sides filled in: a value holding "==" or "<" is
+    // not the comparison.
+    NSRange found = NSMakeRange(NSNotFound, 0);
+    BOOL quoted = NO;
+    NSInteger variable = 0;
+    for (NSUInteger i = 0; i < condition.length && found.location == NSNotFound; ++i) {
+        unichar ch = [condition characterAtIndex:i];
+        if (ch == '"') { quoted = !quoted; continue; }
+        if (ch == '$' && i + 1 < condition.length && [condition characterAtIndex:i + 1] == '(') { variable++; i++; continue; }
+        if (ch == ')' && variable > 0) { variable--; continue; }
+        if (quoted || variable > 0) continue;
+        for (NSString *op in @[@"==", @"!=", @"<>", @">=", @"<=", @"=", @">", @"<"]) {
+            if (i + op.length <= condition.length && [[condition substringWithRange:NSMakeRange(i, op.length)] isEqualToString:op]) {
+                found = NSMakeRange(i, op.length);
+                break;
+            }
+        }
+    }
+    if (found.location != NSNotFound) {
+        NSString *op = [condition substringWithRange:found];
+        NSRange r = found;
+        NSString *c = condition;
+        NSString *a = Unquoted([self expand:[c substringToIndex:r.location] forShell:NO]);
+        NSString *b = Unquoted([self expand:[c substringFromIndex:NSMaxRange(r)] forShell:NO]);
         NSScanner *sa = [NSScanner scannerWithString:a], *sb = [NSScanner scannerWithString:b];
         double x = 0, y = 0;
         NSComparisonResult order;
@@ -442,10 +510,18 @@ static BOOL IsBlockIf(NSString *rest) {
             value = result;
         }
         if (env) self.environment[Trimmed(name)] = value;
-        else self.variables[VariableKey(name)] = value;
+        else {
+            self.variables[VariableKey(name)] = value;
+            if (isCalc || [self isWrittenByTheAuthor:Trimmed([body substringFromIndex:NSMaxRange(sep)])]) [self.plainVariables addObject:VariableKey(name)];
+            else [self.plainVariables removeObject:VariableKey(name)];
+        }
         return YES;
     }
-    if ([word isEqualToString:@"UNSET"]) { [self.variables removeObjectForKey:VariableKey(rawRest)]; return YES; }
+    if ([word isEqualToString:@"UNSET"]) {
+        [self.variables removeObjectForKey:VariableKey(rawRest)];
+        [self.plainVariables removeObject:VariableKey(rawRest)];
+        return YES;
+    }
     if ([word isEqualToString:@"ENV_UNSET"]) { [self.environment removeObjectForKey:Trimmed(rawRest)]; return YES; }
     if ([word isEqualToString:@"SLEEP"]) {
         NSScanner *scan = [NSScanner scannerWithString:rest];
@@ -631,11 +707,17 @@ static BOOL IsBlockIf(NSString *rest) {
     // Anything else is a program, run to its end in the script's folder, its
     // output in the console and in $(OUTPUT), its status in $(EXITCODE).
     NSString *command = [self expand:Trimmed(line) forShell:YES];
-    [self print:[NSString stringWithFormat:@"%@\nProcess started >>>", command]];
+    // The console shows the command and its output as it comes; the log gets
+    // the same. No time limit - a build takes what it takes - but Stop ends it.
+    [self record:[NSString stringWithFormat:@"%@\nProcess started >>>", command]];
+    __weak NppScriptEngine *weakSelf = self;
+    EditorController *owner = self.editor;
+    OnMain(^{ (void)[owner console]; });                  // the panel is made on the main thread
     NppRunResult *result = [self.editor runExpandedCommandLine:command directory:self.directory
-                                                   environment:self.environment intoConsole:NO];
+                                                   environment:self.environment intoConsole:YES timeout:0
+                                                      stopWhen:^BOOL{ return weakSelf.cancelled; }];
     NSString *output = result.output ?: @"";
-    if (output.length) [self print:output];
+    if (output.length) [self record:output];
     [self print:[NSString stringWithFormat:@"<<< Process finished. (Exit code %d)%@", result.exitStatus,
                  result.timedOut ? @" - timed out" : @""]];
     while ([output hasSuffix:@"\n"] || [output hasSuffix:@"\r"]) output = [output substringToIndex:output.length - 1];

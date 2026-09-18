@@ -1266,6 +1266,7 @@ static NSString *Ordinal(NSUInteger n) {
     NSMenuItem *again = [self item:@"Execute Previous NppExec Script" action:@selector(executePreviousScript:) key:@"" flags:0 menu:execMenu];
     again.keyEquivalent = [NSString stringWithFormat:@"%C", (unichar)NSF6FunctionKey];
     again.keyEquivalentModifierMask = NSEventModifierFlagControl;
+    [self item:@"Stop Running NppExec Script" action:@selector(stopScript:) key:@"" flags:0 menu:execMenu];
     [self item:@"Show NppExec Console" action:@selector(toggleConsole:) key:@"" flags:0 menu:execMenu];
     [pluginsMenu addItemWithTitle:@"NppExec" action:nil keyEquivalent:@""].submenu = execMenu;
     self.execMenu = execMenu;
@@ -2095,22 +2096,31 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
 /// A script runs off the main thread, so the console fills and the editor
 /// stays live; the engine comes back to the main thread for the editor.
 - (void)executeScriptText:(NSString *)text {
-    if (self.runningScript) {
-        self.runningScript.cancelled = YES;   // one at a time, as NppExec asks
-    }
+    // One at a time, as NppExec has it: the one running is told to stop - its
+    // program is ended with it - and the new one starts when it has.
+    self.runningScript.cancelled = YES;
+    static dispatch_queue_t scripts;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ scripts = dispatch_queue_create("org.notepad-plus-plus.mac.scripts", DISPATCH_QUEUE_SERIAL); });
     [[NSUserDefaults standardUserDefaults] setObject:text forKey:@"NppMac.execLastScript"];
     NppScriptEngine *engine = [[NppScriptEngine alloc] initWithEditor:self.editor];
     __weak AppDelegate *weakSelf = self;
     engine.menuCommandPerformer = ^BOOL(NSString *menuPath) { return [weakSelf performMenuCommandAtPath:menuPath]; };
     self.runningScript = engine;
     [[self.editor console] showWithoutFocus];
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        [engine runScript:text arguments:@[]];
+    dispatch_async(scripts, ^{
+        if (!engine.cancelled) [engine runScript:text arguments:@[]];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (weakSelf.runningScript == engine) weakSelf.runningScript = nil;
             [weakSelf rebuildExecMenu];
         });
     });
+}
+
+- (void)stopScript:(id)sender {
+    if (!self.runningScript) return;
+    self.runningScript.cancelled = YES;
+    [[self.editor console] appendText:@"- the script was stopped\n"];
 }
 
 - (void)executeSavedScript:(NSMenuItem *)sender {
@@ -2320,6 +2330,7 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
 
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
     SEL a = item.action;
+    if (a == @selector(stopScript:)) return self.runningScript != nil;
     if (a == @selector(pickLanguage:)) {
         item.state = [item.representedObject isEqualToString:self.editor.currentDocument.language.name]
                      ? NSControlStateValueOn : NSControlStateValueOff;

@@ -8158,6 +8158,49 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"NppExec (saved scripts)", @"npes_saved.txt's format, the menu of saved scripts, NPP_EXEC with arguments, INPUTBOX, NPP_MENUCOMMAND",
               format && listed && nested && removed);
 
+        // NppExec's IF … THEN; a value that holds an operator; the author's own
+        // variables as plain words, the document's as one quoted word; $(SYS.X) shown.
+        NppScriptEngine *forms = [[NppScriptEngine alloc] initWithEditor:ed];
+        forms.directory = execDir;
+        SetDoc(ed, @"x; echo INJECTED");
+        [ed.sci message:SCI_SELECTALL];
+        BOOL formsOK = [forms runScript:@"SET n = 3\n"
+                                        @"IF \"$(n)\" == \"3\" THEN\n  ECHO then-yes\nELSE\n  ECHO then-no\nENDIF\n"
+                                        @"SET expr = a==b\n"
+                                        @"IF \"$(expr)\" == \"a==b\" THEN\n  ECHO operator-inside\nENDIF\n"
+                                        @"SET flags = a b\n"
+                                        @"SET more = $(flags) tail\n"
+                                        @"/usr/bin/printf '%s|' $(more)\n"
+                                        @"ECHO plain=[$(OUTPUT)]\n"
+                                        @"SET sel = $(SELECTED_TEXT)\n"
+                                        @"/bin/echo $(sel)\n"
+                                        @"ECHO doc=[$(OUTPUT)]\n"
+                                        @"/bin/echo \"$(printf %s $(SELECTED_TEXT))\"\n"
+                                        @"ECHO sub=[$(OUTPUT)]\n"
+                                        @"ENV_SET T_EXEC_VAR = shown\n"
+                                        @"SET $(SYS.T_EXEC_VAR)\n"
+                                arguments:@[]];
+        NSString *fl = forms.log;
+        formsOK = formsOK && [fl containsString:@"then-yes"] && ![fl containsString:@"then-no"] &&
+                  [fl containsString:@"operator-inside"] && [fl containsString:@"plain=[a|b|tail|]"] &&
+                  [fl containsString:@"doc=[x; echo INJECTED]"] && [fl containsString:@"sub=[x; echo INJECTED]"] &&
+                  [fl containsString:@"= shown"];
+        if (!formsOK) printf("%s\n", fl.UTF8String);
+        Check(@"NppExec (THEN, operators in values, quoting)",
+              @"IF … THEN is read, a value holding == is not the comparison, SET words stay words, and text from the "
+              @"document is one quoted word even inside the shell's $( )",
+              formsOK);
+
+        // A program may run longer than the Run dialog allows, and Stop ends it.
+        NppScriptEngine *slow = [[NppScriptEngine alloc] initWithEditor:ed];
+        NSDate *slowStart = [NSDate date];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.6 * NSEC_PER_SEC)), dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{ slow.cancelled = YES; });
+        [slow runScript:@"/bin/sh -c \"/bin/sleep 20; true\"\nECHO not-reached\n" arguments:@[]];
+        NSTimeInterval slowTook = -[slowStart timeIntervalSinceNow];
+        printf("    exec stop took %.1fs\n%s", slowTook, slowTook < 5 ? "" : slow.log.UTF8String);
+        Check(@"NppExec (stop)", @"stopping a script ends the program it is running, and nothing after it runs",
+              slowTook < 5 && ![slow.log containsString:@"not-reached"]);
+
         // A runaway loop is stopped rather than hanging the editor.
         NppScriptEngine *loop = [[NppScriptEngine alloc] initWithEditor:ed];
         loop.stepLimit = 500;

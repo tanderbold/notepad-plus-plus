@@ -75,5 +75,6 @@
 - (BOOL)performMenuCommandAtPath:(NSString *)path;
 - (void)rebuildExecMenu;
 - (void)executeScriptText:(NSString *)text;
+- (void)stopScript:(id)sender;
 @property (nonatomic, strong) NSMenu *execMenu;
 @end

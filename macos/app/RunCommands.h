@@ -55,6 +55,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (NppRunResult *)runExpandedCommandLine:(NSString *)expanded directory:(nullable NSString *)directory
                              environment:(nullable NSDictionary<NSString *, NSString *> *)environment
                              intoConsole:(BOOL)intoConsole;
+/// The same with its own time limit (0: none) and a block asked five times a
+/// second whether to stop the command.
+- (NppRunResult *)runExpandedCommandLine:(NSString *)expanded directory:(nullable NSString *)directory
+                             environment:(nullable NSDictionary<NSString *, NSString *> *)environment
+                             intoConsole:(BOOL)intoConsole timeout:(NSTimeInterval)timeout
+                                stopWhen:(nullable BOOL (^)(void))stopWhen;
 /// The same, off the main thread, so the console fills while the app stays live.
 - (void)runCommandLineInBackground:(NSString *)command
                         completion:(void (^_Nullable)(NppRunResult *))completion;
