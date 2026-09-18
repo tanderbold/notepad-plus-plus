@@ -1168,6 +1168,22 @@ int NppMacRunTests(AppDelegate *app) {
                     [ed.sci message:SCI_STYLEGETFORE wParam:SCE_USER_STYLE_COMMENTLINE lParam:0] == 0x008000 &&
                     [[NSString stringWithContentsOfFile:mainFile encoding:NSUTF8StringEncoding error:NULL] containsString:@"colorStyle=\"1\""];
 
+            // Typing shows in the document a moment later, without leaving the field.
+            NSTextField *commentOpen = (NSTextField *)[dialog controlNamed:@"commentLineOpen"];
+            commentOpen.stringValue = @"//";
+            [[NSNotificationCenter defaultCenter] postNotificationName:NSControlTextDidChangeNotification object:commentOpen];
+            BOOL notYet = [ed.sci message:SCI_GETSTYLEAT wParam:10 lParam:0] == SCE_USER_STYLE_COMMENTLINE;
+            NSDate *typed = [NSDate dateWithTimeIntervalSinceNow:3];
+            [ed.sci message:SCI_COLOURISE wParam:0 lParam:-1];
+            while ([typed timeIntervalSinceNow] > 0) {
+                [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+                [ed.sci message:SCI_COLOURISE wParam:0 lParam:-1];
+                if ([ed.sci message:SCI_GETSTYLEAT wParam:10 lParam:0] != SCE_USER_STYLE_COMMENTLINE) break;
+            }
+            shown = shown && notYet && [ed.sci message:SCI_GETSTYLEAT wParam:10 lParam:0] != SCE_USER_STYLE_COMMENTLINE;
+            commentOpen.stringValue = @"--";
+            [dialog commit];
+
             BOOL renamed = [dialog renameCurrentTo:@"DialogLang2"] && [doc.language.name isEqualToString:@"DialogLang2"] &&
                            ![catalog languageNamed:@"DialogLang"];
             BOOL copied = [dialog saveCurrentAs:@"DialogLang3"] && [catalog userLanguageNamed:@"DialogLang3"] &&

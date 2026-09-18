@@ -455,6 +455,16 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
 - (void)controlTextDidEndEditing:(NSNotification *)note { [self commit]; }
 - (void)textDidEndEditing:(NSNotification *)note { [self commit]; }
 
+/// While typing, as on Windows, where every keystroke re-styles the document:
+/// here a moment after the last one, since each commit also writes the file.
+- (void)commitSoon {
+    if (self.loading) return;
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(commit) object:nil];
+    [self performSelector:@selector(commit) withObject:nil afterDelay:0.35];
+}
+- (void)controlTextDidChange:(NSNotification *)note { [self commitSoon]; }
+- (void)textDidChange:(NSNotification *)note { [self commitSoon]; }
+
 - (void)setStyle:(int)styleID attributes:(NSDictionary *)attributes {
     if (!self.current) return;
     [self readControls];
