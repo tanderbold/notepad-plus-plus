@@ -1258,7 +1258,6 @@ int NppMacRunTests(AppDelegate *app) {
             [prefs toggle];
             applied = applied && !p.confirmSaveAll;
             p.confirmSaveAll = confirmBefore;
-            controls = [prefs valueForKey:@"controls"];
             p.tabBarVertical = wasVertical; p.recentFilesMax = wasMax;
             [ed applyEditorPreferences];
             Check(@"IDM_SETTING_PREFERENCE (the pages Windows has)",
