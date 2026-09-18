@@ -81,6 +81,9 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @property (nonatomic) BOOL syncH;
 @property (nonatomic) BOOL syncZ;
 @property (nonatomic, strong) ScintillaView *docMapView;
+/// What the dock shows: the map sits in it and may be wider than it, so that
+/// a wrapped map breaks its lines where the editor does (DocumentMap::wrapMap).
+@property (nonatomic, strong) NSView *docMapHost;
 @property (nonatomic, strong) NppMapZoneView *docMapZone;
 @property (nonatomic, strong) NSPanel *peekPanel;
 /// Distraction Free mode: the tabs and the status bar are put away.
@@ -2359,16 +2362,21 @@ static const char kEditorMenuItemsKey = 0;
         [self.docMapView message:SCI_SETMARGINWIDTHN wParam:2 lParam:0];
         [self.docMapView message:SCI_SETHSCROLLBAR wParam:0 lParam:0];
         [self.docMapView message:SCI_SETVSCROLLBAR wParam:0 lParam:0];
-        // Docked, floated or resized: the zone is worked out again.
-        self.docMapView.postsFrameChangedNotifications = YES;
+        self.docMapHost = [[NSView alloc] initWithFrame:self.docMapView.frame];
+        self.docMapHost.wantsLayer = YES;
+        self.docMapHost.layer.masksToBounds = YES;
+        self.docMapView.autoresizingMask = NSViewHeightSizable;
+        [self.docMapHost addSubview:self.docMapView];
+        // Docked, floated or resized: the map and its zone are worked out again.
+        self.docMapHost.postsFrameChangedNotifications = YES;
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(documentMapFrameChanged:)
-                                                     name:NSViewFrameDidChangeNotification object:self.docMapView];
+                                                     name:NSViewFrameDidChangeNotification object:self.docMapHost];
     }
     [self.docMapView message:SCI_SETDOCPOINTER wParam:0
                       lParam:(sptr_t)self.currentDocument.docPointer];
     NppDockingManager *dock = [NppDockingManager shared];
     if (![dock hasPanel:@"documentMap"]) {
-        [dock registerPanel:@"documentMap" title:@"Document Map" view:self.docMapView defaultPlace:NppDockRight];
+        [dock registerPanel:@"documentMap" title:@"Document Map" view:self.docMapHost defaultPlace:NppDockRight];
     }
     [dock showPanel:@"documentMap"];
     if (!self.docMapZone) {
@@ -2404,8 +2412,33 @@ static const char kEditorMenuItemsKey = 0;
 
 /// DocumentMap::scrollMap and the view zone: the map follows the editor so
 /// the zone is in sight, and the zone covers the lines the editor shows.
+/// The map is as wide as its panel; wrapped, it is as wide as the editor's
+/// text is in the map's own small characters, so both wrap at the same words.
+- (void)layoutDocumentMap {
+    ScintillaView *map = self.docMapView, *sci = self.sciView;
+    if (!map || !self.docMapHost) return;
+    CGFloat width = NSWidth(self.docMapHost.bounds);
+    if ([sci message:SCI_GETWRAPMODE] != SC_WRAP_NONE) {
+        CGFloat text = NSWidth([sci content].bounds);
+        for (int m = 0; m < 5; ++m) text -= (CGFloat)[sci message:SCI_GETMARGINWIDTHN wParam:(uptr_t)m];
+        text -= (CGFloat)([sci message:SCI_GETMARGINLEFT] + [sci message:SCI_GETMARGINRIGHT]);
+        // Long and mixed: the widths come back as whole pixels, and the map's characters are under two wide.
+        const char *probe = "The quick brown fox jumps over the lazy dog 0123456789 {}[]();,. int main(void) return value == other; "
+                            "the quick brown fox jumps over the lazy dog 0123456789 {}[]();,. int main(void) return value == other;";
+        double inEditor = (double)[sci message:SCI_TEXTWIDTH wParam:STYLE_DEFAULT lParam:(sptr_t)probe];
+        double inMap = (double)[map message:SCI_TEXTWIDTH wParam:STYLE_DEFAULT lParam:(sptr_t)probe];
+        if (text > 0 && inEditor > 0 && inMap > 0) {
+            width = ceil(text * inMap / inEditor) + (CGFloat)([map message:SCI_GETMARGINLEFT] + [map message:SCI_GETMARGINRIGHT]);
+        }
+        [map message:SCI_SETWRAPINDENTMODE wParam:(uptr_t)[sci message:SCI_GETWRAPINDENTMODE] lParam:0];
+    }
+    NSRect wanted = NSMakeRect(0, 0, MAX(1, width), NSHeight(self.docMapHost.bounds));
+    if (!NSEqualRects(map.frame, wanted)) map.frame = wanted;
+}
+
 - (void)updateDocumentMap {
     if (![self documentMapVisible]) return;
+    [self layoutDocumentMap];
     ScintillaView *map = self.docMapView, *sci = self.sciView;
     long first = [sci message:SCI_GETFIRSTVISIBLELINE];
     long onScreen = [sci message:SCI_LINESONSCREEN];

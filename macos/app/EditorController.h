@@ -235,6 +235,8 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// What a click or drag in the map at `y` does: centres the editor there.
 - (void)scrollFromDocumentMapAtY:(CGFloat)y;
 - (void)updateDocumentMap;
+/// The editor's colours and wrapping, given to the map.
+- (void)mirrorStylesToDocumentMap;
 /// Document Peeker: what hovering tab `index` does (-1 leaves the tabs).
 - (void)peekAtTabIndex:(NSInteger)index;
 - (void)applyStatusBarVisibility;

@@ -4204,6 +4204,33 @@ int NppMacRunTests(AppDelegate *app) {
             BOOL clicked = afterClick > 1500 + 20 && afterClick < 1500 + 60 + shown;
             BOOL coloured = [map message:SCI_STYLEGETFORE wParam:SCE_C_WORD] == [ed.sci message:SCI_STYLEGETFORE wParam:SCE_C_WORD] &&
                             [map message:SCI_STYLEGETBOLD wParam:SCE_C_WORD] == [ed.sci message:SCI_STYLEGETBOLD wParam:SCE_C_WORD];
+            // Wrapped, the map breaks its lines where the editor does: the same
+            // number of display lines for the same long text.
+            NSMutableString *longLines = [NSMutableString string];
+            for (int i = 0; i < 40; ++i) {
+                for (int w = 0; w < 60 + i; ++w) [longLines appendFormat:@"word%d ", w % 7];
+                [longLines appendString:@"\n"];
+            }
+            SetDoc(ed, longLines);
+            [ed.sci message:SCI_SETWRAPMODE wParam:SC_WRAP_WORD lParam:0];
+            [ed mirrorStylesToDocumentMap];
+            [ed updateDocumentMap];
+            // (Scintilla wraps in idle time.)
+            NSDate *wrapWait = [NSDate dateWithTimeIntervalSinceNow:3];
+            while (([ed.sci message:SCI_WRAPCOUNT wParam:39] < 2 || [map message:SCI_WRAPCOUNT wParam:39] < 2) && [wrapWait timeIntervalSinceNow] > 0) {
+                [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+            }
+            long editorLines = 0, mapLines = 0;
+            for (long l = 0; l < 40; ++l) {
+                editorLines += [ed.sci message:SCI_WRAPCOUNT wParam:(uptr_t)l];
+                mapLines += [map message:SCI_WRAPCOUNT wParam:(uptr_t)l];
+            }
+            BOOL sameWrap = editorLines > 60 && labs(editorLines - mapLines) <= editorLines / 20;
+            printf("    map wrap: editor %ld display lines, map %ld, map width %.0f in a panel of %.0f\n", editorLines, mapLines,
+                   NSWidth(map.frame), NSWidth(map.superview.bounds));
+            [ed.sci message:SCI_SETWRAPMODE wParam:SC_WRAP_NONE lParam:0];
+            [ed updateDocumentMap];
+            coloured = coloured && sameWrap && fabs(NSWidth(map.frame) - NSWidth(map.superview.bounds)) < 1;
             [ed setDocumentMapVisible:NO];
             [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
             printf("    map: first %ld zone %.0f+%.0f line %ld click %ld\n", mapFirst, zone.origin.y, zone.size.height, zoneLine, afterClick);
