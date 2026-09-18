@@ -1,4 +1,5 @@
 #import "ViewCommands.h"
+#import "EditorLook.h"
 #import "SettingsCommands.h"
 #import "LanguageCatalog.h"
 #import "ScintillaView.h"
@@ -86,9 +87,8 @@
     switch (symbol) {
         case NppSymbolWhitespace:  return [sci message:SCI_GETVIEWWS] != SCWS_INVISIBLE;
         case NppSymbolEOL:         return [sci message:SCI_GETVIEWEOL] != 0;
-        case NppSymbolNonPrinting: return [sci message:SCI_GETCONTROLCHARSYMBOL] != 0;
-        case NppSymbolControlAndUnicodeEOL:
-            return [sci message:SCI_GETVIEWEOL] != 0 && [sci message:SCI_GETCONTROLCHARSYMBOL] != 0;
+        case NppSymbolNonPrinting: return [NppPreferences shared].npcShow;
+        case NppSymbolControlAndUnicodeEOL: return [NppPreferences shared].ccUniEolShow;
         case NppSymbolIndentGuide: return [sci message:SCI_GETINDENTATIONGUIDES] != SC_IV_NONE;
         case NppSymbolWrap:        return [sci message:SCI_GETWRAPVISUALFLAGS] != SC_WRAPVISUALFLAG_NONE;
     }
@@ -112,12 +112,15 @@
             [sci message:SCI_SETVIEWEOL wParam:(uptr_t)(on ? 0 : 1) lParam:0];
             break;
         case NppSymbolNonPrinting:
-            // 0 restores Scintilla's default boxed mnemonics.
-            [sci message:SCI_SETCONTROLCHARSYMBOL wParam:(uptr_t)(on ? 0 : (long)'.') lParam:0];
+            // Representations of the invisible characters, as showNpc sets them.
+            [NppPreferences shared].npcShow = !on;
+            [self applySymbolRepresentationsTo:sci];
+            if (self.secondarySci) [self applySymbolRepresentationsTo:self.secondarySci];
             break;
         case NppSymbolControlAndUnicodeEOL:
-            [sci message:SCI_SETVIEWEOL wParam:(uptr_t)(on ? 0 : 1) lParam:0];
-            [sci message:SCI_SETCONTROLCHARSYMBOL wParam:(uptr_t)(on ? 0 : (long)'.') lParam:0];
+            [NppPreferences shared].ccUniEolShow = !on;
+            [self applySymbolRepresentationsTo:sci];
+            if (self.secondarySci) [self applySymbolRepresentationsTo:self.secondarySci];
             break;
         case NppSymbolIndentGuide:
             [sci message:SCI_SETINDENTATIONGUIDES wParam:(uptr_t)(on ? SC_IV_NONE : SC_IV_LOOKBOTH) lParam:0];

@@ -459,6 +459,15 @@ static BOOL LanguageAlwaysBraces(NSString *name) {
     NppPreferences *p = [NppPreferences shared];
     ScintillaView *sci = self.sci;
 
+    // Prevent control character (C0 code) typing into document: upstream
+    // drops the WM_CHAR; here the character just typed is taken out again.
+    if (p.preventC0Typing && ((character >= 0 && character <= 31 && character != '\t' && character != '\n' &&
+                               character != '\r') || character == 127)) {
+        long caret = [sci message:SCI_GETCURRENTPOS];
+        if (caret > 0) [sci message:SCI_DELETERANGE wParam:(uptr_t)(caret - 1) lParam:1];
+        return;
+    }
+
     // Nothing is added to what a macro records or plays back, as upstream.
     if ([self recordingMacro] || [self playingMacro]) return;
 

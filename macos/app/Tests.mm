@@ -42,6 +42,7 @@
 #import "StyleConfigurator.h"
 #import "DocumentListPanel.h"
 #import "WorkspacePanel.h"
+#import "EditorLook.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -6551,6 +6552,108 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_SETTING_PREFERENCE (document switcher)",
               @"Ctrl+Tab goes to the document used last and shows the list, or steps through the tabs when off",
               mruFirst && mruSecond && hidden && inOrder);
+    }
+
+    printf("\n== Preferences: Editing and Margins ==\n");
+    {
+        NppPreferences *lp = [NppPreferences shared];
+        [ed newDocument];
+        [ed setLanguageNamed:@"cpp"];
+        SetDoc(ed, @"int f() {\n    return 0;\n}\n");
+        // Fold margin styles, and None hiding the margin.
+        lp.foldMarginStyle = 1;
+        [ed applyEditorPreferences];
+        BOOL arrow = [sci message:SCI_MARKERSYMBOLDEFINED wParam:SC_MARKNUM_FOLDER] == SC_MARK_ARROW;
+        lp.foldMarginStyle = 2;
+        [ed applyEditorPreferences];
+        BOOL circle = [sci message:SCI_MARKERSYMBOLDEFINED wParam:SC_MARKNUM_FOLDEROPEN] == SC_MARK_CIRCLEMINUS;
+        lp.foldMarginStyle = 4;
+        [ed applyEditorPreferences];
+        BOOL none = [sci message:SCI_GETMARGINWIDTHN wParam:2] == 0;
+        lp.foldMarginStyle = 3;
+        [ed applyEditorPreferences];
+        BOOL box = [sci message:SCI_MARKERSYMBOLDEFINED wParam:SC_MARKNUM_FOLDER] == SC_MARK_BOXPLUS &&
+                   [sci message:SCI_GETMARGINWIDTHN wParam:2] > 0;
+        Check(@"IDM_SETTING_PREFERENCE (fold margin style)",
+              @"simple, arrow, circle tree and box tree markers, and none hides the margin", arrow && circle && none && box);
+
+        // Line numbers: dynamic width fits the lines shown, constant the file.
+        NSMutableString *many = [NSMutableString string];
+        for (int i = 0; i < 120000; ++i) [many appendString:@"x\n"];
+        SetDoc(ed, many);
+        [sci message:SCI_SETFIRSTVISIBLELINE wParam:0 lParam:0];
+        lp.lineNumberDynamicWidth = YES;
+        [ed updateLineNumberWidth];
+        long dynamicWidth = [sci message:SCI_GETMARGINWIDTHN wParam:0];
+        lp.lineNumberDynamicWidth = NO;
+        [ed updateLineNumberWidth];
+        long constantWidth = [sci message:SCI_GETMARGINWIDTHN wParam:0];
+        lp.lineNumberShow = NO;
+        [ed updateLineNumberWidth];
+        BOOL hiddenNumbers = [sci message:SCI_GETMARGINWIDTHN wParam:0] == 0;
+        lp.lineNumberShow = YES;
+        lp.lineNumberDynamicWidth = YES;
+        [ed updateLineNumberWidth];
+        Check(@"IDM_SETTING_PREFERENCE (line number width)",
+              @"a dynamic margin fits the lines on screen, a constant one the whole file, and it can be hidden",
+              constantWidth > dynamicWidth && dynamicWidth > 0 && hiddenNumbers);
+        SetDoc(ed, [NSString stringWithFormat:@"a%Cb%Cc\n", (unichar)0xA0, (unichar)1]);
+
+        // Non-printing characters and C0/C1: abbreviation or code point, and
+        // hidden when that view option is off; EOL as plain text.
+        char rep[32] = {0};
+        char nbsp[] = {(char)0xC2, (char)0xA0, 0}, soh[] = {1, 0}, zwsp[] = {(char)0xE2, (char)0x80, (char)0x8B, 0};
+        lp.npcShow = YES; lp.npcCodepoint = NO; lp.ccUniEolShow = YES;
+        [ed applySymbolRepresentationsTo:sci];
+        [sci message:SCI_GETREPRESENTATION wParam:(uptr_t)nbsp lParam:(sptr_t)rep];
+        BOOL abbreviation = !strcmp(rep, "NBSP");
+        lp.npcCodepoint = YES;
+        [ed applySymbolRepresentationsTo:sci];
+        memset(rep, 0, sizeof rep);
+        [sci message:SCI_GETREPRESENTATION wParam:(uptr_t)nbsp lParam:(sptr_t)rep];
+        BOOL codepoint = !strcmp(rep, "U+00A0");
+        lp.ccUniEolShow = NO;
+        [ed applySymbolRepresentationsTo:sci];
+        memset(rep, 0, sizeof rep);
+        [sci message:SCI_GETREPRESENTATION wParam:(uptr_t)soh lParam:(sptr_t)rep];
+        BOOL controlHidden = !strcmp(rep, zwsp);
+        lp.eolPlainText = YES;
+        [ed applySymbolRepresentationsTo:sci];
+        BOOL plainEol = [sci message:SCI_GETREPRESENTATIONAPPEARANCE wParam:(uptr_t)"\n"] == SC_REPRESENTATION_PLAIN;
+        lp.npcShow = NO; lp.npcCodepoint = NO; lp.ccUniEolShow = YES; lp.eolPlainText = NO;
+        [ed applySymbolRepresentationsTo:sci];
+        memset(rep, 0, sizeof rep);
+        [sci message:SCI_GETREPRESENTATION wParam:(uptr_t)nbsp lParam:(sptr_t)rep];
+        BOOL npcOff = rep[0] == 0;
+        Check(@"IDM_VIEW_NPC (appearance)",
+              @"invisible characters show by abbreviation or code point, C0 controls hide when switched off, EOL can be plain",
+              abbreviation && codepoint && controlHidden && plainEol && npcOff);
+
+        // Change History in the text, smooth font, C0 typing, toggleable folding.
+        lp.changeHistoryText = YES; lp.smoothFont = YES;
+        [ed applyEditorPreferences];
+        BOOL historyText = ([sci message:SCI_GETCHANGEHISTORY] & SC_CHANGE_HISTORY_INDICATORS) != 0;
+        BOOL smooth = [sci message:SCI_GETFONTQUALITY] == SC_EFF_QUALITY_LCD_OPTIMIZED;
+        lp.changeHistoryText = NO; lp.smoothFont = NO;
+        [ed applyEditorPreferences];
+        SetDoc(ed, @"ab");
+        [sci message:SCI_GOTOPOS wParam:2 lParam:0];
+        [sci setStringProperty:SCI_REPLACESEL parameter:0 value:[NSString stringWithFormat:@"%C", (unichar)2]];
+        [ed handleCharacterAdded:2];
+        BOOL noC0 = [DocText(ed) isEqualToString:@"ab"];
+        SetDoc(ed, @"int f() {\n    return 0;\n}\n");
+        [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+        [sci message:SCI_GOTOLINE wParam:1 lParam:0];
+        lp.foldCommandsToggle = YES;
+        [ed foldCurrent:NO];
+        BOOL toggledShut = [sci message:SCI_GETFOLDEXPANDED wParam:0] == 0;
+        [ed foldCurrent:NO];
+        BOOL toggledOpen = [sci message:SCI_GETFOLDEXPANDED wParam:0] != 0;
+        lp.foldCommandsToggle = NO;
+        [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        Check(@"IDM_SETTING_PREFERENCE (editing)",
+              @"change history in the text, smooth font, no C0 typing, and fold commands that toggle",
+              historyText && smooth && noC0 && toggledShut && toggledOpen);
     }
 
     printf("\n== New documents, recent files, directories ==\n");

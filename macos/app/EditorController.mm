@@ -5,6 +5,7 @@
 #import "UserLanguages.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
+#import "EditorLook.h"
 #import "AdvancedEditCommands.h"
 #import "ScintillaView.h"
 #import "WorkspacePanel.h"
@@ -320,9 +321,8 @@ static long SciColor(NSColor *c) {
     [sci message:SCI_SETMARGINS wParam:4 lParam:0];
     [sci message:SCI_SETMARGINTYPEN wParam:3 lParam:SC_MARGIN_SYMBOL];
     [sci message:SCI_SETMARGINMASKN wParam:3 lParam:historyMask];
-    [sci message:SCI_SETMARGINWIDTHN wParam:3 lParam:6];
-    [sci message:SCI_SETCHANGEHISTORY
-           wParam:(SC_CHANGE_HISTORY_ENABLED | SC_CHANGE_HISTORY_MARKERS) lParam:0];
+    // Change History's modes (margin, text) are set by applyLook.
+    [sci message:SCI_SETMARGINWIDTHN wParam:3 lParam:prefs.changeHistoryMargin ? 6 : 0];
 
     [self applyEditorPreferences];
 }
@@ -333,6 +333,7 @@ static long SciColor(NSColor *c) {
     ScintillaView *sci = self.sciView;
     NppPreferences *prefs = [NppPreferences shared];
     [self applyStatusBarVisibility];
+    [self applyLook];
 
     // A vertical edge can be a line or a change of background, and Notepad++
     // takes a list of columns rather than one.
@@ -392,7 +393,8 @@ static long SciColor(NSColor *c) {
     // Margins the user can turn off. The line number margin has its own
     // setting elsewhere; these two are the bookmark and fold margins.
     [sci message:SCI_SETMARGINWIDTHN wParam:1 lParam:prefs.bookmarkMarginShow ? 14 : 0];
-    [sci message:SCI_SETMARGINWIDTHN wParam:2 lParam:prefs.foldMarginShow ? 16 : 0];
+    // The fold margin's width goes with its style, in applyFoldMarkersTo:.
+    [self applyFoldMarkersTo:sci];
 
     // How a wrapped line continues: plain, aligned with the line above, or a
     // level further in.
@@ -1553,6 +1555,7 @@ static BOOL gCheckingFilesOnDisk;
             [sci message:SCI_MARKERSETFORE wParam:(uptr_t)history[i].marker lParam:SciColor(hs.background)];
         }
     }
+    [self applyLook];
 }
 
 #pragma mark - Encoding + EOL
@@ -1716,8 +1719,13 @@ static BOOL gCheckingFilesOnDisk;
     ScintillaView *sci = self.sciView;
     long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
     // Act on the enclosing fold point, which is what "current level" means.
-    long parent = [sci message:SCI_GETFOLDPARENT wParam:(uptr_t)line];
+    // A fold point itself, or the one the line is inside (foldCurrentPos).
+    BOOL header = ([sci message:SCI_GETFOLDLEVEL wParam:(uptr_t)line] & SC_FOLDLEVELHEADERFLAG) != 0;
+    long parent = header ? line : [sci message:SCI_GETFOLDPARENT wParam:(uptr_t)line];
     if (parent < 0) parent = line;
+    // With "Make current level folding/unfolding commands toggleable" either
+    // command folds an open level and opens a folded one.
+    if ([NppPreferences shared].foldCommandsToggle) fold = [sci message:SCI_GETFOLDEXPANDED wParam:(uptr_t)parent] != 0;
     [sci message:SCI_FOLDLINE wParam:(uptr_t)parent
              lParam:(fold ? SC_FOLDACTION_CONTRACT : SC_FOLDACTION_EXPAND)];
 }
@@ -2158,6 +2166,7 @@ static const char kEditorMenuItemsKey = 0;
         case SCN_UPDATEUI:
             [self refreshChrome];
             if (n->updated & (SC_UPDATE_V_SCROLL | SC_UPDATE_CONTENT)) [self updateDocumentMap];
+            if (n->updated & (SC_UPDATE_V_SCROLL | SC_UPDATE_CONTENT)) [self updateLineNumberWidth];
             [self mirrorScrollToSecondary];
             [self updateBraceMatch];
             if (n->updated & SC_UPDATE_SELECTION) [self updateSmartHighlight];

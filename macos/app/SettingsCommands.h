@@ -157,6 +157,29 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL backspaceUnindents;
 // General
 @property (nonatomic) BOOL statusBarHidden;
+// Editing
+@property (nonatomic) BOOL smoothFont;
+@property (nonatomic) BOOL selectedTextCustomForeground;
+@property (nonatomic) BOOL multiEditing;
+@property (nonatomic) BOOL preventC0Typing;
+@property (nonatomic) BOOL foldCommandsToggle;
+/// EOL (CRLF): plain text instead of a rounded box, and the custom colour.
+@property (nonatomic) BOOL eolPlainText;
+@property (nonatomic) BOOL eolCustomColour;
+/// Non-printing characters: shown (View menu), by code point rather than
+/// abbreviation, in the custom colour, and the same for C0/C1/Unicode EOL.
+@property (nonatomic) BOOL npcShow;
+@property (nonatomic) BOOL ccUniEolShow;
+@property (nonatomic) BOOL npcCodepoint;
+@property (nonatomic) BOOL npcCustomColour;
+@property (nonatomic) BOOL npcIncludeCcUniEol;
+// Margins
+/// 0 simple, 1 arrow, 2 circle tree, 3 box tree, 4 none.
+@property (nonatomic) NSInteger foldMarginStyle;
+@property (nonatomic) BOOL lineNumberShow;
+@property (nonatomic) BOOL lineNumberDynamicWidth;
+@property (nonatomic) BOOL changeHistoryMargin;
+@property (nonatomic) BOOL changeHistoryText;
 /// The tab width and tab/space choice in force for a language.
 - (NSInteger)tabWidthForLanguage:(nullable NSString *)language;
 - (BOOL)useSpacesForLanguage:(nullable NSString *)language;

@@ -353,6 +353,22 @@
                        on:p.showWhitespace to:v atY:y];
     y = [self addCheckbox:@"Show indent guides" key:@"showIndentGuides"
                        on:p.showIndentGuides to:v atY:y];
+    y = [self addCheckbox:@"Enable smooth font" key:@"smoothFont" on:p.smoothFont to:v atY:y];
+    y = [self addCheckbox:@"Apply custom color to selected text foreground" key:@"selectedTextCustomForeground"
+                       on:p.selectedTextCustomForeground to:v atY:y];
+    y = [self addCheckbox:@"Enable Multi-Editing (Cmd+click/selection)" key:@"multiEditing" on:p.multiEditing to:v atY:y];
+    y = [self addCheckbox:@"Make current level folding/unfolding commands toggleable" key:@"foldCommandsToggle"
+                       on:p.foldCommandsToggle to:v atY:y];
+    y = [self addPopup:@"EOL (CRLF)" key:@"eolPlainText" items:@[@"Default", @"Plain Text"]
+              selected:p.eolPlainText ? 1 : 0 to:v atY:y];
+    y = [self addCheckbox:@"    EOL custom color" key:@"eolCustomColour" on:p.eolCustomColour to:v atY:y];
+    y = [self addPopup:@"Non-Printing Characters" key:@"npcCodepoint" items:@[@"Abbreviation", @"Codepoint"]
+              selected:p.npcCodepoint ? 1 : 0 to:v atY:y];
+    y = [self addCheckbox:@"    Non-printing characters custom color" key:@"npcCustomColour" on:p.npcCustomColour to:v atY:y];
+    y = [self addCheckbox:@"    Apply Appearance settings to C0, C1 & Unicode EOL" key:@"npcIncludeCcUniEol"
+                       on:p.npcIncludeCcUniEol to:v atY:y];
+    y = [self addCheckbox:@"Prevent control character (C0 code) typing into document" key:@"preventC0Typing"
+                       on:p.preventC0Typing to:v atY:y];
     [self endPage:@"Editing 2" atY:y];
 
     y = [self beginPage:@"Dark Mode"]; v = [self page:@"Dark Mode"];
@@ -380,6 +396,15 @@
               selected:p.edgeMode to:v atY:y];
     y = [self addField:@"Columns (space separated)" key:@"edgeColumns"
                   value:p.edgeColumns to:v atY:y];
+    y = [self addPopup:@"Fold Margin Style" key:@"foldMarginStyle"
+                 items:@[@"Simple", @"Arrow", @"Circle tree", @"Box tree", @"None"]
+              selected:p.foldMarginStyle to:v atY:y];
+    y = [self addCheckbox:@"Line Number: display" key:@"lineNumberShow" on:p.lineNumberShow to:v atY:y];
+    y = [self addPopup:@"    Width" key:@"lineNumberDynamicWidth" items:@[@"Constant width", @"Dynamic width"]
+              selected:p.lineNumberDynamicWidth ? 1 : 0 to:v atY:y];
+    y = [self addCheckbox:@"Change History: show in the margin" key:@"changeHistoryMargin"
+                       on:p.changeHistoryMargin to:v atY:y];
+    y = [self addCheckbox:@"Change History: show in the text" key:@"changeHistoryText" on:p.changeHistoryText to:v atY:y];
     [self endPage:@"Margins/Border/Edge" atY:y];
 
     y = [self beginPage:@"New Document"]; v = [self page:@"New Document"];
@@ -811,6 +836,21 @@
     p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
     p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
     p.statusBarHidden = on(@"statusBarHidden");
+    p.smoothFont = on(@"smoothFont");
+    p.selectedTextCustomForeground = on(@"selectedTextCustomForeground");
+    p.multiEditing = on(@"multiEditing");
+    p.foldCommandsToggle = on(@"foldCommandsToggle");
+    p.eolPlainText = [self.controls[@"eolPlainText"] indexOfSelectedItem] == 1;
+    p.eolCustomColour = on(@"eolCustomColour");
+    p.npcCodepoint = [self.controls[@"npcCodepoint"] indexOfSelectedItem] == 1;
+    p.npcCustomColour = on(@"npcCustomColour");
+    p.npcIncludeCcUniEol = on(@"npcIncludeCcUniEol");
+    p.preventC0Typing = on(@"preventC0Typing");
+    p.foldMarginStyle = [self.controls[@"foldMarginStyle"] indexOfSelectedItem];
+    p.lineNumberShow = on(@"lineNumberShow");
+    p.lineNumberDynamicWidth = [self.controls[@"lineNumberDynamicWidth"] indexOfSelectedItem] == 1;
+    p.changeHistoryMargin = on(@"changeHistoryMargin");
+    p.changeHistoryText = on(@"changeHistoryText");
     p.backspaceUnindents = on(@"backspaceUnindents");
     p.languageIndent = [(NppLanguageIndentView *)self.controls[@"languageIndent"] draft];
     p.languageMenuHidden = [(NppLanguageListsView *)self.controls[@"languageMenuHidden"] hiddenLanguages];

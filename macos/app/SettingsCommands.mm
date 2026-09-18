@@ -165,6 +165,12 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"workspaceSymlinks"): @NO, Key(@"searchEngine"): @1, Key(@"searchEngineCustom"): @"",
         Key(@"languageMenuHidden"): @[], Key(@"languageMenuCompact"): @YES, Key(@"sqlBackslashEscape"): @YES,
         Key(@"languageIndent"): @{}, Key(@"backspaceUnindents"): @NO, Key(@"statusBarHidden"): @NO,
+        Key(@"smoothFont"): @NO, Key(@"selectedTextCustomForeground"): @NO, Key(@"multiEditing"): @YES,
+        Key(@"preventC0Typing"): @YES, Key(@"foldCommandsToggle"): @NO, Key(@"eolPlainText"): @NO,
+        Key(@"eolCustomColour"): @NO, Key(@"npcShow"): @NO, Key(@"ccUniEolShow"): @YES, Key(@"npcCodepoint"): @NO,
+        Key(@"npcCustomColour"): @NO, Key(@"npcIncludeCcUniEol"): @NO, Key(@"foldMarginStyle"): @3,
+        Key(@"lineNumberShow"): @YES, Key(@"lineNumberDynamicWidth"): @YES,
+        Key(@"changeHistoryMargin"): @YES, Key(@"changeHistoryText"): @NO,
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -263,6 +269,23 @@ NPP_PREF_BOOL(sqlBackslashEscape, setSqlBackslashEscape, @"sqlBackslashEscape")
 NPP_PREF_OBJ(languageIndent, setLanguageIndent, NSDictionary, @"languageIndent")
 NPP_PREF_BOOL(backspaceUnindents, setBackspaceUnindents, @"backspaceUnindents")
 NPP_PREF_BOOL(statusBarHidden, setStatusBarHidden, @"statusBarHidden")
+NPP_PREF_BOOL(smoothFont, setSmoothFont, @"smoothFont")
+NPP_PREF_BOOL(selectedTextCustomForeground, setSelectedTextCustomForeground, @"selectedTextCustomForeground")
+NPP_PREF_BOOL(multiEditing, setMultiEditing, @"multiEditing")
+NPP_PREF_BOOL(preventC0Typing, setPreventC0Typing, @"preventC0Typing")
+NPP_PREF_BOOL(foldCommandsToggle, setFoldCommandsToggle, @"foldCommandsToggle")
+NPP_PREF_BOOL(eolPlainText, setEolPlainText, @"eolPlainText")
+NPP_PREF_BOOL(eolCustomColour, setEolCustomColour, @"eolCustomColour")
+NPP_PREF_BOOL(npcShow, setNpcShow, @"npcShow")
+NPP_PREF_BOOL(ccUniEolShow, setCcUniEolShow, @"ccUniEolShow")
+NPP_PREF_BOOL(npcCodepoint, setNpcCodepoint, @"npcCodepoint")
+NPP_PREF_BOOL(npcCustomColour, setNpcCustomColour, @"npcCustomColour")
+NPP_PREF_BOOL(npcIncludeCcUniEol, setNpcIncludeCcUniEol, @"npcIncludeCcUniEol")
+NPP_PREF_BOOL(lineNumberShow, setLineNumberShow, @"lineNumberShow")
+NPP_PREF_BOOL(lineNumberDynamicWidth, setLineNumberDynamicWidth, @"lineNumberDynamicWidth")
+NPP_PREF_BOOL(changeHistoryMargin, setChangeHistoryMargin, @"changeHistoryMargin")
+NPP_PREF_BOOL(changeHistoryText, setChangeHistoryText, @"changeHistoryText")
+NPP_PREF_INT(foldMarginStyle, setFoldMarginStyle, @"foldMarginStyle")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
 NPP_PREF_INT(fontSize, setFontSize, @"fontSize")
