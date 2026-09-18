@@ -1527,7 +1527,10 @@ static BOOL gCheckingFilesOnDisk;
     if ([self secondaryViewVisible] && self.secondaryDocument.path) {
         session[@"secondary"] = @{@"path": self.secondaryDocument.path,
                                   @"firstLine": @([self.secondaryView message:SCI_GETFIRSTVISIBLELINE]),
-                                  @"caret": @([self.secondaryView message:SCI_GETCURRENTPOS])};
+                                  @"caret": @([self.secondaryView message:SCI_GETCURRENTPOS]),
+                                  // Where the divider stands, as a share of the height.
+                                  @"split": @(NSHeight(self.editorSplit.frame) > 0
+                                      ? NSHeight(self.sciView.frame) / NSHeight(self.editorSplit.frame) : 0.5)};
     }
     // Folder as Workspace's roots, as upstream's FileBrowser section.
     if ([self workspaceVisible] && [self workspaceRootPaths].count) session[@"workspaceRoots"] = [self workspaceRootPaths];
@@ -1595,6 +1598,10 @@ static BOOL gCheckingFilesOnDisk;
             [self cloneCurrentToOtherView];
             [self.secondaryView message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)[secondary[@"firstLine"] longValue] lParam:0];
             [self.secondaryView message:SCI_GOTOPOS wParam:(uptr_t)[secondary[@"caret"] longValue] lParam:0];
+            double share = [secondary[@"split"] doubleValue];
+            if (share > 0.05 && share < 0.95) {
+                [self.editorSplit setPosition:NSHeight(self.editorSplit.frame) * share ofDividerAtIndex:0];
+            }
             NSUInteger back = front ? [self.docs indexOfObjectIdenticalTo:front] : NSNotFound;
             if (back != NSNotFound) [self selectDocumentAtIndex:(NSInteger)back];
         }

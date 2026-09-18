@@ -7339,6 +7339,8 @@ int NppMacRunTests(AppDelegate *app) {
         [ed openFolderAsWorkspace:rootA];                    // already a root: not twice
         NSArray *roots = [ed workspaceRootPaths];
         NSString *sessionPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_depth_session.json"];
+        NSSplitView *viewSplit = [ed valueForKey:@"editorSplit"];
+        [viewSplit setPosition:NSHeight(viewSplit.frame) * 0.3 ofDividerAtIndex:0];
         [ed saveSessionTo:sessionPath error:NULL];
         [ed setReadOnly:NO];
         [ed setSecondaryViewVisible:NO];
@@ -7352,7 +7354,9 @@ int NppMacRunTests(AppDelegate *app) {
         if (at != NSNotFound) [ed selectDocumentAtIndex:(NSInteger)at];
         BOOL foldBack = at != NSNotFound && [sci message:SCI_GETFOLDEXPANDED wParam:3] == 0;
         BOOL readOnlyBack = [ed isReadOnly] && ed.currentDocument.userReadOnly;
-        BOOL secondBack = [ed secondaryViewVisible] &&
+        double shareBack = NSHeight(ed.sci.frame) / MAX(1, NSHeight(viewSplit.frame));
+        printf("    session: the views' divider came back at %.2f\n", shareBack);
+        BOOL secondBack = fabs(shareBack - 0.3) < 0.05 && [ed secondaryViewVisible] &&
             (void *)[ed.secondarySci message:SCI_GETDOCPOINTER] == ed.currentDocument.docPointer;
         BOOL rootsBack = [[ed workspaceRootPaths] isEqualToArray:(@[rootA, rootB])] && roots.count == 2 &&
                          [[ed workspaceTopLevelNames] containsObject:@"t_rootB.txt"];
