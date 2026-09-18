@@ -63,11 +63,41 @@ echo "==> libscintilla-cocoa.a"
 libtool -static -o "$OUT/libscintilla-cocoa.a" "$OBJ"/*.o 2>/dev/null
 
 echo "==> NotepadMac"
-APPOBJ="$OUT/appobj"
+# Objects per architecture set; a source is recompiled only when it, or a
+# header it includes (as clang recorded in its .d file), is newer than its
+# object, or the build script itself changed. Every .mm in macos/app is part
+# of the application: there is no list to forget a new file in.
+APPOBJ="$OUT/appobj-${NPPMAC_ARCH:-universal}"
 mkdir -p "$APPOBJ"
-for f in NppPanel NppRegex ApiCatalog CharsetDetection LanguageCatalog UserLanguages LanguageModel LanguageDetection StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands FindCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
-    clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
+SOURCES=()
+for f in "$SRC"/*.mm; do SOURCES+=("$(basename "${f%.mm}")"); done
+
+needs_build() {
+    local name="$1" o="$APPOBJ/$1.o" d="$APPOBJ/$1.d"
+    [ -f "$o" ] && [ -f "$d" ] || return 0
+    [ "$0" -nt "$o" ] && return 0
+    local dep
+    for dep in $(sed -e 's/^[^:]*://' -e 's/\\$//' "$d"); do
+        [ -e "$dep" ] || return 0
+        [ "$dep" -nt "$o" ] && return 0
+    done
+    return 1
+}
+
+STALE=()
+for f in "${SOURCES[@]}"; do needs_build "$f" && STALE+=("$f"); done
+# Objects of sources that no longer exist are dropped, so they are not linked.
+for o in "$APPOBJ"/*.o; do
+    [ -e "$o" ] || continue
+    [ -f "$SRC/$(basename "${o%.o}").mm" ] || rm -f "$o" "${o%.o}.d"
 done
+echo "    ${#STALE[@]} of ${#SOURCES[@]} sources to compile"
+if [ ${#STALE[@]} -gt 0 ]; then
+    export CXXFLAGS_STR="${CXXFLAGS[*]}" INCLUDES_STR="${INCLUDES[*]}" SRC APPOBJ
+    printf '%s\n' "${STALE[@]}" | xargs -P "$(sysctl -n hw.ncpu)" -I{} sh -c '
+        clang++ $CXXFLAGS_STR $INCLUDES_STR -fobjc-arc -MMD -MF "$APPOBJ/{}.d" \
+            -c "$SRC/{}.mm" -o "$APPOBJ/{}.o" || { rm -f "$APPOBJ/{}.o"; exit 255; }'
+fi
 clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o "$UCOBJ"/*.o \
     "$OUT/libscintilla-cocoa.a" "$LEX/bin/liblexilla.a" \
     -framework Cocoa -framework QuartzCore -framework Security -lcurl -lxml2 -lz \
