@@ -203,40 +203,72 @@
 
 #pragma mark - Monitoring (tail -f)
 
-static const char kMonitorSourceKey = 0;
+- (BOOL)monitoringEnabled { return self.currentDocument.monitoring; }
 
-- (BOOL)monitoringEnabled {
-    return objc_getAssociatedObject(self, &kMonitorSourceKey) != nil;
+/// IDM_VIEW_MONITORING for the document in front: refused for a file with
+/// unsaved changes or none on disk, as upstream refuses it.
+- (void)setMonitoring:(BOOL)on {
+    NppDocument *doc = self.currentDocument;
+    if (!doc) return;
+    if (!on) { [self stopMonitoringDocument:doc]; [self refreshChrome]; return; }
+    if (doc.monitoring) return;
+    if (!doc.path.length || ![[NSFileManager defaultManager] fileExistsAtPath:doc.path] || doc.modified) { NppBeep(); return; }
+    [self startMonitoringDocument:doc];
+    [self refreshChrome];
 }
 
-- (void)setMonitoring:(BOOL)on {
-    dispatch_source_t existing = objc_getAssociatedObject(self, &kMonitorSourceKey);
-    if (existing) {
-        dispatch_source_cancel(existing);
-        objc_setAssociatedObject(self, &kMonitorSourceKey, nil, OBJC_ASSOCIATION_RETAIN);
-    }
-    if (!on) { [self refreshChrome]; return; }
-
-    NSString *path = self.currentDocument.path;
-    if (!path.length) { NppBeep(); return; }
-    int fd = open(path.fileSystemRepresentation, O_EVTONLY);
+- (void)startMonitoringDocument:(NppDocument *)doc {
+    int fd = open(doc.path.fileSystemRepresentation, O_EVTONLY);
     if (fd < 0) { NppBeep(); return; }
-
     dispatch_source_t src = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, (uintptr_t)fd,
-        DISPATCH_VNODE_WRITE | DISPATCH_VNODE_EXTEND | DISPATCH_VNODE_DELETE,
+        DISPATCH_VNODE_WRITE | DISPATCH_VNODE_EXTEND | DISPATCH_VNODE_DELETE | DISPATCH_VNODE_RENAME,
         dispatch_get_main_queue());
     __weak EditorController *weakSelf = self;
+    __weak NppDocument *weakDoc = doc;
     dispatch_source_set_event_handler(src, ^{
         EditorController *me = weakSelf;
-        if (!me) return;
-        // Reload and stay pinned to the end, which is what tail -f looks like.
-        [me reloadCurrentDocument:NULL];
-        [me.sci message:SCI_DOCUMENTEND];
+        NppDocument *watched = weakDoc;
+        if (!me || !watched) return;
+        if (dispatch_source_get_data(src) & (DISPATCH_VNODE_DELETE | DISPATCH_VNODE_RENAME)) {
+            [me stopMonitoringDocument:watched];
+            return;
+        }
+        [me monitoredDocumentChanged:watched];
     });
     dispatch_source_set_cancel_handler(src, ^{ close(fd); });
     dispatch_resume(src);
-    objc_setAssociatedObject(self, &kMonitorSourceKey, src, OBJC_ASSOCIATION_RETAIN);
-    [self refreshChrome];
+    doc.monitorSource = src;
+    doc.monitoring = YES;
+    // The user's read-only, as upstream sets it while monitoring.
+    if (doc == self.currentDocument) [self.sci message:SCI_SETREADONLY wParam:1 lParam:0];
+}
+
+- (void)stopMonitoringDocument:(NppDocument *)doc {
+    if (doc.monitorSource) dispatch_source_cancel((dispatch_source_t)doc.monitorSource);
+    doc.monitorSource = nil;
+    doc.monitorReloadPending = NO;
+    if (!doc.monitoring) return;
+    doc.monitoring = NO;
+    if (doc == self.currentDocument) {
+        BOOL writable = !doc.path || [[NSFileManager defaultManager] isWritableFileAtPath:doc.path];
+        [self.sci message:SCI_SETREADONLY wParam:writable ? 0 : 1 lParam:0];
+    }
+}
+
+/// The file grew or changed: reloaded at once when in front, and followed to
+/// its end; otherwise when it next comes to the front.
+- (void)monitoredDocumentChanged:(NppDocument *)doc {
+    if (doc != self.currentDocument) { doc.monitorReloadPending = YES; return; }
+    doc.monitorReloadPending = NO;
+    [self.sci message:SCI_SETREADONLY wParam:0 lParam:0];
+    [self reloadCurrentDocument:NULL];
+    [self.sci message:SCI_SETREADONLY wParam:1 lParam:0];
+    [self.sci message:SCI_DOCUMENTEND];
+}
+
+- (void)catchUpMonitoredDocument {
+    NppDocument *doc = self.currentDocument;
+    if (doc.monitoring && doc.monitorReloadPending) [self monitoredDocumentChanged:doc];
 }
 
 @end

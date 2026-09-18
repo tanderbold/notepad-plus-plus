@@ -180,7 +180,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"toolbarFilledIcons"): @NO, Key(@"toolbarIconColour"): @0, Key(@"toolbarIconCustomColour"): @"",
         Key(@"toolbarColorizeComplete"): @NO,
         Key(@"tabDrawActiveBar"): @YES, Key(@"tabColourInactive"): @YES, Key(@"tabReduced"): @YES, Key(@"tabMaxLabelLength"): @0,
-        Key(@"panelStateKeep"): @{}, Key(@"distractionFreeDivPart"): @4,
+        Key(@"panelStateKeep"): @{}, Key(@"distractionFreeDivPart"): @4, Key(@"openAnsiAsUtf8"): @YES,
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -320,6 +320,7 @@ NPP_PREF_BOOL(tabReduced, setTabReduced, @"tabReduced")
 NPP_PREF_INT(tabMaxLabelLength, setTabMaxLabelLength, @"tabMaxLabelLength")
 NPP_PREF_OBJ(panelStateKeep, setPanelStateKeep, NSDictionary, @"panelStateKeep")
 NPP_PREF_INT(distractionFreeDivPart, setDistractionFreeDivPart, @"distractionFreeDivPart")
+NPP_PREF_BOOL(openAnsiAsUtf8, setOpenAnsiAsUtf8, @"openAnsiAsUtf8")
 NPP_PREF_OBJ(customDateFormat, setCustomDateFormat, NSString, @"customDateFormat")
 NPP_PREF_INT(foldMarginStyle, setFoldMarginStyle, @"foldMarginStyle")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")

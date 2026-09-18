@@ -6,6 +6,7 @@
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "EditorLook.h"
+#import "ViewCommands.h"
 #import "TagMatch.h"
 #import "AdvancedEditCommands.h"
 #import "ScintillaView.h"
@@ -130,6 +131,17 @@ static NSString *DecodeText(NSData *data, NSStringEncoding *outEnc, BOOL *outBOM
         NSString *s = [[NSString alloc] initWithData:data encoding:wide];
         if (s) { *outEnc = wide; return s; }
     }
+    // Seven-bit text is "ANSI" to upstream, and opens as UTF-8 only when new
+    // documents are UTF-8 and "Apply to opened ANSI files" is on
+    // (setLoadedBufferEncodingAndEol, uni7Bit). An empty file goes the same way.
+    BOOL sevenBit = YES;
+    for (NSUInteger i = 0; i < n && sevenBit; ++i) if (b[i] >= 0x80) sevenBit = NO;
+    if (sevenBit) {
+        NppPreferences *p = [NppPreferences shared];
+        BOOL utf8 = [p.defaultEncoding hasPrefix:@"UTF-8"] && p.openAnsiAsUtf8;
+        *outEnc = utf8 ? NSUTF8StringEncoding : NSISOLatin1StringEncoding;
+        return [[NSString alloc] initWithData:data encoding:*outEnc];
+    }
     NSString *s = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     if (s) { *outEnc = NSUTF8StringEncoding; return s; }
     // Not UTF-8: asked of uchardet, as Windows asks, before falling back to
@@ -143,6 +155,79 @@ static NSString *DecodeText(NSData *data, NSStringEncoding *outEnc, BOOL *outBOM
     }
     *outEnc = NSISOLatin1StringEncoding;
     return [[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
+}
+
+/// Files at least this big are not decoded into a string: the file is mapped
+/// and its bytes go to Scintilla as they are (UTF-8) or converted piecewise.
+static unsigned long long gStreamingThreshold = 64ULL * 1024 * 1024;
+
+/// Whether bytes are well-formed UTF-8, checked in place.
+static BOOL IsValidUTF8(const unsigned char *b, NSUInteger n) {
+    NSUInteger i = 0;
+    while (i < n) {
+        unsigned char c = b[i];
+        if (c < 0x80) { i++; continue; }
+        NSUInteger need;
+        unsigned int min, cp;
+        if ((c & 0xE0) == 0xC0) { need = 1; min = 0x80; cp = c & 0x1F; }
+        else if ((c & 0xF0) == 0xE0) { need = 2; min = 0x800; cp = c & 0x0F; }
+        else if ((c & 0xF8) == 0xF0) { need = 3; min = 0x10000; cp = c & 0x07; }
+        else return NO;
+        if (i + need >= n) return NO;
+        for (NSUInteger k = 1; k <= need; ++k) {
+            unsigned char cc = b[i + k];
+            if ((cc & 0xC0) != 0x80) return NO;
+            cp = (cp << 6) | (cc & 0x3F);
+        }
+        if (cp < min || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) return NO;
+        i += need + 1;
+    }
+    return YES;
+}
+
+/// The UTF-8 a big file is added as, without a string in between: the mapped
+/// bytes themselves (less a BOM) when they are UTF-8 or seven-bit, Latin-1
+/// converted otherwise. Nil for UTF-16, which takes the ordinary path.
+static NSData *DirectBytesForLargeFile(NSData *data, NSStringEncoding *outEnc, BOOL *outBOM) {
+    const unsigned char *b = (const unsigned char *)data.bytes;
+    NSUInteger n = data.length;
+    *outBOM = NO;
+    if (n >= 2 && ((b[0] == 0xFF && b[1] == 0xFE) || (b[0] == 0xFE && b[1] == 0xFF))) return nil;
+    NSUInteger start = 0;
+    if (n >= 3 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF) { start = 3; *outBOM = YES; }
+    if (*outBOM || IsValidUTF8(b, n)) {
+        BOOL sevenBit = !*outBOM;
+        for (NSUInteger i = start; i < n && sevenBit; ++i) if (b[i] >= 0x80) sevenBit = NO;
+        NppPreferences *p = [NppPreferences shared];
+        *outEnc = (sevenBit && !([p.defaultEncoding hasPrefix:@"UTF-8"] && p.openAnsiAsUtf8))
+            ? NSISOLatin1StringEncoding : NSUTF8StringEncoding;
+        // No copy: a sub-range of mapped data that starts at 0 is the data itself.
+        return start ? [NSData dataWithBytesNoCopy:(void *)(b + start) length:n - start freeWhenDone:NO] : data;
+    }
+    // Not UTF-8: ANSI, each byte its Latin-1 character.
+    *outEnc = NSISOLatin1StringEncoding;
+    NSMutableData *out = [NSMutableData dataWithCapacity:n + n / 8];
+    unsigned char buffer[8192];
+    NSUInteger used = 0;
+    for (NSUInteger i = 0; i < n; ++i) {
+        unsigned char c = b[i];
+        if (c < 0x80) buffer[used++] = c;
+        else { buffer[used++] = (unsigned char)(0xC0 | (c >> 6)); buffer[used++] = (unsigned char)(0x80 | (c & 0x3F)); }
+        if (used >= sizeof(buffer) - 2) { [out appendBytes:buffer length:used]; used = 0; }
+    }
+    if (used) [out appendBytes:buffer length:used];
+    return out;
+}
+
+/// DetectEOL over bytes.
+static int DetectEOLBytes(NSData *data) {
+    const unsigned char *b = (const unsigned char *)data.bytes;
+    NSUInteger n = data.length;
+    for (NSUInteger i = 0; i < n; ++i) {
+        if (b[i] == '\n') return SC_EOL_LF;
+        if (b[i] == '\r') return (i + 1 < n && b[i + 1] == '\n') ? SC_EOL_CRLF : SC_EOL_CR;
+    }
+    return SC_EOL_LF;
 }
 
 /// First line ending wins, matching how Notepad++ reports a file's EOL.
@@ -468,6 +553,24 @@ static long SciColor(NSColor *c) {
     return text ?: ([self.sciView string] ?: @"");
 }
 
++ (void)setStreamingThreshold:(unsigned long long)bytes { gStreamingThreshold = bytes ?: 64ULL * 1024 * 1024; }
+
+/// Adds UTF-8 bytes in pieces, with room made for all of them first.
+- (void)setDocumentBytes:(NSData *)utf8 {
+    ScintillaView *sci = self.sciView;
+    BOOL readOnly = [sci message:SCI_GETREADONLY wParam:0 lParam:0] != 0;
+    if (readOnly) [sci message:SCI_SETREADONLY wParam:0 lParam:0];
+    [sci message:SCI_CLEARALL wParam:0 lParam:0];
+    [sci message:SCI_ALLOCATE wParam:(uptr_t)utf8.length lParam:0];
+    const unsigned char *bytes = (const unsigned char *)utf8.bytes;
+    const NSUInteger chunk = 16 * 1024 * 1024;
+    for (NSUInteger at = 0; at < utf8.length; at += chunk) {
+        NSUInteger len = MIN(chunk, utf8.length - at);
+        [sci message:SCI_APPENDTEXT wParam:(uptr_t)len lParam:(sptr_t)(bytes + at)];
+    }
+    if (readOnly) [sci message:SCI_SETREADONLY wParam:1 lParam:0];
+}
+
 - (void)setDocumentText:(NSString *)text {
     NSData *utf8 = [text dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
     // A read-only document takes no text; the flag is lifted for the
@@ -501,23 +604,39 @@ static long SciColor(NSColor *c) {
     // start rather than styled and then unstyled.
     unsigned long long size = [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL]
                                fileSize];
-    if (size >= 2ULL * 1024 * 1024 * 1024) {
-        if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadTooLargeError
-                                            userInfo:@{NSLocalizedDescriptionKey:
-                                                [NSString stringWithFormat:@"%@ is too big to open (2 GB or more).",
-                                                 path.lastPathComponent]}];
-        return NO;
-    }
     NppPreferences *prefs = [NppPreferences shared];
-    BOOL large = prefs.largeFileRestrictionEnabled &&
-                 size > (unsigned long long)prefs.largeFileThresholdMB * 1024 * 1024;
+    BOOL huge = size >= 2ULL * 1024 * 1024 * 1024;
+    // As upstream asks before a file of 2 GB or more, unless told not to.
+    if (huge && !prefs.suppressHugeFileWarning && !getenv("NPPMAC_TEST")) {
+        NSAlert *ask = [[NSAlert alloc] init];
+        ask.messageText = @"Opening a huge file";
+        ask.informativeText = @"Opening a huge file of 2GB+ could take several minutes.\nDo you want to open it?";
+        [ask addButtonWithTitle:@"Yes"];
+        [ask addButtonWithTitle:@"No"];
+        if ([ask runModal] != NSAlertFirstButtonReturn) {
+            if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];
+            return NO;
+        }
+    }
+    BOOL large = huge || (prefs.largeFileRestrictionEnabled &&
+                 size > (unsigned long long)prefs.largeFileThresholdMB * 1024 * 1024);
 
-    NSData *data = [NSData dataWithContentsOfFile:path options:0 error:error];
+    // A big file is mapped rather than read, and not made into a string.
+    BOOL stream = size >= gStreamingThreshold;
+    NSData *data = [NSData dataWithContentsOfFile:path options:stream ? NSDataReadingMappedAlways : 0 error:error];
     if (!data) return NO;
 
     NSStringEncoding used = NSUTF8StringEncoding;
     BOOL bom = NO;
-    NSString *text = DecodeText(data, &used, &bom);
+    NSData *direct = stream ? DirectBytesForLargeFile(data, &used, &bom) : nil;
+    if (!direct && huge) {
+        if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadTooLargeError
+                                            userInfo:@{NSLocalizedDescriptionKey:
+                                                [NSString stringWithFormat:@"%@ is UTF-16 and too big to open (2 GB or more).",
+                                                 path.lastPathComponent]}];
+        return NO;
+    }
+    NSString *text = direct ? @"" : DecodeText(data, &used, &bom);
     if (!text) {
         if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain
                                                 code:NSFileReadUnknownStringEncodingError
@@ -536,14 +655,15 @@ static long SciColor(NSColor *c) {
     doc.encoding = used;
     doc.hasBOM = bom;
     doc.codepage = 0;
-    doc.eolMode = DetectEOL(text);
+    doc.eolMode = direct ? DetectEOLBytes(direct) : DetectEOL(text);
     doc.fileModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL]
                                 fileModificationDate];
 
     [self.docs addObject:doc];
     [self selectDocumentAtIndex:(NSInteger)self.docs.count - 1];
 
-    [self setDocumentText:text];
+    if (direct) [self setDocumentBytes:direct];
+    else [self setDocumentText:text];
     [self.sciView message:SCI_SETEOLMODE wParam:(uptr_t)doc.eolMode lParam:0];
     [self applyPerformanceRestrictions];
     [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
@@ -568,6 +688,7 @@ static long SciColor(NSColor *c) {
 
 - (void)selectDocumentAtIndex:(NSInteger)index {
     if (index < 0 || index >= (NSInteger)self.docs.count) return;
+    dispatch_async(dispatch_get_main_queue(), ^{ [self catchUpMonitoredDocument]; });
     if (!self.mru) self.mru = [NSMutableArray array];
     [self.mru removeObjectIdenticalTo:self.docs[(NSUInteger)index]];
     [self.mru insertObject:self.docs[(NSUInteger)index] atIndex:0];
@@ -904,6 +1025,8 @@ static BOOL gCheckingFilesOnDisk;
     NppDocument *doc = self.docs[index];
     if (!discard && doc.modified) return;
     NppDocument *inFront = self.currentDocument;
+    // A closed document is no longer watched.
+    if (doc.monitoring || doc.monitorSource) [self stopMonitoringDocument:doc];
 
     [self.docs removeObjectAtIndex:index];
 
@@ -1221,6 +1344,7 @@ static BOOL gCheckingFilesOnDisk;
     entry[@"firstLine"] = @(front ? [self.sciView message:SCI_GETFIRSTVISIBLELINE] : d.firstVisibleLine);
     entry[@"pinned"] = @(d.pinned);
     entry[@"tabColour"] = @(d.tabColour);
+    entry[@"monitoring"] = @(d.monitoring);
     entry[@"encoding"] = @(d.encoding);
     entry[@"bom"] = @(d.hasBOM);
     entry[@"codepage"] = @(d.codepage);
@@ -1337,6 +1461,7 @@ static BOOL gCheckingFilesOnDisk;
     }
     if ([f[@"pinned"] isKindOfClass:[NSNumber class]]) doc.pinned = [f[@"pinned"] boolValue];
     if ([f[@"tabColour"] isKindOfClass:[NSNumber class]]) doc.tabColour = [f[@"tabColour"] integerValue];
+    if ([f[@"monitoring"] isKindOfClass:[NSNumber class]] && [f[@"monitoring"] boolValue]) [self setMonitoring:YES];
     // A backup newer than the file is the unsaved text of the last session.
     NSString *backup = f[@"backup"];
     if ([backup isKindOfClass:[NSString class]] && doc.path) {

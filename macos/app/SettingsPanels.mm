@@ -445,6 +445,7 @@
     y = [self beginPage:@"New Document"]; v = [self page:@"New Document"];
     y = [self addField:@"Default encoding" key:@"defaultEncoding"
                   value:p.defaultEncoding to:v atY:y];
+    y = [self addCheckbox:@"    Apply to opened ANSI files (with UTF-8)" key:@"openAnsiAsUtf8" on:p.openAnsiAsUtf8 to:v atY:y];
     y = [self addCheckbox:@"Work the language out from the contents when the name does not say"
                       key:@"detectLanguageFromContent"
                        on:p.detectLanguageFromContent to:v atY:y];
@@ -961,6 +962,7 @@
     p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
     p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
     p.statusBarHidden = on(@"statusBarHidden");
+    p.openAnsiAsUtf8 = on(@"openAnsiAsUtf8");
     NSMutableDictionary *keep = [NSMutableDictionary dictionary];
     for (NSString *key in self.controls) {
         if ([key hasPrefix:@"panelKeep."]) keep[[key substringFromIndex:10]] = @(on(key));

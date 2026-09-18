@@ -6820,6 +6820,90 @@ int NppMacRunTests(AppDelegate *app) {
               (rebuilt.state == NSControlStateValueOn) == statusBefore);
     }
 
+    printf("\n== Files: monitoring, ANSI, big files ==\n");
+    {
+        NppPreferences *fp = [NppPreferences shared];
+        // Monitoring per document: read-only while watched; a change to a
+        // file not in front waits for it to come to the front.
+        NSString *logA = TempFile(@"t_mon_a.log", @"one\n");
+        NSString *logB = TempFile(@"t_mon_b.log", @"other\n");
+        [ed openFileAtPath:logA error:NULL];
+        NppDocument *docA = ed.currentDocument;
+        [ed setMonitoring:YES];
+        BOOL watched = docA.monitoring && [sci message:SCI_GETREADONLY] != 0;
+        [ed openFileAtPath:logB error:NULL];
+        NppDocument *docB = ed.currentDocument;
+        NSFileHandle *h = [NSFileHandle fileHandleForWritingAtPath:logA];
+        [h seekToEndOfFile];
+        [h writeData:[@"two\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [h closeFile];
+        NSDate *until = [NSDate dateWithTimeIntervalSinceNow:5];
+        while (!docA.monitorReloadPending && [until timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+        }
+        BOOL waited = docA.monitorReloadPending && ed.currentDocument == docB && [DocText(ed) isEqualToString:@"other\n"];
+        [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:docA]];
+        until = [NSDate dateWithTimeIntervalSinceNow:2];
+        while (docA.monitorReloadPending && [until timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
+        }
+        BOOL caughtUp = [DocText(ed) isEqualToString:@"one\ntwo\n"] &&
+                        [sci message:SCI_GETCURRENTPOS] == [sci message:SCI_GETLENGTH];
+        [ed setMonitoring:NO];
+        BOOL released = !docA.monitoring && [sci message:SCI_GETREADONLY] == 0;
+        [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:docB]];
+        [sci setStringProperty:SCI_REPLACESEL parameter:0 value:@"dirty"];
+        ed.currentDocument.modified = YES;
+        [ed setMonitoring:YES];
+        BOOL refusedDirty = !docB.monitoring;
+        [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:docB] discardChanges:YES];
+        [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:docA] discardChanges:YES];
+        Check(@"IDM_VIEW_MONITORING (per document)",
+              @"a watched file is read-only, a change waits while another tab is in front, and a dirty file is refused",
+              watched && waited && caughtUp && released && refusedDirty);
+
+        // Apply to opened ANSI files: seven-bit text as UTF-8, or as ANSI.
+        NSString *ascii = TempFile(@"t_ascii.txt", @"plain text\n");
+        BOOL ansiBefore = fp.openAnsiAsUtf8;
+        fp.openAnsiAsUtf8 = YES;
+        [ed openFileAtPath:ascii error:NULL];
+        BOOL asUtf8 = ed.currentDocument.encoding == NSUTF8StringEncoding;
+        [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        fp.openAnsiAsUtf8 = NO;
+        [ed openFileAtPath:ascii error:NULL];
+        BOOL asAnsi = ed.currentDocument.encoding == NSISOLatin1StringEncoding;
+        [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        fp.openAnsiAsUtf8 = ansiBefore;
+        Check(@"IDM_SETTING_PREFERENCE (ANSI as UTF-8)",
+              @"a seven-bit file opens as UTF-8 only with Apply to opened ANSI files", asUtf8 && asAnsi);
+
+        // Big files: mapped and handed over as bytes, UTF-8, Latin-1 or with a BOM.
+        [EditorController setStreamingThreshold:1024];
+        NSMutableString *bigText = [NSMutableString string];
+        for (int i = 0; i < 400; ++i) [bigText appendFormat:@"line %d café\r\n", i];
+        NSString *bigUtf8 = TempFile(@"t_big_utf8.txt", bigText);
+        [ed openFileAtPath:bigUtf8 error:NULL];
+        BOOL utf8Ok = [DocText(ed) isEqualToString:bigText] && ed.currentDocument.encoding == NSUTF8StringEncoding &&
+                      ed.currentDocument.eolMode == SC_EOL_CRLF;
+        [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        NSString *bigLatin = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_big_latin.txt"];
+        [[bigText dataUsingEncoding:NSISOLatin1StringEncoding] writeToFile:bigLatin atomically:YES];
+        [ed openFileAtPath:bigLatin error:NULL];
+        BOOL latinOk = [DocText(ed) isEqualToString:bigText] && ed.currentDocument.encoding == NSISOLatin1StringEncoding;
+        [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        NSMutableData *withBom = [NSMutableData dataWithBytes:"\xEF\xBB\xBF" length:3];
+        [withBom appendData:[bigText dataUsingEncoding:NSUTF8StringEncoding]];
+        NSString *bigBom = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_big_bom.txt"];
+        [withBom writeToFile:bigBom atomically:YES];
+        [ed openFileAtPath:bigBom error:NULL];
+        BOOL bomOk = [DocText(ed) isEqualToString:bigText] && ed.currentDocument.hasBOM;
+        [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        [EditorController setStreamingThreshold:0];
+        Check(@"IDM_FILE_OPEN (big files)",
+              @"a big file is mapped and read as UTF-8, Latin-1 or UTF-8 with a BOM without a string in between",
+              utf8Ok && latinOk && bomOk);
+    }
+
     printf("\n== New documents, recent files, directories ==\n");
     {
         NppPreferences *p = [NppPreferences shared];

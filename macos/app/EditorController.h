@@ -52,6 +52,11 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// The bookmarked lines as last recorded for the session, for a document
 /// that is not in front (Scintilla answers for the view's document only).
 @property (nonatomic, copy, nullable) NSArray<NSNumber *> *bookmarkedLines;
+/// Monitoring (tail -f): the file is watched and the document kept read-only;
+/// a change while it is not in front is loaded when it comes to the front.
+@property (nonatomic) BOOL monitoring;
+@property (nonatomic, strong, nullable) id monitorSource;
+@property (nonatomic) BOOL monitorReloadPending;
 @end
 
 @interface EditorController : NSObject <NppTabBarDelegate>
@@ -70,6 +75,8 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// by length, so that a NUL byte inside a file is kept rather than ending it.
 - (NSString *)documentText;
 - (void)setDocumentText:(NSString *)text;
+/// Files at least this big are mapped and handed to Scintilla as bytes; for tests.
++ (void)setStreamingThreshold:(unsigned long long)bytes;
 
 /// Looks at every open file on disk: one changed by another program is
 /// reloaded (after asking, unless the setting says to do it silently), one

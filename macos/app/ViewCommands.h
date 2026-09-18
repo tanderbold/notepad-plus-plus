@@ -49,6 +49,11 @@ typedef NS_ENUM(NSInteger, NppWindowMode) {
 
 // Monitoring (tail -f)
 - (BOOL)monitoringEnabled;
+- (void)stopMonitoringDocument:(NppDocument *)doc;
+/// A monitored document's file changed (the watcher calls this).
+- (void)monitoredDocumentChanged:(NppDocument *)doc;
+/// Loads what a monitored document missed while it was not in front.
+- (void)catchUpMonitoredDocument;
 - (void)setMonitoring:(BOOL)on;
 
 @end

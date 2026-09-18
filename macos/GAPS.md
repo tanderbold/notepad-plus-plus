@@ -50,9 +50,14 @@ Grouped by area. "Property only" means the setting exists in
 activation with the reload / keep prompts and the silent and scroll-to-end
 settings; the command-line switches; uchardet for the character set and
 UTF-16 without a mark; read-only detection on open; the large-file
-decision by size on disk. Still: file monitoring follows one document per
-controller; large files are not streamed; "Open ANSI as UTF-8" has no
-setting (pure-ASCII files already read as UTF-8).
+decision by size on disk. Plan 2.5: monitoring (tail -f) is per document,
+read-only while watched, stops when the file goes, catches up when a tab
+comes to the front, and is kept in the session; "Apply to opened ANSI
+files" decides whether seven-bit files are UTF-8 or ANSI, as upstream's
+uni7Bit rule; files of 64 MB and more are mapped and handed to Scintilla as
+bytes without a string in between; files of 2 GB and more open after
+upstream's warning (which Performance can suppress) instead of being
+refused.
 
 **Session.** Done since the audit: caret, scroll, selection, bookmarks,
 pinned state, tab colour, encoding and code page, and untitled buffers
