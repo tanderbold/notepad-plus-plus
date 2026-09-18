@@ -6007,6 +6007,51 @@ int NppMacRunTests(AppDelegate *app) {
                   readWindows && scintillaKey && kept);
         }
 
+        // Recording: a menu command that upstream records by its id is one
+        // step of type 2, and what it sent to Scintilla meanwhile is not recorded again.
+        {
+            NSMenuItem *upper = [app.shortcutStore menuItemsByIdentifier][@42016];     // IDM_EDIT_UPPERCASE
+            [ed newDocument];
+            [ed startRecordingMacro];
+            [ed.sci message:SCI_REPLACESEL wParam:0 lParam:(sptr_t)"abc"];
+            [ed.sci message:SCI_SELECTALL];
+            NSDictionary *info = upper ? @{@"MenuItem": upper} : @{};
+            [[NSNotificationCenter defaultCenter] postNotificationName:NSMenuWillSendActionNotification object:upper.menu userInfo:info];
+            if (upper) [NSApp sendAction:upper.action to:upper.target from:upper];
+            [[NSNotificationCenter defaultCenter] postNotificationName:NSMenuDidSendActionNotification object:upper.menu userInfo:info];
+            [ed stopRecordingMacro];
+            NSArray *recorded = [[ed valueForKey:@"macroSteps"] copy];
+            NSUInteger menuSteps = 0;
+            for (NSDictionary *step in recorded) if ([step[@"type"] intValue] == 2 && [step[@"w"] intValue] == 42016) menuSteps++;
+            BOOL recordedOnce = upper != nil && menuSteps == 1 && [[ed documentText] isEqualToString:@"ABC"];
+            [ed setDocumentText:@""];
+            [ed playbackMacro:1];
+            BOOL replayed = [[ed documentText] isEqualToString:@"ABC"];
+            // A Replace All from the Find dialog is six steps of type 3, and plays.
+            [app buildFindPanel];
+            NSTextField *mFind = [app valueForKey:@"findField"], *mWith = [app valueForKey:@"replaceField"];
+            NSString *mFindWas = mFind.stringValue, *mWithWas = mWith.stringValue;
+            [ed setDocumentText:@"cat cat"];
+            [ed startRecordingMacro];
+            mFind.stringValue = @"cat";
+            mWith.stringValue = @"dog";
+            [app findPanelReplaceAll:nil];
+            [ed stopRecordingMacro];
+            NSArray *findSteps = [[ed valueForKey:@"macroSteps"] copy];
+            BOOL sixSteps = findSteps.count == 6 && [findSteps.firstObject[@"msg"] intValue] == 1700 &&
+                            [findSteps.lastObject[@"msg"] intValue] == 1701 && [findSteps.lastObject[@"l"] intValue] == 1609 &&
+                            [[ed documentText] isEqualToString:@"dog dog"];
+            [ed setDocumentText:@"a cat"];
+            [ed playbackMacro:1];
+            replayed = replayed && sixSteps && [[ed documentText] isEqualToString:@"a dog"];
+            mFind.stringValue = mFindWas; mWith.stringValue = mWithWas;
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            printf("    macro recording: %lu steps, %lu of them the menu command\n", (unsigned long)recorded.count, (unsigned long)menuSteps);
+            Check(@"IDM_MACRO_STARTRECORDINGMACRO (menu commands)",
+                  @"a recordable menu command is recorded by its id, once, and plays back",
+                  recordedOnce && replayed);
+        }
+
         // Saved macros are in the Macro menu, as on Windows.
         {
             [ed storeSavedMacro:@[@{@"msg": @2170, @"w": @0, @"l": @0, @"text": @"x"}] named:@"Menu macro"];

@@ -22,6 +22,7 @@
 - (void)findPanelCopyMarkedText:(id)sender;
 - (void)findPanelFindAllInOpenDocuments:(id)sender;
 - (void)findPanelReplaceAllInOpenDocuments:(id)sender;
+- (void)findPanelReplaceAll:(id)sender;
 - (void)findPanelSwap:(id)sender;
 - (void)updateInSelectionAvailability;
 - (void)applyFindTransparency;

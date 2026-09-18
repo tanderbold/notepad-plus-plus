@@ -47,6 +47,7 @@
 #import "UpdateChecker.h"
 #import "DockingManager.h"
 #import "ScriptCommands.h"
+#import "MacroableCommands.h"
 #import <objc/runtime.h>
 
 @interface AppDelegate () <NSWindowDelegate>
@@ -414,6 +415,11 @@ static NSString *Ordinal(NSUInteger n) {
 
     __weak __typeof(self) weakApp = self;
     self.editor.tabContextMenu = ^NSMenu *{ return [weakApp buildTabContextMenu]; };
+    // And are recorded from here: the menu says when one of its commands runs.
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuWillSendAction:)
+                                                 name:NSMenuWillSendActionNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuDidSendAction:)
+                                                 name:NSMenuDidSendActionNotification object:nil];
     // Macro steps that are menu commands (shortcuts.xml's type 2) find their command here.
     self.editor.menuCommandByIdentifier = ^BOOL(int identifier) {
         NSMenuItem *item = [weakApp.shortcutStore menuItemsByIdentifier][@(identifier)];
@@ -2051,6 +2057,39 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
         entry.toolTip = c.command;
     }
     [self.shortcutStore applyToMenus];
+}
+
+#pragma mark - Recording menu commands into a macro
+
+/// The id of a menu item when it is one of the commands upstream records by id.
+- (int)macroableIdentifierOf:(NSMenuItem *)item {
+    static NSSet<NSNumber *> *macroable;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSMutableDictionary<NSString *, NSNumber *> *byName = [NSMutableDictionary dictionary];
+        for (int i = 0; i < kNppMenuCommandIDCount; ++i) byName[@(kNppMenuCommandIDs[i].name)] = @(kNppMenuCommandIDs[i].identifier);
+        NSMutableSet *ids = [NSMutableSet set];
+        for (int i = 0; i < kNppMacroableCommandCount; ++i) {
+            NSNumber *identifier = byName[@(kNppMacroableCommands[i])];
+            if (identifier) [ids addObject:identifier];
+        }
+        macroable = ids;
+    });
+    if (!item) return 0;
+    NSDictionary<NSNumber *, NSMenuItem *> *items = [self.shortcutStore menuItemsByIdentifier];
+    for (NSNumber *identifier in items) {
+        if (items[identifier] == item) return [macroable containsObject:identifier] ? identifier.intValue : 0;
+    }
+    return 0;
+}
+
+- (void)menuWillSendAction:(NSNotification *)note {
+    if (![self.editor recordingMacro] || [self.editor playingMacro]) return;
+    if ([self macroableIdentifierOf:note.userInfo[@"MenuItem"]]) [self.editor beginRecordableMenuCommand];
+}
+
+- (void)menuDidSendAction:(NSNotification *)note {
+    [self.editor endRecordableMenuCommand:[self macroableIdentifierOf:note.userInfo[@"MenuItem"]]];
 }
 
 #pragma mark - NppExec scripts
@@ -3753,7 +3792,9 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         [confirm addButtonWithTitle:@"Cancel"];
         if ([confirm runModal] != NSAlertFirstButtonReturn) return;
     }
+    [self.editor beginRecordableMenuCommand];
     NSUInteger n = [self.editor replaceAllInOpenDocuments:spec];
+    [self.editor recordFindCommand:1635 spec:spec markFlags:0 global:YES];
     self.findStatus.stringValue = [self status:@"Replace in Opened Files: 1 occurrence was replaced"
                                           many:@"Replace in Opened Files: $INT_REPLACE$ occurrences were replaced" count:n];
 }
@@ -3869,24 +3910,32 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 - (void)findPanelNext:(id)sender {
     [self rememberFindFields:NO files:NO];
     NppFindSpec *spec = [self currentFindSpec];
+    [self.editor beginRecordableMenuCommand];
     self.findStatus.stringValue = [self.editor findNext:spec] ? @"" : NppLMessage(@"Find: Can't find the text \"$STR_REPLACE$\"", spec.what, 0);
+    [self.editor recordFindCommand:1 spec:spec markFlags:0 global:NO];
 }
 
 - (void)findPanelCount:(id)sender {
     [self rememberFindFields:NO files:NO];
+    [self.editor beginRecordableMenuCommand];
     NSUInteger n = [self.editor countMatches:[self currentFindSpec]];
+    [self.editor recordFindCommand:1614 spec:[self currentFindSpec] markFlags:0 global:YES];
     self.findStatus.stringValue = [self status:@"Count: 1 match" many:@"Count: $INT_REPLACE$ matches" count:n];
 }
 
 - (void)findPanelReplace:(id)sender {
     [self rememberFindFields:YES files:NO];
     NppFindSpec *spec = [self currentFindSpec];
+    [self.editor beginRecordableMenuCommand];
     self.findStatus.stringValue = [self.editor replaceCurrentThenFindNext:spec] ? @"" : NppL(@"Replace: no occurrence was found");
+    [self.editor recordFindCommand:1608 spec:spec markFlags:0 global:NO];
 }
 
 - (void)findPanelReplaceAll:(id)sender {
     [self rememberFindFields:YES files:NO];
+    [self.editor beginRecordableMenuCommand];
     NSUInteger n = [self.editor replaceAll:[self currentFindSpec]];
+    [self.editor recordFindCommand:1609 spec:[self currentFindSpec] markFlags:0 global:NO];
     self.findStatus.stringValue = [self status:@"Replace All: 1 occurrence was replaced"
                                           many:@"Replace All: $INT_REPLACE$ occurrences were replaced" count:n];
 }
@@ -4080,6 +4129,8 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         }
     }
     self.findStatus.stringValue = [self status:@"Mark: 1 match" many:@"Mark: $INT_REPLACE$ matches" count:n];
+    [self.editor recordFindCommand:1615 spec:spec
+                         markFlags:(purge ? 4 : 0) | (self.bookmarkLineBox.state == NSControlStateValueOn ? 16 : 0) global:YES];
 }
 
 - (void)findNext:(id)sender {

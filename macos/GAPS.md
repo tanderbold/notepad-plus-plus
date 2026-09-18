@@ -68,22 +68,22 @@ tab of each dock container are kept; a column sort covers the rectangle's
 lines, thin selections included; Select and Find Next is no longer Volatile
 Find; a wrapped Document Map wraps where the editor does; a dragged panel
 shows where it would land; the results tab is known by a flag; `EXIT` in a
-nested NppExec script returns to its caller; the language model has examples
+nested NppExec script returns to its caller; a macro records the menu
+commands upstream records by id (192 of them, read from `NppCommands.cpp`)
+and the Find dialog's searches; the language model has examples
 of asn1, fortran77, gui4cli, hollywood and json5.
 
 What is left of that list, none of it a defect in what exists:
 
 1. A floating dock window holds one panel; upstream's can hold several as tabs.
 2. The Document List has no "Group by View".
-3. A macro recorded here records Scintilla actions only; menu commands and
-   Find steps play when they come from a file, but are not recorded.
-4. Messages the port has and Windows does not (JSON, Compare, XML, FTP,
+3. Messages the port has and Windows does not (JSON, Compare, XML, FTP,
    NppExec, the update check) stay English under a translation: no
    nativeLang file has them.
-5. The plan's wording was wrong in two places and nothing is missing:
+4. The plan's wording was wrong in two places and nothing is missing:
    `${name}` and two-digit `\\10` are not Boost's syntax (`$+{name}` and
    `$10` are, and work); Notepad++ has no "line context" in its results.
-6. The single-answer level of the language model comes out equal to the
+5. The single-answer level of the language model comes out equal to the
    ordinary one on the present data, so the short list is not shown; a
    retrain on other data moves it without a code change.
 

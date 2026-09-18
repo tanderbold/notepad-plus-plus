@@ -104,9 +104,52 @@ static BOOL gPlayingMacro = NO;
     [self refreshChrome];
 }
 
+static const char kMacroSuspendedKey = 0;
+
+/// A menu command that records as itself is about to run: what it does to
+/// the text is its own business and is not recorded a second time.
+- (void)beginRecordableMenuCommand {
+    if (![self recordingMacro]) return;
+    objc_setAssociatedObject(self, &kMacroSuspendedKey, @YES, OBJC_ASSOCIATION_RETAIN);
+}
+
+/// It has run: recorded by its id, as Notepad_plus::command records it (type 2).
+- (void)endRecordableMenuCommand:(int)identifier {
+    if (![objc_getAssociatedObject(self, &kMacroSuspendedKey) boolValue]) return;
+    objc_setAssociatedObject(self, &kMacroSuspendedKey, @NO, OBJC_ASSOCIATION_RETAIN);
+    if (![self recordingMacro] || identifier <= 0) return;
+    [[self macroSteps] addObject:@{@"type": @2, @"msg": @0, @"w": @(identifier), @"l": @0, @"text": @""}];
+}
+
+/// A search run from the Find dialog while recording, as
+/// FindReplaceDlg::saveInMacro writes it: the options, then what to do (type 3).
+- (void)recordFindCommand:(int)command spec:(NppFindSpec *)spec markFlags:(long)markFlags global:(BOOL)global {
+    objc_setAssociatedObject(self, &kMacroSuspendedKey, @NO, OBJC_ASSOCIATION_RETAIN);
+    if (![self recordingMacro] || !spec.what.length) return;
+    long flags = markFlags;
+    if (spec.options & NppFindWholeWord) flags |= 1;
+    if (spec.options & NppFindMatchCase) flags |= 2;
+    if (spec.options & NppFindDotMatchesNewline) flags |= 1024;
+    if (!global) {
+        if (spec.options & NppFindInSelection) flags |= 128;
+        if (spec.options & NppFindWrap) flags |= 256;
+        if (!(spec.options & NppFindBackward)) flags |= 512;
+    }
+    long mode = spec.mode == NppSearchRegex ? 2 : spec.mode == NppSearchExtended ? 1 : 0;
+    BOOL replaces = command == 1608 || command == 1609 || command == 1635;
+    NSMutableArray *steps = [self macroSteps];
+    [steps addObject:@{@"type": @3, @"msg": @1700, @"w": @0, @"l": @0, @"text": @""}];
+    [steps addObject:@{@"type": @3, @"msg": @1601, @"w": @0, @"l": @0, @"text": spec.what}];
+    [steps addObject:@{@"type": @3, @"msg": @1625, @"w": @0, @"l": @(mode), @"text": @""}];
+    if (replaces) [steps addObject:@{@"type": @3, @"msg": @1602, @"w": @0, @"l": @0, @"text": spec.replacement ?: @""}];
+    [steps addObject:@{@"type": @3, @"msg": @1702, @"w": @0, @"l": @(flags), @"text": @""}];
+    [steps addObject:@{@"type": @3, @"msg": @1701, @"w": @0, @"l": @(command), @"text": @""}];
+}
+
 /// Called from the notification handler for each recorded action.
 - (void)recordMacroMessage:(int)message wParam:(unsigned long)wParam lParam:(long)lParam {
     if (![self recordingMacro]) return;
+    if ([objc_getAssociatedObject(self, &kMacroSuspendedKey) boolValue]) return;
     // Messages whose lParam is a string must have the text copied now; the
     // pointer Scintilla passes does not outlive the callback.
     NSString *text = nil;
@@ -207,7 +250,15 @@ static const char kMenuCommandKey = 0;
         case 1608: [self replaceCurrentThenFindNext:spec]; break;                 // IDREPLACE
         case 1609: [self replaceAll:spec]; break;                                 // IDREPLACEALL
         case 1614: [self countMatches:spec]; break;                               // IDCCOUNTALL
-        case 1615: [self markAll:spec purge:(flags & 4) != 0]; break;             // IDCMARKALL
+        case 1615:                                                                // IDCMARKALL
+            [self markAll:spec purge:(flags & 4) != 0];
+            if (flags & 16) {                                                     // "Bookmark line"
+                for (NSValue *match in [self rangesOfMatches:spec]) {
+                    long line = [self.sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)match.rangeValue.location];
+                    [self.sci message:SCI_MARKERADD wParam:(uptr_t)line lParam:1];
+                }
+            }
+            break;
         case 1635: [self replaceAllInOpenDocuments:spec]; break;                  // IDC_REPLACE_OPENEDFILES
         default: break;                                   // Find All and Find in Files show results; not replayed
     }

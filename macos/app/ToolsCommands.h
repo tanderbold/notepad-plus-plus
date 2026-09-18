@@ -1,5 +1,6 @@
 // Tools, Macro, Window, Run and Help commands.
 #import "EditorController.h"
+#import "FindCommands.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -42,6 +43,12 @@ typedef NS_ENUM(NSInteger, NppTabSort) {
 - (void)reloadSavedMacros;
 /// Called from the notification handler for each recorded Scintilla action.
 - (void)recordMacroMessage:(int)message wParam:(unsigned long)wParam lParam:(long)lParam;
+/// Around a menu command that a macro records by its id rather than by what it sends to Scintilla.
+- (void)beginRecordableMenuCommand;
+- (void)endRecordableMenuCommand:(int)identifier;
+/// After a search from the Find dialog (begun with beginRecordableMenuCommand):
+/// its six steps of type 3, `command` being IDOK, IDREPLACE, IDREPLACEALL and so on.
+- (void)recordFindCommand:(int)command spec:(NppFindSpec *)spec markFlags:(long)markFlags global:(BOOL)global;
 /// Performs a menu command by Notepad++'s id, for macro steps of type 2; set by the application.
 @property (nonatomic, copy, nullable) BOOL (^menuCommandByIdentifier)(int identifier);
 - (void)rememberPreviousTab:(NppDocument *)doc;
