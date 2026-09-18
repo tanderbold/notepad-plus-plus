@@ -177,6 +177,10 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"findDialogStaysOpen"): @NO, Key(@"confirmReplaceAllOpenDocs"): @YES, Key(@"inSelectionThreshold"): @1024,
         Key(@"fillFindWhatThreshold"): @1024, Key(@"fillDirectoryFromActiveDocument"): @NO,
         Key(@"findMatchCase"): @NO, Key(@"findWholeWord"): @NO, Key(@"findWrap"): @YES, Key(@"findMode"): @0,
+        Key(@"toolbarFilledIcons"): @NO, Key(@"toolbarIconColour"): @0, Key(@"toolbarIconCustomColour"): @"",
+        Key(@"toolbarColorizeComplete"): @NO,
+        Key(@"tabDrawActiveBar"): @YES, Key(@"tabColourInactive"): @YES, Key(@"tabReduced"): @YES, Key(@"tabMaxLabelLength"): @0,
+        Key(@"panelStateKeep"): @{}, Key(@"distractionFreeDivPart"): @4,
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -306,6 +310,16 @@ NPP_PREF_BOOL(findWrap, setFindWrap, @"findWrap")
 NPP_PREF_INT(inSelectionThreshold, setInSelectionThreshold, @"inSelectionThreshold")
 NPP_PREF_INT(fillFindWhatThreshold, setFillFindWhatThreshold, @"fillFindWhatThreshold")
 NPP_PREF_INT(findMode, setFindMode, @"findMode")
+NPP_PREF_BOOL(toolbarFilledIcons, setToolbarFilledIcons, @"toolbarFilledIcons")
+NPP_PREF_INT(toolbarIconColour, setToolbarIconColour, @"toolbarIconColour")
+NPP_PREF_OBJ(toolbarIconCustomColour, setToolbarIconCustomColour, NSString, @"toolbarIconCustomColour")
+NPP_PREF_BOOL(toolbarColorizeComplete, setToolbarColorizeComplete, @"toolbarColorizeComplete")
+NPP_PREF_BOOL(tabDrawActiveBar, setTabDrawActiveBar, @"tabDrawActiveBar")
+NPP_PREF_BOOL(tabColourInactive, setTabColourInactive, @"tabColourInactive")
+NPP_PREF_BOOL(tabReduced, setTabReduced, @"tabReduced")
+NPP_PREF_INT(tabMaxLabelLength, setTabMaxLabelLength, @"tabMaxLabelLength")
+NPP_PREF_OBJ(panelStateKeep, setPanelStateKeep, NSDictionary, @"panelStateKeep")
+NPP_PREF_INT(distractionFreeDivPart, setDistractionFreeDivPart, @"distractionFreeDivPart")
 NPP_PREF_OBJ(customDateFormat, setCustomDateFormat, NSString, @"customDateFormat")
 NPP_PREF_INT(foldMarginStyle, setFoldMarginStyle, @"foldMarginStyle")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
@@ -455,6 +469,11 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
         i += run;
     }
     return out;
+}
+
+- (BOOL)keepsPanelState:(NSString *)panel {
+    NSNumber *keep = self.panelStateKeep[panel];
+    return keep ? keep.boolValue : YES;
 }
 
 - (NSInteger)tabWidthForLanguage:(NSString *)language {

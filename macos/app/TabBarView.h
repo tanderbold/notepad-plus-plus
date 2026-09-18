@@ -38,6 +38,17 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL closeButtonsOnInactiveTabs;
 @property (nonatomic) BOOL doubleClickCloses;
 @property (nonatomic) BOOL locked;          // no drag and drop
+/// Tab Bar page: a coloured bar on the active tab, inactive tabs in their own
+/// colours, reduced size, and a limit on the label (0 for none).
+@property (nonatomic) BOOL drawActiveBar;
+@property (nonatomic) BOOL colourInactiveTabs;
+@property (nonatomic) BOOL reduced;
+@property (nonatomic) NSInteger maxLabelLength;
+/// From the theme: Active tab focused / unfocused indicator, Active tab text, Inactive tabs.
+@property (nonatomic, strong, nullable) NSColor *activeBarColour, *activeBarUnfocusedColour, *activeTextColour;
+@property (nonatomic, strong, nullable) NSColor *inactiveTextColour, *inactiveBackColour;
+/// The label a tab shows, shortened to the limit.
+- (NSString *)displayTitleAtIndex:(NSInteger)index;
 
 /// The height (or width, when vertical) the bar needs for its current layout.
 - (CGFloat)requiredThickness;

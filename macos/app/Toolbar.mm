@@ -1,4 +1,5 @@
 #import "Toolbar.h"
+#import "SettingsCommands.h"
 
 /// One button. The command is the Notepad++ menu id, which is what order.txt
 /// names; the label and the selector are what macOS needs to build the item.
@@ -199,6 +200,17 @@ static NSString *IdentifierForCommand(NSString *command) {
     return [self.activeCommands containsObject:command ?: @""];
 }
 
+- (void)reloadIcons {
+    for (NSToolbarItem *item in self.toolbar.items) {
+        if (![item isKindOfClass:NppToolbarItem.class]) continue;
+        NppToolbarItem *button = (NppToolbarItem *)item;
+        button.enabledImage = [self imageNamed:button.iconName ?: @"" label:button.label command:button.command];
+        button.disabledImage = [self imageNamed:button.disabledIconName ?: @"" label:button.label
+                                        command:button.command] ?: button.enabledImage;
+        button.image = button.isEnabled ? button.enabledImage : button.disabledImage;
+    }
+}
+
 - (void)setActive:(BOOL)active forCommand:(NSString *)command {
     if (!command.length) return;
     if (active) [self.activeCommands addObject:command];
@@ -245,14 +257,90 @@ static NSString *IdentifierForCommand(NSString *command) {
     return nil;
 }
 
+/// IconList::changeFluentIconColor: with complete colorization every opaque
+/// pixel takes the colour; with partial only those in the icon's second
+/// colour (within 3 per channel) do. A colour of nil leaves the icon alone.
+static NSImage *Recoloured(NSImage *image, NSColor *colour, BOOL complete, BOOL dark) {
+    if (!image || !colour) return image;
+    NSBitmapImageRep *rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+        pixelsWide:(NSInteger)image.size.width pixelsHigh:(NSInteger)image.size.height bitsPerSample:8
+        samplesPerPixel:4 hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace
+        bytesPerRow:0 bitsPerPixel:0];
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:[NSGraphicsContext graphicsContextWithBitmapImageRep:rep]];
+    [image drawInRect:NSMakeRect(0, 0, image.size.width, image.size.height)];
+    [NSGraphicsContext restoreGraphicsState];
+    NSColor *c = [colour colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+    int nr = (int)lround(c.redComponent * 255), ng = (int)lround(c.greenComponent * 255), nb = (int)lround(c.blueComponent * 255);
+    // g_cDefaultSecondaryDark / g_cDefaultSecondaryLight.
+    int sr = dark ? 0x4C : 0x00, sg = dark ? 0xC2 : 0x78, sb = dark ? 0xFF : 0xD4;
+    // The pixels are premultiplied, which is what a bitmap context draws into:
+    // compared un-multiplied, written multiplied again. Rows are padded, so
+    // each starts at its own offset.
+    for (NSInteger row = 0; row < rep.pixelsHigh; ++row) {
+        unsigned char *px = rep.bitmapData + row * rep.bytesPerRow;
+        for (NSInteger col = 0; col < rep.pixelsWide; ++col, px += 4) {
+            int a = px[3];
+            if (a == 0) continue;
+            int r = px[0] * 255 / a, g = px[1] * 255 / a, b = px[2] * 255 / a;
+            if (!complete && !(abs(r - sr) <= 3 && abs(g - sg) <= 3 && abs(b - sb) <= 3)) continue;
+            px[0] = (unsigned char)(nr * a / 255); px[1] = (unsigned char)(ng * a / 255); px[2] = (unsigned char)(nb * a / 255);
+        }
+    }
+    NSImage *out = [[NSImage alloc] initWithSize:image.size];
+    [out addRepresentation:rep];
+    return out;
+}
+
+/// Preferences > Toolbar's colour choice, with upstream's values.
+static NSColor *ToolbarColour(BOOL dark) {
+    NppPreferences *p = [NppPreferences shared];
+    switch (p.toolbarIconColour) {
+        case 1: return [NSColor colorWithSRGBRed:0xE8/255.0 green:0x11/255.0 blue:0x23/255.0 alpha:1];
+        case 2: return [NSColor colorWithSRGBRed:0x00 green:0x8B/255.0 blue:0x00 alpha:1];
+        case 3: return [NSColor colorWithSRGBRed:0x00 green:0x78/255.0 blue:0xD4/255.0 alpha:1];
+        case 4: return [NSColor colorWithSRGBRed:0xB1/255.0 green:0x46/255.0 blue:0xC2/255.0 alpha:1];
+        case 5: return [NSColor colorWithSRGBRed:0x00 green:0xB7/255.0 blue:0xC3/255.0 alpha:1];
+        case 6: return [NSColor colorWithSRGBRed:0x49/255.0 green:0x82/255.0 blue:0x05/255.0 alpha:1];
+        case 7: return [NSColor colorWithSRGBRed:0xFF/255.0 green:0xB9/255.0 blue:0x00 alpha:1];
+        case 8: return [NSColor controlAccentColor];
+        case 9: {
+            unsigned int rgb = 0;
+            if (p.toolbarIconCustomColour.length == 6 &&
+                [[NSScanner scannerWithString:p.toolbarIconCustomColour] scanHexInt:&rgb] && rgb) {
+                return [NSColor colorWithSRGBRed:((rgb >> 16) & 0xFF) / 255.0 green:((rgb >> 8) & 0xFF) / 255.0
+                                            blue:(rgb & 0xFF) / 255.0 alpha:1];
+            }
+            break;
+        }
+        default: break;
+    }
+    // Default: nothing, unless complete colorization asks for the main colour.
+    if (p.toolbarColorizeComplete) {
+        return dark ? [NSColor colorWithSRGBRed:0xDE/255.0 green:0xDE/255.0 blue:0xDE/255.0 alpha:1]
+                    : [NSColor colorWithSRGBRed:0x21/255.0 green:0x21/255.0 blue:0x21/255.0 alpha:1];
+    }
+    return nil;
+}
+
 - (NSImage *)imageNamed:(NSString *)name label:(NSString *)label command:(NSString *)command {
     NSBundle *bundle = [NSBundle mainBundle];
-    NSString *light = [bundle pathForResource:name ofType:@"png" inDirectory:@"toolbar/light"];
-    NSString *dark  = [bundle pathForResource:name ofType:@"png" inDirectory:@"toolbar/dark"];
+    // Regular or filled Fluent icons, as the Toolbar page chooses.
+    NSString *suffix = [NppPreferences shared].toolbarFilledIcons ? @"-filled" : @"";
+    NSString *light = [bundle pathForResource:name ofType:@"png" inDirectory:[@"toolbar/light" stringByAppendingString:suffix]]
+                   ?: [bundle pathForResource:name ofType:@"png" inDirectory:@"toolbar/light"];
+    NSString *dark  = [bundle pathForResource:name ofType:@"png" inDirectory:[@"toolbar/dark" stringByAppendingString:suffix]]
+                   ?: [bundle pathForResource:name ofType:@"png" inDirectory:@"toolbar/dark"];
     if (!light && !dark) return nil;
 
+    BOOL complete = [NppPreferences shared].toolbarColorizeComplete;
+    BOOL disabledIcon = [name hasSuffix:@"_dis"];
     NSImage *lightImage = light ? [[NSImage alloc] initWithContentsOfFile:light] : nil;
     NSImage *darkImage  = dark  ? [[NSImage alloc] initWithContentsOfFile:dark]  : nil;
+    if (!disabledIcon) {
+        lightImage = Recoloured(lightImage, ToolbarColour(NO), complete, NO);
+        darkImage = Recoloured(darkImage, ToolbarColour(YES), complete, YES);
+    }
     if (!lightImage && !darkImage) return nil;
 
     // The files hold the largest size Notepad++ ships, so drawing them into a

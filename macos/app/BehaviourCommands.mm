@@ -461,10 +461,11 @@ static BOOL UrlLooksReal(NSString *candidate) {
 - (void)rememberPanelState {
     NppPreferences *p = [NppPreferences shared];
     if (!p.rememberPanelState) return;
-    NSMutableDictionary *state = [NSMutableDictionary dictionary];
-    state[@"workspace"] = @([self workspaceVisible]);
-    state[@"documentMap"] = @([self documentMapVisible]);
-    state[@"projectPanel"] = @([self activeProjectPanel]);
+    // The floating panels' entries, put there by the app, are kept.
+    NSMutableDictionary *state = [p.panelState mutableCopy] ?: [NSMutableDictionary dictionary];
+    state[@"workspace"] = @([self workspaceVisible] && [p keepsPanelState:@"workspace"]);
+    state[@"documentMap"] = @([self documentMapVisible] && [p keepsPanelState:@"documentMap"]);
+    state[@"projectPanel"] = @([p keepsPanelState:@"projectPanel"] ? [self activeProjectPanel] : 0);
     state[@"secondaryView"] = @([self secondaryViewVisible]);
     p.panelState = state;
 }

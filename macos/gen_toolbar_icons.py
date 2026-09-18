@@ -52,8 +52,10 @@ def toolbar_rows():
         fields = [f.strip() for f in line.strip("{},").split(",")]
         if len(fields) < 7:
             continue
-        # cmdID, default, gray, default2, gray2, defaultDark, grayDark, ...
-        rows.append((fields[0], fields[1], fields[2], fields[5], fields[6]))
+        # cmdID, regular, gray, filled, filled gray, regular dark, gray dark,
+        # filled dark, filled gray dark
+        rows.append((fields[0], fields[1], fields[2], fields[5], fields[6],
+                     fields[3], fields[4], fields[7], fields[8]))
     return rows
 
 
@@ -79,7 +81,7 @@ def main():
     if not rows:
         sys.exit("no buttons found -- has toolBarIcons[] moved?")
 
-    for theme in ("light", "dark"):
+    for theme in ("light", "dark", "light-filled", "dark-filled"):
         os.makedirs(os.path.join(OUT, theme), exist_ok=True)
 
     written = set()
@@ -100,10 +102,15 @@ def main():
         return name
 
     lines = []
-    for cmd, light, gray, dark, dark_gray in rows:
+    for cmd, light, gray, dark, dark_gray, filled, filled_gray, filled_dark, filled_dark_gray in rows:
         if cmd == "0":
             lines.append("-")
             continue
+        # The filled set (Preferences > Toolbar), under the same names.
+        emit(filled, "light-filled")
+        emit(filled_gray, "light-filled")
+        emit(filled_dark, "dark-filled")
+        emit(filled_dark_gray, "dark-filled")
         light_name = emit(light, "light")
         gray_name = emit(gray, "light")
         dark_name = emit(dark, "dark")

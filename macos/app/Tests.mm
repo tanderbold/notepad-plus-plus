@@ -6737,6 +6737,89 @@ int NppMacRunTests(AppDelegate *app) {
               ![seedLong isEqualToString:@"abcdef"] && [seedShort isEqualToString:@"ab"]);
     }
 
+    printf("\n== Preferences: Toolbar, Tab Bar, panels, Cancel ==\n");
+    {
+        NppPreferences *tp = [NppPreferences shared];
+        // Toolbar colour, completely: every opaque pixel of the icon takes it.
+        NppToolbar *bar = [app valueForKey:@"toolbar"];
+        CGFloat (^share)(NSString *, BOOL (^)(CGFloat, CGFloat, CGFloat)) = ^CGFloat(NSString *command, BOOL (^test)(CGFloat, CGFloat, CGFloat)) {
+            NSBitmapImageRep *shot = [bar renderedImageForCommand:command];
+            if (!shot) return -1;
+            CGFloat hit = 0, all = 0;
+            for (NSInteger x = 0; x < shot.pixelsWide; ++x) for (NSInteger y = 0; y < shot.pixelsHigh; ++y) {
+                NSColor *px = [[shot colorAtX:x y:y] colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+                if (px.alphaComponent < 0.5) continue;
+                all++;
+                if (test(px.redComponent, px.greenComponent, px.blueComponent)) hit++;
+            }
+            return all > 0 ? hit / all : -1;
+        };
+        // Green whatever the edge blending: green clearly above red and blue.
+        BOOL (^isGreen)(CGFloat, CGFloat, CGFloat) = ^BOOL(CGFloat r, CGFloat g, CGFloat b) { return g > r + 0.1 && g > b + 0.1; };
+        tp.toolbarIconColour = 2; tp.toolbarColorizeComplete = YES;
+        [app applyToolbarPreferences];
+        CGFloat greenShare = share(@"IDM_FILE_NEW", isGreen);
+        tp.toolbarIconColour = 0; tp.toolbarColorizeComplete = NO;
+        [app applyToolbarPreferences];
+        CGFloat plainShare = share(@"IDM_FILE_NEW", isGreen);
+        tp.toolbarFilledIcons = YES;
+        [app applyToolbarPreferences];
+        BOOL filledDrawn = share(@"IDM_FILE_NEW", ^BOOL(CGFloat r, CGFloat g, CGFloat b) { return YES; }) > 0;
+        tp.toolbarFilledIcons = NO;
+        [app applyToolbarPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (toolbar icons)",
+              @"icons take the chosen colour, completely when asked, and the filled set can be used",
+              greenShare > 0.9 && plainShare < 0.1 && filledDrawn);
+
+        // Tab Bar: a limit on the label.
+        tp.tabMaxLabelLength = 4;
+        [ed applyTabBarPreferences];
+        NppTabBarView *tabs = [ed valueForKey:@"tabBar"];
+        NSString *shortened = [tabs displayTitleAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument]];
+        tp.tabMaxLabelLength = 0;
+        [ed applyTabBarPreferences];
+        Check(@"IDM_SETTING_PREFERENCE (tab label length)",
+              @"tab labels are cut to the length set, with an ellipsis", shortened.length <= 5);
+
+        // Distraction Free: the text in the middle, each side a share of the width.
+        tp.distractionFreeDivPart = 4;
+        [ed setChromeVisible:NO];
+        long left = [sci message:SCI_GETMARGINLEFT];
+        long expected = (long)(NSWidth(sci.bounds) / 4);
+        [ed setChromeVisible:YES];
+        long back = [sci message:SCI_GETMARGINLEFT];
+        Check(@"IDM_VIEW_DISTRACTIONFREE (width)",
+              @"distraction free keeps a quarter of the width on each side, and leaving it restores the padding",
+              labs(left - expected) <= 1 && back <= 9);
+
+        // Remember panel state, panel by panel.
+        BOOL rememberBefore = tp.rememberPanelState;
+        tp.rememberPanelState = YES;
+        tp.panelStateKeep = @{@"documentMap": @NO};
+        [ed setDocumentMapVisible:YES];
+        [ed rememberPanelState];
+        BOOL mapNotKept = ![tp.panelState[@"documentMap"] boolValue];
+        tp.panelStateKeep = @{};
+        [ed rememberPanelState];
+        BOOL mapKept = [tp.panelState[@"documentMap"] boolValue];
+        [ed setDocumentMapVisible:NO];
+        tp.rememberPanelState = rememberBefore;
+        Check(@"IDM_SETTING_PREFERENCE (panel state per panel)",
+              @"each panel is remembered only when ticked", mapNotKept && mapKept);
+
+        // Preferences Cancel keeps nothing of what was changed.
+        PreferencesWindow *cancelWindow = [[PreferencesWindow alloc] initWithEditor:ed];
+        NSButton *hideStatus = [cancelWindow valueForKey:@"controls"][@"statusBarHidden"];
+        BOOL statusBefore = tp.statusBarHidden;
+        hideStatus.state = statusBefore ? NSControlStateValueOff : NSControlStateValueOn;
+        [cancelWindow performSelector:@selector(cancel:) withObject:nil];
+        NSButton *rebuilt = [cancelWindow valueForKey:@"controls"][@"statusBarHidden"];
+        Check(@"IDM_SETTING_PREFERENCE (cancel)",
+              @"Cancel closes the dialog without keeping the change, and shows the settings as they are next time",
+              tp.statusBarHidden == statusBefore && rebuilt != hideStatus &&
+              (rebuilt.state == NSControlStateValueOn) == statusBefore);
+    }
+
     printf("\n== New documents, recent files, directories ==\n");
     {
         NppPreferences *p = [NppPreferences shared];

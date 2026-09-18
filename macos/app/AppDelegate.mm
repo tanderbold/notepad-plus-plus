@@ -370,6 +370,7 @@ static NSString *Ordinal(NSUInteger n) {
     [self.editor setAutosaveEnabled:[NppPreferences shared].autosaveEnabled
                            interval:[NppPreferences shared].autosaveInterval];
     [self.editor restorePanelState];
+    [self restoreFloatingPanels];
     if ([self.commandLine[@"-nosession"] boolValue]) {
         self.editor.sessionSavingDisabled = YES;      // neither loaded nor overwritten
     } else if ([NppPreferences shared].restoreSession) {
@@ -478,6 +479,7 @@ static NSString *Ordinal(NSUInteger n) {
 }
 
 - (void)applicationWillTerminate:(NSNotification *)note {
+    [self rememberFloatingPanels];
     [self.editor rememberPanelState];
     if (self.editor.sessionSavingDisabled) return;
     if ([NppPreferences shared].multiInstanceMode == 2 || [NppPreferences shared].restoreSession) {
@@ -1283,6 +1285,7 @@ static NSString *Ordinal(NSUInteger n) {
     self.toolbar.displayMode = p.toolbarDisplayMode;
     self.toolbar.iconSize = p.toolbarIconSize;
     self.toolbar.visible = p.showToolbar;
+    [self.toolbar reloadIcons];
 }
 
 #pragma mark - JSON
@@ -2614,6 +2617,29 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     NSURL *folder = [self.editor containingFolderURL];
     if (folder) { [self.editor openFolderAsWorkspace:folder.path]; return; }
     [self openFolderAsWorkspace:sender];
+}
+
+/// The floating panels in "Remember panel state": Clipboard History,
+/// Document List, Character Panel and Function List, each as Preferences says.
+- (void)rememberFloatingPanels {
+    NppPreferences *p = [NppPreferences shared];
+    if (!p.rememberPanelState) return;
+    NSMutableDictionary *state = [p.panelState mutableCopy] ?: [NSMutableDictionary dictionary];
+    state[@"clipboardHistory"] = @(self.clipPanel.visible && [p keepsPanelState:@"clipboardHistory"]);
+    state[@"documentList"] = @(self.docList.visible && [p keepsPanelState:@"documentList"]);
+    state[@"characterPanel"] = @(self.charPanel.visible && [p keepsPanelState:@"characterPanel"]);
+    state[@"functionList"] = @(self.funcList.visible && [p keepsPanelState:@"functionList"]);
+    p.panelState = state;
+}
+
+- (void)restoreFloatingPanels {
+    NppPreferences *p = [NppPreferences shared];
+    if (!p.rememberPanelState) return;
+    NSDictionary *state = p.panelState;
+    if ([state[@"clipboardHistory"] boolValue] && [p keepsPanelState:@"clipboardHistory"] && !self.clipPanel.visible) [self toggleClipboardHistory:nil];
+    if ([state[@"documentList"] boolValue] && [p keepsPanelState:@"documentList"] && !self.docList.visible) [self toggleDocumentList:nil];
+    if ([state[@"characterPanel"] boolValue] && [p keepsPanelState:@"characterPanel"] && !self.charPanel.visible) [self toggleCharacterPanel:nil];
+    if ([state[@"functionList"] boolValue] && [p keepsPanelState:@"functionList"] && !self.funcList.visible) [self toggleFunctionList:nil];
 }
 
 - (void)toggleDocumentList:(id)sender {

@@ -127,6 +127,10 @@ mkdir -p "$APP/Contents/Resources/toolbar/light" "$APP/Contents/Resources/toolba
 cp "$ROOT"/macos/resources/toolbar/order.txt        "$APP/Contents/Resources/toolbar/"
 cp "$ROOT"/macos/resources/toolbar/light/*.png      "$APP/Contents/Resources/toolbar/light/"
 cp "$ROOT"/macos/resources/toolbar/dark/*.png       "$APP/Contents/Resources/toolbar/dark/"
+for set in light-filled dark-filled; do
+    mkdir -p "$APP/Contents/Resources/toolbar/$set"
+    cp "$ROOT"/macos/resources/toolbar/$set/*.png "$APP/Contents/Resources/toolbar/$set/"
+done
 
 # The user languages Notepad++ ships (Markdown, light and dark).
 mkdir -p "$APP/Contents/Resources/userDefineLangs"

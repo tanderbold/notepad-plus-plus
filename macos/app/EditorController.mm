@@ -80,6 +80,8 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @property (nonatomic, strong) ScintillaView *docMapView;
 @property (nonatomic, strong) NppMapZoneView *docMapZone;
 @property (nonatomic, strong) NSPanel *peekPanel;
+/// Distraction Free mode: the tabs and the status bar are put away.
+@property (nonatomic) BOOL chromeHidden;
 @property (nonatomic, strong) NSMutableArray<NppDocument *> *mru;
 @property (nonatomic, strong) ScintillaView *peekView;
 /// The document the other pane shows, so that closing it can move the pane off it.
@@ -404,10 +406,16 @@ static long SciColor(NSColor *c) {
                                                 : SC_WRAPINDENT_SAME;
     [sci message:SCI_SETWRAPINDENTMODE wParam:(uptr_t)wrapIndent lParam:0];
 
-    [sci message:SCI_SETMARGINLEFT wParam:0
-           lParam:(sptr_t)MIN((NSInteger)9, MAX((NSInteger)0, prefs.paddingLeft))];
-    [sci message:SCI_SETMARGINRIGHT wParam:0
-           lParam:(sptr_t)MIN((NSInteger)9, MAX((NSInteger)0, prefs.paddingRight))];
+    // In Distraction Free mode the text takes the middle of the view: each
+    // side gets the width divided by the chosen number of parts.
+    long leftPad = MIN((NSInteger)9, MAX((NSInteger)0, prefs.paddingLeft));
+    long rightPad = MIN((NSInteger)9, MAX((NSInteger)0, prefs.paddingRight));
+    if (self.chromeHidden) {
+        NSInteger parts = prefs.distractionFreeDivPart > 2 ? prefs.distractionFreeDivPart : 4;
+        leftPad = rightPad = (long)(NSWidth(sci.bounds) / parts);
+    }
+    [sci message:SCI_SETMARGINLEFT wParam:0 lParam:leftPad];
+    [sci message:SCI_SETMARGINRIGHT wParam:0 lParam:rightPad];
 
     [sci message:SCI_SETMOUSESELECTIONRECTANGULARSWITCH wParam:1 lParam:0];
     [sci message:SCI_SETDRAGDROPENABLED wParam:prefs.selectedTextDragDrop ? 1 : 0 lParam:0];
@@ -1863,11 +1871,27 @@ static const char kEditorMenuItemsKey = 0;
     self.tabBar.vertical = p.tabBarVertical;
     self.tabBar.multiLine = p.tabBarMultiLine;
     self.tabBar.hidden = p.hideTabBar;
+    self.tabBar.drawActiveBar = p.tabDrawActiveBar;
+    self.tabBar.colourInactiveTabs = p.tabColourInactive;
+    self.tabBar.reduced = p.tabReduced;
+    self.tabBar.maxLabelLength = p.tabMaxLabelLength;
+    NSDictionary<NSString *, NppStyle *> *g = [StyleCatalog sharedCatalog].globalStyles;
+    self.tabBar.activeBarColour = g[@"Active tab focused indicator"].foreground;
+    self.tabBar.activeBarUnfocusedColour = g[@"Active tab unfocused indicator"].foreground;
+    // The text and inactive colours are drawn on the system's tab
+    // backgrounds, so they are taken only where they read on them: in dark
+    // mode upstream draws its tabs in the dark palette instead.
+    BOOL dark = [[self.tabBar.effectiveAppearance bestMatchFromAppearancesWithNames:
+                  @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]] isEqualToString:NSAppearanceNameDarkAqua];
+    self.tabBar.activeTextColour = dark ? nil : g[@"Active tab text"].foreground;
+    self.tabBar.inactiveTextColour = dark ? [NSColor secondaryLabelColor] : g[@"Inactive tabs"].foreground;
+    self.tabBar.inactiveBackColour = dark ? nil : g[@"Inactive tabs"].background;
+    [self.tabBar setNeedsDisplay:YES];
 }
 
 /// General > Status Bar > Hide.
 - (void)applyStatusBarVisibility {
-    BOOL hidden = [NppPreferences shared].statusBarHidden || ![self chromeVisible];
+    BOOL hidden = [NppPreferences shared].statusBarHidden || self.chromeHidden;
     self.statusField.hidden = hidden;
     CGFloat statusH = hidden ? 0 : 22;
     self.split.frame = NSMakeRect(0, statusH, NSWidth(self.container.frame), NSHeight(self.container.frame) - statusH);
@@ -1876,7 +1900,8 @@ static const char kEditorMenuItemsKey = 0;
 - (BOOL)statusBarVisible { return !self.statusField.hidden; }
 
 - (void)setChromeVisible:(BOOL)visible {
-    self.tabBar.hidden = !visible;
+    self.chromeHidden = !visible;
+    self.tabBar.hidden = !visible || [NppPreferences shared].hideTabBar;
     self.statusField.hidden = !visible || [NppPreferences shared].statusBarHidden;
     NSRect upper = self.split.frame;
     CGFloat tabH = visible ? 28 : 0, statusH = self.statusField.hidden ? 0 : 22;
@@ -1885,10 +1910,11 @@ static const char kEditorMenuItemsKey = 0;
     self.sciView.frame = NSMakeRect(0, 0, NSWidth(self.editorArea.frame),
                                     NSHeight(self.editorArea.frame) - tabH);
     (void)upper;
+    [self applyEditorPreferences];
     [self.container setNeedsDisplay:YES];
 }
 
-- (BOOL)chromeVisible { return !self.tabBar.hidden; }
+- (BOOL)chromeVisible { return !self.chromeHidden; }
 
 #pragma mark - Second editor pane
 

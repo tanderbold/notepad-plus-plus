@@ -215,6 +215,17 @@
     apply.autoresizingMask = NSViewMinXMargin;
     [content addSubview:apply];
 
+    // Cancel: close without keeping what was changed; the pages are built
+    // again from the settings, so nothing half-edited survives to the next time.
+    NSButton *cancel = [[NSButton alloc] initWithFrame:NSMakeRect(360, 12, 100, 28)];
+    cancel.title = @"Cancel";
+    cancel.bezelStyle = NSBezelStyleRounded;
+    cancel.target = self;
+    cancel.action = @selector(cancel:);
+    cancel.keyEquivalent = @"\033";
+    cancel.autoresizingMask = NSViewMinXMargin;
+    [content addSubview:cancel];
+
     NSButton *reset = [[NSButton alloc] initWithFrame:NSMakeRect(470, 12, 100, 28)];
     reset.title = @"Reset";
     reset.bezelStyle = NSBezelStyleRounded;
@@ -294,6 +305,13 @@
                        on:p.restoreSession to:v atY:y];
     y = [self addCheckbox:@"Remember which panels were open" key:@"rememberPanelState"
                        on:p.rememberPanelState to:v atY:y];
+    for (NSArray *panel in @[@[@"clipboardHistory", @"Clipboard History"], @[@"documentList", @"Document List"],
+                             @[@"characterPanel", @"Character Panel"], @[@"workspace", @"Folder as Workspace"],
+                             @[@"projectPanel", @"Project Panels"], @[@"documentMap", @"Document Map"],
+                             @[@"functionList", @"Function List"]]) {
+        y = [self addCheckbox:[@"    " stringByAppendingString:panel[1]] key:[@"panelKeep." stringByAppendingString:panel[0]]
+                           on:[p keepsPanelState:panel[0]] to:v atY:y];
+    }
     y = [self addPopup:@"Instances" key:@"multiInstanceMode"
                  items:@[@"Default (one instance)", @"Always a new instance",
                          @"A session per instance"]
@@ -316,6 +334,15 @@
               selected:p.toolbarDisplayMode to:v atY:y];
     y = [self addPopup:@"Toolbar size" key:@"toolbarIconSize" items:@[@"Regular", @"Small"]
               selected:p.toolbarIconSize to:v atY:y];
+    y = [self addPopup:@"Icons" key:@"toolbarFilledIcons" items:@[@"Fluent UI", @"Filled Fluent UI"]
+              selected:p.toolbarFilledIcons ? 1 : 0 to:v atY:y];
+    y = [self addPopup:@"Color choice" key:@"toolbarIconColour"
+                 items:@[@"Default", @"Red", @"Green", @"Blue", @"Purple", @"Cyan", @"Olive", @"Yellow",
+                         @"System Accent", @"Custom"]
+              selected:p.toolbarIconColour to:v atY:y];
+    y = [self addField:@"Custom color (RRGGBB)" key:@"toolbarIconCustomColour" value:p.toolbarIconCustomColour to:v atY:y];
+    y = [self addPopup:@"Colorization" key:@"toolbarColorizeComplete" items:@[@"Partial", @"Complete"]
+              selected:p.toolbarColorizeComplete ? 1 : 0 to:v atY:y];
     [self endPage:@"Toolbar" atY:y];
 
     y = [self beginPage:@"Editing 1"]; v = [self page:@"Editing 1"];
@@ -406,6 +433,9 @@
     y = [self addCheckbox:@"Change History: show in the margin" key:@"changeHistoryMargin"
                        on:p.changeHistoryMargin to:v atY:y];
     y = [self addCheckbox:@"Change History: show in the text" key:@"changeHistoryText" on:p.changeHistoryText to:v atY:y];
+    y = [self addPopup:@"Distraction Free (text width)" key:@"distractionFreeDivPart"
+                 items:@[@"3 parts", @"4 parts", @"5 parts", @"6 parts", @"7 parts", @"8 parts", @"9 parts"]
+              selected:MIN(6, MAX(0, p.distractionFreeDivPart - 3)) to:v atY:y];
     [self endPage:@"Margins/Border/Edge" atY:y];
 
     y = [self beginPage:@"New Document"]; v = [self page:@"New Document"];
@@ -621,6 +651,11 @@
     y = [self addCheckbox:@"Double click on a tab closes it" key:@"tabDoubleClickCloses" on:p.tabDoubleClickCloses to:v atY:y];
     y = [self addCheckbox:@"Allow tabs to be pinned" key:@"tabPinFeatureEnabled" on:p.tabPinFeatureEnabled to:v atY:y];
     y = [self addCheckbox:@"Quit when the last tab is closed" key:@"exitOnClosingLastTab" on:p.exitOnClosingLastTab to:v atY:y];
+    y = [self addCheckbox:@"Reduce" key:@"tabReduced" on:p.tabReduced to:v atY:y];
+    y = [self addCheckbox:@"Change inactive tab color" key:@"tabColourInactive" on:p.tabColourInactive to:v atY:y];
+    y = [self addCheckbox:@"Draw a colored bar on active tab" key:@"tabDrawActiveBar" on:p.tabDrawActiveBar to:v atY:y];
+    y = [self addField:@"Max. tab label length (0: none)" key:@"tabMaxLabelLength"
+                  value:[@(p.tabMaxLabelLength) stringValue] to:v atY:y];
     [self endPage:@"Tab Bar" atY:y];
 
     y = [self beginPage:@"Recent Files History"]; v = [self page:@"Recent Files History"];
@@ -846,6 +881,14 @@
     p.showToolbar = [self.controls[@"showToolbar"] state] == NSControlStateValueOn;
     p.toolbarDisplayMode = [self.controls[@"toolbarDisplayMode"] indexOfSelectedItem];
     p.toolbarIconSize = [self.controls[@"toolbarIconSize"] indexOfSelectedItem];
+    p.tabReduced = on(@"tabReduced");
+    p.tabColourInactive = on(@"tabColourInactive");
+    p.tabDrawActiveBar = on(@"tabDrawActiveBar");
+    p.tabMaxLabelLength = MAX(0, text(@"tabMaxLabelLength").integerValue);
+    p.toolbarFilledIcons = [self.controls[@"toolbarFilledIcons"] indexOfSelectedItem] == 1;
+    p.toolbarIconColour = [self.controls[@"toolbarIconColour"] indexOfSelectedItem];
+    p.toolbarIconCustomColour = text(@"toolbarIconCustomColour");
+    p.toolbarColorizeComplete = [self.controls[@"toolbarColorizeComplete"] indexOfSelectedItem] == 1;
     p.backupMode = [self.controls[@"backupMode"] indexOfSelectedItem];
     p.backupDirectory = [self.controls[@"backupDirectory"] stringValue];
     p.autosaveEnabled = [self.controls[@"autosaveEnabled"] state] == NSControlStateValueOn;
@@ -914,6 +957,12 @@
     p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
     p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
     p.statusBarHidden = on(@"statusBarHidden");
+    NSMutableDictionary *keep = [NSMutableDictionary dictionary];
+    for (NSString *key in self.controls) {
+        if ([key hasPrefix:@"panelKeep."]) keep[[key substringFromIndex:10]] = @(on(key));
+    }
+    p.panelStateKeep = keep;
+    p.distractionFreeDivPart = [self.controls[@"distractionFreeDivPart"] indexOfSelectedItem] + 3;
     p.smartHighlightUseFindSettings = on(@"smartHighlightUseFindSettings");
     p.smartHighlightOtherView = on(@"smartHighlightOtherView");
     p.highlightMatchingTags = on(@"highlightMatchingTags");
@@ -984,6 +1033,11 @@
     }
     [self.editor applyLanguage];
     [self.editor refreshChrome];
+}
+
+- (void)cancel:(id)sender {
+    [self rebuildPages];
+    [self.panel orderOut:nil];
 }
 
 - (void)resetAll:(id)sender {

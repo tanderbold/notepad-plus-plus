@@ -95,6 +95,15 @@ static const CGFloat kPadding = 8;
     return bottom;
 }
 
+- (NSString *)displayTitleAtIndex:(NSInteger)index {
+    if (index < 0 || index >= (NSInteger)self.items.count) return @"";
+    NSString *title = self.items[(NSUInteger)index].title ?: @"";
+    if (self.maxLabelLength > 0 && (NSInteger)title.length > self.maxLabelLength) {
+        title = [[title substringToIndex:(NSUInteger)self.maxLabelLength] stringByAppendingString:@"…"];
+    }
+    return title;
+}
+
 - (NSRect)frameOfTabAtIndex:(NSInteger)index {
     if (index < 0 || index >= (NSInteger)self.tabFrames.count) return NSZeroRect;
     return self.tabFrames[(NSUInteger)index].rectValue;
@@ -148,18 +157,29 @@ static NSColor *TabColour(NSInteger colour) {
     [[NSColor windowBackgroundColor] setFill];
     NSRectFill(dirtyRect);
 
-    NSDictionary *attrs = @{NSFontAttributeName: [NSFont systemFontOfSize:11],
-                            NSForegroundColorAttributeName: [NSColor labelColor]};
-    NSDictionary *activeAttrs = @{NSFontAttributeName: [NSFont boldSystemFontOfSize:11],
-                                  NSForegroundColorAttributeName: [NSColor labelColor]};
+    CGFloat fontSize = self.reduced ? 11 : 12.5;
+    NSDictionary *attrs = @{NSFontAttributeName: [NSFont systemFontOfSize:fontSize],
+                            NSForegroundColorAttributeName: (self.colourInactiveTabs && self.inactiveTextColour)
+                                ? self.inactiveTextColour : [NSColor labelColor]};
+    NSDictionary *activeAttrs = @{NSFontAttributeName: [NSFont boldSystemFontOfSize:fontSize],
+                                  NSForegroundColorAttributeName: self.activeTextColour ?: [NSColor labelColor]};
 
     for (NSUInteger i = 0; i < self.items.count && i < self.tabFrames.count; ++i) {
         NppTabItem *item = self.items[i];
         NSRect tab = self.tabFrames[i].rectValue;
         BOOL active = (NSInteger)i == self.selectedIndex;
 
-        [(active ? [NSColor controlBackgroundColor] : [NSColor windowBackgroundColor]) setFill];
-        NSRectFill(tab);
+        NSColor *inactiveBack = (self.colourInactiveTabs && self.inactiveBackColour)
+            ? [self.inactiveBackColour colorWithAlphaComponent:0.35] : [NSColor windowBackgroundColor];
+        [(active ? [NSColor controlBackgroundColor] : inactiveBack) setFill];
+        NSRectFillUsingOperation(tab, NSCompositingOperationSourceOver);
+        // Draw a colored bar on active tab: the focused or unfocused colour.
+        if (active && self.drawActiveBar) {
+            NSColor *bar = self.window.isKeyWindow ? (self.activeBarColour ?: [NSColor systemOrangeColor])
+                                                   : (self.activeBarUnfocusedColour ?: [NSColor systemOrangeColor]);
+            [bar setFill];
+            NSRectFill(NSMakeRect(NSMinX(tab), self.isFlipped ? NSMinY(tab) : NSMaxY(tab) - 3, NSWidth(tab), 3));
+        }
         [[NSColor separatorColor] setStroke];
         NSFrameRect(NSMakeRect(NSMaxX(tab) - 1, NSMinY(tab), 1, NSHeight(tab)));
 
@@ -179,7 +199,8 @@ static NSColor *TabColour(NSInteger colour) {
 
         BOOL hasClose = [self closeButtonVisibleForIndex:(NSInteger)i];
         CGFloat textRight = NSMaxX(tab) - kPadding - (hasClose ? kCloseSize + 4 : 0);
-        NSString *title = item.modified ? [item.title stringByAppendingString:@" •"] : item.title;
+        NSString *shown = [self displayTitleAtIndex:(NSInteger)i];
+        NSString *title = item.modified ? [shown stringByAppendingString:@" •"] : shown;
         NSRect textRect = NSMakeRect(textLeft, NSMinY(tab) + 5,
                                      MAX(0, textRight - textLeft), NSHeight(tab) - 8);
         [title drawInRect:textRect withAttributes:(active ? activeAttrs : attrs)];

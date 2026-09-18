@@ -200,6 +200,22 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL findWholeWord;
 @property (nonatomic) BOOL findWrap;
 @property (nonatomic) NSInteger findMode;
+// Toolbar: Fluent icons regular or filled; colour 0 default, 1 red, 2 green,
+// 3 blue, 4 purple, 5 cyan, 6 olive, 7 yellow, 8 accent, 9 custom (hex).
+@property (nonatomic) BOOL toolbarFilledIcons;
+@property (nonatomic) NSInteger toolbarIconColour;
+@property (nonatomic, copy) NSString *toolbarIconCustomColour;
+@property (nonatomic) BOOL toolbarColorizeComplete;
+// Tab Bar
+@property (nonatomic) BOOL tabDrawActiveBar;
+@property (nonatomic) BOOL tabColourInactive;
+@property (nonatomic) BOOL tabReduced;
+@property (nonatomic) NSInteger tabMaxLabelLength;
+/// Which panels "Remember panel state" covers, by the keys panelState uses.
+@property (nonatomic, copy) NSDictionary<NSString *, NSNumber *> *panelStateKeep;
+- (BOOL)keepsPanelState:(NSString *)panel;
+/// Distraction Free: each side gets the editor's width divided by this (3-9).
+@property (nonatomic) NSInteger distractionFreeDivPart;
 /// A Windows date/time picture ("yyyy-MM-dd HH:mm:ss tt") in NSDateFormatter's terms.
 + (NSString *)dateFormatFromWindowsPicture:(NSString *)picture;
 /// The tab width and tab/space choice in force for a language.

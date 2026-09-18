@@ -20,6 +20,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Marks a button as active. The record button is tinted red while a macro is
 /// being recorded, which is the only sign the editor gives that it is.
+/// Draws the icons again, after the icon set or colour changed.
+- (void)reloadIcons;
 - (void)setActive:(BOOL)active forCommand:(NSString *)command;
 - (BOOL)isActiveForCommand:(NSString *)command;
 /// What the button is actually showing, so a test can look at the picture rather

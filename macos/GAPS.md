@@ -59,22 +59,28 @@ pinned state, tab colour, encoding and code page, and untitled buffers
 through the periodic backup. Still: folds, user read-only, the second view
 and the file browser roots.
 
-**Preferences.** 20 pages now. Done since the audit: Tab Bar, Recent Files
-History, Default Directory and Searching pages, and every setting that
-existed only as a property has a control; File Status Auto-Detection and
-character-set detection have theirs. Still absent: Language menu, Search
-Engine and MISC pages, and, with no property behind them: localisation picker, hide menu / status bar,
-toolbar icon sets and accent colour, smooth font, custom selection colour,
-EOL display and colour, non-printing character appearance, dark-mode tones
-and custom colours, fold margin style, border width, dynamic line-number
-width, change-history margin toggle, distraction-free width, per-language
-indent, backspace-unindent setting (always on), Highlight Matching Tags,
-smart highlight in the other view / with Find settings, formfeed page
-break, header/footer variable picker, user-defined auto-insert pairs,
-custom date/time format, per-panel "remember state", File Status
-Auto-Detection, Document Switcher MRU, Document Peeker, auto-updater
-settings, mute sounds, file-name-only title bar, Save All confirmation.
-The dialog has Apply and Reset but no Cancel.
+**Preferences.** 24 pages. Done since the audit (plan 2.4): Language
+(menu hiding, compact letter submenus, SQL backslash), Search Engine and
+MISC. pages (Document Switcher with MRU, Document Peeker, file name only in
+the title, Save All confirmation, mute sounds, session / workspace file
+extensions, symlinks in Folder as Workspace); hide the status bar; toolbar
+regular or filled Fluent icons with upstream's colour choices and partial
+or complete colorization; smooth font, custom selected text colour, EOL and
+non-printing character appearance with custom colours, multi-editing, no C0
+typing, toggleable fold commands; fold margin style, line number display
+and dynamic / constant width, Change History in margin and text,
+distraction-free width; per-language indentation and Backspace unindent;
+Highlight Matching Tags with attributes, smart highlighting with Find
+settings and in the other view; form feed page breaks and the header
+variable list; the custom date format with preview; the Searching extras;
+inactive-tab colours, active-tab bar, reduced tabs and label length;
+Remember panel state per panel; a Cancel button. Not applicable on macOS,
+so left out on purpose: hiding the menu bar (it belongs to the system),
+dark-mode tones and custom dark colours (the system's dark appearance draws
+the chrome), the 3D border width, DirectWrite rendering modes, minimize /
+close to the tray, "alternate icons" and "show only pinned button" (the
+port's tabs draw no such buttons). The localisation picker waits for plan
+3.1.
 
 **Style Configurator.** Done since the audit: the dialog edits a copy of
 the theme's XML, previews each change and writes the user's copy on Save &
