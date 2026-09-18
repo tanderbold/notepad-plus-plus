@@ -64,8 +64,15 @@ session), -x / -y place the window, -monitor watches every file given, and
 
 **Session.** Done since the audit: caret, scroll, selection, bookmarks,
 pinned state, tab colour, encoding and code page, and untitled buffers
-through the periodic backup. Still: folds, user read-only, the second view
-and the file browser roots.
+through the periodic backup. Plan 1.4: folds (which now also survive tab
+switches, opening files, a second view on the document and a change of
+language or theme - each of those used to unfold everything), the user's
+read-only, the second view with its document and position, monitoring,
+and the Folder as Workspace roots, of which there can now be several as
+upstream has them, with its right-click menu (Add, Remove, Remove All,
+Copy path, Copy file name, Find in Files..., Reveal in Finder, Terminal
+here, Run by system, Fold / Unfold all, Locate current file). The session
+file is still the port's JSON, not upstream's session XML.
 
 **Preferences.** 24 pages. Done since the audit (plan 2.4): Language
 (menu hiding, compact letter submenus, SQL backslash), Search Engine and

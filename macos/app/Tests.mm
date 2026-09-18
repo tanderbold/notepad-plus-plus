@@ -6990,6 +6990,80 @@ int NppMacRunTests(AppDelegate *app) {
               defaults && tabbed && bottom && floating && back && drops && remembered && allHidden);
     }
 
+    printf("\n== Session depth ==\n");
+    {
+        // Folds belong to the document: they survive a trip to another tab.
+        NSString *foldFile = TempFile(@"t_folds.cpp", @"int f() {\n    return 1;\n}\nint g() {\n    return 2;\n}\n");
+        NSString *otherFile = TempFile(@"t_folds_other.txt", @"other\n");
+        [ed openFileAtPath:foldFile error:NULL];
+        NppDocument *foldDoc = ed.currentDocument;
+        [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+        [sci message:SCI_FOLDLINE wParam:3 lParam:SC_FOLDACTION_CONTRACT];
+        [ed openFileAtPath:otherFile error:NULL];
+        [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:foldDoc]];
+        BOOL keptFold = [sci message:SCI_GETFOLDEXPANDED wParam:3] == 0 && [sci message:SCI_GETFOLDEXPANDED wParam:0] != 0;
+        Check(@"IDM_VIEW_FOLDALL (folds per document)",
+              @"a folded block stays folded when another tab has been in front", keptFold);
+
+        // The session keeps folds, the user's read-only, the second view and
+        // every Folder as Workspace root.
+        [ed setReadOnly:YES];
+        [ed cloneCurrentToOtherView];
+        NSString *rootA = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_rootA"];
+        NSString *rootB = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_rootB"];
+        for (NSString *r in @[rootA, rootB]) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:r withIntermediateDirectories:YES attributes:nil error:NULL];
+            [@"x" writeToFile:[r stringByAppendingPathComponent:[r.lastPathComponent stringByAppendingString:@".txt"]]
+                   atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        }
+        [ed openFolderAsWorkspace:nil];
+        [ed openFolderAsWorkspace:rootA];
+        [ed openFolderAsWorkspace:rootB];
+        [ed openFolderAsWorkspace:rootA];                    // already a root: not twice
+        NSArray *roots = [ed workspaceRootPaths];
+        NSString *sessionPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_depth_session.json"];
+        [ed saveSessionTo:sessionPath error:NULL];
+        [ed setReadOnly:NO];
+        [ed setSecondaryViewVisible:NO];
+        [ed openFolderAsWorkspace:nil];
+        for (NSInteger i = (NSInteger)ed.documents.count - 1; i >= 0; --i) {
+            NSString *p = ed.documents[(NSUInteger)i].path;
+            if ([p isEqualToString:foldFile] || [p isEqualToString:otherFile]) [ed closeDocumentAtIndex:i discardChanges:YES];
+        }
+        [ed loadSessionFrom:sessionPath error:NULL];
+        NSUInteger at = [ed.documents indexOfObjectPassingTest:^BOOL(NppDocument *d, NSUInteger i, BOOL *st) { return [d.path isEqualToString:foldFile]; }];
+        if (at != NSNotFound) [ed selectDocumentAtIndex:(NSInteger)at];
+        BOOL foldBack = at != NSNotFound && [sci message:SCI_GETFOLDEXPANDED wParam:3] == 0;
+        BOOL readOnlyBack = [ed isReadOnly] && ed.currentDocument.userReadOnly;
+        BOOL secondBack = [ed secondaryViewVisible] &&
+            (void *)[ed.secondarySci message:SCI_GETDOCPOINTER] == ed.currentDocument.docPointer;
+        BOOL rootsBack = [[ed workspaceRootPaths] isEqualToArray:(@[rootA, rootB])] && roots.count == 2 &&
+                         [[ed workspaceTopLevelNames] containsObject:@"t_rootB.txt"];
+        [ed setReadOnly:NO];
+        [ed setSecondaryViewVisible:NO];
+        [ed openFolderAsWorkspace:nil];
+        for (NSInteger i = (NSInteger)ed.documents.count - 1; i >= 0; --i) {
+            NSString *p = ed.documents[(NSUInteger)i].path;
+            if ([p isEqualToString:foldFile] || [p isEqualToString:otherFile]) [ed closeDocumentAtIndex:i discardChanges:YES];
+        }
+        Check(@"IDM_FILE_SAVESESSION (depth)",
+              @"a session brings back folds, the user's read-only, the second view and every workspace root",
+              foldBack && readOnlyBack && secondBack && rootsBack);
+
+        // Folder as Workspace: several roots, locate the current file, and its menu.
+        WorkspacePanel *wp = [[WorkspacePanel alloc] initWithFrame:NSMakeRect(0, 0, 200, 300)];
+        [wp addRootPath:rootA];
+        [wp addRootPath:rootB];
+        BOOL located = [wp locateFile:[rootB stringByAppendingPathComponent:@"t_rootB.txt"]];
+        NSMenu *rootMenu = [wp menuForRow:0];
+        BOOL menu = [rootMenu itemWithTitle:@"Remove"] && [rootMenu itemWithTitle:@"Remove All"] &&
+                    [rootMenu itemWithTitle:@"Find in Files..."] && [rootMenu itemWithTitle:@"Locate current file"];
+        [wp removeRootPath:rootA];
+        Check(@"IDM_FILE_OPENFOLDERASWORKSPACE (roots)",
+              @"the panel holds several roots, finds a file under them, and has upstream's menu",
+              located && menu && [wp.rootPaths isEqualToArray:@[rootB]]);
+    }
+
     printf("\n== New documents, recent files, directories ==\n");
     {
         NppPreferences *p = [NppPreferences shared];

@@ -55,6 +55,11 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// Monitoring (tail -f): the file is watched and the document kept read-only;
 /// a change while it is not in front is loaded when it comes to the front.
 @property (nonatomic) BOOL monitoring;
+/// Read-only as the user set it (Edit > Read-Only), kept in the session.
+@property (nonatomic) BOOL userReadOnly;
+/// The folded lines, recorded when the document leaves the front: Scintilla
+/// keeps folds per view, so a tab switch would otherwise lose them.
+@property (nonatomic, copy, nullable) NSArray<NSNumber *> *foldedLines;
 @property (nonatomic, strong, nullable) id monitorSource;
 @property (nonatomic) BOOL monitorReloadPending;
 @end
@@ -149,6 +154,11 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (void)openFolderAsWorkspace:(nullable NSString *)path;   // nil hides the panel
 - (BOOL)workspaceVisible;
 - (nullable NSString *)workspaceRootPath;
+/// Every Folder as Workspace root.
+- (NSArray<NSString *> *)workspaceRootPaths;
+/// The folded lines of the document in front.
+- (NSArray<NSNumber *> *)currentFoldedLines;
+- (void)foldLines:(NSArray<NSNumber *> *)lines;
 - (NSArray<NSString *> *)workspaceTopLevelNames;
 
 // Sessions

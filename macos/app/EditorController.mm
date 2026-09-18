@@ -537,7 +537,7 @@ static long SciColor(NSColor *c) {
 
 - (void)newDocument {
     NppDocument *doc = [[NppDocument alloc] init];
-    doc.docPointer = (void *)[self.sciView message:SCI_CREATEDOCUMENT wParam:0 lParam:SC_DOCUMENTOPTION_DEFAULT];
+    doc.docPointer = [self createScintillaDocument:SC_DOCUMENTOPTION_DEFAULT];
     doc.displayName = @"new 1";
     doc.language = [[LanguageCatalog sharedCatalog] languageNamed:@"normal"];
     doc.encoding = NSUTF8StringEncoding;
@@ -658,9 +658,8 @@ static long SciColor(NSColor *c) {
     }
 
     NppDocument *doc = [[NppDocument alloc] init];
-    doc.docPointer = (void *)[self.sciView message:SCI_CREATEDOCUMENT wParam:0
-        lParam:large ? (SC_DOCUMENTOPTION_STYLES_NONE | SC_DOCUMENTOPTION_TEXT_LARGE)
-                     : SC_DOCUMENTOPTION_DEFAULT];
+    doc.docPointer = [self createScintillaDocument:large ? (SC_DOCUMENTOPTION_STYLES_NONE | SC_DOCUMENTOPTION_TEXT_LARGE)
+                                                         : SC_DOCUMENTOPTION_DEFAULT];
     doc.path = path;
     doc.displayName = path.lastPathComponent;
     doc.language = [[LanguageCatalog sharedCatalog] languageForFileName:path];
@@ -722,11 +721,16 @@ static long SciColor(NSColor *c) {
             [marks addObject:@(line)];
         }
         leaving.bookmarkedLines = marks;
-    }
+        leaving.foldedLines = [self currentFoldedLines];
+        }
     BOOL switching = self.currentIndex != index;
     self.currentIndex = index;
     NppDocument *doc = self.docs[index];
-    [self.sciView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    // Setting the pointer again, even to the same document, resets the
+    // view's folds; the tab already in front keeps its own.
+    if ((void *)[self.sciView message:SCI_GETDOCPOINTER] != doc.docPointer) {
+        [self.sciView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    }
     if (switching) {
         [self.sciView message:SCI_SETSEL wParam:(uptr_t)doc.anchorPosition lParam:doc.caretPosition];
         [self.sciView message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)doc.firstVisibleLine lParam:0];
@@ -740,8 +744,39 @@ static long SciColor(NSColor *c) {
     }
     [self applyDocumentSettings];
     [self applyLanguage];
+    // Folds come back once the lexer has worked out the fold levels.
+    if (switching && doc.foldedLines.count) [self foldLines:doc.foldedLines];
     [self refreshChrome];
     [self.window makeFirstResponder:self.sciView];
+}
+
+/// Documents are created in a scratch view that shows nothing, as upstream
+/// creates them in its _pscratchTilla: SCI_CREATEDOCUMENT resets the folds of
+/// the view it is sent to, which would unfold the document in front.
+- (void *)createScintillaDocument:(long)options {
+    static ScintillaView *scratch;
+    if (!scratch) scratch = [[ScintillaView alloc] initWithFrame:NSMakeRect(0, 0, 10, 10)];
+    return (void *)[scratch message:SCI_CREATEDOCUMENT wParam:0 lParam:options];
+}
+
+- (NSArray<NSNumber *> *)currentFoldedLines {
+    NSMutableArray *lines = [NSMutableArray array];
+    long line = -1;
+    while ((line = [self.sciView message:SCI_CONTRACTEDFOLDNEXT wParam:(uptr_t)(line + 1)]) >= 0) {
+        [lines addObject:@(line)];
+    }
+    return lines;
+}
+
+- (void)foldLines:(NSArray<NSNumber *> *)lines {
+    ScintillaView *sci = self.sciView;
+    [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+    for (NSNumber *line in lines) {
+        if (![line isKindOfClass:[NSNumber class]]) continue;
+        if ([sci message:SCI_GETFOLDLEVEL wParam:(uptr_t)line.longValue] & SC_FOLDLEVELHEADERFLAG) {
+            [sci message:SCI_FOLDLINE wParam:(uptr_t)line.longValue lParam:SC_FOLDACTION_CONTRACT];
+        }
+    }
 }
 
 #pragma mark - NppTabBarDelegate
@@ -1280,8 +1315,17 @@ static BOOL gCheckingFilesOnDisk;
         [self.workspace setRootPath:nil];
         return;
     }
-    [self.workspace setRootPath:path];
+    // Opening a folder adds it to the panel's roots, as upstream's does.
+    [self.workspace addRootPath:path];
     [[NppDockingManager shared] showPanel:@"workspace"];
+}
+
+- (NSArray<NSString *> *)workspaceRootPaths { return self.workspace.rootPaths; }
+
+- (NSString *)workspaceCurrentFilePath { return self.currentDocument.path; }
+
+- (void)workspaceWantsFindInFolder:(NSString *)path {
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"NppFindInFolderRequested" object:path];
 }
 
 - (BOOL)workspaceVisible { return [[NppDockingManager shared] isPanelVisible:@"workspace"]; }
@@ -1366,6 +1410,9 @@ static BOOL gCheckingFilesOnDisk;
     entry[@"pinned"] = @(d.pinned);
     entry[@"tabColour"] = @(d.tabColour);
     entry[@"monitoring"] = @(d.monitoring);
+    entry[@"userReadOnly"] = @(d.userReadOnly);
+    NSArray *folds = front ? [self currentFoldedLines] : d.foldedLines;
+    if (folds.count) entry[@"folds"] = folds;
     entry[@"encoding"] = @(d.encoding);
     entry[@"bom"] = @(d.hasBOM);
     entry[@"codepage"] = @(d.codepage);
@@ -1407,11 +1454,19 @@ static BOOL gCheckingFilesOnDisk;
     }
     // The active tab is named by path: an index would count the unsaved
     // tabs that are not in the list, and the tabs open before the load.
-    NSDictionary *session = @{@"version": @2,
+    NSMutableDictionary *session = [@{@"version": @2,
                               @"current": @(MAX(0, self.currentIndex)),
                               @"currentPath": self.currentDocument.path ?: @"",
                               @"files": files,
-                              @"unsaved": unsaved};
+                              @"unsaved": unsaved} mutableCopy];
+    // The second view and what it shows, as upstream's subView.
+    if ([self secondaryViewVisible] && self.secondaryDocument.path) {
+        session[@"secondary"] = @{@"path": self.secondaryDocument.path,
+                                  @"firstLine": @([self.secondaryView message:SCI_GETFIRSTVISIBLELINE]),
+                                  @"caret": @([self.secondaryView message:SCI_GETCURRENTPOS])};
+    }
+    // Folder as Workspace's roots, as upstream's FileBrowser section.
+    if ([self workspaceVisible] && [self workspaceRootPaths].count) session[@"workspaceRoots"] = [self workspaceRootPaths];
     NSData *json = [NSJSONSerialization dataWithJSONObject:session
                                                    options:NSJSONWritingPrettyPrinted error:error];
     if (!json) return NO;
@@ -1464,6 +1519,30 @@ static BOOL gCheckingFilesOnDisk;
         // A session written before the path was kept: the index is all there is.
         [self selectDocumentAtIndex:MIN(cur.integerValue, (NSInteger)self.docs.count - 1)];
     }
+    // The second view comes back showing what it showed, and where.
+    NSDictionary *secondary = session[@"secondary"];
+    if ([secondary isKindOfClass:[NSDictionary class]] && [secondary[@"path"] isKindOfClass:[NSString class]]) {
+        NppDocument *front = self.currentDocument;
+        NSUInteger at = [self.docs indexOfObjectPassingTest:^BOOL(NppDocument *d, NSUInteger i, BOOL *stop) {
+            return [d.path isEqualToString:secondary[@"path"]];
+        }];
+        if (at != NSNotFound) {
+            [self selectDocumentAtIndex:(NSInteger)at];
+            [self cloneCurrentToOtherView];
+            [self.secondaryView message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)[secondary[@"firstLine"] longValue] lParam:0];
+            [self.secondaryView message:SCI_GOTOPOS wParam:(uptr_t)[secondary[@"caret"] longValue] lParam:0];
+            NSUInteger back = front ? [self.docs indexOfObjectIdenticalTo:front] : NSNotFound;
+            if (back != NSNotFound) [self selectDocumentAtIndex:(NSInteger)back];
+        }
+    }
+    NSArray *roots = session[@"workspaceRoots"];
+    if ([roots isKindOfClass:[NSArray class]]) {
+        for (NSString *root in roots) {
+            if ([root isKindOfClass:[NSString class]] && [[NSFileManager defaultManager] fileExistsAtPath:root]) {
+                [self openFolderAsWorkspace:root];
+            }
+        }
+    }
     // An untitled tab was active: it is not in the list, and an index over
     // the tabs of that time would land on the wrong file; the last one opened stays.
     return opened > 0 || files.count == 0;
@@ -1483,6 +1562,10 @@ static BOOL gCheckingFilesOnDisk;
     if ([f[@"pinned"] isKindOfClass:[NSNumber class]]) doc.pinned = [f[@"pinned"] boolValue];
     if ([f[@"tabColour"] isKindOfClass:[NSNumber class]]) doc.tabColour = [f[@"tabColour"] integerValue];
     if ([f[@"monitoring"] isKindOfClass:[NSNumber class]] && [f[@"monitoring"] boolValue]) [self setMonitoring:YES];
+    if ([f[@"userReadOnly"] isKindOfClass:[NSNumber class]] && [f[@"userReadOnly"] boolValue] && !doc.monitoring) {
+        [self.sciView message:SCI_SETREADONLY wParam:1 lParam:0];
+        doc.userReadOnly = YES;
+    }
     // A backup newer than the file is the unsaved text of the last session.
     NSString *backup = f[@"backup"];
     if ([backup isKindOfClass:[NSString class]] && doc.path) {
@@ -1502,6 +1585,11 @@ static BOOL gCheckingFilesOnDisk;
                 [self.sciView message:SCI_MARKERADD wParam:(uptr_t)line.longValue lParam:1];
             }
         }
+    }
+    NSArray *folds = f[@"folds"];
+    if ([folds isKindOfClass:[NSArray class]] && folds.count) {
+        [self foldLines:folds];
+        doc.foldedLines = folds;
     }
     long caret = [f[@"caret"] isKindOfClass:[NSNumber class]] ? [f[@"caret"] longValue] : 0;
     long anchor = [f[@"anchor"] isKindOfClass:[NSNumber class]] ? [f[@"anchor"] longValue] : caret;
@@ -1549,6 +1637,9 @@ static BOOL gCheckingFilesOnDisk;
     if (!doc) return;
     NppLanguage *lang = doc.language ?: [[LanguageCatalog sharedCatalog] languageNamed:@"normal"];
     ScintillaView *sci = self.sciView;
+    // A new lexer works the fold levels out again, which unfolds everything;
+    // what was folded is folded again afterwards.
+    NSArray *folds = [self currentFoldedLines];
 
     void *lexer = CreateLexer(lang.lexerID.UTF8String);
     [sci message:SCI_SETILEXER wParam:0 lParam:(sptr_t)lexer];
@@ -1578,6 +1669,7 @@ static BOOL gCheckingFilesOnDisk;
     [self applyTheme];
     if (udl) [self applyUserLanguageStyles:udl];
     [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+    if (folds.count) [self foldLines:folds];
     if ([self documentMapVisible]) { [self mirrorStylesToDocumentMap]; [self updateDocumentMap]; }
     [self applyWordCharacters];
     [self markClickableLinks];
@@ -2098,11 +2190,14 @@ static const char kEditorMenuItemsKey = 0;
 - (BOOL)cloneCurrentToOtherView {
     NppDocument *doc = self.currentDocument;
     if (!doc) return NO;
+    // A second view on the document expands the folds of the first; they are put back.
+    NSArray *folds = [self currentFoldedLines];
     [self setSecondaryViewVisible:YES];
     // Sharing the document pointer is what makes it a clone: both panes edit
     // the same buffer, exactly as Notepad++'s Clone to Other View does.
     [self.secondaryView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
     self.secondaryDocument = doc;
+    if (folds.count) [self foldLines:folds];
     return YES;
 }
 

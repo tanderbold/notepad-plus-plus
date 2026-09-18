@@ -397,6 +397,8 @@ static NSString *Ordinal(NSUInteger n) {
 
     __weak __typeof(self) weakApp = self;
     self.editor.tabContextMenu = ^NSMenu *{ return [weakApp buildTabContextMenu]; };
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(findInFolderRequested:)
+                                                 name:@"NppFindInFolderRequested" object:nil];
     [self installDocumentSwitcher];
     self.toolbar = [[NppToolbar alloc] initWithWindow:self.window target:self];
     [[NppPreferences shared] applyToEditor:self.editor];
@@ -3014,6 +3016,12 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         if (it.submenu && !it.submenu.numberOfItems) [menu removeItem:it];
     }
     return menu;
+}
+
+/// Folder as Workspace > Find in Files...: the Find in Files tab, on that folder.
+- (void)findInFolderRequested:(NSNotification *)note {
+    [self openFindPanelOnTab:2];
+    if ([note.object isKindOfClass:[NSString class]]) self.directoryField.stringValue = note.object;
 }
 
 - (void)showFind:(id)sender    { [self openFindPanelOnTab:0]; }

@@ -746,6 +746,7 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
 
 - (void)setReadOnly:(BOOL)readOnly {
     [self.sci message:SCI_SETREADONLY wParam:(uptr_t)(readOnly ? 1 : 0) lParam:0];
+    self.currentDocument.userReadOnly = readOnly;
     [self refreshChrome];
 }
 
