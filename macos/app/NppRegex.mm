@@ -14,6 +14,7 @@ typedef size_t *(*npp_pcre2_get_ovector_pointer)(void *matchData);
 typedef void (*npp_pcre2_match_data_free)(void *matchData);
 typedef void (*npp_pcre2_code_free)(void *code);
 typedef int (*npp_pcre2_get_error_message)(int errorcode, uint8_t *buffer, size_t length);
+typedef int (*npp_pcre2_substring_number_from_name)(const void *code, const uint8_t *name);
 
 // The option values are those of PCRE2 10.x. They are checked against the
 // library's own behaviour by a test, rather than being trusted from memory.
@@ -28,6 +29,7 @@ static npp_pcre2_get_ovector_pointer gOvector;
 static npp_pcre2_match_data_free gMatchDataFree;
 static npp_pcre2_code_free gCodeFree;
 static npp_pcre2_get_error_message gErrorMessage;
+static npp_pcre2_substring_number_from_name gNumberFromName;
 static BOOL gLoaded;
 
 static void LoadPCRE2(void) {
@@ -43,6 +45,7 @@ static void LoadPCRE2(void) {
         gMatchDataFree = (npp_pcre2_match_data_free)dlsym(handle, "pcre2_match_data_free_8");
         gCodeFree = (npp_pcre2_code_free)dlsym(handle, "pcre2_code_free_8");
         gErrorMessage = (npp_pcre2_get_error_message)dlsym(handle, "pcre2_get_error_message_8");
+        gNumberFromName = (npp_pcre2_substring_number_from_name)dlsym(handle, "pcre2_substring_number_from_name_8");
         gLoaded = gCompile && gMatchDataCreate && gMatch && gOvector &&
                   gMatchDataFree && gCodeFree;
     });
@@ -209,6 +212,12 @@ static size_t NextCharacter(const uint8_t *bytes, size_t length, size_t from) {
         *stop = YES;
     }];
     return found;
+}
+
+- (NSInteger)groupNumberForName:(NSString *)name {
+    if (!self.code || !gNumberFromName || !name.length) return -1;
+    int n = gNumberFromName(self.code, (const uint8_t *)name.UTF8String);
+    return n > 0 ? n : -1;
 }
 
 @end

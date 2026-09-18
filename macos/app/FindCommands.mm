@@ -1,4 +1,5 @@
 #import "FindCommands.h"
+#import "BoostFormat.h"
 #import "SearchCommands.h"
 #import "NppRegex.h"
 #import "ScintillaView.h"
@@ -243,12 +244,14 @@
     return YES;
 }
 
-- (NSUInteger)markAll:(NppFindSpec *)spec {
+- (NSUInteger)markAll:(NppFindSpec *)spec { return [self markAll:spec purge:YES]; }
+
+- (NSUInteger)markAll:(NppFindSpec *)spec purge:(BOOL)purge {
     NSArray<NSValue *> *matches = [self rangesOfMatches:spec];
     ScintillaView *sci = self.sci;
     [sci message:SCI_SETINDICATORCURRENT wParam:NPPMAC_FIND_MARK_INDICATOR];
-    [sci message:SCI_INDICATORCLEARRANGE wParam:0
-           lParam:(sptr_t)[sci message:SCI_GETLENGTH]];
+    // Without "Purge for each search" the marks of earlier searches stay.
+    if (purge) [sci message:SCI_INDICATORCLEARRANGE wParam:0 lParam:(sptr_t)[sci message:SCI_GETLENGTH]];
     for (NSValue *v in matches) {
         NSRange r = v.rangeValue;
         [sci message:SCI_INDICATORFILLRANGE wParam:(uptr_t)r.location lParam:(sptr_t)r.length];
@@ -258,83 +261,51 @@
 
 #pragma mark - Replacing
 
-/// Builds the replacement for one match: \1..\9 and $1..$9 name the groups when
-/// the search was a regular expression; otherwise the text is taken as it is,
-/// after Extended mode has had its say.
+/// Builds the replacement for one match. Outside regular expressions the
+/// text is taken as it is, after Extended mode has had its say. In a regular
+/// expression it is read by Boost's formatter, as Notepad++ reads it.
 - (NSString *)replacementFor:(NppFindSpec *)spec
                       groups:(NSArray<NSValue *> *)groups
                         data:(NSData *)data {
+    return [self replacementFor:spec groups:groups data:data regex:nil
+                     prefixFrom:0 suffixTo:data.length];
+}
+
+- (NSString *)replacementFor:(NppFindSpec *)spec
+                      groups:(NSArray<NSValue *> *)groups
+                        data:(NSData *)data
+                       regex:(nullable NppRegex *)regex
+                  prefixFrom:(NSUInteger)prefixFrom
+                    suffixTo:(NSUInteger)suffixTo {
     NSString *template_ = spec.replacement ?: @"";
     if (spec.mode == NppSearchExtended) {
         template_ = [EditorController convertExtendedToString:template_];
     }
     if (spec.mode != NppSearchRegex) return template_;
 
-    // \U and \L change the case of everything up to \E; \u and \l change one
-    // character. They are what makes a replacement able to normalise what it
-    // captured, and Notepad++ has them because Boost does.
-    typedef NS_ENUM(NSInteger, NppCaseRun) { NppCaseAsIs, NppCaseUpperRun, NppCaseLowerRun };
-    __block NppCaseRun run = NppCaseAsIs;
-    __block NSInteger single = 0;      // +1 next character upper, -1 next lower
-
-    NSMutableString *out = [NSMutableString stringWithCapacity:template_.length];
-    void (^append)(NSString *) = ^(NSString *piece) {
-        if (!piece.length) return;
-        NSMutableString *text = [piece mutableCopy];
-        if (single != 0) {
-            NSString *first = [text substringToIndex:1];
-            [text replaceCharactersInRange:NSMakeRange(0, 1)
-                                withString:single > 0 ? first.uppercaseString : first.lowercaseString];
-            single = 0;
-            if (run == NppCaseUpperRun) {
-                NSString *rest = [text substringFromIndex:1].uppercaseString;
-                text = [[[text substringToIndex:1] stringByAppendingString:rest] mutableCopy];
-            } else if (run == NppCaseLowerRun) {
-                NSString *rest = [text substringFromIndex:1].lowercaseString;
-                text = [[[text substringToIndex:1] stringByAppendingString:rest] mutableCopy];
-            }
-        } else if (run == NppCaseUpperRun) {
-            text = [text.uppercaseString mutableCopy];
-        } else if (run == NppCaseLowerRun) {
-            text = [text.lowercaseString mutableCopy];
-        }
-        [out appendString:text];
+    // Boost's formatter in format_all mode, as SubstituteByPosition calls it.
+    NSString *(^bytes)(NSUInteger, NSUInteger) = ^NSString *(NSUInteger from, NSUInteger to) {
+        if (from == NSNotFound || to < from || to > data.length) return @"";
+        return [[NSString alloc] initWithData:[data subdataWithRange:NSMakeRange(from, to - from)]
+                                     encoding:NSUTF8StringEncoding] ?: @"";
     };
-
-    for (NSUInteger i = 0; i < template_.length; ++i) {
-        unichar c = [template_ characterAtIndex:i];
-        BOOL hasNext = i + 1 < template_.length;
-        unichar next = hasNext ? [template_ characterAtIndex:i + 1] : 0;
-
-        if ((c == '\\' || c == '$') && next >= '0' && next <= '9') {
-            NSUInteger index = next - '0';
-            if (index < groups.count) {
-                NSRange r = groups[index].rangeValue;
-                if (r.location != NSNotFound) {
-                    append([[NSString alloc] initWithData:[data subdataWithRange:r]
-                                                 encoding:NSUTF8StringEncoding] ?: @"");
-                }
-            }
-            i++;
-            continue;
-        }
-        if (c == '\\' && hasNext) {
-            switch (next) {
-                case 'U': run = NppCaseUpperRun; i++; continue;
-                case 'L': run = NppCaseLowerRun; i++; continue;
-                case 'E': run = NppCaseAsIs;     i++; continue;
-                case 'u': single = 1;            i++; continue;
-                case 'l': single = -1;           i++; continue;
-                case 'n': append(@"\n");         i++; continue;
-                case 'r': append(@"\r");         i++; continue;
-                case 't': append(@"\t");         i++; continue;
-                case '\\': append(@"\\");        i++; continue;
-                default: break;
-            }
-        }
-        append([NSString stringWithCharacters:&c length:1]);
+    NSMutableArray *texts = [NSMutableArray arrayWithCapacity:groups.count];
+    NSInteger lastClosed = -1;
+    NSUInteger lastEnd = 0;
+    for (NSUInteger g = 0; g < groups.count; ++g) {
+        NSRange r = groups[g].rangeValue;
+        if (r.location == NSNotFound) { [texts addObject:[NSNull null]]; continue; }
+        [texts addObject:bytes(r.location, NSMaxRange(r))];
+        // The group that closed last: the one ending furthest on, the outer
+        // of two that end together.
+        if (g > 0 && (lastClosed < 0 || NSMaxRange(r) > lastEnd)) { lastClosed = (NSInteger)g; lastEnd = NSMaxRange(r); }
     }
-    return out;
+    NSRange whole = groups.firstObject.rangeValue;
+    NSString *prefix = bytes(MIN(prefixFrom, whole.location), whole.location);
+    NSString *suffix = bytes(NSMaxRange(whole), MAX(suffixTo, NSMaxRange(whole)));
+    NSInteger (^named)(NSString *) = nil;
+    if (regex) named = ^NSInteger(NSString *name) { return [regex groupNumberForName:name]; };
+    return NppBoostFormat(template_, texts, prefix, suffix, lastClosed, named);
 }
 
 - (NSUInteger)replaceAll:(NppFindSpec *)spec {
@@ -348,10 +319,13 @@
     // matches still to be replaced.
     NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
     NSMutableArray<NSString *> *texts = [NSMutableArray array];
+    __block NSUInteger previousEnd = scope.location;
     [regex enumerateMatchesWithGroupsInData:data range:scope
                                  usingBlock:^(NSArray<NSValue *> *groups, BOOL *stop) {
         [ranges addObject:groups.firstObject];
-        [texts addObject:[self replacementFor:spec groups:groups data:data]];
+        [texts addObject:[self replacementFor:spec groups:groups data:data regex:regex
+                                   prefixFrom:previousEnd suffixTo:NSMaxRange(scope)]];
+        previousEnd = NSMaxRange(groups.firstObject.rangeValue);
     }];
     if (!ranges.count) return 0;
 
@@ -395,7 +369,8 @@
             *stop = YES;
         }];
         if (exact) {
-            NSString *text = [self replacementFor:spec groups:matched data:data];
+            NSString *text = [self replacementFor:spec groups:matched data:data regex:regex
+                                       prefixFrom:(NSUInteger)from suffixTo:data.length];
             [sci message:SCI_SETTARGETSTART wParam:(uptr_t)from];
             [sci message:SCI_SETTARGETEND wParam:(uptr_t)to];
             [sci setStringProperty:SCI_REPLACETARGET
@@ -571,11 +546,14 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
 
     NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
     NSMutableArray<NSString *> *texts = [NSMutableArray array];
+    __block NSUInteger previousEnd = 0;
     [regex enumerateMatchesWithGroupsInData:data range:NSMakeRange(0, data.length)
                                  usingBlock:^(NSArray<NSValue *> *groups, BOOL *stop) {
         if (search.cancelled) { *stop = YES; return; }
         [ranges addObject:groups.firstObject];
-        [texts addObject:[self replacementFor:spec groups:groups data:data]];
+        [texts addObject:[self replacementFor:spec groups:groups data:data regex:regex
+                                   prefixFrom:previousEnd suffixTo:data.length]];
+        previousEnd = NSMaxRange(groups.firstObject.rangeValue);
     }];
     if (!ranges.count || search.cancelled) return 0;
 
@@ -722,25 +700,19 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
     } progress:progress completion:completion];
 }
 
-- (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec
-                                       folder:(NSString *)folder
-                                      filters:(NSString *)filters
-                                    recursive:(BOOL)recursive
-                                includeHidden:(BOOL)includeHidden
-                                     progress:(void (^)(NSUInteger, NSUInteger))progress
-                                   completion:(void (^)(NSUInteger, NSUInteger, BOOL))completion {
+- (NppFileSearch *)replaceInBackground:(NppFindSpec *)spec
+                                  walk:(void (^)(NppFileSearch *, void (^)(NSString *, NSString *, NSUInteger)))walk
+                              progress:(void (^)(NSUInteger, NSUInteger))progress
+                            completion:(void (^)(NSUInteger, NSUInteger, BOOL))completion {
     NppFileSearch *search = [[NppFileSearch alloc] init];
     NppRegex *regex = [self regexFor:spec];
-    if (!spec.what.length || !folder.length || !regex) {
+    if (!spec.what.length || !regex) {
         if (completion) completion(0, 0, NO);
         return search;
     }
-
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         __block NSUInteger replaced = 0, touched = 0;
-        [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
-                  search:search
-                   visit:^(NSString *path, NSString *contents, NSUInteger scanned) {
+        walk(search, ^(NSString *path, NSString *contents, NSUInteger scanned) {
             NSUInteger inFile = [self replaceEveryMatch:spec regex:regex inFileAtPath:path
                                                contents:contents cancelledBy:search];
             if (inFile) { replaced += inFile; touched++; }
@@ -750,8 +722,7 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
                     if (!search.cancelled) progress(scanned, replacedSoFar);
                 });
             }
-        }];
-
+        });
         BOOL stopped = search.cancelled;
         NSUInteger total = replaced, files = touched;
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -759,6 +730,119 @@ static BOOL GlobMatches(NSString *pattern, NSString *name) {
         });
     });
     return search;
+}
+
+- (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec
+                                       folder:(NSString *)folder
+                                      filters:(NSString *)filters
+                                    recursive:(BOOL)recursive
+                                includeHidden:(BOOL)includeHidden
+                                     progress:(void (^)(NSUInteger, NSUInteger))progress
+                                   completion:(void (^)(NSUInteger, NSUInteger, BOOL))completion {
+    if (!folder.length) {
+        if (completion) completion(0, 0, NO);
+        return [[NppFileSearch alloc] init];
+    }
+    return [self replaceInBackground:spec walk:^(NppFileSearch *search, void (^visit)(NSString *, NSString *, NSUInteger)) {
+        [self walkFolder:folder filters:filters recursive:recursive includeHidden:includeHidden
+                  search:search visit:visit];
+    } progress:progress completion:completion];
+}
+
+- (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec
+                                        paths:(NSArray<NSString *> *)paths
+                                      filters:(NSString *)filters
+                                     progress:(void (^)(NSUInteger, NSUInteger))progress
+                                   completion:(void (^)(NSUInteger, NSUInteger, BOOL))completion {
+    NSArray *files = [[NSOrderedSet orderedSetWithArray:paths] array];
+    return [self replaceInBackground:spec walk:^(NppFileSearch *search, void (^visit)(NSString *, NSString *, NSUInteger)) {
+        NSUInteger scanned = 0;
+        for (NSString *path in files) {
+            if (search.cancelled) return;
+            if (![EditorController name:path.lastPathComponent matchesFilters:filters]) continue;
+            NSString *contents = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:NULL];
+            if (!contents) continue;
+            visit(path, contents, ++scanned);
+        }
+    } progress:progress completion:completion];
+}
+
+#pragma mark - Every open document
+
+/// The hit lines of a document, each line once however many matches it has,
+/// as Notepad++'s Find All lists them.
+- (NSString *)reportLinesForMatches:(NSArray<NSValue *> *)matches {
+    ScintillaView *sci = self.sci;
+    NSData *bytes = [([sci string] ?: @"") dataUsingEncoding:NSUTF8StringEncoding];
+    NSMutableString *block = [NSMutableString string];
+    long lastLine = -1;
+    for (NSValue *match in matches) {
+        long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)match.rangeValue.location];
+        if (line == lastLine) continue;
+        lastLine = line;
+        long start = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)line];
+        long end = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)line];
+        NSString *text = (end > start && (NSUInteger)end <= bytes.length)
+            ? [[NSString alloc] initWithData:[bytes subdataWithRange:NSMakeRange((NSUInteger)start, (NSUInteger)(end - start))]
+                                    encoding:NSUTF8StringEncoding] : @"";
+        [block appendFormat:@"\tLine %ld: %@\n", line + 1, [EditorController singleReportLine:text ?: @""]];
+    }
+    return block;
+}
+
+- (NSString *)findAllReport:(NppFindSpec *)spec hits:(NSUInteger *)hits {
+    NSArray<NSValue *> *matches = [self rangesOfMatches:spec];
+    NSString *path = self.currentDocument.path ?: self.currentDocument.displayName;
+    NSMutableString *report = [NSMutableString stringWithFormat:@"Search \"%@\" in %@\n\n", spec.what, path];
+    [report appendString:[self reportLinesForMatches:matches]];
+    [report appendFormat:@"\n%lu hit%@\n", (unsigned long)matches.count, matches.count == 1 ? @"" : @"s"];
+    if (hits) *hits = matches.count;
+    return report;
+}
+
+/// Runs `body` with each open document in front in turn - not the results
+/// tab - and puts back the one that was in front.
+- (void)forEachOpenDocument:(void (^)(NppDocument *doc))body {
+    NppDocument *front = self.currentDocument;
+    NSArray<NppDocument *> *docs = [self.documents copy];
+    for (NppDocument *doc in docs) {
+        if ([doc.displayName isEqualToString:@"Search results"] && !doc.path) continue;
+        NSUInteger index = [self.documents indexOfObjectIdenticalTo:doc];
+        if (index == NSNotFound) continue;
+        [self selectDocumentAtIndex:(NSInteger)index];
+        body(doc);
+    }
+    NSUInteger back = front ? [self.documents indexOfObjectIdenticalTo:front] : NSNotFound;
+    if (back != NSNotFound) [self selectDocumentAtIndex:(NSInteger)back];
+}
+
+- (NSString *)findAllInOpenDocuments:(NppFindSpec *)spec hits:(NSUInteger *)hits {
+    NppFindSpec *whole = [NppFindSpec specFor:spec.what mode:spec.mode options:spec.options & ~NppFindInSelection];
+    __block NSUInteger total = 0, files = 0, searched = 0;
+    NSMutableString *body = [NSMutableString string];
+    [self forEachOpenDocument:^(NppDocument *doc) {
+        searched++;
+        NSArray<NSValue *> *matches = [self rangesOfMatches:whole];
+        if (!matches.count) return;
+        total += matches.count;
+        files++;
+        [body appendFormat:@"%@ (%lu hit%@)\n%@", doc.path ?: doc.displayName, (unsigned long)matches.count,
+                           matches.count == 1 ? @"" : @"s", [self reportLinesForMatches:matches]];
+    }];
+    if (hits) *hits = total;
+    return [NSString stringWithFormat:@"Search \"%@\" (%lu hit%@ in %lu file%@ of %lu searched)\n%@",
+            spec.what, (unsigned long)total, total == 1 ? @"" : @"s", (unsigned long)files,
+            files == 1 ? @"" : @"s", (unsigned long)searched, body];
+}
+
+- (NSUInteger)replaceAllInOpenDocuments:(NppFindSpec *)spec {
+    NppFindSpec *whole = [NppFindSpec specFor:spec.what mode:spec.mode options:spec.options & ~NppFindInSelection];
+    whole.replacement = spec.replacement;
+    __block NSUInteger total = 0;
+    [self forEachOpenDocument:^(NppDocument *doc) {
+        total += [self replaceAll:whole];
+    }];
+    return total;
 }
 
 @end

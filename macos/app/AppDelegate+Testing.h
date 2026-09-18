@@ -17,6 +17,14 @@
 - (void)findPanelFindInFiles:(id)sender;
 - (void)findPanelFindAll:(id)sender;
 - (id)currentFindSpec;
+- (void)findPanelCount:(id)sender;
+- (void)findPanelMarkAll:(id)sender;
+- (void)findPanelCopyMarkedText:(id)sender;
+- (void)findPanelFindAllInOpenDocuments:(id)sender;
+- (void)findPanelReplaceAllInOpenDocuments:(id)sender;
+- (void)findPanelSwap:(id)sender;
+- (void)updateInSelectionAvailability;
+- (void)applyFindTransparency;
 
 // File
 - (void)newDocument:(id)sender;

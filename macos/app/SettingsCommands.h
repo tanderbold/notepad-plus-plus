@@ -112,6 +112,14 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL autoInsertCloseTag;
 /// Up to three pairs of the user's own, each an opener and a closer ("<>").
 @property (nonatomic, copy) NSArray<NSString *> *userMatchedPairs;
+/// The Find dialog's histories, newest first, ten of each at most.
+@property (nonatomic, copy) NSArray<NSString *> *findHistory;
+@property (nonatomic, copy) NSArray<NSString *> *replaceHistory;
+@property (nonatomic, copy) NSArray<NSString *> *filterHistory;
+@property (nonatomic, copy) NSArray<NSString *> *directoryHistory;
+/// 0 off, 1 on losing focus, 2 always; the level is an alpha out of 255.
+@property (nonatomic) NSInteger findTransparencyMode;
+@property (nonatomic) NSInteger findTransparencyLevel;
 
 /// New documents.
 @property (nonatomic, copy) NSString *defaultLanguage;

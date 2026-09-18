@@ -108,18 +108,18 @@ tabbing panels together, top or bottom containers, or saved layout.
 view). No virtual folders, adding single files, rename, move, `.xml`
 workspace save / load, or Find in Projects over a real project.
 
-**Search.** Present: three modes, match case / whole word / wrap / backward /
-in selection, Find, Replace, Find in Files, Find in Projects and Mark tabs,
-Count, Find All, Replace All, Replace in Files with confirmation, filters
-with several globs, recursion, hidden folders, "From doc". Absent: ". matches
-newline", transparency, find / replace / filter / directory histories with
-dropdowns, "In selection" greyed without a selection, per-search folding,
-collapse / expand and the context menu in the results panel, "Purge for each
-search" and "Copy Marked Text" on the Mark tab, a distinct Volatile Find,
-`${name}`, `$&`, `` $` ``, `$'`, `$$` and two-digit references in
-replacements. Unverified: Find All / Replace All in All Opened Documents.
-The engine is PCRE2, a superset of what Boost offers, so regex syntax
-itself is not the gap.
+**Search.** Done since the audit: histories of ten for find, replace,
+filters and directories in drop-downs, kept between launches; the swap
+button; "In selection" greyed and cleared without a selection and ticked
+for one of 1024 characters or more; transparency on losing focus or always;
+Find All / Replace All in All Opened Documents; Replace in Projects; "Purge
+for each search" and "Copy Marked Text" on Mark. Replacements go through a
+port of Boost's `format_all` formatter, as Notepad++ calls it, so `$&`,
+`` $` ``, `$'`, `$$`, `$n`, `${n}`, `$+{name}`, `$MATCH` and friends,
+`\n` (one digit; `$10` for two), octal, `\x{…}`, parentheses and `?N…:…`
+conditionals give the same text as on Windows. Volatile Find was already
+there. Still open: the results panel's folding, collapse / expand and
+context menu (plan 2.2).
 
 **Editing assist.** Done since the audit, following AutoCompletion.cpp,
 FunctionCallTip.cpp and maintainIndentation: Function Completion (⌃Space,

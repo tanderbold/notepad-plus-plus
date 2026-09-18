@@ -97,6 +97,10 @@
 @property (nonatomic, strong) NSButton *recursiveBox;
 @property (nonatomic, strong) NSButton *hiddenBox;
 @property (nonatomic, strong) NSButton *bookmarkLineBox;
+@property (nonatomic, strong) NSButton *purgeBox;
+@property (nonatomic, strong) NSButton *transparencyBox;
+@property (nonatomic, strong) NSMatrix *transparencyRadios;
+@property (nonatomic, strong) NSSlider *transparencySlider;
 @property (nonatomic, strong) NSMutableArray<NSView *> *findOnlyViews;
 @property (nonatomic, strong) NSMutableArray<NSView *> *replaceViews;
 @property (nonatomic, strong) NSMutableArray<NSView *> *inFilesViews;
@@ -2725,6 +2729,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         NSString *path = self.editor.currentDocument.path;
         if (path.length) self.directoryField.stringValue = path.stringByDeletingLastPathComponent;
     }
+    [self updateInSelectionAvailability];
     [self.findPanel makeKeyAndOrderFront:nil];
     [self.findPanel makeFirstResponder:self.findField];
 }
@@ -2750,8 +2755,18 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     return button;
 }
 
+/// A field with its history in a drop-down, as the dialog's combo boxes are.
+- (NSComboBox *)findCombo:(NSRect)frame history:(NSArray<NSString *> *)history in:(NSView *)parent {
+    NSComboBox *combo = [[NSComboBox alloc] initWithFrame:frame];
+    combo.completes = NO;
+    combo.numberOfVisibleItems = 10;
+    [combo addItemsWithObjectValues:history ?: @[]];
+    [parent addSubview:combo];
+    return combo;
+}
+
 - (void)buildFindPanel {
-    NSRect frame = NSMakeRect(0, 0, 640, 400);
+    NSRect frame = NSMakeRect(0, 0, 700, 400);
     self.findPanel = [[NppPanel alloc] initWithContentRect:frame
                                                 styleMask:(NSWindowStyleMaskTitled |
                                                            NSWindowStyleMaskClosable |
@@ -2759,6 +2774,10 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
                                                   backing:NSBackingStoreBuffered defer:YES];
     self.findPanel.title = @"Find";
     self.findPanel.releasedWhenClosed = NO;
+    // Transparency follows focus; In selection follows the selection.
+    NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+    [nc addObserver:self selector:@selector(findPanelFocusChanged:) name:NSWindowDidBecomeKeyNotification object:self.findPanel];
+    [nc addObserver:self selector:@selector(findPanelFocusChanged:) name:NSWindowDidResignKeyNotification object:self.findPanel];
 
     // A panel's default content view paints nothing, so in dark mode the labels
     // are white on white. This follows the appearance.
@@ -2773,6 +2792,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     self.inFilesViews = [NSMutableArray array];
     self.inProjectsViews = [NSMutableArray array];
     self.markViews = [NSMutableArray array];
+    NppPreferences *prefs = [NppPreferences shared];
 
     // Notepad++ puts these one behind the other on tabs, and the fields and
     // options below them are shared.
@@ -2781,41 +2801,42 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
                                                       trackingMode:NSSegmentSwitchTrackingSelectOne
                                                             target:self
                                                             action:@selector(findTabChanged:)];
-    self.findTabs.frame = NSMakeRect(16, 360, 608, 26);
+    self.findTabs.frame = NSMakeRect(16, 360, 668, 26);
     self.findTabs.selectedSegment = 0;
     [content addSubview:self.findTabs];
 
     NSTextField *findLabel = [NSTextField labelWithString:@"Find what:"];
     findLabel.frame = NSMakeRect(16, 328, 90, 18);
     [content addSubview:findLabel];
-    self.findField = [[NSTextField alloc] initWithFrame:NSMakeRect(110, 325, 514, 24)];
-    [content addSubview:self.findField];
+    self.findField = [self findCombo:NSMakeRect(110, 324, 480, 26) history:prefs.findHistory in:content];
 
     NSTextField *replaceLabel = [NSTextField labelWithString:@"Replace with:"];
     replaceLabel.frame = NSMakeRect(16, 298, 90, 18);
     [content addSubview:replaceLabel];
-    self.replaceField = [[NSTextField alloc] initWithFrame:NSMakeRect(110, 295, 514, 24)];
-    [content addSubview:self.replaceField];
-    [self.replaceViews addObjectsFromArray:@[replaceLabel, self.replaceField]];
-    [self.inFilesViews addObjectsFromArray:@[replaceLabel, self.replaceField]];
-    [self.inProjectsViews addObjectsFromArray:@[replaceLabel, self.replaceField]];
+    self.replaceField = [self findCombo:NSMakeRect(110, 294, 480, 26) history:prefs.replaceHistory in:content];
+    // Swaps the two fields, as the button between them on Windows does.
+    NSButton *swap = [NSButton buttonWithTitle:@"⇅" target:self action:@selector(findPanelSwap:)];
+    swap.frame = NSMakeRect(596, 308, 36, 26);
+    swap.toolTip = @"Swap Find with Replace";
+    [content addSubview:swap];
+    [self.replaceViews addObjectsFromArray:@[replaceLabel, self.replaceField, swap]];
+    [self.inFilesViews addObjectsFromArray:@[replaceLabel, self.replaceField, swap]];
+    [self.inProjectsViews addObjectsFromArray:@[replaceLabel, self.replaceField, swap]];
 
     NSTextField *filtersLabel = [NSTextField labelWithString:@"Filters:"];
     filtersLabel.frame = NSMakeRect(16, 268, 90, 18);
     [content addSubview:filtersLabel];
-    self.filtersField = [[NSTextField alloc] initWithFrame:NSMakeRect(110, 265, 514, 24)];
+    self.filtersField = [self findCombo:NSMakeRect(110, 264, 480, 26) history:prefs.filterHistory in:content];
     self.filtersField.placeholderString = @"*.cpp *.h — blank for every file";
-    [content addSubview:self.filtersField];
     [self.inFilesViews addObjectsFromArray:@[filtersLabel, self.filtersField]];
     [self.inProjectsViews addObjectsFromArray:@[filtersLabel, self.filtersField]];
 
     NSTextField *directoryLabel = [NSTextField labelWithString:@"Directory:"];
     directoryLabel.frame = NSMakeRect(16, 238, 90, 18);
     [content addSubview:directoryLabel];
-    self.directoryField = [[NSTextField alloc] initWithFrame:NSMakeRect(110, 235, 410, 24)];
-    [content addSubview:self.directoryField];
+    self.directoryField = [self findCombo:NSMakeRect(110, 234, 420, 26) history:prefs.directoryHistory in:content];
     NSButton *browse = [self findButton:@"Browse…" action:@selector(findPanelBrowse:)
-                                     at:NSMakePoint(524, 233) in:content];
+                                     at:NSMakePoint(536, 233) in:content];
     NSButton *fromDoc = [self findButton:@"From doc" action:@selector(findPanelDirectoryFromDocument:)
                                       at:NSMakePoint(110, 203) in:content];
     [self.inFilesViews addObjectsFromArray:@[directoryLabel, self.directoryField, browse, fromDoc]];
@@ -2846,31 +2867,41 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     self.matchCaseBox   = [self findCheckbox:@"Match case"      at:NSMakePoint(285, 158) in:content];
     self.wholeWordBox   = [self findCheckbox:@"Whole word only" at:NSMakePoint(285, 136) in:content];
     self.wrapBox        = [self findCheckbox:@"Wrap around"     at:NSMakePoint(285, 114) in:content];
-    self.backwardBox    = [self findCheckbox:@"Backward"        at:NSMakePoint(455, 158) in:content];
-    self.inSelectionBox = [self findCheckbox:@"In selection"    at:NSMakePoint(455, 136) in:content];
+    self.backwardBox    = [self findCheckbox:@"Backward"        at:NSMakePoint(475, 158) in:content];
+    self.inSelectionBox = [self findCheckbox:@"In selection"    at:NSMakePoint(475, 136) in:content];
     self.wrapBox.state = NSControlStateValueOn;
-    [self.findOnlyViews addObjectsFromArray:@[self.backwardBox]];
+    [self.findOnlyViews addObjectsFromArray:@[self.backwardBox, self.inSelectionBox]];
     [self.replaceViews addObjectsFromArray:@[self.backwardBox, self.inSelectionBox]];
 
-    self.bookmarkLineBox = [self findCheckbox:@"Bookmark the line" at:NSMakePoint(455, 114) in:content];
+    self.bookmarkLineBox = [self findCheckbox:@"Bookmark the line" at:NSMakePoint(475, 114) in:content];
+    self.purgeBox = [self findCheckbox:@"Purge for each search" at:NSMakePoint(475, 92) in:content];
+    [self.markViews addObjectsFromArray:@[self.bookmarkLineBox, self.purgeBox, self.inSelectionBox]];
     [self findModeChanged:nil];
-    [self.markViews addObject:self.bookmarkLineBox];
 
-    // One row of buttons per tab, in the places Notepad++ puts them.
+    // The rows of buttons, one set per tab.
     NSButton *findNext = [self findButton:@"Find Next" action:@selector(findPanelNext:)
                                        at:NSMakePoint(16, 60) in:content];
     findNext.keyEquivalent = @"\r";                       // Enter does the dialog's job
     NSButton *count = [self findButton:@"Count" action:@selector(findPanelCount:)
                                     at:NSMakePoint(128, 60) in:content];
-    NSButton *findAllHere = [self findButton:@"Find All" action:@selector(findPanelFindAll:)
+    NSButton *findAllHere = [self findButton:@"Find All in Current Document" action:@selector(findPanelFindAll:)
                                           at:NSMakePoint(240, 60) in:content];
-    [self.findOnlyViews addObjectsFromArray:@[findNext, count, findAllHere]];
+    findAllHere.frame = NSMakeRect(240, 60, 230, 26);
+    NSButton *findAllOpen = [self findButton:@"Find All in All Opened Documents"
+                                      action:@selector(findPanelFindAllInOpenDocuments:)
+                                          at:NSMakePoint(16, 28) in:content];
+    findAllOpen.frame = NSMakeRect(16, 28, 260, 26);
+    [self.findOnlyViews addObjectsFromArray:@[findNext, count, findAllHere, findAllOpen]];
 
     NSButton *replaceOne = [self findButton:@"Replace" action:@selector(findPanelReplace:)
-                                         at:NSMakePoint(16, 28) in:content];
+                                         at:NSMakePoint(128, 60) in:content];
     NSButton *replaceAll = [self findButton:@"Replace All" action:@selector(findPanelReplaceAll:)
-                                         at:NSMakePoint(128, 28) in:content];
-    [self.replaceViews addObjectsFromArray:@[findNext, replaceOne, replaceAll]];
+                                         at:NSMakePoint(240, 60) in:content];
+    NSButton *replaceAllOpen = [self findButton:@"Replace All in All Opened Documents"
+                                         action:@selector(findPanelReplaceAllInOpenDocuments:)
+                                             at:NSMakePoint(16, 28) in:content];
+    replaceAllOpen.frame = NSMakeRect(16, 28, 280, 26);
+    [self.replaceViews addObjectsFromArray:@[findNext, replaceOne, replaceAll, replaceAllOpen]];
 
     NSButton *filesFind = [self findButton:@"Find All" action:@selector(findPanelFindInFiles:)
                                         at:NSMakePoint(16, 28) in:content];
@@ -2883,7 +2914,11 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     NSButton *projectsFind = [self findButton:@"Find All"
                                        action:@selector(findPanelFindInProjects:)
                                            at:NSMakePoint(16, 28) in:content];
-    [self.inProjectsViews addObject:projectsFind];
+    NSButton *projectsReplace = [self findButton:@"Replace in Projects"
+                                          action:@selector(findPanelReplaceInProjects:)
+                                              at:NSMakePoint(128, 28) in:content];
+    projectsReplace.frame = NSMakeRect(128, 28, 150, 26);
+    [self.inProjectsViews addObjectsFromArray:@[projectsFind, projectsReplace]];
     NSMutableArray *boxes = [NSMutableArray array];
     for (NSInteger i = 1; i <= 3; ++i) {
         NSButton *box = [self findCheckbox:[NSString stringWithFormat:@"Project Panel %ld", (long)i]
@@ -2900,28 +2935,193 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
                                      action:@selector(findPanelClearMarks:)
                                          at:NSMakePoint(128, 28) in:content];
     clearMarks.frame = NSMakeRect(128, 28, 130, 26);
-    [self.markViews addObjectsFromArray:@[markAll, clearMarks]];
+    NSButton *copyMarked = [self findButton:@"Copy Marked Text"
+                                     action:@selector(findPanelCopyMarkedText:)
+                                         at:NSMakePoint(262, 28) in:content];
+    copyMarked.frame = NSMakeRect(262, 28, 150, 26);
+    [self.markViews addObjectsFromArray:@[markAll, clearMarks, copyMarked]];
 
     // A search over a folder can take a while, so it says how far it has got
     // and can be called off.
     self.findStopButton = [self findButton:@"Stop" action:@selector(findPanelStop:)
-                                        at:NSMakePoint(276, 28) in:content];
-    self.findStopButton.frame = NSMakeRect(276, 28, 64, 26);
+                                        at:NSMakePoint(286, 28) in:content];
+    self.findStopButton.frame = NSMakeRect(286, 28, 64, 26);
     self.findStopButton.hidden = YES;
 
-    self.findProgress = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(348, 32, 120, 18)];
+    self.findProgress = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(358, 32, 120, 18)];
     self.findProgress.style = NSProgressIndicatorStyleBar;
     self.findProgress.indeterminate = YES;
     self.findProgress.displayedWhenStopped = NO;
     [content addSubview:self.findProgress];
 
-    self.findSearchButtons = @[filesFind, filesReplace, projectsFind];
+    self.findSearchButtons = @[filesFind, filesReplace, projectsFind, projectsReplace];
 
     self.findStatus = [NSTextField labelWithString:@""];
-    self.findStatus.frame = NSMakeRect(300, 8, 324, 18);
+    self.findStatus.frame = NSMakeRect(16, 6, 500, 18);
     [content addSubview:self.findStatus];
 
+    // Transparency: on losing focus or always, at the chosen level.
+    self.transparencyBox = [self findCheckbox:@"Transparency" at:NSMakePoint(540, 72) in:content];
+    self.transparencyBox.target = self;
+    self.transparencyBox.action = @selector(findTransparencyChanged:);
+    self.transparencyBox.state = prefs.findTransparencyMode ? NSControlStateValueOn : NSControlStateValueOff;
+    self.transparencyRadios = [[NSMatrix alloc] initWithFrame:NSMakeRect(556, 28, 130, 42)
+                                                         mode:NSRadioModeMatrix prototype:prototype
+                                                 numberOfRows:2 numberOfColumns:1];
+    [[self.transparencyRadios cellAtRow:0 column:0] setTitle:@"On losing focus"];
+    [[self.transparencyRadios cellAtRow:1 column:0] setTitle:@"Always"];
+    [self.transparencyRadios setCellSize:NSMakeSize(130, 20)];
+    [self.transparencyRadios selectCellAtRow:prefs.findTransparencyMode == 2 ? 1 : 0 column:0];
+    self.transparencyRadios.target = self;
+    self.transparencyRadios.action = @selector(findTransparencyChanged:);
+    [content addSubview:self.transparencyRadios];
+    self.transparencySlider = [NSSlider sliderWithValue:prefs.findTransparencyLevel ?: 150 minValue:20 maxValue:255
+                                                 target:self action:@selector(findTransparencyChanged:)];
+    self.transparencySlider.frame = NSMakeRect(556, 4, 128, 22);
+    [content addSubview:self.transparencySlider];
+
     [self findTabChanged:nil];
+    [self applyFindTransparency];
+}
+
+- (void)findPanelSwap:(id)sender {
+    NSString *what = self.findField.stringValue;
+    self.findField.stringValue = self.replaceField.stringValue;
+    self.replaceField.stringValue = what;
+}
+
+/// Puts a value at the head of a history, keeping at most ten, as the
+/// dialog's combo boxes do, and remembers it for the next launch.
+- (void)remember:(NSString *)value inCombo:(NSComboBox *)combo key:(NSString *)key {
+    if (!value.length || ![combo isKindOfClass:[NSComboBox class]]) return;
+    NSMutableArray *items = [combo.objectValues mutableCopy] ?: [NSMutableArray array];
+    [items removeObject:value];
+    [items insertObject:value atIndex:0];
+    while (items.count > 10) [items removeLastObject];
+    [combo removeAllItems];
+    [combo addItemsWithObjectValues:items];
+    combo.stringValue = value;
+    [[NppPreferences shared] setValue:items forKey:key];
+}
+
+- (void)rememberFindFields:(BOOL)withReplace files:(BOOL)files {
+    [self remember:self.findField.stringValue inCombo:(NSComboBox *)self.findField key:@"findHistory"];
+    if (withReplace) [self remember:self.replaceField.stringValue inCombo:(NSComboBox *)self.replaceField key:@"replaceHistory"];
+    if (files) {
+        [self remember:self.filtersField.stringValue inCombo:(NSComboBox *)self.filtersField key:@"filterHistory"];
+        [self remember:self.directoryField.stringValue inCombo:(NSComboBox *)self.directoryField key:@"directoryHistory"];
+    }
+}
+
+- (void)applyFindTransparency {
+    NppPreferences *p = [NppPreferences shared];
+    BOOL on = self.transparencyBox.state == NSControlStateValueOn;
+    BOOL always = [self.transparencyRadios selectedRow] == 1;
+    self.transparencyRadios.enabled = on;
+    self.transparencySlider.enabled = on;
+    p.findTransparencyMode = on ? (always ? 2 : 1) : 0;
+    p.findTransparencyLevel = (NSInteger)self.transparencySlider.integerValue;
+    BOOL translucent = on && (always || !self.findPanel.isKeyWindow);
+    self.findPanel.alphaValue = translucent ? self.transparencySlider.doubleValue / 255.0 : 1.0;
+}
+
+- (void)findTransparencyChanged:(id)sender { [self applyFindTransparency]; }
+
+/// In selection means nothing without a selection, so it is greyed out
+/// then; a selection big enough ticks it, as Notepad++ does at 1024 characters.
+- (void)updateInSelectionAvailability {
+    ScintillaView *sci = self.editor.sci;
+    long length = [sci message:SCI_GETSELECTIONEND] - [sci message:SCI_GETSELECTIONSTART];
+    self.inSelectionBox.enabled = length > 0;
+    if (length <= 0) self.inSelectionBox.state = NSControlStateValueOff;
+    else if (length >= 1024) self.inSelectionBox.state = NSControlStateValueOn;
+}
+
+- (void)findPanelFocusChanged:(NSNotification *)note {
+    if ([note.name isEqualToString:NSWindowDidBecomeKeyNotification]) [self updateInSelectionAvailability];
+    [self applyFindTransparency];
+}
+
+- (void)findPanelFindAllInOpenDocuments:(id)sender {
+    NppFindSpec *spec = [self currentFindSpec];
+    [self rememberFindFields:NO files:NO];
+    NSUInteger hits = 0;
+    NSString *report = [self.editor findAllInOpenDocuments:spec hits:&hits];
+    [self.editor showSearchResults:report];
+    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found in all opened documents", (unsigned long)hits];
+}
+
+- (void)findPanelReplaceAllInOpenDocuments:(id)sender {
+    NppFindSpec *spec = [self currentFindSpec];
+    [self rememberFindFields:YES files:NO];
+    if (!getenv("NPPMAC_TEST")) {
+        NSAlert *confirm = [[NSAlert alloc] init];
+        confirm.messageText = @"Replace All in All Opened Documents";
+        confirm.informativeText = @"Are you sure you want to replace all occurrences in all open documents?";
+        [confirm addButtonWithTitle:@"Replace"];
+        [confirm addButtonWithTitle:@"Cancel"];
+        if ([confirm runModal] != NSAlertFirstButtonReturn) return;
+    }
+    NSUInteger n = [self.editor replaceAllInOpenDocuments:spec];
+    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu replaced in all opened documents", (unsigned long)n];
+}
+
+- (void)findPanelCopyMarkedText:(id)sender {
+    NSString *text = [self.editor textOfStyle:NPPMAC_STYLE_COUNT];
+    if (!text.length) { self.findStatus.stringValue = @"Nothing is marked"; return; }
+    [[NSPasteboard generalPasteboard] clearContents];
+    [[NSPasteboard generalPasteboard] setString:text forType:NSPasteboardTypeString];
+    self.findStatus.stringValue = @"Marked text copied";
+}
+
+/// The files of the projects in the ticked panels - a panel never opened is
+/// loaded with its last workspace first.
+- (NSArray<NSString *> *)filesOfTickedProjects {
+    NSMutableArray<NSString *> *files = [NSMutableArray array];
+    for (NSInteger panel = 1; panel <= 3; ++panel) {
+        if (self.projectPanelBoxes[(NSUInteger)(panel - 1)].state != NSControlStateValueOn) continue;
+        NppProjectPanel *p = [self.editor projectPanel:panel];
+        if (!p.workspacePath && !p.root.children.count) {
+            NSString *last = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppMac.projectWorkspaces"]
+                             [[@(panel) stringValue]];
+            if (last.length) [p openWorkspace:last];
+        }
+        for (NSString *f in [p allFilePaths]) if (![files containsObject:f]) [files addObject:f];
+    }
+    return files;
+}
+
+- (void)findPanelReplaceInProjects:(id)sender {
+    if (self.runningSearch) return;
+    NppFindSpec *spec = [self currentFindSpec];
+    [self rememberFindFields:YES files:NO];
+    NSArray<NSString *> *files = [self filesOfTickedProjects];
+    if (!files.count) { self.findStatus.stringValue = @"The ticked project panels have no files"; return; }
+    if (!getenv("NPPMAC_TEST")) {
+        NSAlert *confirm = [[NSAlert alloc] init];
+        confirm.messageText = @"Replace in Projects";
+        confirm.informativeText = [NSString stringWithFormat:
+            @"Replace \"%@\" in the %lu files of the ticked projects? This writes to disk and cannot be undone.",
+            spec.what, (unsigned long)files.count];
+        [confirm addButtonWithTitle:@"Replace"];
+        [confirm addButtonWithTitle:@"Cancel"];
+        if ([confirm runModal] != NSAlertFirstButtonReturn) return;
+    }
+    [self beginSearchUI];
+    __weak __typeof(self) weakSelf = self;
+    self.runningSearch =
+        [self.editor replaceInFilesInBackground:spec paths:files filters:self.filtersField.stringValue
+                                       progress:^(NSUInteger scanned, NSUInteger replaced) {
+            weakSelf.findStatus.stringValue = [NSString stringWithFormat:@"%lu file%@ searched, %lu replaced",
+                (unsigned long)scanned, scanned == 1 ? @"" : @"s", (unsigned long)replaced];
+        }
+                                     completion:^(NSUInteger replaced, NSUInteger touched, BOOL stopped) {
+            __typeof(self) strongSelf = weakSelf;
+            [strongSelf endSearchUI];
+            strongSelf.findStatus.stringValue = [NSString stringWithFormat:@"%lu replaced in %lu file%@%@",
+                (unsigned long)replaced, (unsigned long)touched, touched == 1 ? @"" : @"s",
+                stopped ? @" (stopped)" : @""];
+        }];
 }
 
 /// Shows the controls that belong to the tab in front and hides the rest.
@@ -2971,22 +3171,26 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 }
 
 - (void)findPanelNext:(id)sender {
+    [self rememberFindFields:NO files:NO];
     NppFindSpec *spec = [self currentFindSpec];
     self.findStatus.stringValue = [self.editor findNext:spec] ? @"" : @"Not found";
 }
 
 - (void)findPanelCount:(id)sender {
+    [self rememberFindFields:NO files:NO];
     NSUInteger n = [self.editor countMatches:[self currentFindSpec]];
     self.findStatus.stringValue = [NSString stringWithFormat:@"%lu match%@",
                                    (unsigned long)n, n == 1 ? @"" : @"es"];
 }
 
 - (void)findPanelReplace:(id)sender {
+    [self rememberFindFields:YES files:NO];
     NppFindSpec *spec = [self currentFindSpec];
     self.findStatus.stringValue = [self.editor replaceCurrentThenFindNext:spec] ? @"" : @"Not found";
 }
 
 - (void)findPanelReplaceAll:(id)sender {
+    [self rememberFindFields:YES files:NO];
     NSUInteger n = [self.editor replaceAll:[self currentFindSpec]];
     self.findStatus.stringValue = [NSString stringWithFormat:@"%lu replaced", (unsigned long)n];
 }
@@ -3007,33 +3211,16 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 
 /// Find All in the current document: every match listed in the results panel.
 - (void)findPanelFindAll:(id)sender {
-    NppFindSpec *spec = [self currentFindSpec];
-    NSArray<NSValue *> *matches = [self.editor rangesOfMatches:spec];
-    NSString *path = self.editor.currentDocument.path ?: self.editor.currentDocument.displayName;
-    NSMutableString *report = [NSMutableString stringWithFormat:@"Search \"%@\" in %@\n\n",
-                               spec.what, path];
-    ScintillaView *sci = self.editor.sci;
-    for (NSValue *match in matches) {
-        long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)match.rangeValue.location];
-        long start = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)line];
-        long end = [sci message:SCI_GETLINEENDPOSITION wParam:(uptr_t)line];
-        NSData *bytes = [([sci string] ?: @"") dataUsingEncoding:NSUTF8StringEncoding];
-        NSString *text = (end > start && (NSUInteger)end <= bytes.length)
-            ? [[NSString alloc] initWithData:[bytes subdataWithRange:NSMakeRange(start, end - start)]
-                                    encoding:NSUTF8StringEncoding]
-            : @"";
-        [report appendFormat:@"\tLine %ld: %@\n", line + 1,
-                             [EditorController singleReportLine:text ?: @""]];
-    }
-    [report appendFormat:@"\n%lu hit%@\n", (unsigned long)matches.count,
-                         matches.count == 1 ? @"" : @"s"];
+    [self rememberFindFields:NO files:NO];
+    NSUInteger hits = 0;
+    NSString *report = [self.editor findAllReport:[self currentFindSpec] hits:&hits];
     [self.editor showSearchResults:report];
-    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found",
-                                   (unsigned long)matches.count];
+    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu found", (unsigned long)hits];
 }
 
 - (void)findPanelFindInFiles:(id)sender {
-    if (self.runningSearch) return;                  // one at a time
+    if (self.runningSearch) return;
+    [self rememberFindFields:NO files:YES];
     NppFindSpec *spec = [self currentFindSpec];
     NSString *folder = self.directoryField.stringValue;
     if (!folder.length) { self.findStatus.stringValue = @"Choose a folder first"; return; }
@@ -3094,6 +3281,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 
 - (void)findPanelReplaceInFiles:(id)sender {
     if (self.runningSearch) return;
+    [self rememberFindFields:YES files:YES];
     NppFindSpec *spec = [self currentFindSpec];
     NSString *folder = self.directoryField.stringValue;
     if (!folder.length) { self.findStatus.stringValue = @"Choose a folder first"; return; }
@@ -3137,21 +3325,10 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 /// The projects tab searches the folders the project panels are rooted at.
 - (void)findPanelFindInProjects:(id)sender {
     if (self.runningSearch) return;
+    [self rememberFindFields:NO files:NO];
     NppFindSpec *spec = [self currentFindSpec];
 
-    // The files of the projects in the panels that are ticked - the panels
-    // are loaded with their last workspace if they were never opened.
-    NSMutableArray<NSString *> *files = [NSMutableArray array];
-    for (NSInteger panel = 1; panel <= 3; ++panel) {
-        if (self.projectPanelBoxes[(NSUInteger)(panel - 1)].state != NSControlStateValueOn) continue;
-        NppProjectPanel *p = [self.editor projectPanel:panel];
-        if (!p.workspacePath && !p.root.children.count) {
-            NSString *last = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppMac.projectWorkspaces"]
-                             [[@(panel) stringValue]];
-            if (last.length) [p openWorkspace:last];
-        }
-        for (NSString *f in [p allFilePaths]) if (![files containsObject:f]) [files addObject:f];
-    }
+    NSArray<NSString *> *files = [self filesOfTickedProjects];
     if (!files.count) { self.findStatus.stringValue = @"The ticked project panels have no files"; return; }
 
     [self.editor showSearchResults:[NSString stringWithFormat:@"Search \"%@\" in the projects\n\nSearching...\n",
@@ -3185,8 +3362,14 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 }
 
 - (void)findPanelMarkAll:(id)sender {
+    [self rememberFindFields:NO files:NO];
     NppFindSpec *spec = [self currentFindSpec];
-    NSUInteger n = [self.editor markAll:spec];
+    BOOL purge = self.purgeBox.state == NSControlStateValueOn;
+    // Purging also takes away the bookmarks an earlier Mark All put in.
+    if (purge && self.bookmarkLineBox.state == NSControlStateValueOn) {
+        [self.editor.sci message:SCI_MARKERDELETEALL wParam:1 lParam:0];
+    }
+    NSUInteger n = [self.editor markAll:spec purge:purge];
 
     // Notepad++ can put a bookmark on every line it marks.
     if (self.bookmarkLineBox.state == NSControlStateValueOn) {
@@ -3338,6 +3521,16 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     [self.editor.view displayIfNeeded];
 
     NSView *view = self.window.contentView;
+    // NPPMAC_SNAPSHOT_PANEL=find:<tab> or style captures that dialog instead.
+    const char *panel = getenv("NPPMAC_SNAPSHOT_PANEL");
+    if (panel && !strncmp(panel, "find", 4)) {
+        [self openFindPanelOnTab:strlen(panel) > 5 ? atoi(panel + 5) : 0];
+        view = self.findPanel.contentView;
+    } else if (panel && !strcmp(panel, "style")) {
+        [self showStyleConfigurator:nil];
+        view = [[self.styleWindow valueForKey:@"panel"] contentView];
+    }
+    [view.window displayIfNeeded];
 
     NSBitmapImageRep *rep = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
     [view cacheDisplayInRect:view.bounds toBitmapImageRep:rep];

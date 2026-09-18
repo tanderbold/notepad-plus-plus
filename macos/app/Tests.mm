@@ -2043,15 +2043,37 @@ int NppMacRunTests(AppDelegate *app) {
               @"\\U, \\L, \\E, \\u and \\l change the case of the replacement",
               upperRun && lowerRun && oneEach);
 
-        // The replacement is text, not a second pattern: \d+ put in the replace
-        // field means those three characters.
+        // The replacement is text, not a second pattern. Boost, which reads it on
+        // Windows, drops the backslash of an escape it does not know: \d+ gives d+.
         SetDoc(ed, @"x\n");
         NppFindSpec *literal = [NppFindSpec specFor:@"x" mode:NppSearchRegex options:NppFindNone];
         literal.replacement = @"\\d+";
         [ed replaceAll:literal];
         Check(@"IDM_SEARCH_REPLACE (replacement is text)",
-              @"a pattern typed into the replace field is put in as it stands",
-              [DocText(ed) isEqualToString:@"\\d+\n"]);
+              @"a pattern typed into the replace field is text, read as Boost reads it",
+              [DocText(ed) isEqualToString:@"d+\n"]);
+
+        // Boost's format_all, as Notepad++ calls it: the Perl names, named and
+        // numbered groups, prefix and suffix, parentheses and conditionals.
+        NSString *(^replaced)(NSString *, NSString *, NSString *) = ^NSString *(NSString *doc, NSString *what, NSString *with) {
+            SetDoc(ed, doc);
+            NppFindSpec *sp = [NppFindSpec specFor:what mode:NppSearchRegex options:NppFindMatchCase];
+            sp.replacement = with;
+            [ed replaceAll:sp];
+            return DocText(ed);
+        };
+        NSString *perl = replaced(@"xx ab-12 yy", @"(?<w>[a-z]+)-(\\d+)", @"[$+{w}|$2|$&|$$|\\2|$`|$'|${2}|$MATCH]");
+        NSString *conditional = replaced(@"a1 b", @"([a-z])(\\d)?", @"(?2<$1$2>:[$1])");
+        NSString *digits = replaced(@"abcdefghij", @"(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)", @"\\10|$10|${1}0");
+        NSString *escapes = replaced(@"q", @"q", @"\\x41\\x{263A}\\101\\\\\\u$&(x)");
+        NSString *stray = replaced(@"q", @"q", @"a)b");
+        Check(@"IDM_SEARCH_REPLACE (Boost format)",
+              @"replacements read $+{name}, $`, $', ${n}, \\n, ?N:, escapes and parentheses as Notepad++ does",
+              [perl isEqualToString:@"xx [ab|12|ab-12|$|12|xx | yy|12|ab-12] yy"] &&
+              [conditional isEqualToString:@"<a1> [b]"] &&
+              [digits isEqualToString:@"a0|j|a0"] &&
+              [escapes isEqualToString:@"A\u263A01\\Qx"] &&
+              [stray isEqualToString:@"a"]);
 
         // '^' is per line, so "^." matches once on each of them.
         SetDoc(ed, @"abc\ndef\n");
@@ -2468,6 +2490,112 @@ int NppMacRunTests(AppDelegate *app) {
               (fromPanel.options & NppFindWholeWord) == 0 &&
               [ed countMatches:fromPanel] == 3 &&
               modes.numberOfRows == 3);
+
+        // The rest of the dialog as on Windows.
+        {
+            NSComboBox *what = [app valueForKey:@"findField"];
+            NSComboBox *with = [app valueForKey:@"replaceField"];
+            NppPreferences *fp = [NppPreferences shared];
+            NSArray *savedFind = fp.findHistory, *savedReplace = fp.replaceHistory;
+            [modes selectCellAtRow:0 column:0];
+            SetDoc(ed, @"one two one\n");
+            for (int i = 0; i < 12; ++i) {
+                what.stringValue = [NSString stringWithFormat:@"term%d", i];
+                [app findPanelCount:nil];
+            }
+            what.stringValue = @"term3";
+            [app findPanelCount:nil];
+            BOOL history = [what isKindOfClass:[NSComboBox class]] && fp.findHistory.count == 10 &&
+                           [fp.findHistory.firstObject isEqualToString:@"term3"] && what.numberOfItems == 10 &&
+                           [[what itemObjectValueAtIndex:1] isEqualToString:@"term11"];
+            what.stringValue = @"left";
+            with.stringValue = @"right";
+            [app findPanelSwap:nil];
+            BOOL swapped = [what.stringValue isEqualToString:@"right"] && [with.stringValue isEqualToString:@"left"];
+            Check(@"IDM_SEARCH_FIND (histories)",
+                  @"each field keeps its last ten entries, newest first, and the swap button trades the two",
+                  history && swapped);
+
+            NSButton *sel = [app valueForKey:@"inSelectionBox"];
+            [sci message:SCI_SETSEL wParam:0 lParam:0];
+            sel.state = NSControlStateValueOn;
+            [app updateInSelectionAvailability];
+            BOOL greyed = !sel.enabled && sel.state == NSControlStateValueOff;
+            [sci message:SCI_SETSEL wParam:0 lParam:3];
+            [app updateInSelectionAvailability];
+            BOOL usable = sel.enabled;
+            [sci message:SCI_SETSEL wParam:0 lParam:0];
+            [app updateInSelectionAvailability];
+            Check(@"IDM_SEARCH_FIND (in selection)",
+                  @"In selection is greyed out and cleared while nothing is selected", greyed && usable);
+
+            // Mark: without purging, earlier marks stay; Copy Marked Text takes them.
+            NSButton *purge = [app valueForKey:@"purgeBox"];
+            purge.state = NSControlStateValueOff;
+            what.stringValue = @"one";
+            [app findPanelMarkAll:nil];
+            what.stringValue = @"two";
+            [app findPanelMarkAll:nil];
+            NSString *kept = [ed textOfStyle:NPPMAC_STYLE_COUNT];
+            purge.state = NSControlStateValueOn;
+            [app findPanelMarkAll:nil];
+            NSString *purged = [ed textOfStyle:NPPMAC_STYLE_COUNT];
+            [app findPanelCopyMarkedText:nil];
+            NSString *copied = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
+            [ed clearStyle:NPPMAC_STYLE_COUNT];
+            purge.state = NSControlStateValueOff;
+            Check(@"IDM_SEARCH_MARK (purge, copy)",
+                  @"marks add up unless Purge for each search is on, and Copy Marked Text copies them",
+                  [kept componentsSeparatedByString:@"\n"].count == 3 && [purged isEqualToString:@"two"] &&
+                  [copied isEqualToString:@"two"]);
+
+            // Every open document: Find All lists each, Replace All changes each.
+            NSUInteger docsBefore = ed.documents.count;
+            [ed newDocument];
+            SetDoc(ed, @"zqx first\nzqx again zqx\n");
+            [ed newDocument];
+            SetDoc(ed, @"second zqx\n");
+            NppDocument *second = ed.currentDocument;
+            NSUInteger hits = 0;
+            NSString *all = [ed findAllInOpenDocuments:[NppFindSpec specFor:@"zqx" mode:NppSearchNormal options:NppFindNone]
+                                                  hits:&hits];
+            BOOL listed = hits == 4 && [all containsString:@"(4 hits in 2 files of"] &&
+                          [all containsString:@"(3 hits)\n\tLine 1: zqx first\n\tLine 2: zqx again zqx\n"] &&
+                          ed.currentDocument == second;
+            what.stringValue = @"zqx";
+            with.stringValue = @"done";
+            [app findPanelReplaceAllInOpenDocuments:nil];
+            BOOL replacedEverywhere = [DocText(ed) isEqualToString:@"second done\n"] &&
+                                      [[ed findAllInOpenDocuments:[NppFindSpec specFor:@"zqx" mode:NppSearchNormal
+                                                                              options:NppFindNone] hits:NULL]
+                                       containsString:@"(0 hits in 0 files"];
+            while (ed.documents.count > docsBefore) {
+                [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+            }
+            Check(@"IDM_SEARCH_FINDALL_OPENEDFILES",
+                  @"Find All and Replace All reach every open document and leave the one in front where it was",
+                  listed && replacedEverywhere);
+
+            // Transparency, on losing focus or always.
+            NSButton *transparent = [app valueForKey:@"transparencyBox"];
+            NSMatrix *when = [app valueForKey:@"transparencyRadios"];
+            NSPanel *dialog = [app valueForKey:@"findPanel"];
+            NSInteger savedMode = fp.findTransparencyMode;
+            transparent.state = NSControlStateValueOn;
+            [when selectCellAtRow:1 column:0];
+            [app applyFindTransparency];
+            BOOL always = dialog.alphaValue < 1.0 && fp.findTransparencyMode == 2;
+            transparent.state = NSControlStateValueOff;
+            [app applyFindTransparency];
+            BOOL opaque = dialog.alphaValue == 1.0 && fp.findTransparencyMode == 0;
+            fp.findTransparencyMode = savedMode;
+            Check(@"IDM_SEARCH_FIND (transparency)",
+                  @"the dialog turns translucent as set, and the setting is kept", always && opaque);
+            fp.findHistory = savedFind ?: @[];
+            fp.replaceHistory = savedReplace ?: @[];
+            what.stringValue = @"";
+            with.stringValue = @"";
+        }
 
         // Cmd+V while a Find field has the caret must reach that field, not the
         // document behind it. The menu items carry a target, so they never

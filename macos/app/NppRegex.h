@@ -40,6 +40,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// at the start of "[Section]" before it reaches the word.
 - (NSRange)firstNonEmptyMatchInData:(NSData *)data range:(NSRange)range;
 
+/// The number of the group a pattern named (?<name>...), or -1.
+- (NSInteger)groupNumberForName:(NSString *)name;
+
 @end
 
 NS_ASSUME_NONNULL_END

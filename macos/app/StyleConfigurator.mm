@@ -129,7 +129,12 @@ static NSTextView *KeywordView(NSRect frame, NSView *parent, BOOL editable) {
     _panel.title = @"Style Configurator";
     _panel.releasedWhenClosed = NO;
     _panel.delegate = self;
-    NSView *content = [[NSView alloc] initWithFrame:frame];
+    // A panel's own content view paints nothing, and in dark mode its labels
+    // would be white on white; this one follows the appearance.
+    NSVisualEffectView *content = [[NSVisualEffectView alloc] initWithFrame:frame];
+    content.material = NSVisualEffectMaterialWindowBackground;
+    content.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+    content.state = NSVisualEffectStateActive;
     CGFloat top = NSHeight(frame);
 
     [content addSubview:Label(@"Select theme:", NSMakeRect(20, top - 38, 90, 18))];

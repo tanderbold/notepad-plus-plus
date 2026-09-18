@@ -53,6 +53,8 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
 - (BOOL)replaceCurrentThenFindNext:(NppFindSpec *)spec;
 /// Marks every match with the Find mark style, returning how many.
 - (NSUInteger)markAll:(NppFindSpec *)spec;
+/// The same, keeping the marks already there unless `purge`.
+- (NSUInteger)markAll:(NppFindSpec *)spec purge:(BOOL)purge;
 /// Searching a folder, which is what the Find in Files tab does. The filter is
 /// what Notepad++ takes there: patterns such as "*.cpp *.h", empty for all.
 - (NSUInteger)findInFiles:(NppFindSpec *)spec
@@ -100,6 +102,25 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
                                      progress:(void (^)(NSUInteger scanned, NSUInteger replaced))progress
                                    completion:(void (^)(NSUInteger replaced, NSUInteger files,
                                                         BOOL cancelled))completion;
+
+/// Replace in Projects: the same over a list of files.
+- (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec
+                                        paths:(NSArray<NSString *> *)paths
+                                      filters:(nullable NSString *)filters
+                                     progress:(nullable void (^)(NSUInteger scanned, NSUInteger replaced))progress
+                                   completion:(nullable void (^)(NSUInteger replaced, NSUInteger files,
+                                                                 BOOL cancelled))completion;
+
+/// Find All in Current Document, as the report the results tab shows.
+- (NSString *)findAllReport:(NppFindSpec *)spec hits:(NSUInteger *_Nullable)hits;
+/// Find All in All Opened Documents: a heading per document with hits.
+- (NSString *)findAllInOpenDocuments:(NppFindSpec *)spec hits:(NSUInteger *_Nullable)hits;
+/// Replace All in All Opened Documents; how many were replaced.
+- (NSUInteger)replaceAllInOpenDocuments:(NppFindSpec *)spec;
+/// The replacement text for one match; for the tests.
+- (NSString *)replacementFor:(NppFindSpec *)spec
+                      groups:(NSArray<NSValue *> *)groups
+                        data:(NSData *)data;
 
 /// The lines of a file, counted as the editor counts them: CRLF, CR and LF all
 /// end a line. Splitting on LF alone numbers the lines of a file with CR or

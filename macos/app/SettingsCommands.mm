@@ -153,6 +153,9 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"styleOverrides"):  @{},
         Key(@"globalOverride"):  @{},
         Key(@"userMatchedPairs"): @[],
+        Key(@"findHistory"): @[], Key(@"replaceHistory"): @[],
+        Key(@"filterHistory"): @[], Key(@"directoryHistory"): @[],
+        Key(@"findTransparencyMode"): @1, Key(@"findTransparencyLevel"): @150,
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -224,6 +227,12 @@ NPP_PREF_BOOL(selectedTextDragDrop, setSelectedTextDragDrop, @"selectedTextDragD
 NPP_PREF_OBJ(styleOverrides, setStyleOverrides, NSDictionary, @"styleOverrides")
 NPP_PREF_OBJ(globalOverride, setGlobalOverride, NSDictionary, @"globalOverride")
 NPP_PREF_OBJ(userMatchedPairs, setUserMatchedPairs, NSArray, @"userMatchedPairs")
+NPP_PREF_OBJ(findHistory, setFindHistory, NSArray, @"findHistory")
+NPP_PREF_OBJ(replaceHistory, setReplaceHistory, NSArray, @"replaceHistory")
+NPP_PREF_OBJ(filterHistory, setFilterHistory, NSArray, @"filterHistory")
+NPP_PREF_OBJ(directoryHistory, setDirectoryHistory, NSArray, @"directoryHistory")
+NPP_PREF_INT(findTransparencyMode, setFindTransparencyMode, @"findTransparencyMode")
+NPP_PREF_INT(findTransparencyLevel, setFindTransparencyLevel, @"findTransparencyLevel")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
 NPP_PREF_INT(fontSize, setFontSize, @"fontSize")
