@@ -3278,7 +3278,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
             into = submenus[name];
             if (!into) {
                 into = submenus[name] = [[NSMenu alloc] initWithTitle:name];
-                [menu addItemWithTitle:name action:nil keyEquivalent:@""].submenu = into;
+                [menu addItemWithTitle:NppL(name) action:nil keyEquivalent:@""].submenu = into;
             }
         }
         if (!entry.label) {
@@ -3292,7 +3292,11 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         NSMenuItem *real = identifier ? items[@(identifier)] : nil;
         if (!real && entry.action) real = byAction(NSSelectorFromString(@(entry.action)));
         if (!real) continue;
-        NSMenuItem *copy = [[NSMenuItem alloc] initWithTitle:@(entry.label) action:real.action keyEquivalent:@""];
+        // In the interface language: the tab menu's wording, else the main menu's, else by the English text.
+        NppLocalization *l10n = [NppLocalization shared];
+        NSString *label = !l10n.active ? @(entry.label)
+            : ([l10n tabCommandName:identifier] ?: (identifier ? [l10n commandName:identifier] : nil) ?: NppL(@(entry.label)));
+        NSMenuItem *copy = [[NSMenuItem alloc] initWithTitle:label action:real.action keyEquivalent:@""];
         copy.target = real.target;
         copy.tag = real.tag;
         copy.representedObject = real.representedObject;
@@ -3319,6 +3323,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     if (![file isEqualToString:l.languageFile ?: @""] || !file.length) [l loadLanguageFile:file];
     [l localizeMenu:NSApp.mainMenu identifiers:self.menuIdentifiers ?: @{}];
     for (NSWindow *w in NSApp.windows) [l localizeWindow:w];
+    [self.editor rebuildContextMenu];   // copies of menu titles, made anew in the language
 }
 
 - (void)windowBecameKey:(NSNotification *)note {

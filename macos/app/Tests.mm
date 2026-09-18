@@ -7313,6 +7313,39 @@ int NppMacRunTests(AppDelegate *app) {
                      [replaceButton.title isEqualToString:@"Заменить"] &&
                      [replaceAllButton.title isEqualToString:@"Заменить все"] &&
                      replaceAllButton.cell.cellSize.width <= NSWidth(replaceAllButton.frame) + 0.5;
+        // What the program writes into a label after it was translated stays:
+        // a status line is not put back to the first text it ever held.
+        NSWindow *statusWindow = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 200, 60) styleMask:NSWindowStyleMaskTitled
+                                                               backing:NSBackingStoreBuffered defer:YES];
+        statusWindow.releasedWhenClosed = NO;
+        NSTextField *statusLabel = [NSTextField labelWithString:@"Match case"];
+        [statusWindow.contentView addSubview:statusLabel];
+        statusWindow.title = @"first.txt";
+        [[NppLocalization shared] localizeWindow:statusWindow];
+        BOOL translatedFirst = [statusLabel.stringValue isEqualToString:@"Учитывать регистр"];
+        statusLabel.stringValue = @"3 matches in 2 files";
+        statusWindow.title = @"second.txt";
+        [[NppLocalization shared] localizeWindow:statusWindow];
+        [[NppLocalization shared] localizeWindow:statusWindow];
+        BOOL keptNew = [statusLabel.stringValue isEqualToString:@"3 matches in 2 files"] && [statusWindow.title isEqualToString:@"second.txt"];
+        statusLabel.stringValue = @"Wrap around";
+        [[NppLocalization shared] localizeWindow:statusWindow];
+        names = names && translatedFirst && keptNew && [statusLabel.stringValue isEqualToString:@"Зациклить поиск"];
+
+        // Context menus: the tab's in its own wording, the editor's still found
+        // by the English titles the setting keeps.
+        NSMenu *tabMenu = [app buildTabContextMenu];
+        NSMenu *editorMenu = [ed.sci menu];
+        NSMenuItem *closeOthers = nil;
+        for (NSMenuItem *it in fileTop.submenu.itemArray) for (NSMenuItem *sub in it.submenu.itemArray) if (sub.action == NSSelectorFromString(@"closeAllButCurrent:")) closeOthers = sub;
+        BOOL contextMenus = [tabMenu.itemArray.firstObject.title isEqualToString:@"Закрыть"] &&
+                            [[tabMenu.itemArray[1].submenu.itemArray.firstObject title] isEqualToString:@"Закрыть все Кроме Текущей"] &&
+                            editorMenu.numberOfItems >= 3 && [editorMenu.itemArray.firstObject.title isEqualToString:@"Копировать"];
+        printf("    l10n context: tab=%s/%s editor=%ld first=%s main=%s\n", tabMenu.itemArray.firstObject.title.UTF8String,
+               [tabMenu.itemArray[1].submenu.itemArray.firstObject title].UTF8String, (long)editorMenu.numberOfItems,
+               editorMenu.itemArray.firstObject.title.UTF8String, closeOthers.title.UTF8String);
+        names = names && contextMenus;
+
         // The language pop-up has one item per file, so its index is the file's.
         PreferencesWindow *lpw = [[PreferencesWindow alloc] initWithEditor:ed];
         NSPopUpButton *languagePopup = [lpw valueForKey:@"controls"][@"localizationFile"];

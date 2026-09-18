@@ -4,6 +4,7 @@
 @interface NppLocalization ()
 @property (nonatomic, readwrite, copy, nullable) NSString *languageFile;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSString *> *commands;
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSString *> *tabCommands;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *menuNames;      // menuId / subMenuId -> text
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *englishMenuIds;  // english name -> menuId / subMenuId
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *strings;        // normalised english -> text
@@ -19,16 +20,37 @@ static NSMapTable *Originals(void) {
     return gOriginals;
 }
 
+/// The English text of something shown. What the program itself has put
+/// there since - a status line, a count, a toggled title - is neither the
+/// English kept nor the translation last shown, and becomes the new English.
 static NSString *Original(id object, NSString *key, NSString *now) {
+    NSMutableDictionary *d = [Originals() objectForKey:object];
+    if (!d) { d = [NSMutableDictionary dictionary]; [Originals() setObject:d forKey:object]; }
+    NSString *shown = d[[key stringByAppendingString:@".shown"]];
+    if (now && (!d[key] || (![now isEqualToString:d[key]] && ![now isEqualToString:shown ?: @""]))) d[key] = now;
+    return d[key] ?: now;
+}
+
+/// A value kept as it first was (a button's English width).
+static NSString *FirstSeen(id object, NSString *key, NSString *now) {
     NSMutableDictionary *d = [Originals() objectForKey:object];
     if (!d) { d = [NSMutableDictionary dictionary]; [Originals() setObject:d forKey:object]; }
     if (!d[key] && now) d[key] = now;
     return d[key] ?: now;
 }
 
+static NSString *Shown(id object, NSString *key, NSString *text) {
+    NSMutableDictionary *d = [Originals() objectForKey:object];
+    if (text) d[[key stringByAppendingString:@".shown"]] = text;
+    return text;
+}
+
 NSString *NppEnglishTitle(NSMenuItem *item) {
     NSDictionary *d = [Originals() objectForKey:item];
-    return d[@"title"] ?: item.title ?: @"";
+    NSString *now = item.title ?: @"";
+    // A title the program changed since it was last translated is its own English.
+    if (d[@"title"] && ![now isEqualToString:d[@"title"]] && ![now isEqualToString:d[@"title.shown"] ?: @""]) return now;
+    return d[@"title"] ?: now;
 }
 
 NSString *NppEnglishMenuTitle(NSMenu *menu) {
@@ -69,7 +91,7 @@ static NSString *Normalised(NSString *s) {
 /// A push button keeps its English width, or grows to its translated title
 /// when the room beside it is free; otherwise the title is cut on one line.
 static void FitPushButton(NSButton *b) {
-    NSString *w = Original(b, @"width", [NSString stringWithFormat:@"%g", b.frame.size.width]);
+    NSString *w = FirstSeen(b, @"width", [NSString stringWithFormat:@"%g", b.frame.size.width]);
     NSRect frame = b.frame;
     frame.size.width = w.doubleValue;
     CGFloat wanted = ceil(b.cell.cellSize.width);
@@ -159,6 +181,7 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
 
 - (BOOL)loadLanguageFile:(NSString *)fileName {
     self.commands = [NSMutableDictionary dictionary];
+    self.tabCommands = [NSMutableDictionary dictionary];
     self.menuNames = [NSMutableDictionary dictionary];
     self.englishMenuIds = [NSMutableDictionary dictionary];
     self.strings = [NSMutableDictionary dictionary];
@@ -182,10 +205,16 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
         NSString *en = english[key];
         // Menu commands by id, menus and submenus by their upstream ids.
         NSRange cmd = [key rangeOfString:@"/Commands/Item[id="];
-        if (cmd.location == NSNotFound) cmd = [key rangeOfString:@"/TabBar/Item[CMDID="];
         if ([key hasPrefix:@"/Native-Langue/Menu/"] && cmd.location != NSNotFound && [key hasSuffix:@"@name"]) {
             NSString *idPart = [key substringFromIndex:NSMaxRange(cmd)];
             self.commands[@([idPart intValue])] = WithoutAccessKeys(text);
+        }
+        // The tab's own menu words some commands differently ("Close All BUT This"),
+        // so its texts are kept apart from the main menu's.
+        NSRange tab = [key rangeOfString:@"/TabBar/Item[CMDID="];
+        if ([key hasPrefix:@"/Native-Langue/Menu/"] && tab.location != NSNotFound && [key hasSuffix:@"@name"]) {
+            int identifier = [[key substringFromIndex:NSMaxRange(tab)] intValue];
+            if (identifier > 100) self.tabCommands[@(identifier)] = WithoutAccessKeys(text);
         }
         for (NSString *kind in @[@"menuId=", @"subMenuId="]) {
             NSRange r = [key rangeOfString:kind];
@@ -211,6 +240,7 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
 }
 
 - (NSString *)commandName:(int)identifier { return self.commands[@(identifier)]; }
+- (NSString *)tabCommandName:(int)identifier { return self.tabCommands[@(identifier)]; }
 
 - (NSString *)translate:(NSString *)english {
     return [self translate:english hit:self.strings[Normalised(english ?: @"")]];
@@ -268,14 +298,14 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
             if (top && menu.itemArray.firstObject == item) text = english;
             else if (ident) text = self.menuNames[ident];
             if (!text) text = [self translate:english];
-            item.submenu.title = self.active ? text : englishMenu;
+            item.submenu.title = Shown(item.submenu, @"title", self.active ? text : englishMenu);
             [self localizeMenu:item.submenu byItem:byItem top:NO];
         } else {
             NSNumber *identifier = [byItem objectForKey:item];
             text = identifier ? [self commandName:identifier.intValue] : nil;
             text = text ?: [self translate:english];
         }
-        item.title = (self.active ? text : english) ?: @"";
+        item.title = Shown(item, @"title", (self.active ? text : english) ?: @"");
     }
 }
 
@@ -284,7 +314,7 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
 - (void)localizeWindow:(NSWindow *)window {
     if (!window) return;
     NSString *english = Original(window, @"title", window.title);
-    window.title = [self translateTitle:english];
+    window.title = Shown(window, @"title", [self translateTitle:english]);
     if (window.contentView) [self localizeView:window.contentView];
 }
 
@@ -293,37 +323,39 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
         // (A pop-up's setTitle: selects or adds an item; its items are done below.)
         NSButton *b = (NSButton *)view;
         if (b.title.length) {
-            b.title = [self translate:Original(b, @"title", b.title)];
+            b.title = Shown(b, @"title", [self translate:Original(b, @"title", b.title)]);
             if (b.bezelStyle == NSBezelStyleRounded) FitPushButton(b);
         }
     }
     if ([view isKindOfClass:[NSPopUpButton class]]) {
         for (NSMenuItem *item in ((NSPopUpButton *)view).itemArray) {
-            item.title = [self translate:Original(item, @"title", item.title)];
+            item.title = Shown(item, @"title", [self translate:Original(item, @"title", item.title)]);
         }
     } else if ([view isKindOfClass:[NSSegmentedControl class]]) {
         NSSegmentedControl *s = (NSSegmentedControl *)view;
         for (NSInteger i = 0; i < s.segmentCount; ++i) {
             NSString *label = [s labelForSegment:i];
-            if (label.length) [s setLabel:[self translateTitle:Original(s, [NSString stringWithFormat:@"seg%ld", (long)i], label)] forSegment:i];
+            if (label.length) [s setLabel:Shown(s, [NSString stringWithFormat:@"seg%ld", (long)i], [self translateTitle:Original(s, [NSString stringWithFormat:@"seg%ld", (long)i], label)]) forSegment:i];
         }
     } else if ([view isKindOfClass:[NSTextField class]] && ![view isKindOfClass:[NSComboBox class]]) {
         NSTextField *f = (NSTextField *)view;
-        if (!f.editable && f.stringValue.length) f.stringValue = [self translate:Original(f, @"text", f.stringValue)];
-        if (f.placeholderString.length) f.placeholderString = [self translate:Original(f, @"placeholder", f.placeholderString)];
+        if (!f.editable && f.stringValue.length) f.stringValue = Shown(f, @"text", [self translate:Original(f, @"text", f.stringValue)]);
+        if (f.placeholderString.length) f.placeholderString = Shown(f, @"placeholder", [self translate:Original(f, @"placeholder", f.placeholderString)]);
     } else if ([view isKindOfClass:[NSMatrix class]]) {
         for (NSCell *cell in ((NSMatrix *)view).cells) {
-            if (cell.title.length) cell.title = [self translate:Original(cell, @"title", cell.title)];
+            if (cell.title.length) cell.title = Shown(cell, @"title", [self translate:Original(cell, @"title", cell.title)]);
         }
     } else if ([view isKindOfClass:[NSTableView class]]) {
-        [(NSTableView *)view reloadData];   // data sources translate what they return
+        NSTableView *table = (NSTableView *)view;
+        for (NSTableColumn *c in table.tableColumns) {
+            if (c.title.length) c.title = Shown(c, @"title", [self translate:Original(c, @"title", c.title)]);
+        }
+        [table.headerView setNeedsDisplay:YES];
+        // Data sources translate what they return; a cell being edited is left to its editor.
+        if (table.editedRow < 0) [table reloadData];
     } else if ([view isKindOfClass:[NSBox class]]) {
         NSBox *b = (NSBox *)view;
-        if (b.title.length) b.title = [self translate:Original(b, @"title", b.title)];
-    } else if ([view isKindOfClass:[NSTableView class]]) {
-        for (NSTableColumn *c in ((NSTableView *)view).tableColumns) {
-            if (c.title.length) c.title = [self translate:Original(c, @"title", c.title)];
-        }
+        if (b.title.length) b.title = Shown(b, @"title", [self translate:Original(b, @"title", b.title)]);
     }
     for (NSView *sub in view.subviews) [self localizeView:sub];
 }

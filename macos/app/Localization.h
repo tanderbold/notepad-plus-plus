@@ -16,6 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL active;
 /// A menu command's text, by upstream's command id.
 - (nullable NSString *)commandName:(int)identifier;
+/// The tab context menu's own wording for a command, when the file has one.
+- (nullable NSString *)tabCommandName:(int)identifier;
 /// The translation of an English string, or the string itself.
 - (NSString *)translate:(nullable NSString *)english;
 /// As translate:, preferring the names upstream gives windows and tabs.

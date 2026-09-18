@@ -1,5 +1,6 @@
 #include <string>
 #import "EditorController.h"
+#import "Localization.h"
 #import "ProjectPanel.h"
 #import "CharsetDetection.h"
 #import "UserLanguages.h"
@@ -2004,7 +2005,8 @@ static const char kEditorMenuItemsKey = 0;
             NSMenuItem *item = queue.firstObject;
             [queue removeObjectAtIndex:0];
             if (item.submenu) [queue addObjectsFromArray:item.submenu.itemArray];
-            if ([item.title isEqualToString:title] && item.action) found = item;
+            // The setting holds English titles; the menu may be showing another language.
+            if (([NppEnglishTitle(item) isEqualToString:title] || [item.title isEqualToString:title]) && item.action) found = item;
         }
         if (!found) continue;
         NSMenuItem *copy = [[NSMenuItem alloc] initWithTitle:found.title
