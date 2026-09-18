@@ -77,6 +77,8 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @property (nonatomic) BOOL syncZ;
 @property (nonatomic, strong) ScintillaView *docMapView;
 @property (nonatomic, strong) NppMapZoneView *docMapZone;
+@property (nonatomic, strong) NSPanel *peekPanel;
+@property (nonatomic, strong) ScintillaView *peekView;
 /// The document the other pane shows, so that closing it can move the pane off it.
 @property (nonatomic, strong) NppDocument *secondaryDocument;
 @property (nonatomic, strong) NSMutableArray<NppProjectPanel *> *projects;
@@ -583,6 +585,71 @@ static long SciColor(NSColor *c) {
 - (void)tabBar:(NppTabBarView *)bar didSelectIndex:(NSInteger)index {
     [self selectDocumentAtIndex:index];
 }
+
+#pragma mark - Document Peeker
+
+/// TCN_MOUSEHOVERING: with "Peek on tab" a small window shows the hovered
+/// document; with "Peek on document map" the map shows it for as long as
+/// the pointer stays. Hovering the tab in front, or leaving, puts things back.
+- (void)tabBar:(NppTabBarView *)bar hoveredIndex:(NSInteger)index {
+    NppPreferences *p = [NppPreferences shared];
+    NppDocument *doc = (index >= 0 && index < (NSInteger)self.documents.count) ? self.documents[(NSUInteger)index] : nil;
+    BOOL other = doc && doc != self.currentDocument;
+    if (p.docPeekOnTab) {
+        if (other) [self showPeekerForDocument:doc underRect:[bar convertRect:[bar frameOfTabAtIndex:index] toView:nil]];
+        else [self hideDocumentPeeker];
+    }
+    if (p.docPeekOnMap && [self documentMapVisible]) {
+        NppDocument *shown = other ? doc : self.currentDocument;
+        [self.docMapView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)shown.docPointer];
+        if (other) [self.docMapView message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)MAX(0, doc.firstVisibleLine) lParam:0];
+        else [self updateDocumentMap];
+        self.docMapZone.hidden = other;
+    }
+}
+
+- (void)showPeekerForDocument:(NppDocument *)doc underRect:(NSRect)rectInWindow {
+    if (!self.peekPanel) {
+        NSRect frame = NSMakeRect(0, 0, 420, 300);
+        self.peekPanel = [[NSPanel alloc] initWithContentRect:frame
+                                                    styleMask:NSWindowStyleMaskBorderless | NSWindowStyleMaskNonactivatingPanel
+                                                      backing:NSBackingStoreBuffered defer:YES];
+        self.peekPanel.floatingPanel = YES;
+        self.peekPanel.hasShadow = YES;
+        self.peekPanel.ignoresMouseEvents = YES;
+        self.peekView = [[ScintillaView alloc] initWithFrame:frame];
+        [self.peekView message:SCI_SETZOOM wParam:(uptr_t)-6 lParam:0];
+        for (int m = 0; m < 5; ++m) [self.peekView message:SCI_SETMARGINWIDTHN wParam:(uptr_t)m lParam:0];
+        [self.peekView message:SCI_SETHSCROLLBAR wParam:0 lParam:0];
+        [self.peekView message:SCI_SETVSCROLLBAR wParam:0 lParam:0];
+        self.peekPanel.contentView = self.peekView;
+    }
+    ScintillaView *peek = self.peekView, *sci = self.sciView;
+    [peek message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    [peek message:SCI_SETREADONLY wParam:1 lParam:0];
+    for (int st = 0; st <= STYLE_MAX; ++st) {
+        [peek message:SCI_STYLESETFORE wParam:(uptr_t)st lParam:[sci message:SCI_STYLEGETFORE wParam:(uptr_t)st]];
+        [peek message:SCI_STYLESETBACK wParam:(uptr_t)st lParam:[sci message:SCI_STYLEGETBACK wParam:(uptr_t)st]];
+    }
+    [peek message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)MAX(0, doc.firstVisibleLine) lParam:0];
+    NSRect onScreen = self.window ? [self.window convertRectToScreen:rectInWindow] : rectInWindow;
+    [self.peekPanel setFrameTopLeftPoint:NSMakePoint(NSMinX(onScreen), NSMinY(onScreen))];
+    [self.peekPanel orderFront:nil];
+}
+
+- (void)hideDocumentPeeker {
+    if (!self.peekPanel.isVisible) return;
+    [self.peekPanel orderOut:nil];
+    [self.peekView message:SCI_SETDOCPOINTER wParam:0 lParam:0];
+}
+
+- (BOOL)documentPeekerVisible { return self.peekPanel.isVisible; }
+
+- (nullable void *)documentPeekerDocument {
+    return self.peekPanel.isVisible ? (void *)[self.peekView message:SCI_GETDOCPOINTER] : NULL;
+}
+
+- (void)peekAtTabIndex:(NSInteger)index { [self tabBar:self.tabBar hoveredIndex:index]; }
 
 - (NSMenu *)tabBar:(NppTabBarView *)bar menuForIndex:(NSInteger)index {
     [self selectDocumentAtIndex:index];

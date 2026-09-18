@@ -209,12 +209,22 @@ static NSColor *TabColour(NSInteger colour) {
 - (void)mouseMoved:(NSEvent *)event {
     NSInteger was = self.hoverIndex;
     self.hoverIndex = [self indexOfTabAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
-    if (was != self.hoverIndex) [self setNeedsDisplay:YES];
+    if (was != self.hoverIndex) {
+        [self setNeedsDisplay:YES];
+        [self tellHover];
+    }
 }
 
 - (void)mouseExited:(NSEvent *)event {
     self.hoverIndex = -1;
     [self setNeedsDisplay:YES];
+    [self tellHover];
+}
+
+- (void)tellHover {
+    if ([self.tabDelegate respondsToSelector:@selector(tabBar:hoveredIndex:)]) {
+        [self.tabDelegate tabBar:self hoveredIndex:self.hoverIndex];
+    }
 }
 
 - (void)mouseDown:(NSEvent *)event {

@@ -456,6 +456,11 @@
     y = [self addField:@"Settings folder" key:@"settingsDirectory"
                   value:p.settingsDirectory to:v atY:y];
     [self endPage:@"Cloud & Link" atY:y];
+
+    y = [self beginPage:@"MISC."]; v = [self page:@"MISC."];
+    y = [self addCheckbox:@"Document Peeker: peek on tab" key:@"docPeekOnTab" on:p.docPeekOnTab to:v atY:y];
+    y = [self addCheckbox:@"Document Peeker: peek on document map" key:@"docPeekOnMap" on:p.docPeekOnMap to:v atY:y];
+    [self endPage:@"MISC." atY:y];
 }
 
 - (CGFloat)addField:(NSString *)label key:(NSString *)key value:(NSString *)value
@@ -636,6 +641,8 @@
     p.autoInsertSingleQuote = [self.controls[@"autoInsertSingleQuote"] state] == NSControlStateValueOn;
     p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
     p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
+    p.docPeekOnTab = [self.controls[@"docPeekOnTab"] state] == NSControlStateValueOn;
+    p.docPeekOnMap = [self.controls[@"docPeekOnMap"] state] == NSControlStateValueOn;
     NSMutableArray *pairs = [NSMutableArray array];
     for (NSInteger i = 0; i < 3; ++i) {
         NSString *pair = [[self.controls[[NSString stringWithFormat:@"userMatchedPair%ld", (long)i]] stringValue]

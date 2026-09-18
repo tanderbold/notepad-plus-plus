@@ -3283,9 +3283,22 @@ int NppMacRunTests(AppDelegate *app) {
         CharacterPanel *chars = [[CharacterPanel alloc] initWithEditor:ed];
         SetDoc(ed, @"");
         [sci message:SCI_GOTOPOS wParam:0 lParam:0];
-        BOOL insertedChar = [chars insertRow:('A' - 32)];
+        BOOL insertedChar = [chars insertRow:'A'];
         Check(@"IDM_EDIT_CHAR_PANEL", @"inserts the chosen character",
               insertedChar && [DocText(ed) isEqualToString:@"A"]);
+        // As AnsiCharPanel: 256 values, the upper half in the code page (1252
+        // for a Unicode file), the HTML columns, and a click on one puts it in.
+        [chars insertRow:0x80];
+        [chars insertRow:0xE9 column:@"name"];
+        [chars insertRow:0x93 column:@"dec"];
+        Check(@"IDM_EDIT_CHAR_PANEL (columns)",
+              @"the panel lists 0-255 with Hex, Character and HTML forms, as Notepad++ does",
+              chars.rowCount == 256 && [[chars textOfColumn:@"char" row:10] isEqualToString:@"LF"] &&
+              [[chars textOfColumn:@"hex" row:255] isEqualToString:@"FF"] &&
+              [[chars textOfColumn:@"char" row:0x80] isEqualToString:@"\u20AC"] &&
+              [[chars textOfColumn:@"name" row:'&'] isEqualToString:@"&amp;"] &&
+              [[chars textOfColumn:@"hexnum" row:0x80] isEqualToString:@"&#x20ac;"] &&
+              [DocText(ed) isEqualToString:@"A\u20AC&eacute;&#8220;"]);
 
         ClipboardHistoryPanel *clips = [[ClipboardHistoryPanel alloc] initWithEditor:ed];
         [ed copyToClipboard:@"history one"];
@@ -4006,6 +4019,41 @@ int NppMacRunTests(AppDelegate *app) {
             Check(@"IDM_VIEW_DOC_MAP (view zone)",
                   @"the zone marks the lines on screen, a click in the map scrolls the editor there, and the colours match",
                   zoneRight && clicked && coloured);
+        }
+
+        // Document Peeker: hovering another tab shows it, in a small window or
+        // in the map; hovering the tab in front, or leaving, puts things back.
+        {
+            NppPreferences *pp = [NppPreferences shared];
+            [ed newDocument];
+            SetDoc(ed, @"peek at me\n");
+            NppDocument *other = ed.currentDocument;
+            [ed newDocument];
+            SetDoc(ed, @"in front\n");
+            NSInteger otherIndex = (NSInteger)[ed.documents indexOfObject:other];
+            NSInteger frontIndex = (NSInteger)[ed.documents indexOfObject:ed.currentDocument];
+            [ed peekAtTabIndex:otherIndex];
+            BOOL offByDefault = ![ed documentPeekerVisible];
+            pp.docPeekOnTab = YES;
+            [ed peekAtTabIndex:otherIndex];
+            BOOL peeking = [ed documentPeekerVisible] && [ed documentPeekerDocument] == other.docPointer;
+            [ed peekAtTabIndex:frontIndex];
+            BOOL frontHides = ![ed documentPeekerVisible];
+            pp.docPeekOnTab = NO;
+            pp.docPeekOnMap = YES;
+            [ed setDocumentMapVisible:YES];
+            ScintillaView *pmap = [ed valueForKey:@"docMapView"];
+            [ed peekAtTabIndex:otherIndex];
+            BOOL mapPeeks = (void *)[pmap message:SCI_GETDOCPOINTER] == other.docPointer;
+            [ed peekAtTabIndex:-1];
+            BOOL mapBack = (void *)[pmap message:SCI_GETDOCPOINTER] == ed.currentDocument.docPointer;
+            [ed setDocumentMapVisible:NO];
+            pp.docPeekOnMap = NO;
+            [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:other] discardChanges:YES];
+            Check(@"IDM_VIEW_DOC_MAP (document peeker)",
+                  @"peek on tab and peek on map show the hovered document, and only when switched on",
+                  offByDefault && peeking && frontHides && mapPeeks && mapBack);
         }
 
         [ed setLanguageNamed:@"python"];

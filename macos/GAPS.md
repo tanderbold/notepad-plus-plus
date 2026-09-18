@@ -137,11 +137,17 @@ has the braceless `if/for/while`, `{`/`}` realignment and Python's `:`.
 Nothing is added while a macro records or plays; column mode gets no
 pairs; up to three user pairs. Defaults now match Windows.
 
-**Panels.** Document Map is a zoomed mirror without the view-zone overlay,
-click-to-scroll or scroll sync. Document List is one column (Windows: name,
-extension, path, sortable, MRU switcher). Character Panel lists 32-255 as
-Unicode, not the document's code page with hex / HTML columns. No Document
-Peeker.
+**Panels.** Done since the audit: the Document Map draws its view zone,
+scrolls the editor on a click, drag or wheel, follows the editor and takes
+its colours and wrapping. The Document List has Name / Ext. / Path columns
+with a header menu, sorting, click to switch, a double click below the
+files for a new one, the tab menu on a file and Close / Save Selected Files
+on several; tabs have their right-click menu as upstream lays it out. The
+Character Panel is the ASCII Codes Insertion Panel: 0-255 in the document's
+code page with Hex and the three HTML columns, inserting the cell clicked.
+The Document Peeker previews a hovered tab in a window or in the map
+(Preferences > MISC.). Still different: panels float instead of docking
+(plan 2.7), and the Document List has no "Group by View".
 
 **Platform.** English only, no `nativeLang` loading. No plugin loading, no
 NPPM/NPPN messages, no Plugins Admin; the built-in stand-ins are JSON,

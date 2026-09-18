@@ -14,6 +14,8 @@ NS_ASSUME_NONNULL_BEGIN
 @optional
 /// The right-click menu of a tab, which is brought to the front first.
 - (nullable NSMenu *)tabBar:(NppTabBarView *)bar menuForIndex:(NSInteger)index;
+/// The pointer came onto a tab, or (-1) left the bar: the Document Peeker's cue.
+- (void)tabBar:(NppTabBarView *)bar hoveredIndex:(NSInteger)index;
 @end
 
 /// What the bar needs to know about one tab.

@@ -158,6 +158,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"findTransparencyMode"): @1, Key(@"findTransparencyLevel"): @150,
         Key(@"searchResultsPurge"): @NO,
         Key(@"docListExtColumn"): @YES, Key(@"docListPathColumn"): @NO,
+        Key(@"docPeekOnTab"): @NO, Key(@"docPeekOnMap"): @NO,
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -238,6 +239,8 @@ NPP_PREF_INT(findTransparencyLevel, setFindTransparencyLevel, @"findTransparency
 NPP_PREF_BOOL(searchResultsPurge, setSearchResultsPurge, @"searchResultsPurge")
 NPP_PREF_BOOL(docListExtColumn, setDocListExtColumn, @"docListExtColumn")
 NPP_PREF_BOOL(docListPathColumn, setDocListPathColumn, @"docListPathColumn")
+NPP_PREF_BOOL(docPeekOnTab, setDocPeekOnTab, @"docPeekOnTab")
+NPP_PREF_BOOL(docPeekOnMap, setDocPeekOnMap, @"docPeekOnMap")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
 NPP_PREF_INT(fontSize, setFontSize, @"fontSize")

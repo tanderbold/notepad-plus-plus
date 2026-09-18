@@ -207,6 +207,10 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// What a click or drag in the map at `y` does: centres the editor there.
 - (void)scrollFromDocumentMapAtY:(CGFloat)y;
 - (void)updateDocumentMap;
+/// Document Peeker: what hovering tab `index` does (-1 leaves the tabs).
+- (void)peekAtTabIndex:(NSInteger)index;
+- (BOOL)documentPeekerVisible;
+- (nullable void *)documentPeekerDocument;
 
 // Project panels 1..3, each keeping its own folder root.
 - (void)showProjectPanel:(NSInteger)index;        // 1..3; same index again hides it

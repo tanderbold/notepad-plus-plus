@@ -125,6 +125,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// Document List's optional columns.
 @property (nonatomic) BOOL docListExtColumn;
 @property (nonatomic) BOOL docListPathColumn;
+/// Document Peeker: preview a hovered tab, or show it in the Document Map.
+@property (nonatomic) BOOL docPeekOnTab;
+@property (nonatomic) BOOL docPeekOnMap;
 
 /// New documents.
 @property (nonatomic, copy) NSString *defaultLanguage;
