@@ -1,3 +1,4 @@
+#import "DockingManager.h"
 #import "NppPanel.h"
 #import "AuxPanels.h"
 #import "EditorController.h"
@@ -72,22 +73,22 @@ static NSString *const kControlNames[33] = {
     scroll.hasVerticalScroller = YES;
     scroll.documentView = _table;
     scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    _panel.contentView = scroll;
+    [[NppDockingManager shared] registerPanel:@"characterPanel" title:@"ASCII Codes Insertion Panel" view:scroll defaultPlace:NppDockRight];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refresh:)
                                                  name:NppEditorDocumentsDidChangeNotification object:nil];
     return self;
 }
 
 - (void)dealloc { [[NSNotificationCenter defaultCenter] removeObserver:self]; }
-- (void)refresh:(NSNotification *)note { if (self.panel.isVisible) [self.table reloadData]; }
+- (void)refresh:(NSNotification *)note { if ([[NppDockingManager shared] isPanelVisible:@"characterPanel"]) [self.table reloadData]; }
 
-- (BOOL)visible { return self.panel.isVisible; }
+- (BOOL)visible { return [[NppDockingManager shared] isPanelVisible:@"characterPanel"]; }
 - (NSInteger)rowCount { return 256; }
 
 - (void)toggle {
-    if (self.panel.isVisible) { [self.panel orderOut:nil]; return; }
+    if ([[NppDockingManager shared] isPanelVisible:@"characterPanel"]) { [[NppDockingManager shared] hidePanel:@"characterPanel"]; return; }
     [self.table reloadData];
-    [self.panel makeKeyAndOrderFront:nil];
+    [[NppDockingManager shared] showPanel:@"characterPanel"];
 }
 
 /// The document's Windows code page: its own for an ANSI encoding, and for a
@@ -218,13 +219,13 @@ static NSString *const kControlNames[33] = {
     scroll.hasVerticalScroller = YES;
     scroll.documentView = _table;
     scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    _panel.contentView = scroll;
+    [[NppDockingManager shared] registerPanel:@"clipboardHistory" title:@"Clipboard History" view:scroll defaultPlace:NppDockRight];
     return self;
 }
 
 - (void)dealloc { [_poller invalidate]; }
 
-- (BOOL)visible { return self.panel.isVisible; }
+- (BOOL)visible { return [[NppDockingManager shared] isPanelVisible:@"clipboardHistory"]; }
 - (NSArray<NSString *> *)entries { return self.items; }
 
 /// The pasteboard has no change notification, so it is polled while the panel
@@ -242,10 +243,10 @@ static NSString *const kControlNames[33] = {
 }
 
 - (void)toggle {
-    if (self.panel.isVisible) {
+    if ([[NppDockingManager shared] isPanelVisible:@"clipboardHistory"]) {
         [self.poller invalidate];
         self.poller = nil;
-        [self.panel orderOut:nil];
+        [[NppDockingManager shared] hidePanel:@"clipboardHistory"];
         return;
     }
     [self capturePasteboard];
@@ -255,7 +256,7 @@ static NSString *const kControlNames[33] = {
         if (!me) { [t invalidate]; return; }
         if ([NSPasteboard generalPasteboard].changeCount != me.lastChangeCount) [me capturePasteboard];
     }];
-    [self.panel makeKeyAndOrderFront:nil];
+    [[NppDockingManager shared] showPanel:@"clipboardHistory"];
 }
 
 - (BOOL)pasteRow:(NSInteger)row {

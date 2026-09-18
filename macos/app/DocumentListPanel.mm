@@ -1,3 +1,4 @@
+#import "DockingManager.h"
 #import "NppPanel.h"
 #import "DocumentListPanel.h"
 #import "EditorController.h"
@@ -56,7 +57,7 @@
     scroll.hasVerticalScroller = YES;
     scroll.documentView = _table;
     scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    _panel.contentView = scroll;
+    [[NppDockingManager shared] registerPanel:@"documentList" title:@"Document List" view:scroll defaultPlace:NppDockLeft];
     [self applyColumnVisibility];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(documentsChanged:)
                                                  name:NppEditorDocumentsDidChangeNotification
@@ -66,15 +67,15 @@
 
 - (void)dealloc { [[NSNotificationCenter defaultCenter] removeObserver:self]; }
 
-- (BOOL)visible { return self.panel.isVisible; }
+- (BOOL)visible { return [[NppDockingManager shared] isPanelVisible:@"documentList"]; }
 - (NSInteger)rowCount { return self.table.numberOfRows; }
 
 - (void)toggle {
-    if (self.panel.isVisible) {
-        [self.panel orderOut:nil];
+    if ([[NppDockingManager shared] isPanelVisible:@"documentList"]) {
+        [[NppDockingManager shared] hidePanel:@"documentList"];
     } else {
         [self.table reloadData];
-        [self.panel makeKeyAndOrderFront:nil];
+        [[NppDockingManager shared] showPanel:@"documentList"];
     }
 }
 

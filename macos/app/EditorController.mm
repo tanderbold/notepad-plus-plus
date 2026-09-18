@@ -6,6 +6,7 @@
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "EditorLook.h"
+#import "DockingManager.h"
 #import "ViewCommands.h"
 #import "TagMatch.h"
 #import "AdvancedEditCommands.h"
@@ -318,8 +319,19 @@ static long SciColor(NSColor *c) {
     _split.vertical = YES;
     _split.dividerStyle = NSSplitViewDividerStyleThin;
     _split.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    [_split addSubview:_editorArea];              // workspace is inserted when opened
+    [_split addSubview:_editorArea];
     [_container addSubview:_split];
+    // The panels dock around the editor, as upstream's DockingManager has them.
+    NppDockingManager *dock = [NppDockingManager shared];
+    [dock attachToSplit:_split center:_editorArea];
+    [dock registerPanel:@"workspace" title:@"Folder as Workspace" view:_workspace.view defaultPlace:NppDockLeft];
+    for (NSUInteger i = 0; i < _projects.count; ++i) {
+        [dock registerPanel:[NSString stringWithFormat:@"project%lu", (unsigned long)i + 1]
+                      title:[NSString stringWithFormat:@"Project Panel %lu", (unsigned long)i + 1]
+                       view:_projects[i].view defaultPlace:NppDockLeft];
+    }
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(dockPanelVisibilityChanged:)
+                                                 name:NppDockPanelVisibilityDidChangeNotification object:nil];
 
     _statusField = [[NSTextField alloc] initWithFrame:NSMakeRect(6, 2, NSWidth(frame) - 12, statusH - 4)];
     _statusField.autoresizingMask = NSViewWidthSizable | NSViewMaxYMargin;
@@ -721,7 +733,7 @@ static long SciColor(NSColor *c) {
     }
     [self forgetAutoCloser];
     // The map mirrors whatever is in front, not whatever was when it opened.
-    if (self.docMapView.superview) {
+    if ([self documentMapVisible]) {
         [self.docMapView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
         [self mirrorStylesToDocumentMap];
         [self updateDocumentMap];
@@ -1264,20 +1276,29 @@ static BOOL gCheckingFilesOnDisk;
 
 - (void)openFolderAsWorkspace:(NSString *)path {
     if (!path.length) {
-        if (self.workspace.view.superview) [self.workspace.view removeFromSuperview];
+        [[NppDockingManager shared] hidePanel:@"workspace"];
         [self.workspace setRootPath:nil];
-        [self.split adjustSubviews];
         return;
     }
     [self.workspace setRootPath:path];
-    if (!self.workspace.view.superview) {
-        [self.split addSubview:self.workspace.view positioned:NSWindowBelow relativeTo:self.editorArea];
-        [self.split setPosition:220 ofDividerAtIndex:0];
-    }
-    [self.split adjustSubviews];
+    [[NppDockingManager shared] showPanel:@"workspace"];
 }
 
-- (BOOL)workspaceVisible { return self.workspace.view.superview != nil; }
+- (BOOL)workspaceVisible { return [[NppDockingManager shared] isPanelVisible:@"workspace"]; }
+
+/// A panel closed from its dock: the editor's own record of it follows.
+- (void)dockPanelVisibilityChanged:(NSNotification *)note {
+    NSString *ident = note.object;
+    NppDockingManager *dock = [NppDockingManager shared];
+    if ([ident hasPrefix:@"project"] && ![dock isPanelVisible:ident] &&
+        self.activeProject == [[ident substringFromIndex:7] integerValue]) {
+        self.activeProject = 0;
+        for (NSInteger i = 1; i <= 3; ++i) {
+            if ([dock isPanelVisible:[NSString stringWithFormat:@"project%ld", (long)i]]) { self.activeProject = i; break; }
+        }
+    }
+    if ([ident isEqualToString:@"workspace"] && ![dock isPanelVisible:ident]) [self.workspace setRootPath:nil];
+}
 - (NSString *)workspaceRootPath { return self.workspace.rootPath; }
 - (NSArray<NSString *> *)workspaceTopLevelNames { return [self.workspace topLevelNames]; }
 
@@ -1557,7 +1578,7 @@ static BOOL gCheckingFilesOnDisk;
     [self applyTheme];
     if (udl) [self applyUserLanguageStyles:udl];
     [sci message:SCI_COLOURISE wParam:0 lParam:-1];
-    if (self.docMapView.superview) { [self mirrorStylesToDocumentMap]; [self updateDocumentMap]; }
+    if ([self documentMapVisible]) { [self mirrorStylesToDocumentMap]; [self updateDocumentMap]; }
     [self applyWordCharacters];
     [self markClickableLinks];
 }
@@ -2153,13 +2174,12 @@ static const char kEditorMenuItemsKey = 0;
 
 #pragma mark - Document Map
 
-- (BOOL)documentMapVisible { return self.docMapView.superview != nil; }
+- (BOOL)documentMapVisible { return [[NppDockingManager shared] isPanelVisible:@"documentMap"]; }
 
 - (void)setDocumentMapVisible:(BOOL)visible {
     if (visible == [self documentMapVisible]) return;
     if (!visible) {
-        [self.docMapView removeFromSuperview];
-        [self.split adjustSubviews];
+        [[NppDockingManager shared] hidePanel:@"documentMap"];
         return;
     }
     if (!self.docMapView) {
@@ -2172,13 +2192,18 @@ static const char kEditorMenuItemsKey = 0;
         [self.docMapView message:SCI_SETMARGINWIDTHN wParam:2 lParam:0];
         [self.docMapView message:SCI_SETHSCROLLBAR wParam:0 lParam:0];
         [self.docMapView message:SCI_SETVSCROLLBAR wParam:0 lParam:0];
+        // Docked, floated or resized: the zone is worked out again.
+        self.docMapView.postsFrameChangedNotifications = YES;
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(documentMapFrameChanged:)
+                                                     name:NSViewFrameDidChangeNotification object:self.docMapView];
     }
     [self.docMapView message:SCI_SETDOCPOINTER wParam:0
                       lParam:(sptr_t)self.currentDocument.docPointer];
-    [self.split addSubview:self.docMapView];
-    [self.split adjustSubviews];
-    [self.split setPosition:NSWidth(self.split.frame) - 120
-           ofDividerAtIndex:self.split.subviews.count - 2];
+    NppDockingManager *dock = [NppDockingManager shared];
+    if (![dock hasPanel:@"documentMap"]) {
+        [dock registerPanel:@"documentMap" title:@"Document Map" view:self.docMapView defaultPlace:NppDockRight];
+    }
+    [dock showPanel:@"documentMap"];
     if (!self.docMapZone) {
         self.docMapZone = [[NppMapZoneView alloc] initWithFrame:self.docMapView.bounds];
         self.docMapZone.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
@@ -2238,6 +2263,10 @@ static const char kEditorMenuItemsKey = 0;
 
 - (NSRect)documentMapZone { return self.docMapZone.zone; }
 
+- (void)documentMapFrameChanged:(NSNotification *)note {
+    dispatch_async(dispatch_get_main_queue(), ^{ [self updateDocumentMap]; });
+}
+
 /// A click or drag at `y` in the map centres the editor on that line.
 - (void)scrollFromDocumentMapAtY:(CGFloat)y {
     ScintillaView *map = self.docMapView, *sci = self.sciView;
@@ -2276,19 +2305,17 @@ static const char kEditorMenuItemsKey = 0;
         if (last.length && [[NSFileManager defaultManager] fileExistsAtPath:last]) [panel openWorkspace:last];
     }
 
-    if (self.activeProject == index) {            // same panel again hides it
-        [panel.view removeFromSuperview];
+    NSString *ident = [NSString stringWithFormat:@"project%ld", (long)index];
+    NppDockingManager *dock = [NppDockingManager shared];
+    if (self.activeProject == index && [dock isPanelVisible:ident]) {   // same panel again hides it
         self.activeProject = 0;
-        [self.split adjustSubviews];
+        [dock hidePanel:ident];
         return;
     }
-    for (NppProjectPanel *p in self.projects) [p.view removeFromSuperview];
-    if ([self workspaceVisible]) [self openFolderAsWorkspace:nil];
-
-    [self.split addSubview:panel.view positioned:NSWindowBelow relativeTo:self.editorArea];
-    [self.split setPosition:240 ofDividerAtIndex:0];
+    // Each project panel is a dockable panel of its own, as upstream's are;
+    // several can be open, as tabs of one dock.
     self.activeProject = index;
-    [self.split adjustSubviews];
+    [dock showPanel:ident];
 }
 
 /// Notepad++ opens a second process; `open -n` is the macOS equivalent.

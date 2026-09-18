@@ -137,7 +137,7 @@ stack newest first with the older ones folded (search, file, hit levels),
 and its context menu has Fold all, Unfold all, Copy Selected Line(s),
 Copy Selected Pathname(s), Select all, Clear all, Delete This Search, Open
 Selected Pathname(s) and Purge for every search. Still different: it is a
-tab rather than a docked panel (plan 2.7), and hits are not coloured.
+tab rather than a docked panel, and hits are not coloured.
 
 **Editing assist.** Done since the audit, following AutoCompletion.cpp,
 FunctionCallTip.cpp and maintainIndentation: Function Completion (⌃Space,
@@ -160,8 +160,15 @@ on several; tabs have their right-click menu as upstream lays it out. The
 Character Panel is the ASCII Codes Insertion Panel: 0-255 in the document's
 code page with Hex and the three HTML columns, inserting the cell clicked.
 The Document Peeker previews a hovered tab in a window or in the map
-(Preferences > MISC.). Still different: panels float instead of docking
-(plan 2.7), and the Document List has no "Group by View".
+(Preferences > MISC.). Plan 2.7: panels dock in four containers around the
+editor (left, right, top, bottom) as tabs, where upstream puts them by
+default (Folder as Workspace, Project Panels and Document List left; Function
+List, Document Map, ASCII panel and Clipboard History right); a panel's tab
+dragged to an edge of the window docks it there and anywhere else floats it,
+its right-click menu offers the same, a double click floats it or docks it
+back; places, floating frames and dock sizes are kept. Still different: the
+Search results stay a tab rather than a bottom panel, and the Document List
+has no "Group by View".
 
 **Platform.** English only, no `nativeLang` loading. No plugin loading, no
 NPPM/NPPN messages, no Plugins Admin; the built-in stand-ins are JSON,

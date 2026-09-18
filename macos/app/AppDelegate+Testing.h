@@ -44,6 +44,7 @@
 - (void)toggleAlwaysOnTop:(id)sender;
 - (void)toggleFileBrowser:(id)sender;
 - (void)toggleDocumentList:(id)sender;
+- (void)toggleFunctionList:(id)sender;
 - (void)applyToolbarPreferences;
 - (void)macroStart:(id)sender;
 - (void)macroStop:(id)sender;

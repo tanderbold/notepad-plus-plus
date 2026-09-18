@@ -3832,6 +3832,12 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         [self.editor setSyncVerticalScroll:YES];
         [self.editor.secondarySci message:SCI_SETFIRSTVISIBLELINE wParam:40 lParam:0];
     }
+    if (getenv("NPPMAC_SNAPSHOT_DOCK")) {
+        [self toggleDocumentList:nil];
+        [self toggleFunctionList:nil];
+        [self.editor setDocumentMapVisible:YES];
+        [self.editor openFolderAsWorkspace:[self.editor containingFolderURL].path];
+    }
     if (getenv("NPPMAC_SNAPSHOT_MAP")) {
         [self.editor setDocumentMapVisible:YES];
         [self.editor.sci message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)atoi(getenv("NPPMAC_SNAPSHOT_MAP")) lParam:0];

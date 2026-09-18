@@ -218,6 +218,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger distractionFreeDivPart;
 /// New Document > "Apply to opened ANSI files": seven-bit files open as UTF-8.
 @property (nonatomic) BOOL openAnsiAsUtf8;
+/// Where the dockable panels live and how big the docks are (DockingManager).
+@property (nonatomic, copy) NSDictionary *dockLayout;
 /// A Windows date/time picture ("yyyy-MM-dd HH:mm:ss tt") in NSDateFormatter's terms.
 + (NSString *)dateFormatFromWindowsPicture:(NSString *)picture;
 /// The tab width and tab/space choice in force for a language.

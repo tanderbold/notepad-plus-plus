@@ -1,3 +1,4 @@
+#import "DockingManager.h"
 #import "NppPanel.h"
 #import "FunctionListPanel.h"
 #import "EditorController.h"
@@ -69,11 +70,11 @@ static NSString *PatternForLanguage(NSString *lang) {
     scroll.hasVerticalScroller = YES;
     scroll.documentView = _table;
     scroll.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    _panel.contentView = scroll;
+    [[NppDockingManager shared] registerPanel:@"functionList" title:@"Function List" view:scroll defaultPlace:NppDockRight];
     return self;
 }
 
-- (BOOL)visible { return self.panel.isVisible; }
+- (BOOL)visible { return [[NppDockingManager shared] isPanelVisible:@"functionList"]; }
 
 - (void)reload {
     NSString *text = [self.editor.sci string] ?: @"";
@@ -127,9 +128,9 @@ static NSString *PatternForLanguage(NSString *lang) {
 }
 
 - (void)toggle {
-    if (self.panel.isVisible) { [self.panel orderOut:nil]; return; }
+    if ([[NppDockingManager shared] isPanelVisible:@"functionList"]) { [[NppDockingManager shared] hidePanel:@"functionList"]; return; }
     [self reload];
-    [self.panel makeKeyAndOrderFront:nil];
+    [[NppDockingManager shared] showPanel:@"functionList"];
 }
 
 - (void)rowActivated:(id)sender {

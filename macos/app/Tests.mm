@@ -43,6 +43,7 @@
 #import "DocumentListPanel.h"
 #import "WorkspacePanel.h"
 #import "EditorLook.h"
+#import "DockingManager.h"
 #import "TagMatch.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
@@ -6942,6 +6943,51 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_FILE_OPEN (big files)",
               @"a big file is mapped and read as UTF-8, Latin-1 or UTF-8 with a BOM without a string in between",
               utf8Ok && latinOk && bomOk);
+    }
+
+    printf("\n== Docking ==\n");
+    {
+        NppDockingManager *dock = [NppDockingManager shared];
+        NSDictionary *layoutBefore = [NppPreferences shared].dockLayout;
+        // The default places are upstream's, and shown panels share a dock as tabs.
+        [app toggleDocumentList:nil];
+        [ed setDocumentMapVisible:YES];
+        [app toggleFunctionList:nil];
+        BOOL defaults = [dock placeOfPanel:@"documentList"] == NppDockLeft &&
+                        [dock placeOfPanel:@"documentMap"] == NppDockRight &&
+                        [dock placeOfPanel:@"functionList"] == NppDockRight;
+        NSArray *right = [dock panelsIn:NppDockRight];
+        BOOL tabbed = [right containsObject:@"documentMap"] && [right containsObject:@"functionList"] &&
+                      [[dock frontPanelIn:NppDockRight] isEqualToString:@"functionList"];
+        // Moving: to the bottom dock, floating in a window, and back.
+        [dock movePanel:@"documentList" to:NppDockBottom];
+        BOOL bottom = [[dock panelsIn:NppDockBottom] isEqualToArray:@[@"documentList"]] &&
+                      ![[dock panelsIn:NppDockLeft] containsObject:@"documentList"];
+        [dock movePanel:@"functionList" to:NppDockFloating];
+        NSView *listView = [[app valueForKey:@"funcList"] valueForKey:@"table"];
+        BOOL floating = [dock placeOfPanel:@"functionList"] == NppDockFloating && listView.window != app.window &&
+                        listView.window.isVisible;
+        [dock movePanel:@"functionList" to:(NppDockPlace)-1];      // back to where it was docked
+        BOOL back = [dock placeOfPanel:@"functionList"] == NppDockRight && listView.window == app.window;
+        // Dropping: the edges of the window dock, the middle and outside float.
+        NSRect w = app.window.frame;
+        BOOL drops = [dock placeForDropAtScreenPoint:NSMakePoint(NSMinX(w) + 10, NSMidY(w))] == NppDockLeft &&
+                     [dock placeForDropAtScreenPoint:NSMakePoint(NSMaxX(w) - 10, NSMidY(w))] == NppDockRight &&
+                     [dock placeForDropAtScreenPoint:NSMakePoint(NSMidX(w), NSMaxY(w) - 10)] == NppDockTop &&
+                     [dock placeForDropAtScreenPoint:NSMakePoint(NSMidX(w), NSMinY(w) + 10)] == NppDockBottom &&
+                     [dock placeForDropAtScreenPoint:NSMakePoint(NSMaxX(w) + 500, NSMidY(w))] == NppDockFloating;
+        // What was moved is remembered.
+        BOOL remembered = [[NppPreferences shared].dockLayout[@"places"][@"documentList"] integerValue] == NppDockBottom;
+        [dock movePanel:@"documentList" to:NppDockLeft];
+        [app toggleDocumentList:nil];
+        [app toggleFunctionList:nil];
+        [ed setDocumentMapVisible:NO];
+        BOOL allHidden = ![dock isPanelVisible:@"documentList"] && ![dock isPanelVisible:@"functionList"] &&
+                         ![dock isPanelVisible:@"documentMap"] && ![dock panelsIn:NppDockRight].count;
+        [NppPreferences shared].dockLayout = layoutBefore ?: @{};
+        Check(@"IDM_VIEW_DOCLIST (docking)",
+              @"panels dock where upstream puts them, share a dock as tabs, move between docks and floating, and are remembered",
+              defaults && tabbed && bottom && floating && back && drops && remembered && allHidden);
     }
 
     printf("\n== New documents, recent files, directories ==\n");
