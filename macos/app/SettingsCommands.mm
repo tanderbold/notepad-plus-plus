@@ -38,6 +38,9 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"backupMode"):      @0,
         Key(@"backupDirectory"): @"",
         Key(@"autosaveEnabled"): @NO,
+        Key(@"fileAutoDetection"): @YES,
+        Key(@"fileAutoDetectionSilent"): @NO,
+        Key(@"fileAutoDetectionScrollToEnd"): @NO,
         Key(@"autosaveInterval"): @60,
         Key(@"printLineNumbers"): @NO,
         Key(@"printColourMode"): @2,
@@ -243,6 +246,9 @@ NPP_PREF_BOOL(restoreSession, setRestoreSession, @"restoreSession")
 NPP_PREF_BOOL(detectLanguageFromContent, setDetectLanguageFromContent, @"detectLanguageFromContent")
 NPP_PREF_BOOL(showToolbar, setShowToolbar, @"showToolbar")
 NPP_PREF_BOOL(autosaveEnabled, setAutosaveEnabled, @"autosaveEnabled")
+NPP_PREF_BOOL(fileAutoDetection, setFileAutoDetection, @"fileAutoDetection")
+NPP_PREF_BOOL(fileAutoDetectionSilent, setFileAutoDetectionSilent, @"fileAutoDetectionSilent")
+NPP_PREF_BOOL(fileAutoDetectionScrollToEnd, setFileAutoDetectionScrollToEnd, @"fileAutoDetectionScrollToEnd")
 NPP_PREF_BOOL(printLineNumbers, setPrintLineNumbers, @"printLineNumbers")
 NPP_PREF_BOOL(printHeaderBold, setPrintHeaderBold, @"printHeaderBold")
 NPP_PREF_BOOL(printHeaderItalic, setPrintHeaderItalic, @"printHeaderItalic")

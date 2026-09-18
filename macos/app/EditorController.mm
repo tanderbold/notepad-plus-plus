@@ -456,6 +456,8 @@ static long SciColor(NSColor *c) {
     doc.hasBOM = bom;
     doc.codepage = 0;
     doc.eolMode = DetectEOL(text);
+    doc.fileModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL]
+                                fileModificationDate];
 
     [self.docs addObject:doc];
     [self selectDocumentAtIndex:(NSInteger)self.docs.count - 1];
@@ -489,9 +491,29 @@ static long SciColor(NSColor *c) {
         self.currentIndex < (NSInteger)self.docs.count) {
         [self rememberPreviousTab:self.docs[self.currentIndex]];   // backs Window > Recent Window
     }
+    // Where the caret and the view are belongs to the document, as on
+    // Windows: kept when it leaves the front, put back when it returns.
+    if (self.currentIndex >= 0 && self.currentIndex != index &&
+        self.currentIndex < (NSInteger)self.docs.count) {
+        NppDocument *leaving = self.docs[self.currentIndex];
+        leaving.caretPosition = [self.sciView message:SCI_GETCURRENTPOS];
+        leaving.anchorPosition = [self.sciView message:SCI_GETANCHOR];
+        leaving.firstVisibleLine = [self.sciView message:SCI_GETFIRSTVISIBLELINE];
+        NSMutableArray *marks = [NSMutableArray array];
+        long line = -1;
+        while ((line = [self.sciView message:SCI_MARKERNEXT wParam:(uptr_t)(line + 1) lParam:(1 << 1)]) >= 0) {
+            [marks addObject:@(line)];
+        }
+        leaving.bookmarkedLines = marks;
+    }
+    BOOL switching = self.currentIndex != index;
     self.currentIndex = index;
     NppDocument *doc = self.docs[index];
     [self.sciView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+    if (switching) {
+        [self.sciView message:SCI_SETSEL wParam:(uptr_t)doc.anchorPosition lParam:doc.caretPosition];
+        [self.sciView message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)doc.firstVisibleLine lParam:0];
+    }
     [self forgetAutoCloser];
     // The map mirrors whatever is in front, not whatever was when it opened.
     if (self.docMapView.superview) {
@@ -575,8 +597,82 @@ static long SciColor(NSColor *c) {
     [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
     self.currentDocument.modified = NO;
     self.currentDocument.encodingChanged = NO;
+    self.currentDocument.fileModificationDate =
+        [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL] fileModificationDate];
+    [self dropBackupOfDocument:self.currentDocument];
     [self refreshChrome];
     return YES;
+}
+
+- (void)dropBackupOfDocument:(NppDocument *)doc {
+    if (!doc.backupPath) return;
+    [[NSFileManager defaultManager] removeItemAtPath:doc.backupPath error:NULL];
+    doc.backupPath = nil;
+}
+
+#pragma mark - Files changed on disk
+
+- (void)checkFilesOnDisk {
+    NppPreferences *p = [NppPreferences shared];
+    if (!p.fileAutoDetection) return;
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NppDocument *was = self.currentDocument;
+    NppDocument *previous = [self previousTab];
+
+    for (NppDocument *doc in [self.docs copy]) {
+        if (!doc.path || ![self.docs containsObject:doc]) continue;
+        NSDate *onDisk = [[fm attributesOfItemAtPath:doc.path error:NULL] fileModificationDate];
+
+        if (!onDisk) {
+            // Gone. Kept as a modified document, or closed, as the user says.
+            [self selectDocumentAtIndex:(NSInteger)[self.docs indexOfObject:doc]];
+            NSInteger answer = self.scriptedCloseAnswer;
+            if (!answer && getenv("NPPMAC_TEST")) answer = NSAlertFirstButtonReturn;
+            if (!answer) {
+                NSAlert *ask = [[NSAlert alloc] init];
+                ask.messageText = [NSString stringWithFormat:@"\"%@\" no longer exists.", doc.displayName];
+                ask.informativeText = @"Keep it in the editor?";
+                [ask addButtonWithTitle:@"Keep"];
+                [ask addButtonWithTitle:@"Close"];
+                answer = [ask runModal];
+            }
+            if (answer == NSAlertFirstButtonReturn) {
+                doc.modified = YES;
+                doc.fileModificationDate = nil;
+                [self refreshChrome];
+            } else {
+                [self closeDocumentAtIndex:(NSInteger)[self.docs indexOfObject:doc] discardChanges:YES];
+            }
+            continue;
+        }
+        if (!doc.fileModificationDate || [onDisk compare:doc.fileModificationDate] == NSOrderedSame) continue;
+
+        // Changed by another program. Reloaded, unless the user has edits and
+        // wants to keep them; asked first unless the setting says not to.
+        [self selectDocumentAtIndex:(NSInteger)[self.docs indexOfObject:doc]];
+        NSInteger answer = self.scriptedCloseAnswer;
+        if (!answer && p.fileAutoDetectionSilent && !doc.modified) answer = NSAlertFirstButtonReturn;
+        if (!answer && getenv("NPPMAC_TEST")) answer = NSAlertFirstButtonReturn;
+        if (!answer) {
+            NSAlert *ask = [[NSAlert alloc] init];
+            ask.messageText = [NSString stringWithFormat:@"\"%@\" has been changed by another program.",
+                               doc.displayName];
+            ask.informativeText = doc.modified
+                ? @"Reload it and lose the changes made here?" : @"Reload it?";
+            [ask addButtonWithTitle:@"Reload"];
+            [ask addButtonWithTitle:@"Keep"];
+            answer = [ask runModal];
+        }
+        if (answer == NSAlertFirstButtonReturn) {
+            if ([self reloadCurrentDocument:NULL] && p.fileAutoDetectionScrollToEnd) {
+                [self.sciView message:SCI_DOCUMENTEND wParam:0 lParam:0];
+            }
+        }
+        // Either way this version is the one known, so it is not asked about again.
+        doc.fileModificationDate = onDisk;
+    }
+    [self reselectDocument:was];
+    [self rememberPreviousTab:previous];
 }
 
 - (BOOL)confirmClosingDocuments:(NSArray<NppDocument *> *)docs {
@@ -648,6 +744,7 @@ static long SciColor(NSColor *c) {
         [self selectDocumentAtIndex:MIN(index, (NSInteger)self.docs.count - 1)];
     }
     if (doc.path) [self noteRecentFile:doc.path];
+    [self dropBackupOfDocument:doc];
     // The other pane must not be left on a document about to go.
     if (self.secondaryDocument == doc) {
         NppDocument *front = self.currentDocument;
@@ -696,6 +793,9 @@ static long SciColor(NSColor *c) {
     [self.sciView message:SCI_GOTOPOS
                    wParam:(uptr_t)MIN(caret, [self.sciView message:SCI_GETLENGTH]) lParam:0];
     [self.sciView message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)firstLine lParam:0];
+    doc.fileModificationDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:doc.path error:NULL]
+                                fileModificationDate];
+    [self dropBackupOfDocument:doc];
     doc.modified = NO;
     [self refreshChrome];
     return YES;
@@ -923,19 +1023,65 @@ static long SciColor(NSColor *c) {
     return [dir stringByAppendingPathComponent:@"session.json"];
 }
 
+/// What the session keeps of a document beyond its path: where the caret and
+/// the view were, its bookmarks, and the settings that are the user's rather
+/// than the file's. The document in front is read live; the others were
+/// recorded when they left the front.
+- (NSMutableDictionary *)sessionEntryForDocument:(NppDocument *)d {
+    NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+    entry[@"language"] = d.language.name ?: @"normal";
+    BOOL front = d == self.currentDocument;
+    entry[@"caret"] = @(front ? [self.sciView message:SCI_GETCURRENTPOS] : d.caretPosition);
+    entry[@"anchor"] = @(front ? [self.sciView message:SCI_GETANCHOR] : d.anchorPosition);
+    entry[@"firstLine"] = @(front ? [self.sciView message:SCI_GETFIRSTVISIBLELINE] : d.firstVisibleLine);
+    entry[@"pinned"] = @(d.pinned);
+    entry[@"tabColour"] = @(d.tabColour);
+    entry[@"encoding"] = @(d.encoding);
+    entry[@"bom"] = @(d.hasBOM);
+    entry[@"codepage"] = @(d.codepage);
+    entry[@"eol"] = @(d.eolMode);
+    if (d.backupPath && [[NSFileManager defaultManager] fileExistsAtPath:d.backupPath]) {
+        entry[@"backup"] = d.backupPath;
+    }
+    // Bookmarks are marker 1, wherever it sits; the document can be asked
+    // without being shown by pointing a query at its pointer... but Scintilla
+    // answers for the view's document only, so the others were recorded on
+    // leaving the front.
+    if (front) {
+        NSMutableArray *marks = [NSMutableArray array];
+        long line = -1;
+        while ((line = [self.sciView message:SCI_MARKERNEXT wParam:(uptr_t)(line + 1) lParam:(1 << 1)]) >= 0) {
+            [marks addObject:@(line)];
+        }
+        entry[@"bookmarks"] = marks;
+        d.bookmarkedLines = marks;
+    } else if (d.bookmarkedLines) {
+        entry[@"bookmarks"] = d.bookmarkedLines;
+    }
+    return entry;
+}
+
 - (BOOL)saveSessionTo:(NSString *)path error:(NSError **)error {
     NSMutableArray *files = [NSMutableArray array];
+    NSMutableArray *unsaved = [NSMutableArray array];
     for (NppDocument *d in self.docs) {
-        if (!d.path) continue;                      // unsaved tabs have nothing to restore
-        [files addObject:@{@"path": d.path,
-                           @"language": d.language.name ?: @"normal"}];
+        NSMutableDictionary *entry = [self sessionEntryForDocument:d];
+        if (d.path) {
+            entry[@"path"] = d.path;
+            [files addObject:entry];
+        } else if (entry[@"backup"]) {
+            // An untitled document survives only through its backup.
+            entry[@"name"] = d.displayName ?: @"";
+            [unsaved addObject:entry];
+        }
     }
     // The active tab is named by path: an index would count the unsaved
     // tabs that are not in the list, and the tabs open before the load.
-    NSDictionary *session = @{@"version": @1,
+    NSDictionary *session = @{@"version": @2,
                               @"current": @(MAX(0, self.currentIndex)),
                               @"currentPath": self.currentDocument.path ?: @"",
-                              @"files": files};
+                              @"files": files,
+                              @"unsaved": unsaved};
     NSData *json = [NSJSONSerialization dataWithJSONObject:session
                                                    options:NSJSONWritingPrettyPrinted error:error];
     if (!json) return NO;
@@ -958,8 +1104,21 @@ static long SciColor(NSColor *c) {
         if (![[NSFileManager defaultManager] fileExistsAtPath:p]) continue;   // deleted since
         if ([self openFileAtPath:p error:NULL]) {
             opened++;
-            NSString *lang = f[@"language"];
-            if ([lang isKindOfClass:[NSString class]] && lang.length) [self setLanguageNamed:lang];
+            [self applySessionEntry:f];
+        }
+    }
+    // Untitled documents come back from their backups, still modified.
+    NSArray *unsaved = session[@"unsaved"];
+    if ([unsaved isKindOfClass:[NSArray class]]) {
+        for (NSDictionary *u in unsaved) {
+            NSString *backup = [u isKindOfClass:[NSDictionary class]] ? u[@"backup"] : nil;
+            NSData *data = [backup isKindOfClass:[NSString class]] ? [NSData dataWithContentsOfFile:backup] : nil;
+            if (!data) continue;
+            [self newDocument];
+            NSString *name = u[@"name"];
+            if ([name isKindOfClass:[NSString class]] && name.length) self.currentDocument.displayName = name;
+            [self applySessionEntry:u];
+            [self restoreBackupData:data forDocument:self.currentDocument atPath:backup];
         }
     }
     NSString *currentPath = session[@"currentPath"];
@@ -978,6 +1137,63 @@ static long SciColor(NSColor *c) {
     // An untitled tab was active: it is not in the list, and an index over
     // the tabs of that time would land on the wrong file; the last one opened stays.
     return opened > 0 || files.count == 0;
+}
+
+/// Puts back what the session kept of a document, once it is in front.
+- (void)applySessionEntry:(NSDictionary *)f {
+    NppDocument *doc = self.currentDocument;
+    NSString *lang = f[@"language"];
+    if ([lang isKindOfClass:[NSString class]] && lang.length) [self setLanguageNamed:lang];
+    if ([f[@"codepage"] isKindOfClass:[NSNumber class]] && [f[@"codepage"] unsignedIntValue] && doc.path) {
+        [self reinterpretAsCodepage:[f[@"codepage"] unsignedIntValue]];
+        doc.modified = NO;
+        doc.encodingChanged = NO;
+        [self.sciView message:SCI_SETSAVEPOINT wParam:0 lParam:0];
+    }
+    if ([f[@"pinned"] isKindOfClass:[NSNumber class]]) doc.pinned = [f[@"pinned"] boolValue];
+    if ([f[@"tabColour"] isKindOfClass:[NSNumber class]]) doc.tabColour = [f[@"tabColour"] integerValue];
+    NSArray *marks = f[@"bookmarks"];
+    if ([marks isKindOfClass:[NSArray class]]) {
+        for (NSNumber *line in marks) {
+            if ([line isKindOfClass:[NSNumber class]]) {
+                [self.sciView message:SCI_MARKERADD wParam:(uptr_t)line.longValue lParam:1];
+            }
+        }
+    }
+    // A backup newer than the file is the unsaved text of the last session.
+    NSString *backup = f[@"backup"];
+    if ([backup isKindOfClass:[NSString class]] && doc.path) {
+        NSDate *backupDate = [[[NSFileManager defaultManager] attributesOfItemAtPath:backup error:NULL] fileModificationDate];
+        NSData *data = backupDate && doc.fileModificationDate &&
+                       [backupDate compare:doc.fileModificationDate] != NSOrderedAscending
+            ? [NSData dataWithContentsOfFile:backup] : nil;
+        if (data) [self restoreBackupData:data forDocument:doc atPath:backup];
+        else [[NSFileManager defaultManager] removeItemAtPath:backup error:NULL];
+    }
+    long caret = [f[@"caret"] isKindOfClass:[NSNumber class]] ? [f[@"caret"] longValue] : 0;
+    long anchor = [f[@"anchor"] isKindOfClass:[NSNumber class]] ? [f[@"anchor"] longValue] : caret;
+    long length = [self.sciView message:SCI_GETLENGTH];
+    [self.sciView message:SCI_SETSEL wParam:(uptr_t)MIN(anchor, length) lParam:MIN(caret, length)];
+    if ([f[@"firstLine"] isKindOfClass:[NSNumber class]]) {
+        [self.sciView message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)[f[@"firstLine"] longValue] lParam:0];
+    }
+    [self refreshChrome];
+}
+
+/// The text of a backup goes into the document in front, which is then
+/// modified, and the backup stays where it is until the document is saved.
+- (void)restoreBackupData:(NSData *)data forDocument:(NppDocument *)doc atPath:(NSString *)backup {
+    NSString *text = doc.codepage ? [EditorController stringFromData:data codepage:doc.codepage] : nil;
+    if (!text) {
+        NSStringEncoding enc = NSUTF8StringEncoding; BOOL bom = NO;
+        text = DecodeText(data, &enc, &bom);
+    }
+    if (!text) return;
+    [self setDocumentText:text];
+    [self.sciView message:SCI_EMPTYUNDOBUFFER wParam:0 lParam:0];
+    doc.modified = YES;
+    doc.backupPath = backup;
+    [self refreshChrome];
 }
 
 #pragma mark - Language + theme

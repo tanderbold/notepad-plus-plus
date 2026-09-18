@@ -32,6 +32,21 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// The encoding or BOM was changed since the last save: the bytes on disk
 /// differ from what would be written even when the text does not.
 @property (nonatomic) BOOL encodingChanged;
+/// Where the periodic backup of this document's unsaved text is, once one
+/// has been written; nil otherwise. Removed when the document is saved or
+/// closed, and read back with the session after a crash or a quit.
+@property (nonatomic, copy, nullable) NSString *backupPath;
+/// The file's modification date as last read or written here, to notice
+/// when another program has changed it.
+@property (nonatomic, strong, nullable) NSDate *fileModificationDate;
+/// Where the caret and the view were when this document was last in front,
+/// put back when it comes to the front again.
+@property (nonatomic) long caretPosition;
+@property (nonatomic) long anchorPosition;
+@property (nonatomic) long firstVisibleLine;
+/// The bookmarked lines as last recorded for the session, for a document
+/// that is not in front (Scintilla answers for the view's document only).
+@property (nonatomic, copy, nullable) NSArray<NSNumber *> *bookmarkedLines;
 @end
 
 @interface EditorController : NSObject <NppTabBarDelegate>
@@ -45,6 +60,15 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 /// by length, so that a NUL byte inside a file is kept rather than ending it.
 - (NSString *)documentText;
 - (void)setDocumentText:(NSString *)text;
+
+/// Looks at every open file on disk: one changed by another program is
+/// reloaded (after asking, unless the setting says to do it silently), one
+/// that is gone is either kept, as modified, or closed. Called when the
+/// application comes to the front.
+- (void)checkFilesOnDisk;
+
+/// Removes the periodic backup of a document, once it is saved or closed.
+- (void)dropBackupOfDocument:(NppDocument *)doc;
 
 /// Reopens the file closed last, from the recent list. NO when there is none.
 - (BOOL)restoreLastClosedFile;

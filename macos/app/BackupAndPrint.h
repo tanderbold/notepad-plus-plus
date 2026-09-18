@@ -27,10 +27,10 @@ typedef NS_ENUM(NSInteger, NppPrintColourMode) {
 // Autosave and session snapshots
 - (void)setAutosaveEnabled:(BOOL)enabled interval:(NSTimeInterval)seconds;
 - (BOOL)autosaveRunning;
-/// One autosave pass: saves every modified document that has a path, and
-/// snapshots the session. Returns how many documents were written.
+/// One backup pass: writes the unsaved text of every modified document to
+/// its own file in the backup folder - never the file itself - and saves the
+/// session, which lists the backups. Returns how many backups were written.
 - (NSUInteger)runAutosavePass;
-- (NSString *)snapshotPath;
 
 // Print
 /// Expands the $(...) variables Notepad++ allows in headers and footers.

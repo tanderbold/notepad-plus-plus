@@ -224,8 +224,19 @@
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)a { return YES; }
 
+- (void)applicationDidBecomeActive:(NSNotification *)note {
+    [self.editor checkFilesOnDisk];
+}
+
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)app {
     if (self.closingConfirmed) return NSTerminateNow;
+    // With the session snapshot on and the session restored at launch, the
+    // unsaved text comes back next time, so nothing is asked - as on Windows.
+    NppPreferences *p = [NppPreferences shared];
+    if (p.autosaveEnabled && p.restoreSession) {
+        [self.editor runAutosavePass];
+        return NSTerminateNow;
+    }
     return [self.editor confirmClosingDocuments:self.editor.documents] ? NSTerminateNow
                                                                          : NSTerminateCancel;
 }

@@ -362,6 +362,24 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
 - (NSInteger)sortLines:(NppSortKey)key descending:(BOOL)descending {
     __block NSInteger failedLine = NSNotFound;
 
+    // A rectangular selection sorts the lines by what is inside its columns,
+    // as on Windows; the whole lines move.
+    ScintillaView *view = self.sci;
+    NSRange columns = NSMakeRange(NSNotFound, 0);
+    if ([view message:SCI_SELECTIONISRECTANGLE]) {
+        long a = [view message:SCI_GETCOLUMN wParam:(uptr_t)[view message:SCI_GETRECTANGULARSELECTIONANCHOR]]
+               + [view message:SCI_GETRECTANGULARSELECTIONANCHORVIRTUALSPACE];
+        long c = [view message:SCI_GETCOLUMN wParam:(uptr_t)[view message:SCI_GETRECTANGULARSELECTIONCARET]]
+               + [view message:SCI_GETRECTANGULARSELECTIONCARETVIRTUALSPACE];
+        columns = NSMakeRange((NSUInteger)MIN(a, c), (NSUInteger)labs(a - c));
+    }
+    NSString *(^keyOf)(NSString *) = ^NSString *(NSString *line) {
+        if (columns.location == NSNotFound) return line;
+        if (columns.location >= line.length) return @"";
+        NSUInteger end = MIN(line.length, NSMaxRange(columns));
+        return [line substringWithRange:NSMakeRange(columns.location, end - columns.location)];
+    };
+
     // The decimal sorts read each line as a number and refuse the whole sort if
     // one of them is not, naming the line -- that is what Notepad++ does, rather
     // than quietly leaving it where it was.
@@ -372,7 +390,7 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
             NSMutableArray *empties = [NSMutableArray array];
             NSMutableArray *numbered = [NSMutableArray array];   // pairs of line and value
             for (NSUInteger i = 0; i < bodies.count; ++i) {
-                NSString *prepared = TakeWhileAdmissable(bodies[i], admissable);
+                NSString *prepared = TakeWhileAdmissable(keyOf(bodies[i]), admissable);
                 if (key == NppSortDecimalComma) {
                     prepared = [prepared stringByReplacingOccurrencesOfString:@"," withString:@"."];
                 }
@@ -417,7 +435,8 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
             return shuffled;
         }
 
-        NSArray *sorted = [bodies sortedArrayUsingComparator:^NSComparisonResult(NSString *a, NSString *b) {
+        NSArray *sorted = [bodies sortedArrayUsingComparator:^NSComparisonResult(NSString *wholeA, NSString *wholeB) {
+            NSString *a = keyOf(wholeA), *b = keyOf(wholeB);
             switch (key) {
                 case NppSortLexicographic:                return [a compare:b];
                 case NppSortLexicographicCaseInsensitive: return [a caseInsensitiveCompare:b];

@@ -1,5 +1,7 @@
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
+#import "EncodingCommands.h"
+#import "ToolsCommands.h"
 #import "SettingsCommands.h"
 #import "ScintillaView.h"
 #import <objc/runtime.h>
@@ -149,41 +151,46 @@ static const char kAutosaveTimerKey = 0;
     objc_setAssociatedObject(self, &kAutosaveTimerKey, timer, OBJC_ASSOCIATION_RETAIN);
 }
 
-- (NSString *)snapshotPath {
-    return [[self supportDirectory] stringByAppendingPathComponent:@"snapshot.json"];
-}
-
 - (NSUInteger)runAutosavePass {
+    // The periodic backup, as Windows keeps it: the unsaved text of every
+    // modified document goes to its own file in the backup folder, and the
+    // document's own file is never touched. The session lists the backups,
+    // so the text comes back after a crash or a quit.
     NSInteger restore = [self.documents indexOfObject:self.currentDocument];
+    NppDocument *previous = [self previousTab];
     NSUInteger written = 0;
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *dir = [self backupDirectory];
+    NSDateFormatter *stamp = [[NSDateFormatter alloc] init];
+    stamp.dateFormat = @"yyyy-MM-dd_HHmmss";
+    stamp.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
 
     for (NSInteger i = 0; i < (NSInteger)self.documents.count; ++i) {
         NppDocument *d = self.documents[(NSUInteger)i];
-        if (!d.path || !d.modified) continue;
+        if (!d.modified) {
+            [self dropBackupOfDocument:d];
+            continue;
+        }
         [self selectDocumentAtIndex:i];
         if ([self largeFileRestrictionActive]) continue;
-        if ([self writeCurrentToPath:d.path]) written++;
+        NSString *text = [self documentText];
+        if (!d.path && !text.length) continue;
+        if (!d.backupPath) {
+            NSString *name = [NSString stringWithFormat:@"%@@%@", d.displayName ?: @"new",
+                              [stamp stringFromDate:[NSDate date]]];
+            NSString *target = [dir stringByAppendingPathComponent:name];
+            for (NSUInteger n = 2; [fm fileExistsAtPath:target]; ++n) {
+                target = [dir stringByAppendingPathComponent:[name stringByAppendingFormat:@"-%lu", (unsigned long)n]];
+            }
+            d.backupPath = target;
+        }
+        NSData *data = d.codepage
+            ? [EditorController dataFromString:text codepage:d.codepage]
+            : [text dataUsingEncoding:d.encoding ?: NSUTF8StringEncoding allowLossyConversion:YES];
+        if (data && [data writeToFile:d.backupPath options:NSDataWritingAtomic error:NULL]) written++;
     }
     if (restore != NSNotFound) [self selectDocumentAtIndex:restore];
-
-    // Documents that have never been saved cannot be written back, so their
-    // text goes into the snapshot instead of being lost.
-    NSMutableArray *unsaved = [NSMutableArray array];
-    NSInteger current = [self.documents indexOfObject:self.currentDocument];
-    for (NSInteger i = 0; i < (NSInteger)self.documents.count; ++i) {
-        NppDocument *d = self.documents[(NSUInteger)i];
-        if (d.path) continue;
-        [self selectDocumentAtIndex:i];
-        NSString *text = [self documentText];
-        if (!text.length) continue;
-        [unsaved addObject:@{@"name": d.displayName ?: @"", @"text": text}];
-    }
-    if (current != NSNotFound) [self selectDocumentAtIndex:current];
-
-    NSDictionary *snapshot = @{@"version": @1, @"unsaved": unsaved};
-    NSData *json = [NSJSONSerialization dataWithJSONObject:snapshot
-                                                   options:NSJSONWritingPrettyPrinted error:NULL];
-    [json writeToFile:[self snapshotPath] options:NSDataWritingAtomic error:NULL];
+    [self rememberPreviousTab:previous];
     [self saveSessionTo:[self defaultSessionPath] error:NULL];
     return written;
 }

@@ -816,6 +816,60 @@ int NppMacRunTests(AppDelegate *app) {
                   @"closing the cloned document points the other pane at the document in front", movedOff);
         }
 
+        // The caret belongs to the document: it is where it was when the tab
+        // comes back to the front.
+        {
+            [ed newDocument]; [ed setDocumentText:@"one\ntwo\nthree\n"];
+            NppDocument *first = ed.currentDocument;
+            [ed.sci message:SCI_SETSEL wParam:4 lParam:7];
+            [ed newDocument]; [ed setDocumentText:@"other\n"];
+            NppDocument *second = ed.currentDocument;
+            [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:first]];
+            BOOL back = [ed.sci message:SCI_GETANCHOR] == 4 && [ed.sci message:SCI_GETCURRENTPOS] == 7;
+            for (NppDocument *d in @[first, second]) [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:d] discardChanges:YES];
+            Check(@"IDM_VIEW_TAB_NEXT (the caret comes back with the tab)",
+                  @"switching away and back leaves the selection where it was", back);
+        }
+
+        // Files changed or removed by another program are noticed when the
+        // application comes to the front.
+        {
+            NSFileManager *fm = [NSFileManager defaultManager];
+            NSString *changing = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-changed-outside.txt"];
+            [@"before\n" writeToFile:changing atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [ed openFileAtPath:changing error:NULL];
+            NppDocument *doc = ed.currentDocument;
+            [@"after\n" writeToFile:changing atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [fm setAttributes:@{NSFileModificationDate: [NSDate dateWithTimeIntervalSinceNow:60]}
+                 ofItemAtPath:changing error:NULL];
+            ed.scriptedCloseAnswer = NSAlertFirstButtonReturn;       // Reload
+            [ed checkFilesOnDisk];
+            [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:doc]];
+            BOOL reloaded = [[ed documentText] isEqualToString:@"after\n"] && !doc.modified;
+            [fm removeItemAtPath:changing error:NULL];
+            ed.scriptedCloseAnswer = NSAlertFirstButtonReturn;       // Keep
+            [ed checkFilesOnDisk];
+            BOOL kept = [ed.documents containsObject:doc] && doc.modified;
+            ed.scriptedCloseAnswer = 0;
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:doc] discardChanges:YES];
+            [ed forgetRecentFile:changing];
+            Check(@"IDM_SETTING_PREFERENCE (File Status Auto-Detection)",
+                  @"a file changed on disk is reloaded, and one removed is kept as modified",
+                  reloaded && kept);
+        }
+
+        // A rectangular selection sorts by its columns.
+        {
+            [ed newDocument]; [ed setDocumentText:@"x c\ny a\nz b\n"];
+            [ed.sci message:SCI_SETRECTANGULARSELECTIONANCHOR wParam:2 lParam:0];
+            [ed.sci message:SCI_SETRECTANGULARSELECTIONCARET wParam:11 lParam:0];
+            [ed sortLines:NppSortLexicographic descending:NO];
+            BOOL byColumn = [[ed documentText] isEqualToString:@"y a\nz b\nx c\n"];
+            [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
+            Check(@"IDM_EDIT_SORTLINES_LEXICOGRAPHIC_ASCENDING (by the selected column)",
+                  @"with a rectangular selection the lines are ordered by what is inside its columns", byColumn);
+        }
+
         // A NUL byte inside a file is content, not the end of it.
         {
             NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];
@@ -4964,28 +5018,64 @@ int NppMacRunTests(AppDelegate *app) {
               [[ed backupsForPath:path] containsObject:verbose]);
         p.backupMode = savedMode;
 
-        // An autosave pass writes modified documents and snapshots unsaved ones.
+        // A backup pass writes the unsaved text to the backup folder and leaves
+        // the files themselves alone; the session lists the backups.
         [ed closeAllDocuments];
         NSString *tracked = TempFile(@"t_autosave.txt", @"original\n");
         [ed openFileAtPath:tracked error:&err];
         SetDoc(ed, @"changed by autosave\n");
         ed.currentDocument.modified = YES;
+        NppDocument *trackedDoc = ed.currentDocument;
         [ed newDocument];
         SetDoc(ed, @"never saved anywhere\n");
+        NppDocument *untitledDoc = ed.currentDocument;
 
         NSUInteger written = [ed runAutosavePass];
         NSString *onDisk = [NSString stringWithContentsOfFile:tracked
                                                      encoding:NSUTF8StringEncoding error:NULL];
-        NSData *snapJson = [NSData dataWithContentsOfFile:[ed snapshotPath]];
-        NSDictionary *snap = snapJson ? [NSJSONSerialization JSONObjectWithData:snapJson
-                                                                       options:0 error:NULL] : nil;
-        BOOL snapshotHasText = NO;
-        for (NSDictionary *entry in snap[@"unsaved"]) {
-            if ([entry[@"text"] containsString:@"never saved anywhere"]) snapshotHasText = YES;
+        NSString *trackedBackup = trackedDoc.backupPath
+            ? [NSString stringWithContentsOfFile:trackedDoc.backupPath encoding:NSUTF8StringEncoding error:NULL] : nil;
+        NSString *untitledBackup = untitledDoc.backupPath
+            ? [NSString stringWithContentsOfFile:untitledDoc.backupPath encoding:NSUTF8StringEncoding error:NULL] : nil;
+        Check(@"IDM_SETTING_PREFERENCE (periodic backup)",
+              @"the unsaved text of every modified document goes to a backup file, and the "
+              @"file itself is not written",
+              written == 2 && [onDisk isEqualToString:@"original\n"] &&
+              [trackedBackup isEqualToString:@"changed by autosave\n"] &&
+              [untitledBackup isEqualToString:@"never saved anywhere\n"] &&
+              [trackedDoc.backupPath hasPrefix:[ed backupDirectory]]);
+
+        // Saving drops the backup; the session brings an untitled one back.
+        NSString *sessionFile = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-backup-session.json"];
+        [ed saveSessionTo:sessionFile error:NULL];
+        [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:trackedDoc]];
+        [ed saveCurrentDocument];
+        BOOL droppedOnSave = trackedDoc.backupPath == nil;
+        NSString *keptBackup = untitledDoc.backupPath;
+        [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:trackedDoc] discardChanges:YES];
+        // The untitled document is dropped without its backup being removed,
+        // as a crash would leave it.
+        untitledDoc.backupPath = nil;
+        [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:untitledDoc] discardChanges:YES];
+        [ed loadSessionFrom:sessionFile error:NULL];
+        NppDocument *restored = nil;
+        for (NppDocument *d in ed.documents) {
+            if (!d.path && [d.backupPath isEqualToString:keptBackup]) restored = d;
         }
-        Check(@"IDM_SETTING_PREFERENCE (autosave)",
-              @"modified files are written and unsaved text is snapshotted",
-              written == 1 && [onDisk isEqualToString:@"changed by autosave\n"] && snapshotHasText);
+        BOOL cameBack = restored != nil && restored.modified;
+        if (restored) {
+            [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:restored]];
+            cameBack = cameBack && [[ed documentText] isEqualToString:@"never saved anywhere\n"];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:restored] discardChanges:YES];
+        }
+        for (NppDocument *d in [ed.documents copy]) {
+            if ([d.path isEqualToString:tracked]) [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:d] discardChanges:YES];
+        }
+        [[NSFileManager defaultManager] removeItemAtPath:sessionFile error:NULL];
+        Check(@"IDM_FILE_LOADSESSION (unsaved text comes back)",
+              @"saving a document drops its backup, and an untitled document's backup is "
+              @"restored from the session, still modified",
+              droppedOnSave && cameBack);
 
         [ed setAutosaveEnabled:YES interval:60];
         BOOL running = [ed autosaveRunning];

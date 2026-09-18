@@ -168,6 +168,12 @@
                  items:@[@"Default (one instance)", @"Always a new instance",
                          @"A session per instance"]
               selected:p.multiInstanceMode to:v atY:y];
+    y = [self addCheckbox:@"Notice files changed or removed by another program (File Status Auto-Detection)"
+                      key:@"fileAutoDetection" on:p.fileAutoDetection to:v atY:y];
+    y = [self addCheckbox:@"    Reload silently" key:@"fileAutoDetectionSilent"
+                       on:p.fileAutoDetectionSilent to:v atY:y];
+    y = [self addCheckbox:@"    Scroll to the last line after a reload" key:@"fileAutoDetectionScrollToEnd"
+                       on:p.fileAutoDetectionScrollToEnd to:v atY:y];
     [self endPage:@"General" atY:y];
 
     y = [self beginPage:@"Toolbar"]; v = [self page:@"Toolbar"];
@@ -298,9 +304,9 @@
               selected:p.backupMode to:v atY:y];
     y = [self addField:@"Backup folder" key:@"backupDirectory"
                   value:p.backupDirectory to:v atY:y];
-    y = [self addCheckbox:@"Autosave modified documents" key:@"autosaveEnabled"
-                       on:p.autosaveEnabled to:v atY:y];
-    y = [self addField:@"Autosave every (seconds)" key:@"autosaveInterval"
+    y = [self addCheckbox:@"Session snapshot and periodic backup (the files themselves are never written)"
+                      key:@"autosaveEnabled" on:p.autosaveEnabled to:v atY:y];
+    y = [self addField:@"Backup every (seconds)" key:@"autosaveInterval"
                   value:[@(p.autosaveInterval) stringValue] to:v atY:y];
     [self endPage:@"Backup" atY:y];
 
@@ -443,6 +449,9 @@
     p.backupMode = [self.controls[@"backupMode"] indexOfSelectedItem];
     p.backupDirectory = [self.controls[@"backupDirectory"] stringValue];
     p.autosaveEnabled = [self.controls[@"autosaveEnabled"] state] == NSControlStateValueOn;
+    p.fileAutoDetection = [self.controls[@"fileAutoDetection"] state] == NSControlStateValueOn;
+    p.fileAutoDetectionSilent = [self.controls[@"fileAutoDetectionSilent"] state] == NSControlStateValueOn;
+    p.fileAutoDetectionScrollToEnd = [self.controls[@"fileAutoDetectionScrollToEnd"] state] == NSControlStateValueOn;
     p.autosaveInterval = MAX(5, [[self.controls[@"autosaveInterval"] stringValue] integerValue]);
     p.printLineNumbers = [self.controls[@"printLineNumbers"] state] == NSControlStateValueOn;
     p.printColourMode = [self.controls[@"printColourMode"] indexOfSelectedItem];

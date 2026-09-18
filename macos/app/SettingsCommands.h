@@ -35,6 +35,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger backupMode;
 @property (nonatomic, copy) NSString *backupDirectory;   // empty = the support folder
 @property (nonatomic) BOOL autosaveEnabled;
+/// File Status Auto-Detection, as Windows calls it: notice a file changed or
+/// removed by another program when the application comes to the front.
+@property (nonatomic) BOOL fileAutoDetection;
+@property (nonatomic) BOOL fileAutoDetectionSilent;       // reload without asking
+@property (nonatomic) BOOL fileAutoDetectionScrollToEnd;  // after a reload
 @property (nonatomic) NSInteger autosaveInterval;        // seconds
 
 /// Print. Colour mode 0 as shown, 1 inverted, 2 black on white, 3 no background.
