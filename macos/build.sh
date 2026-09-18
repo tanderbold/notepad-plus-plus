@@ -65,7 +65,7 @@ libtool -static -o "$OUT/libscintilla-cocoa.a" "$OBJ"/*.o 2>/dev/null
 echo "==> NotepadMac"
 APPOBJ="$OUT/appobj"
 mkdir -p "$APPOBJ"
-for f in NppPanel NppRegex ApiCatalog CharsetDetection LanguageCatalog LanguageModel LanguageDetection StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands FindCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
+for f in NppPanel NppRegex ApiCatalog CharsetDetection LanguageCatalog UserLanguages LanguageModel LanguageDetection StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands FindCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
 done
 clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o "$UCOBJ"/*.o \

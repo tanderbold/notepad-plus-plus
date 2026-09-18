@@ -1,6 +1,7 @@
 #include <string>
 #import "EditorController.h"
 #import "CharsetDetection.h"
+#import "UserLanguages.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -1238,11 +1239,17 @@ static long SciColor(NSColor *c) {
     [sci setLexerProperty:@"fold" value:@"1"];
     [sci setLexerProperty:@"fold.compact" value:@"0"];
 
-    for (NSNumber *idx in lang.keywordSets) {
-        [sci setStringProperty:SCI_SETKEYWORDS parameter:idx.integerValue value:lang.keywordSets[idx]];
+    NppUserLanguage *udl = [[LanguageCatalog sharedCatalog] userLanguageNamed:lang.name];
+    if (udl) {
+        [self configureUserLexerFor:udl];
+    } else {
+        for (NSNumber *idx in lang.keywordSets) {
+            [sci setStringProperty:SCI_SETKEYWORDS parameter:idx.integerValue value:lang.keywordSets[idx]];
+        }
     }
 
     [self applyTheme];
+    if (udl) [self applyUserLanguageStyles:udl];
     [sci message:SCI_COLOURISE wParam:0 lParam:-1];
     [self applyWordCharacters];
     [self markClickableLinks];

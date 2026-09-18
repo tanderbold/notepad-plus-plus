@@ -1,5 +1,6 @@
 #import "NppPanel.h"
 #import "AppDelegate.h"
+#import "UserLanguages.h"
 #import <objc/message.h>
 #import "EditorController.h"
 #import "EditCommands.h"
@@ -317,6 +318,9 @@
     };
     self.window.contentView = self.editor.view;
 
+    // User-defined languages join the catalog before the Language menu is
+    // built from it.
+    [[LanguageCatalog sharedCatalog] reloadUserLanguagesFromDirectory:[self.editor supportDirectory]];
     [self buildMenus];
 
     // Imported themes join the bundled ones in the Preferences picker.

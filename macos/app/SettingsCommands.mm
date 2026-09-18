@@ -1,4 +1,5 @@
 #import "SettingsCommands.h"
+#import "UserLanguages.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -458,20 +459,11 @@ static NSString *XMLEscaped(NSString *text) {
     if (![xml writeToFile:[self userDefinedLanguagePath] atomically:YES
                  encoding:NSUTF8StringEncoding error:NULL]) return NO;
 
-    // Make it usable straight away: drive the document with the chosen tokens.
-    NppLanguage *lang = [[NppLanguage alloc] init];
-    lang.name = name;
-    lang.lexerID = @"user";
-    NSMutableArray *exts = [NSMutableArray array];
-    for (NSString *e in [(extensions ?: @"") componentsSeparatedByString:@" "]) {
-        if (e.length) [exts addObject:e.lowercaseString];
-    }
-    lang.extensions = exts;
-    lang.commentLine = commentLine.length ? commentLine : nil;
-    lang.keywordSets = keywords.length ? @{@0: keywords} : @{};
-    self.currentDocument.language = lang;
-    [self applyLanguage];
-    [self refreshChrome];
+    // Read back the way every user language is, and applied to the document.
+    [[LanguageCatalog sharedCatalog] reloadUserLanguagesFromDirectory:[self supportDirectory]];
+    // Shown on the document in front, as the Windows dialog previews it, but
+    // not as a choice the user made: a rename still re-detects the language.
+    [self setLanguageNamed:name];
     return YES;
 }
 

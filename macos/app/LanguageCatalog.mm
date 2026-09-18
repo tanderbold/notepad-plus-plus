@@ -8,6 +8,8 @@
 @property (nonatomic, strong) NSMutableArray<NppLanguage *> *languages;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NppLanguage *> *byName;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NppLanguage *> *byExtension;
+@property (nonatomic, strong, nullable) NSDictionary<NSString *, NppLanguage *> *builtInByExtension;
+@property (nonatomic, strong) NSArray<NppLanguage *> *userLanguages;
 // parse state
 @property (nonatomic, strong, nullable) NppLanguage *current;
 @property (nonatomic, strong, nullable) NSMutableDictionary<NSNumber *, NSString *> *currentKeywords;
@@ -134,6 +136,21 @@ static NSString *LexerIDForLanguage(NSString *langName) {
 #pragma mark - Lookup
 
 - (NSArray<NppLanguage *> *)allLanguages { return self.languages; }
+
+- (void)registerUserLanguages:(NSArray<NppLanguage *> *)languages {
+    if (!self.builtInByExtension) self.builtInByExtension = [self.byExtension copy];
+    for (NppLanguage *old in self.userLanguages) {
+        [self.languages removeObject:old];
+        if (self.byName[old.name] == old) [self.byName removeObjectForKey:old.name];
+    }
+    self.byExtension = [self.builtInByExtension mutableCopy];
+    self.userLanguages = [languages copy];
+    for (NppLanguage *lang in languages) {
+        [self.languages addObject:lang];
+        self.byName[lang.name] = lang;
+        for (NSString *ext in lang.extensions) self.byExtension[ext.lowercaseString] = lang;
+    }
+}
 
 - (NppLanguage *)languageNamed:(NSString *)name { return self.byName[name]; }
 

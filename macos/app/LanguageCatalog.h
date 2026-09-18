@@ -24,6 +24,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NppLanguage *)languageNamed:(NSString *)name;
 /// Matches on file extension; falls back to the "normal" language.
 - (nullable NppLanguage *)languageForFileName:(NSString *)fileName;
+
+/// Lists user-defined languages, replacing the ones listed before: their
+/// names join the catalog and their extensions win over the built-in ones.
+- (void)registerUserLanguages:(NSArray<NppLanguage *> *)languages;
 @end
 
 NS_ASSUME_NONNULL_END

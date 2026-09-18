@@ -33,6 +33,7 @@
 #import "FindCommands.h"
 #import "LanguageCatalog.h"
 #import "LanguageDetection.h"
+#import "UserLanguages.h"
 #import "LanguageModel.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -928,6 +929,50 @@ int NppMacRunTests(AppDelegate *app) {
             Check(@"IDM_ABOUT (command line switches)",
                   @"-n -c -l -ro -titleAdd= -qt= -z and -notepadStyleCmdline are read and applied as on Windows",
                   parsedRight && oneName && applied && quoted);
+        }
+
+        // A user-defined language is read from its file and highlighted.
+        {
+            NSString *udlPath = [ed userDefinedLanguagePath];
+            NSData *was = [NSData dataWithContentsOfFile:udlPath];
+            NSString *xml =
+                @"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus>\n"
+                @"<UserLang name=\"TestLang\" ext=\"tlang\" udlVersion=\"2.1\">\n"
+                @"<Settings><Global caseIgnored=\"no\" allowFoldOfComments=\"no\" foldCompact=\"no\" "
+                @"forcePureLC=\"0\" decimalSeparator=\"0\" />"
+                @"<Prefix Keywords1=\"no\" Keywords2=\"no\" Keywords3=\"no\" Keywords4=\"no\" "
+                @"Keywords5=\"no\" Keywords6=\"no\" Keywords7=\"no\" Keywords8=\"no\" /></Settings>\n"
+                @"<KeywordLists><Keywords name=\"Comments\">00# 01 02 03 04</Keywords>"
+                @"<Keywords name=\"Keywords1\">alpha beta</Keywords></KeywordLists>\n"
+                @"<Styles><WordsStyle name=\"DEFAULT\" fgColor=\"000000\" bgColor=\"FFFFFF\" fontStyle=\"0\" nesting=\"0\" />"
+                @"<WordsStyle name=\"KEYWORDS1\" fgColor=\"FF0000\" bgColor=\"FFFFFF\" fontStyle=\"1\" nesting=\"0\" />"
+                @"<WordsStyle name=\"LINE COMMENTS\" fgColor=\"008000\" bgColor=\"FFFFFF\" fontStyle=\"0\" nesting=\"0\" />"
+                @"</Styles></UserLang></NotepadPlus>\n";
+            [xml writeToFile:udlPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            NSArray *loaded = [[LanguageCatalog sharedCatalog] reloadUserLanguagesFromDirectory:[ed supportDirectory]];
+            BOOL listed = [[LanguageCatalog sharedCatalog] languageNamed:@"TestLang"] != nil &&
+                          [[[LanguageCatalog sharedCatalog] languageForFileName:@"x.tlang"].name isEqualToString:@"TestLang"];
+
+            NSString *tlPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-udl-test.tlang"];
+            [@"alpha gamma # note\n" writeToFile:tlPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [ed openFileAtPath:tlPath error:NULL];
+            [ed.sci message:SCI_COLOURISE wParam:0 lParam:-1];
+            long keywordStyle = [ed.sci message:SCI_GETSTYLEAT wParam:0 lParam:0];      // "alpha"
+            long plainStyle = [ed.sci message:SCI_GETSTYLEAT wParam:6 lParam:0];        // "gamma"
+            long commentStyle = [ed.sci message:SCI_GETSTYLEAT wParam:13 lParam:0];     // "note"
+            BOOL highlighted = [ed.currentDocument.language.name isEqualToString:@"TestLang"] &&
+                keywordStyle == SCE_USER_STYLE_KEYWORD1 && plainStyle != SCE_USER_STYLE_KEYWORD1 &&
+                commentStyle == SCE_USER_STYLE_COMMENTLINE;
+            BOOL bold = [ed.sci message:SCI_STYLEGETBOLD wParam:SCE_USER_STYLE_KEYWORD1 lParam:0] != 0;
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+            [ed forgetRecentFile:tlPath];
+            [[NSFileManager defaultManager] removeItemAtPath:tlPath error:NULL];
+            if (was) [was writeToFile:udlPath atomically:YES]; else [[NSFileManager defaultManager] removeItemAtPath:udlPath error:NULL];
+            [[LanguageCatalog sharedCatalog] reloadUserLanguagesFromDirectory:[ed supportDirectory]];
+            Check(@"IDM_LANG_USER (a user-defined language highlights)",
+                  @"a language in userDefineLang.xml is listed, claims its extension, and its keywords, "
+                  @"comments and styles reach the lexer",
+                  loaded.count == 1 && listed && highlighted && bold);
         }
 
         // A NUL byte inside a file is content, not the end of it.
