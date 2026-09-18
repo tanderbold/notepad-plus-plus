@@ -32,75 +32,38 @@ auto-close pairs and smart highlighting do what they say.
 
 ### Still open
 
-Found by the same audit, not yet fixed. Most serious first.
+The thirteen bugs listed here after the first round were fixed on
+2026-09-18 as well (commits from "the still-open bugs, batch one" on),
+with the exceptions below.
 
-1. **Periodic "autosave" writes the user's file** (`BackupAndPrint.mm:148`).
-   Windows' periodic backup writes `backup\NAME@timestamp` and never the
-   file itself; the port's setting is called autosave and presented as
-   such, but a user coming from Windows expects a snapshot. The snapshot
-   of unsaved documents (`snapshot.json`) is written and never restored.
-2. **No read-only detection on open** (`EditorController.mm:386`): a file
-   without write permission is editable until Save fails.
-3. **Save As does not refuse a path already open in another tab**
-   (`EditorController.mm:478`); Save All skips untitled documents and does
-   not confirm; Rename of an untitled document writes it to disk.
-4. **Restore Last Closed File and Open All Recent Files are missing**, and
-   the recent list is filled by opening rather than closing
-   (`EditorController.mm:429`).
-5. **Insert Date/Time**: the order is inverted against Windows (time
-   first by default), the long form has seconds, and the selection is not
-   replaced (`EditCommands.mm:607`).
-6. **Paste to Bookmarked Lines** hands clipboard line i to bookmark i;
-   Windows replaces every marked line with the whole clipboard. Copy and
-   Cut of bookmarked lines drop the line endings (`SearchCommands.mm:232`).
-7. **Go To Line** has no offset mode and no range check
-   (`AppDelegate.mm:2914`); Select All Between Matching Braces excludes the
-   braces where Windows includes them (`SearchCommands.mm:326`).
-8. **Proper Case and Sentence Case** differ from Windows on apostrophes,
-   digits and sentence boundaries (`EditCommands.mm:164`); Trim removes
-   every Unicode space where Windows removes tabs and spaces.
-9. **Large files** are decided on after a full decode, with no too-big
-   guard and backups not suppressed (`BehaviourCommands.mm:17`).
-10. **Close All But Pinned** keeps pinned tabs anywhere; Windows keeps the
-    leading run and moves pinned tabs left. No drag and drop of files onto
-    the window.
-11. **Column Editor** lacks repeat count, number base and the from-caret
-    mode; Sort Lines ignores a rectangular selection's column range.
-12. **The secondary view can be left on a released document**: nothing
-    tracks which document the other pane shows, and closing that document
-    from the main pane (`EditorController.mm`, `closeDocumentAtIndex:`)
-    releases it while the pane still points at it. Pre-existing.
-13. Cosmetic: four `nullable` annotations missing (`EditorController.mm:202`,
-    `Toolbar.mm:232,245`, `WorkspacePanel.mm:103`).
+1. **Save All does not confirm** when more than one document is dirty;
+   Windows asks unless the setting says not to. Small.
+2. Cosmetic: the `outlineView:child:ofItem:` delegate method in
+   `WorkspacePanel.mm` returns nil for an absent root; callers guard.
 
 ## What the Windows version has and this does not
 
 Grouped by area. "Property only" means the setting exists in
 `NppPreferences` and works, but no control in Preferences reaches it.
 
-**File handling.** No file-change detection on activation (Windows asks to
-reload, offers "keep non-existing file", can update silently and scroll to
-the end); a buffer changed on disk is silently stale. No command-line
-switches at all (`main.mm` ignores argv): `-n<line> -c<col> -l<lang> -ro
--nosession -multiInst -openSession -notepadStyleCmdline -z -qn/-qt/-qf`.
-No character-set detection: BOM, then valid UTF-8, then Latin-1
-(`EditorController.mm:88`); Windows runs uchardet and has "Open ANSI as
-UTF-8". File monitoring follows one document per controller. Read-only
-files are not detected on open. Large files are not streamed.
+**File handling.** Done since the audit: file-change detection on
+activation with the reload / keep prompts and the silent and scroll-to-end
+settings; the command-line switches; uchardet for the character set and
+UTF-16 without a mark; read-only detection on open; the large-file
+decision by size on disk. Still: file monitoring follows one document per
+controller; large files are not streamed; "Open ANSI as UTF-8" has no
+setting (pure-ASCII files already read as UTF-8).
 
-**Session.** JSON of `{path, language}` plus an index. Windows keeps caret,
-scroll, selection, folds, marks, encoding, read-only, tab colour, the second
-view, untitled buffers and the file browser roots.
+**Session.** Done since the audit: caret, scroll, selection, bookmarks,
+pinned state, tab colour, encoding and code page, and untitled buffers
+through the periodic backup. Still: folds, user read-only, the second view
+and the file browser roots.
 
-**Preferences.** 16 pages and about 75 controls against 24 pages and about
-277. Whole pages absent: Tab Bar, Default Directory, Recent Files History,
-Language menu, Searching, Search Engine, MISC. Property only: tab bar
-layout/lock/close buttons/pin, recent-files cap and display, default
-directory, "fill find from selection", "word under caret", default EOL /
-encoding / language for new documents, untitled tab named from its first
-line, "deactivate wrap above size", "allow autocomplete/smart highlight
-above size", print header middle / footer left and right / header font.
-Absent with no property: localisation picker, hide menu / status bar,
+**Preferences.** 20 pages now. Done since the audit: Tab Bar, Recent Files
+History, Default Directory and Searching pages, and every setting that
+existed only as a property has a control; File Status Auto-Detection and
+character-set detection have theirs. Still absent: Language menu, Search
+Engine and MISC pages, and, with no property behind them: localisation picker, hide menu / status bar,
 toolbar icon sets and accent colour, smooth font, custom selection colour,
 EOL display and colour, non-printing character appearance, dark-mode tones
 and custom colours, fold margin style, border width, dynamic line-number
@@ -120,11 +83,11 @@ theme picker in the dialog, Save & Close / Cancel (changes are immediate and
 irreversible), writing back to the theme XML (overrides live only in
 `NSUserDefaults`).
 
-**User Defined Language.** There is no editor: `defineUserLanguage:` is four
-text prompts writing a two-keyword-set `userDefineLang.xml`. Nothing sends
-`SCI_SETPROPERTY userDefine.*`, so no UDL, imported or not, is ever
-highlighted; the "user" lexer is created unconfigured. No import, export,
-rename, remove, folding, delimiters, comment and number styling, `-udl=`.
+**User Defined Language.** Done since the audit: `userDefineLang.xml` and
+`userDefineLangs/*.xml` are read, listed, claim their extensions and drive
+the user lexer with the same properties, keyword lists and styles Windows
+sends, and `-udl=` works. Still no editor: `defineUserLanguage:` is four
+text prompts writing a minimal file. No import, export, rename or remove.
 
 **Shortcut Mapper and context menu.** A single list of menu items that
 already have a key; items without one cannot be assigned; a text prompt for
@@ -183,13 +146,11 @@ items. About is the stock Cocoa panel.
 In this order, each a day or less of work and each closing a hole a daily
 user falls into:
 
-1. File-change detection on activation, with reload / keep prompts.
-2. Snapshot restore of unsaved documents, and periodic backup that does
-   not touch the file (still-open bug 1).
-3. Command-line switches, at least `-n -c -l -ro -nosession -multiInst`.
-4. Character-set detection (uchardet is in `PowerEditor/src/uchardet`, and
-   builds on macOS) and "Open ANSI as UTF-8".
-5. Session depth: caret, scroll, folds, marks, encoding, untitled buffers.
-6. Still-open bugs 2 to 8.
-7. Loading `userDefineLang.xml` into the lexer; a UDL editor after that.
-8. Preferences controls for the settings that already exist.
+1. A UDL editor with import and export, now that UDLs highlight.
+2. The Shortcut Mapper: any command, Scintilla commands, macros, conflicts.
+3. Session depth: folds, the second view, the file browser roots.
+4. Project panels with virtual folders and `.xml` workspaces.
+5. Style Configurator: global overrides, Cancel, writing to the theme XML.
+6. Document Map view zone and click-to-scroll; Document List columns.
+7. Docking of panels, with the layout saved.
+8. Localisation from `nativeLang`.

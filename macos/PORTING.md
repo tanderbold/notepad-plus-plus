@@ -75,8 +75,19 @@ NPPMAC_ARCH=native ./macos/build.sh   # host arch only, ~2x faster
 - Sessions: save and reopen the set of open files.
 - A toolbar of the editing commands, with the buttons, their labels and the bar
   size all configurable.
-- Backup on save, simple or timestamped, in a configurable folder; autosave on
-  a timer, with the text of never-saved documents kept in a snapshot file.
+- Backup on save, simple or timestamped, in a configurable folder; a periodic
+  backup of every modified document's unsaved text to the backup folder,
+  never to the file itself, listed in the session and restored from it after
+  a crash or a quit - untitled documents included.
+- Files changed or removed by another program are noticed when the
+  application comes to the front, with reload and keep prompts; files that
+  cannot be written open read-only; the character set of a file that is not
+  UTF-8 is found by uchardet, compiled in from Notepad++'s own copy.
+- The command-line switches Notepad++ takes (-n -c -p -l -ro -nosession
+  -openSession -r -openFoldersAsWorkspace -monitor -alwaysOnTop -notabbar
+  -titleAdd= -settingsDir= -qt= -qf= -notepadStyleCmdline -z).
+- User Defined Languages from userDefineLang.xml and userDefineLangs/,
+  driven into the user lexer exactly as Windows drives it.
 - Print options: line numbers, four colour modes, page margins, and header and
   footer templates using the same $(...) variables Notepad++ accepts.
 - A large-file restriction that drops highlighting and other work above a size
