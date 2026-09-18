@@ -107,6 +107,11 @@ static NSString *TempFile(NSString *name, NSString *contents) {
     return p;
 }
 
+/// The alert hook of Localization.mm, named so the suite can call it.
+@protocol NppAlertLocalizing
+- (void)npp_localize;
+@end
+
 /// Reads back one attribute value, for the newline-preservation test.
 @interface NppAttributeReader : NSObject <NSXMLParserDelegate>
 @property (nonatomic, copy) NSString *value;
@@ -7437,6 +7442,26 @@ int NppMacRunTests(AppDelegate *app) {
         statusLabel.stringValue = @"Wrap around";
         [[NppLocalization shared] localizeWindow:statusWindow];
         names = names && translatedFirst && keptNew && [statusLabel.stringValue isEqualToString:@"Зациклить поиск"];
+
+        // Messages: upstream's words with their placeholders, filled in after
+        // translation, the translation's line breaks kept; an alert on a sheet
+        // or run modally takes them the same way.
+        NSString *reloadAsk = NppLMessage(@"\"$STR_REPLACE$\"\n\nThis file has been modified by another program.\nDo you want to reload it?", @"/tmp/x.txt", 0);
+        NSString *countLine = NppLMessage(@"Count: $INT_REPLACE$ matches", nil, 12);
+        NSAlert *probe = [[NSAlert alloc] init];
+        probe.messageText = @"Reload";
+        probe.informativeText = @"Are you sure you want to reload the current file and lose the changes made in Notepad++?";
+        [probe addButtonWithTitle:@"Yes"];
+        [probe addButtonWithTitle:@"Cancel"];
+        [(id<NppAlertLocalizing>)probe npp_localize];
+        BOOL messages = [reloadAsk hasPrefix:@"\"/tmp/x.txt\""] && [reloadAsk containsString:@"\n"] && ![reloadAsk containsString:@"modified by another"] &&
+                        ![reloadAsk containsString:@"$STR_REPLACE$"] &&
+                        [countLine containsString:@"12"] && ![countLine containsString:@"matches"] &&
+                        ![probe.informativeText containsString:@"Are you sure"] && [probe.buttons.firstObject.title isEqualToString:@"Да"] &&
+                        [probe.buttons.lastObject.title isEqualToString:@"Отмена"];
+        printf("    l10n messages: %s | %s | %s\n", [reloadAsk stringByReplacingOccurrencesOfString:@"\n" withString:@"/"].UTF8String,
+               countLine.UTF8String, probe.informativeText.UTF8String);
+        names = names && messages;
 
         // Context menus: the tab's in its own wording, the editor's still found
         // by the English titles the setting keeps.

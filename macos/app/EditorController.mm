@@ -672,7 +672,7 @@ static long SciColor(NSColor *c) {
     // As upstream asks before a file of 2 GB or more, unless told not to.
     if (huge && !prefs.suppressHugeFileWarning && !getenv("NPPMAC_TEST")) {
         NSAlert *ask = [[NSAlert alloc] init];
-        ask.messageText = @"Opening a huge file";
+        ask.messageText = @"Opening huge file warning";
         ask.informativeText = @"Opening a huge file of 2GB+ could take several minutes.\nDo you want to open it?";
         [ask addButtonWithTitle:@"Yes"];
         [ask addButtonWithTitle:@"No"];
@@ -1034,10 +1034,11 @@ static BOOL gCheckingFilesOnDisk;
             if (!answer && getenv("NPPMAC_TEST")) answer = NSAlertFirstButtonReturn;
             if (!answer) {
                 NSAlert *ask = [[NSAlert alloc] init];
-                ask.messageText = [NSString stringWithFormat:@"\"%@\" no longer exists.", doc.displayName];
-                ask.informativeText = @"Keep it in the editor?";
-                [ask addButtonWithTitle:@"Keep"];
-                [ask addButtonWithTitle:@"Close"];
+                // Upstream's words (DoCloseOrNot), so every translation has them.
+                ask.messageText = NppL(@"Keep non existing file");
+                ask.informativeText = NppLMessage(@"The file \"$STR_REPLACE$\" doesn't exist anymore.\nKeep this file in editor?", doc.displayName, 0);
+                [ask addButtonWithTitle:@"Yes"];
+                [ask addButtonWithTitle:@"No"];
                 answer = [ask runModal];
             }
             if (answer == NSAlertFirstButtonReturn) {
@@ -1061,12 +1062,13 @@ static BOOL gCheckingFilesOnDisk;
         if (!answer && getenv("NPPMAC_TEST")) answer = NSAlertFirstButtonReturn;
         if (!answer) {
             NSAlert *ask = [[NSAlert alloc] init];
-            ask.messageText = [NSString stringWithFormat:@"\"%@\" has been changed by another program.",
-                               doc.displayName];
-            ask.informativeText = doc.modified
-                ? @"Reload it and lose the changes made here?" : @"Reload it?";
-            [ask addButtonWithTitle:@"Reload"];
-            [ask addButtonWithTitle:@"Keep"];
+            // DoReloadOrNot and DoReloadOrNotAndLooseChange.
+            ask.messageText = NppL(@"Reload");
+            ask.informativeText = NppLMessage(doc.modified
+                ? @"\"$STR_REPLACE$\"\n\nThis file has been modified by another program.\nDo you want to reload it and lose the changes made in Notepad++?"
+                : @"\"$STR_REPLACE$\"\n\nThis file has been modified by another program.\nDo you want to reload it?", doc.path ?: doc.displayName, 0);
+            [ask addButtonWithTitle:@"Yes"];
+            [ask addButtonWithTitle:@"No"];
             answer = [ask runModal];
         }
         if (answer == NSAlertFirstButtonReturn) {
@@ -1098,10 +1100,11 @@ static BOOL gCheckingFilesOnDisk;
         if (!answer && getenv("NPPMAC_TEST")) answer = NSAlertSecondButtonReturn;
         if (!answer) {
             NSAlert *alert = [[NSAlert alloc] init];
-            alert.messageText = [NSString stringWithFormat:@"Save changes to %@?", doc.displayName];
-            alert.informativeText = @"Your changes will be lost if you don't save them.";
-            [alert addButtonWithTitle:@"Save"];
-            [alert addButtonWithTitle:@"Don't Save"];
+            // DoSaveOrNot: "Save file "x" ?" with Yes, No and Cancel.
+            alert.messageText = NppL(@"Save");
+            alert.informativeText = NppLMessage(@"Save file \"$STR_REPLACE$\" ?", doc.displayName, 0);
+            [alert addButtonWithTitle:@"Yes"];
+            [alert addButtonWithTitle:@"No"];
             [alert addButtonWithTitle:@"Cancel"];
             answer = [alert runModal];
         }

@@ -684,9 +684,10 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
 - (void)remove:(id)sender {
     if (!self.current) { NppBeep(); return; }
     NSAlert *ask = [[NSAlert alloc] init];
-    ask.messageText = [NSString stringWithFormat:@"Remove \"%@\"?", self.current.name];
-    [ask addButtonWithTitle:@"Remove"];
-    [ask addButtonWithTitle:@"Cancel"];
+    ask.messageText = @"Remove the current language";    // UDLRemoveCurrentLang
+    ask.informativeText = @"Are you sure?";
+    [ask addButtonWithTitle:@"Yes"];
+    [ask addButtonWithTitle:@"No"];
     if ([ask runModal] == NSAlertFirstButtonReturn) [self removeCurrent];
 }
 

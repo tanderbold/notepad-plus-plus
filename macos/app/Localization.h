@@ -24,6 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)translateTitle:(nullable NSString *)english;
 /// The main menu: commands by id (from `idsByItem`), menus and submenus by name.
 - (void)localizeMenu:(NSMenu *)menu identifiers:(NSDictionary<NSNumber *, NSMenuItem *> *)idsByItem;
+/// A message in upstream's wording, with its $STR_REPLACE$ and $INT_REPLACE$ filled in.
+- (NSString *)message:(NSString *)english string:(nullable NSString *)string number:(NSInteger)number;
 /// A window's controls and title.
 - (void)localizeWindow:(NSWindow *)window;
 - (void)localizeView:(NSView *)view;
@@ -31,6 +33,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// The translated form of an English interface string.
 FOUNDATION_EXPORT NSString *NppL(NSString *english);
+/// A message by upstream's English text - placeholders and all - translated and filled in.
+FOUNDATION_EXPORT NSString *NppLMessage(NSString *english, NSString *_Nullable string, NSInteger number);
 /// A menu item's or menu's English title, whatever it shows now: what the
 /// Shortcut Mapper and shortcuts.xml go by.
 FOUNDATION_EXPORT NSString *NppEnglishTitle(NSMenuItem *item);

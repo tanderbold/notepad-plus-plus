@@ -2460,10 +2460,10 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
         if (!answer && getenv("NPPMAC_TEST")) answer = NSAlertFirstButtonReturn;
         if (!answer) {
             NSAlert *ask = [[NSAlert alloc] init];
-            ask.messageText = [NSString stringWithFormat:@"Reload %@?", doc.displayName];
-            ask.informativeText = @"The changes made here will be lost.";
-            [ask addButtonWithTitle:@"Reload"];
-            [ask addButtonWithTitle:@"Cancel"];
+            ask.messageText = @"Reload";                 // DocReloadWarning
+            ask.informativeText = @"Are you sure you want to reload the current file and lose the changes made in Notepad++?";
+            [ask addButtonWithTitle:@"Yes"];
+            [ask addButtonWithTitle:@"No"];
             answer = [ask runModal];
         }
         if (answer != NSAlertFirstButtonReturn) return;
@@ -2537,9 +2537,14 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
     NppDocument *doc = self.editor.currentDocument;
     if (!doc.path) { NppBeep(); return; }
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = [NSString stringWithFormat:@"Move %@ to the Trash?", doc.displayName];
-    [alert addButtonWithTitle:@"Move to Trash"];
-    [alert addButtonWithTitle:@"Cancel"];
+    // DoDeleteOrNot; in English the Mac's word for where it goes.
+    NSString *upstream = @"The file \"$STR_REPLACE$\"\nwill be moved to your Recycle Bin and this document will be closed.\nContinue?";
+    alert.messageText = NppL(@"Delete file");
+    alert.informativeText = [NppLocalization shared].active
+        ? NppLMessage(upstream, doc.path, 0)
+        : [NSString stringWithFormat:@"The file \"%@\"\nwill be moved to your Trash and this document will be closed.\nContinue?", doc.path];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
     if ([alert runModal] != NSAlertFirstButtonReturn) return;
     NSError *err = nil;
     if (![self.editor moveCurrentToTrash:&err] && err) [[NSAlert alertWithError:err] runModal];
@@ -2732,8 +2737,7 @@ static BOOL NppForwardToFieldEditor(SEL action, id sender) {
         // line stopped it, rather than leaving the file half sorted.
         NSAlert *alert = [[NSAlert alloc] init];
         alert.messageText = @"Sorting Error";
-        alert.informativeText = [NSString stringWithFormat:
-            @"Unable to perform numeric sorting due to line %ld.", (long)(failed + 1)];
+        alert.informativeText = NppLMessage(@"Unable to perform numeric sorting due to line $INT_REPLACE$.", nil, failed + 1);
         [alert runModal];
         return;
     }
@@ -3621,6 +3625,11 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     [self applyFindTransparency];
 }
 
+/// A status line in upstream's words, which have one form for one and another for many.
+- (NSString *)status:(NSString *)one many:(NSString *)many count:(NSUInteger)count {
+    return count == 1 ? NppL(one) : NppLMessage(many, nil, (NSInteger)count);
+}
+
 - (void)findPanelSwap:(id)sender {
     NSString *what = self.findField.stringValue;
     self.findField.stringValue = self.replaceField.stringValue;
@@ -3702,7 +3711,8 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         if ([confirm runModal] != NSAlertFirstButtonReturn) return;
     }
     NSUInteger n = [self.editor replaceAllInOpenDocuments:spec];
-    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu replaced in all opened documents", (unsigned long)n];
+    self.findStatus.stringValue = [self status:@"Replace in Opened Files: 1 occurrence was replaced"
+                                          many:@"Replace in Opened Files: $INT_REPLACE$ occurrences were replaced" count:n];
 }
 
 - (void)findPanelCopyMarkedText:(id)sender {
@@ -3738,11 +3748,9 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     if (!files.count) { self.findStatus.stringValue = @"The ticked project panels have no files"; return; }
     if (!getenv("NPPMAC_TEST")) {
         NSAlert *confirm = [[NSAlert alloc] init];
-        confirm.messageText = @"Replace in Projects";
-        confirm.informativeText = [NSString stringWithFormat:
-            @"Replace \"%@\" in the %lu files of the ticked projects? This writes to disk and cannot be undone.",
-            spec.what, (unsigned long)files.count];
-        [confirm addButtonWithTitle:@"Replace"];
+        confirm.messageText = @"Are you sure?";      // replace-in-projects-confirm-*
+        confirm.informativeText = @"Do you want to replace all occurrences in all documents in the selected Project Panel(s)?";
+        [confirm addButtonWithTitle:@"OK"];
         [confirm addButtonWithTitle:@"Cancel"];
         if ([confirm runModal] != NSAlertFirstButtonReturn) return;
     }
@@ -3818,26 +3826,26 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 - (void)findPanelNext:(id)sender {
     [self rememberFindFields:NO files:NO];
     NppFindSpec *spec = [self currentFindSpec];
-    self.findStatus.stringValue = [self.editor findNext:spec] ? @"" : @"Not found";
+    self.findStatus.stringValue = [self.editor findNext:spec] ? @"" : NppLMessage(@"Find: Can't find the text \"$STR_REPLACE$\"", spec.what, 0);
 }
 
 - (void)findPanelCount:(id)sender {
     [self rememberFindFields:NO files:NO];
     NSUInteger n = [self.editor countMatches:[self currentFindSpec]];
-    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu match%@",
-                                   (unsigned long)n, n == 1 ? @"" : @"es"];
+    self.findStatus.stringValue = [self status:@"Count: 1 match" many:@"Count: $INT_REPLACE$ matches" count:n];
 }
 
 - (void)findPanelReplace:(id)sender {
     [self rememberFindFields:YES files:NO];
     NppFindSpec *spec = [self currentFindSpec];
-    self.findStatus.stringValue = [self.editor replaceCurrentThenFindNext:spec] ? @"" : @"Not found";
+    self.findStatus.stringValue = [self.editor replaceCurrentThenFindNext:spec] ? @"" : NppL(@"Replace: no occurrence was found");
 }
 
 - (void)findPanelReplaceAll:(id)sender {
     [self rememberFindFields:YES files:NO];
     NSUInteger n = [self.editor replaceAll:[self currentFindSpec]];
-    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu replaced", (unsigned long)n];
+    self.findStatus.stringValue = [self status:@"Replace All: 1 occurrence was replaced"
+                                          many:@"Replace All: $INT_REPLACE$ occurrences were replaced" count:n];
 }
 
 - (void)findPanelBrowse:(id)sender {
@@ -3936,11 +3944,12 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     // Changing files on disk that are not open is worth asking about, which is
     // what Notepad++ does too.
     NSAlert *confirm = [[NSAlert alloc] init];
-    confirm.messageText = @"Replace in Files";
-    confirm.informativeText = [NSString stringWithFormat:
-        @"Replace \"%@\" in the files under %@? This writes to disk and cannot be undone.",
-        spec.what, folder];
-    [confirm addButtonWithTitle:@"Replace"];
+    // replace-in-files-confirm-*: the folder, then the file types.
+    confirm.messageText = @"Are you sure?";
+    confirm.informativeText = [NSString stringWithFormat:@"%@\n%@\n\n%@\n%@",
+        NppL(@"Are you sure you want to replace all occurrences in:"), folder,
+        NppL(@"For file type:"), self.filtersField.stringValue.length ? self.filtersField.stringValue : @"*.*"];
+    [confirm addButtonWithTitle:@"OK"];
     [confirm addButtonWithTitle:@"Cancel"];
     if ([confirm runModal] != NSAlertFirstButtonReturn) return;
 
@@ -4027,7 +4036,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
             [sci message:SCI_MARKERADD wParam:(uptr_t)line lParam:1];   // the bookmark marker
         }
     }
-    self.findStatus.stringValue = [NSString stringWithFormat:@"%lu marked", (unsigned long)n];
+    self.findStatus.stringValue = [self status:@"Mark: 1 match" many:@"Mark: $INT_REPLACE$ matches" count:n];
 }
 
 - (void)findNext:(id)sender {

@@ -1,4 +1,5 @@
 #import "ProjectPanel.h"
+#import "Localization.h"
 #import "SettingsCommands.h"
 
 @implementation NppProjectNode
@@ -100,10 +101,11 @@ static NppProjectNode *NewNode(NppProjectNodeKind kind, NSString *name, NppProje
     NSInteger answer = self.scriptedAnswer;
     if (!answer) {
         NSAlert *ask = [[NSAlert alloc] init];
-        ask.messageText = [NSString stringWithFormat:@"The workspace of Project Panel %ld has changed. Save it?",
-                           (long)self.number];
-        [ask addButtonWithTitle:@"Save"];
-        [ask addButtonWithTitle:@"Don't Save"];
+        // ProjectPanelChanged: the panel's name as the title.
+        ask.messageText = [NSString stringWithFormat:@"%@ %ld", NppL(@"Project Panel"), (long)self.number];
+        ask.informativeText = @"The workspace was modified. Do you want to save it?";
+        [ask addButtonWithTitle:@"Yes"];
+        [ask addButtonWithTitle:@"No"];
         [ask addButtonWithTitle:@"Cancel"];
         answer = [ask runModal];
     }
@@ -515,9 +517,10 @@ static NSString *PortablePath(NSString *path) {
 - (void)menuReloadWorkspace:(id)sender {
     if (self.dirty) {
         NSAlert *ask = [[NSAlert alloc] init];
-        ask.messageText = @"Reload the workspace and lose the changes made here?";
-        [ask addButtonWithTitle:@"Reload"];
-        [ask addButtonWithTitle:@"Cancel"];
+        ask.messageText = @"Reload Workspace";       // ProjectPanelReloadDirty
+        ask.informativeText = NppLMessage(@"The current workspace was modified. Reloading will discard all modifications.\nDo you want to continue?", nil, 0);
+        [ask addButtonWithTitle:@"Yes"];
+        [ask addButtonWithTitle:@"No"];
         if ([ask runModal] != NSAlertFirstButtonReturn) return;
     }
     if (![self reloadWorkspace]) NppBeep();
@@ -563,9 +566,10 @@ static NSString *PortablePath(NSString *path) {
     NppProjectNode *node = [self nodeOf:sender];
     if (node.kind != NppProjectNodeFile) {
         NSAlert *ask = [[NSAlert alloc] init];
-        ask.messageText = [NSString stringWithFormat:@"Remove \"%@\" and everything in it from the workspace?", node.name];
-        [ask addButtonWithTitle:@"Remove"];
-        [ask addButtonWithTitle:@"Cancel"];
+        ask.messageText = @"Remove folder from project";   // ProjectPanelRemoveFolderFromProject
+        ask.informativeText = NppLMessage(@"All the sub-items will be removed.\nAre you sure you want to remove this folder from the project?", nil, 0);
+        [ask addButtonWithTitle:@"Yes"];
+        [ask addButtonWithTitle:@"No"];
         if ([ask runModal] != NSAlertFirstButtonReturn) return;
     }
     [self remove:node];

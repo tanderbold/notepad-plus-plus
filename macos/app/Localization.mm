@@ -60,6 +60,10 @@ NSString *NppEnglishMenuTitle(NSMenu *menu) {
 
 NSString *NppL(NSString *english) { return [[NppLocalization shared] translate:english]; }
 
+NSString *NppLMessage(NSString *english, NSString *string, NSInteger number) {
+    return [[NppLocalization shared] message:english string:string number:number];
+}
+
 /// Upstream's strings carry & before the access key; && is a literal &.
 static NSString *WithoutAccessKeys(NSString *s) {
     if ([s rangeOfString:@"&"].location == NSNotFound) return s;
@@ -81,7 +85,10 @@ static NSString *Normalised(NSString *s) {
     NSString *t = WithoutAccessKeys(s ?: @"");
     NSRange tab = [t rangeOfString:@"\t"];
     if (tab.location != NSNotFound) t = [t substringToIndex:tab.location];
-    t = [t stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    // Line breaks and runs of blanks are one space to the lookup: a message is
+    // the same message however its lines were broken.
+    t = [[[t componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+          filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"length > 0"]] componentsJoinedByString:@" "];
     while ([t hasSuffix:@":"] || [t hasSuffix:@"…"] || [t hasSuffix:@"."]) {
         t = [[t substringToIndex:t.length - 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     }
@@ -157,6 +164,32 @@ static void FitPushButton(NSButton *b) {
 /// the attribute that tells siblings apart, then the attribute's name.
 static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
     NSData *data = [NSData dataWithContentsOfFile:path];
+    // Messages are written over several lines inside their attribute, and an
+    // XML parser makes such line breaks spaces; written as &#x0A; they stay.
+    NSString *xml = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : nil;
+    if (xml) {
+        NSMutableString *kept = [NSMutableString stringWithCapacity:xml.length + 1024];
+        BOOL inTag = NO, inValue = NO;
+        NSUInteger n = xml.length;
+        for (NSUInteger i = 0; i < n; ++i) {
+            unichar c = [xml characterAtIndex:i];
+            if (!inTag && c == '<') {
+                if (i + 3 < n && [[xml substringWithRange:NSMakeRange(i, 4)] isEqualToString:@"<!--"]) {
+                    NSRange end = [xml rangeOfString:@"-->" options:0 range:NSMakeRange(i, n - i)];
+                    NSUInteger stop = end.location == NSNotFound ? n : NSMaxRange(end);
+                    [kept appendString:[xml substringWithRange:NSMakeRange(i, stop - i)]];
+                    i = stop - 1;
+                    continue;
+                }
+                inTag = YES;
+            } else if (inTag && c == '"') inValue = !inValue;
+            else if (inTag && !inValue && c == '>') inTag = NO;
+            if (inValue && c == '\r') continue;
+            if (inValue && c == '\n') { [kept appendString:@"&#x0A;"]; continue; }
+            [kept appendFormat:@"%C", c];
+        }
+        data = [kept dataUsingEncoding:NSUTF8StringEncoding];
+    }
     NSXMLDocument *doc = data ? [[NSXMLDocument alloc] initWithData:data options:0 error:NULL] : nil;
     NSMutableDictionary *out = [NSMutableDictionary dictionary];
     if (!doc) return out;
@@ -244,6 +277,14 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
 
 - (NSString *)translate:(NSString *)english {
     return [self translate:english hit:self.strings[Normalised(english ?: @"")]];
+}
+
+- (NSString *)message:(NSString *)english string:(NSString *)string number:(NSInteger)number {
+    // Looked up with its placeholders in, filled in afterwards; line breaks are the translation's own.
+    NSString *hit = self.strings.count ? self.strings[Normalised(english ?: @"")] : nil;
+    NSString *text = hit ?: english ?: @"";
+    text = [text stringByReplacingOccurrencesOfString:@"$STR_REPLACE$" withString:string ?: @""];
+    return [text stringByReplacingOccurrencesOfString:@"$INT_REPLACE$" withString:[NSString stringWithFormat:@"%ld", (long)number]];
 }
 
 - (NSString *)translateTitle:(NSString *)english {
@@ -371,16 +412,28 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
     Method original = class_getInstanceMethod(self, @selector(runModal));
     Method replacement = class_getInstanceMethod(self, @selector(npp_runModal));
     method_exchangeImplementations(original, replacement);
+    method_exchangeImplementations(class_getInstanceMethod(self, @selector(beginSheetModalForWindow:completionHandler:)),
+                                   class_getInstanceMethod(self, @selector(npp_beginSheetModalForWindow:completionHandler:)));
+}
+
+/// The alert's words in the interface language: the title as a label, the
+/// message with its own line breaks, the buttons by their names.
+- (void)npp_localize {
+    NppLocalization *l = [NppLocalization shared];
+    if (!l.active) return;
+    self.messageText = [l translate:self.messageText];
+    self.informativeText = [l message:self.informativeText string:nil number:0];
+    for (NSButton *b in self.buttons) b.title = [l translate:b.title];
 }
 
 - (NSModalResponse)npp_runModal {
-    NppLocalization *l = [NppLocalization shared];
-    if (l.active) {
-        self.messageText = [l translate:self.messageText];
-        self.informativeText = [l translate:self.informativeText];
-        for (NSButton *b in self.buttons) b.title = [l translate:b.title];
-    }
+    [self npp_localize];
     return [self npp_runModal];
+}
+
+- (void)npp_beginSheetModalForWindow:(NSWindow *)window completionHandler:(void (^)(NSModalResponse))handler {
+    [self npp_localize];
+    [self npp_beginSheetModalForWindow:window completionHandler:handler];
 }
 
 @end
