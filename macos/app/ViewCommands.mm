@@ -230,7 +230,9 @@
         NppDocument *watched = weakDoc;
         if (!me || !watched) return;
         if (dispatch_source_get_data(src) & (DISPATCH_VNODE_DELETE | DISPATCH_VNODE_RENAME)) {
-            [me stopMonitoringDocument:watched];
+            // A log that is rotated is moved away and made again under the
+            // same name: the name is what is followed, so it is waited for.
+            [me awaitMonitoredFileOf:watched];
             return;
         }
         [me monitoredDocumentChanged:watched];
@@ -241,6 +243,27 @@
     doc.monitoring = YES;
     // The user's read-only, as upstream sets it while monitoring.
     if (doc == self.currentDocument) [self.sci message:SCI_SETREADONLY wParam:1 lParam:0];
+}
+
+- (void)awaitMonitoredFileOf:(NppDocument *)doc {
+    if (doc.monitorSource) dispatch_source_cancel((dispatch_source_t)doc.monitorSource);
+    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+    dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)),
+                              (uint64_t)(0.5 * NSEC_PER_SEC), (uint64_t)(0.1 * NSEC_PER_SEC));
+    __weak EditorController *weakSelf = self;
+    __weak NppDocument *weakDoc = doc;
+    dispatch_source_set_event_handler(timer, ^{
+        EditorController *me = weakSelf;
+        NppDocument *watched = weakDoc;
+        if (!me || !watched || !watched.monitoring) { dispatch_source_cancel(timer); return; }
+        if (![[NSFileManager defaultManager] fileExistsAtPath:watched.path]) return;
+        dispatch_source_cancel(timer);
+        watched.monitorSource = nil;
+        [me startMonitoringDocument:watched];
+        [me monitoredDocumentChanged:watched];
+    });
+    dispatch_resume(timer);
+    doc.monitorSource = timer;
 }
 
 - (void)stopMonitoringDocument:(NppDocument *)doc {

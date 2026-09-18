@@ -7158,6 +7158,25 @@ int NppMacRunTests(AppDelegate *app) {
         }
         BOOL caughtUp = [DocText(ed) isEqualToString:@"one\ntwo\n"] &&
                         [sci message:SCI_GETCURRENTPOS] == [sci message:SCI_GETLENGTH];
+        // Rotated: moved away and made again under the same name, then
+        // written to. The name is still followed.
+        [[NSFileManager defaultManager] moveItemAtPath:logA toPath:[logA stringByAppendingString:@".1"] error:NULL];
+        [@"fresh\n" writeToFile:logA atomically:NO encoding:NSUTF8StringEncoding error:NULL];
+        until = [NSDate dateWithTimeIntervalSinceNow:5];
+        while (![DocText(ed) isEqualToString:@"fresh\n"] && [until timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+        }
+        BOOL rotated = [DocText(ed) isEqualToString:@"fresh\n"] && docA.monitoring;
+        h = [NSFileHandle fileHandleForWritingAtPath:logA];
+        [h seekToEndOfFile];
+        [h writeData:[@"more\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [h closeFile];
+        until = [NSDate dateWithTimeIntervalSinceNow:5];
+        while (![DocText(ed) isEqualToString:@"fresh\nmore\n"] && [until timeIntervalSinceNow] > 0) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.05]];
+        }
+        caughtUp = caughtUp && rotated && [DocText(ed) isEqualToString:@"fresh\nmore\n"];
+        [[NSFileManager defaultManager] removeItemAtPath:[logA stringByAppendingString:@".1"] error:NULL];
         [ed setMonitoring:NO];
         BOOL released = !docA.monitoring && [sci message:SCI_GETREADONLY] == 0;
         [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:docB]];
