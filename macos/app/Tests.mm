@@ -4985,6 +4985,26 @@ int NppMacRunTests(AppDelegate *app) {
                        [[panel allFilePaths] isEqualToArray:@[[projDir stringByAppendingPathComponent:@"src/sub/b.h"],
                                                              [projDir stringByAppendingPathComponent:@"notes.txt"]]];
 
+        // Saved again without a change it is what Windows wrote: backslashes, a
+        // path outside the folder and a drive path all as they were. A renamed
+        // file takes its new name into its path, and keeps it over a reload.
+        NSString *roundPath = [projDir stringByAppendingPathComponent:@"RoundTrip.xml"];
+        [@"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus>\n<Project name=\"W\">\n"
+         @"<File name=\"src\\sub\\b.h\" />\n<File name=\"..\\lib\\x.cpp\" />\n<File name=\"C:\\dev\\y.h\" />\n"
+         @"<File name=\"notes.txt\" />\n</Project>\n</NotepadPlus>\n" writeToFile:roundPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        BOOL roundTrip = [panel openWorkspace:roundPath];
+        NppProjectNode *notesNode = panel.root.children.firstObject.children.lastObject;
+        roundTrip = roundTrip && [panel rename:notesNode to:@"renamed.txt"] && [panel saveWorkspace];
+        NSString *roundText = [NSString stringWithContentsOfFile:roundPath encoding:NSUTF8StringEncoding error:NULL];
+        roundTrip = roundTrip && [roundText containsString:@"name=\"src\\sub\\b.h\""] && [roundText containsString:@"name=\"..\\lib\\x.cpp\""] &&
+                    [roundText containsString:@"name=\"C:\\dev\\y.h\""] && [roundText containsString:@"name=\"renamed.txt\""] &&
+                    [panel reloadWorkspace] &&
+                    [panel.root.children.firstObject.children.lastObject.name isEqualToString:@"renamed.txt"] &&
+                    [panel.root.children.firstObject.children.lastObject.path isEqualToString:[projDir stringByAppendingPathComponent:@"renamed.txt"]];
+        if (!roundTrip) printf("%s\n", roundText.UTF8String);
+        windows = windows && roundTrip;
+        [panel openWorkspace:winPath];
+
         // A changed workspace is asked about; Cancel keeps it.
         [panel addProjectNamed:@"Extra"];
         panel.scriptedAnswer = NSAlertThirdButtonReturn;

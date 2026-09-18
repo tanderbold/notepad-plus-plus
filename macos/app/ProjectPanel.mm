@@ -143,6 +143,8 @@ static NSString *PortablePath(NSString *path) {
         } else if ([e.name isEqualToString:@"File"] && name.length) {
             NppProjectNode *file = NewNode(NppProjectNodeFile, PortablePath(name).lastPathComponent, parent);
             file.path = [self absolutePathFor:name];
+            file.storedPath = name;
+            file.storedResolvedPath = file.path;
             [parent.children addObject:file];
         }
     }
@@ -185,8 +187,12 @@ static NSString *PortablePath(NSString *path) {
             [element addChild:folder];
         } else if (child.kind == NppProjectNodeFile) {
             NSXMLElement *leaf = [NSXMLElement elementWithName:@"File"];
+            // Untouched since it was read, and written beside where it was read from: as it was.
+            BOOL asRead = child.storedPath.length && [child.path isEqualToString:child.storedResolvedPath ?: @""] &&
+                          [[file stringByDeletingLastPathComponent] isEqualToString:[self.workspacePath stringByDeletingLastPathComponent] ?: @""];
             [leaf addAttribute:[NSXMLNode attributeWithName:@"name"
-                                                stringValue:[self storedPathFor:child.path relativeTo:file]]];
+                                                stringValue:asRead ? child.storedPath
+                                                                   : [self storedPathFor:child.path relativeTo:file]]];
             [element addChild:leaf];
         }
     }
@@ -312,6 +318,13 @@ static NSString *PortablePath(NSString *path) {
 
 - (BOOL)rename:(NppProjectNode *)node to:(NSString *)name {
     if (!name.length || node.kind == NppProjectNodeWorkspace) return NO;
+    // A file's label is the end of its path, and renaming the node renames
+    // what it points at, as ProjectPanel.cpp's TVN_ENDLABELEDIT does (the file
+    // on disk is left alone; a path that does not exist shows as missing).
+    if (node.kind == NppProjectNodeFile && node.path.length) {
+        NSRange old = [node.path rangeOfString:node.name options:NSBackwardsSearch];
+        if (old.location != NSNotFound) node.path = [node.path stringByReplacingCharactersInRange:old withString:name];
+    }
     node.name = name;
     [self changed];
     return YES;

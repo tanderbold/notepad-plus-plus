@@ -16,6 +16,10 @@ typedef NS_ENUM(NSInteger, NppProjectNodeKind) {
 @property (nonatomic, copy) NSString *name;
 /// A file's absolute path; nil for the others.
 @property (nonatomic, copy, nullable) NSString *path;
+/// The path as the workspace file wrote it ("..\\lib\\x.cpp", "C:\\a\\b.h") and
+/// what it resolved to; a file left alone is written back as it was read.
+@property (nonatomic, copy, nullable) NSString *storedPath;
+@property (nonatomic, copy, nullable) NSString *storedResolvedPath;
 @property (nonatomic, strong) NSMutableArray<NppProjectNode *> *children;
 @property (nonatomic, weak, nullable) NppProjectNode *parent;
 @end
