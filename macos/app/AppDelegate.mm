@@ -1,6 +1,7 @@
 #import "NppPanel.h"
 #import "AppDelegate.h"
 #import "UserLanguages.h"
+#import "UserLanguageDialog.h"
 #import <objc/message.h>
 #import "EditorController.h"
 #import "EditCommands.h"
@@ -66,6 +67,8 @@
 @property (nonatomic) BOOL closingConfirmed;
 /// What the command line asked for, parsed once and applied after launch.
 @property (nonatomic, strong) NSDictionary *commandLine;
+@property (nonatomic, strong) NppUserLanguageDialog *userLanguageDialog;
+@property (nonatomic, strong) NSMenu *languageMenu;
 @property (nonatomic, strong) NSPanel *findPanel;
 @property (nonatomic, strong) NSTextField *findField;
 @property (nonatomic, strong) NSTextField *replaceField;
@@ -320,8 +323,12 @@
 
     // User-defined languages join the catalog before the Language menu is
     // built from it.
+    (void)[[NppPreferences shared] effectiveThemeName];  // sets the catalog's dark mode first
     [[LanguageCatalog sharedCatalog] reloadUserLanguagesFromDirectory:[self.editor supportDirectory]];
     [self buildMenus];
+    [self rebuildUserLanguageMenuItems];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(userLanguagesChanged:)
+                                                 name:NppUserLanguagesDidChangeNotification object:nil];
 
     // Imported themes join the bundled ones in the Preferences picker.
     [StyleCatalog setImportedThemesDirectory:
@@ -1017,7 +1024,13 @@
     NSMenuItem *langItem = [[NSMenuItem alloc] init];
     [bar addItem:langItem];
     NSMenu *langMenu = [[NSMenu alloc] initWithTitle:@"Language"];
-    NSArray *langs = [[LanguageCatalog sharedCatalog].allLanguages
+    self.languageMenu = langMenu;
+    // The built-in languages, in order; the user languages go at the end,
+    // after the User Defined Language submenu, as on Windows.
+    NSArray *langs = [[[LanguageCatalog sharedCatalog].allLanguages
+        filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NppLanguage *l, NSDictionary *b) {
+            return !l.userDefined;
+        }]]
         sortedArrayUsingComparator:^NSComparisonResult(NppLanguage *a, NppLanguage *b) {
             return [a.name caseInsensitiveCompare:b.name];
         }];
@@ -1664,15 +1677,35 @@
 #pragma mark - Language: user defined
 
 - (void)defineUserLanguage:(id)sender {
-    NSString *name = [self promptForString:@"Language name" default:@"MyLang"];
-    if (!name.length) return;
-    NSString *ext = [self promptForString:@"Extensions, space separated" default:@"mylang"];
-    NSString *kw = [self promptForString:@"Keywords, space separated" default:@""];
-    NSString *comment = [self promptForString:@"Line comment token" default:@"#"];
-    if (![self.editor defineUserLanguageNamed:name extensions:ext keywords:kw commentLine:comment]) {
-        NSBeep();
+    if (!self.userLanguageDialog) self.userLanguageDialog = [[NppUserLanguageDialog alloc] initWithEditor:self.editor];
+    [self.userLanguageDialog toggle];
+}
+
+/// The user languages at the end of the Language menu, redone whenever they
+/// are read again.
+static const NSInteger kUserLanguageItemTag = 0x55444C;
+
+- (void)rebuildUserLanguageMenuItems {
+    NSMenu *menu = self.languageMenu;
+    if (!menu) return;
+    for (NSMenuItem *item in [menu.itemArray copy]) {
+        if (item.tag == kUserLanguageItemTag) [menu removeItem:item];
+    }
+    NSArray<NppLanguage *> *user = [LanguageCatalog sharedCatalog].userLanguages;
+    if (!user.count) return;
+    NSMenuItem *separator = [NSMenuItem separatorItem];
+    separator.tag = kUserLanguageItemTag;
+    [menu addItem:separator];
+    for (NppLanguage *lang in user) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:lang.name action:@selector(pickLanguage:) keyEquivalent:@""];
+        mi.target = self;
+        mi.representedObject = lang.name;
+        mi.tag = kUserLanguageItemTag;
+        [menu addItem:mi];
     }
 }
+
+- (void)userLanguagesChanged:(NSNotification *)note { [self rebuildUserLanguageMenuItems]; }
 
 - (void)openUDLFolder:(id)sender {
     NSString *path = [self.editor userDefinedLanguagePath];

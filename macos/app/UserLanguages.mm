@@ -90,6 +90,196 @@ static BOOL YesAttribute(NSXMLElement *element, NSString *name) {
     return [value isEqualToString:@"yes"] || [value isEqualToString:@"1"] || [value isEqualToString:@"true"];
 }
 
+- (id)copyWithZone:(NSZone *)zone {
+    NppUserLanguage *copy = [[NppUserLanguage allocWithZone:zone] init];
+    copy.name = self.name; copy.extensions = self.extensions;
+    copy.caseIgnored = self.caseIgnored; copy.allowFoldOfComments = self.allowFoldOfComments;
+    copy.foldCompact = self.foldCompact; copy.forcePureLC = self.forcePureLC;
+    copy.decimalSeparator = self.decimalSeparator; copy.prefixes = self.prefixes;
+    copy.keywordLists = self.keywordLists; copy.styles = self.styles;
+    copy.identifier = self.identifier; copy.darkModeTheme = self.darkModeTheme;
+    copy.sourcePath = self.sourcePath;
+    return copy;
+}
+
++ (NSArray<NSString *> *)keywordListNames {
+    return @[@"Comments", @"Numbers, prefix1", @"Numbers, prefix2", @"Numbers, extras1",
+             @"Numbers, extras2", @"Numbers, suffix1", @"Numbers, suffix2", @"Numbers, range",
+             @"Operators1", @"Operators2",
+             @"Folders in code1, open", @"Folders in code1, middle", @"Folders in code1, close",
+             @"Folders in code2, open", @"Folders in code2, middle", @"Folders in code2, close",
+             @"Folders in comment, open", @"Folders in comment, middle", @"Folders in comment, close",
+             @"Keywords1", @"Keywords2", @"Keywords3", @"Keywords4",
+             @"Keywords5", @"Keywords6", @"Keywords7", @"Keywords8", @"Delimiters"];
+}
+
++ (NSArray<NSString *> *)styleNames {
+    return @[@"DEFAULT", @"COMMENTS", @"LINE COMMENTS", @"NUMBERS",
+             @"KEYWORDS1", @"KEYWORDS2", @"KEYWORDS3", @"KEYWORDS4",
+             @"KEYWORDS5", @"KEYWORDS6", @"KEYWORDS7", @"KEYWORDS8",
+             @"OPERATORS", @"FOLDER IN CODE1", @"FOLDER IN CODE2", @"FOLDER IN COMMENT",
+             @"DELIMITERS1", @"DELIMITERS2", @"DELIMITERS3", @"DELIMITERS4",
+             @"DELIMITERS5", @"DELIMITERS6", @"DELIMITERS7", @"DELIMITERS8"];
+}
+
++ (instancetype)emptyLanguageNamed:(NSString *)name {
+    NppUserLanguage *udl = [[NppUserLanguage alloc] init];
+    udl.name = name;
+    udl.extensions = @[];
+    NSMutableArray *prefixes = [NSMutableArray array];
+    for (int i = 0; i < 8; ++i) [prefixes addObject:@NO];
+    udl.prefixes = prefixes;
+    NSMutableArray *lists = [NSMutableArray array];
+    for (int i = 0; i < SCE_USER_KWLIST_TOTAL; ++i) [lists addObject:@""];
+    // The empty shapes Windows writes for a new language.
+    lists[SCE_USER_KWLIST_COMMENTS] = @"00 01 02 03 04";
+    lists[SCE_USER_KWLIST_DELIMITERS] = @"00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23";
+    udl.keywordLists = lists;
+    NSMutableDictionary *styles = [NSMutableDictionary dictionary];
+    for (NSUInteger i = 0; i < [self styleNames].count; ++i) {
+        styles[@(i)] = @{@"fgColor": @"000000", @"bgColor": @"FFFFFF", @"fontStyle": @"0", @"nesting": @"0"};
+    }
+    udl.styles = styles;
+    return udl;
+}
+
+/// A field as the dialog shows it, from the prefixed list: every token that
+/// starts with the code, and a ((group)) whole (CommentStyleDialog::retrieve).
++ (NSString *)fieldForCode:(int)code inList:(NSString *)list {
+    NSString *prefix = [NSString stringWithFormat:@"%02d", code];
+    unichar p0 = [prefix characterAtIndex:0], p1 = [prefix characterAtIndex:1];
+    NSUInteger n = list.length;
+    unichar (^at)(NSInteger) = ^unichar(NSInteger i) {
+        return (i >= 0 && (NSUInteger)i < n) ? [list characterAtIndex:(NSUInteger)i] : 0;
+    };
+    NSMutableString *out = [NSMutableString string];
+    BOOL copying = NO, inGroup = NO;
+    for (NSInteger i = 0; (NSUInteger)i < n; ++i) {
+        unichar c = at(i);
+        if ((i == 0 || at(i - 1) == ' ') && c == p0 && at(i + 1) == p1) {
+            if (out.length) [out appendString:@" "];
+            copying = YES;
+            ++i;
+            continue;
+        }
+        if (c == '(' && at(i + 1) == '(' && !inGroup && copying) inGroup = YES;
+        if (c != ')' && at(i - 1) == ')' && at(i - 2) == ')' && inGroup) inGroup = NO;
+        if (c == ' ' && copying) copying = NO;
+        if (copying || inGroup) [out appendFormat:@"%C", c];
+    }
+    return out;
+}
+
+/// The prefixed list from the fields, in code order: each space-separated
+/// token of field k becomes "kk<token>", a ((group)) staying one token
+/// (convertTo).
++ (NSString *)listFromFields:(NSArray<NSString *> *)fields {
+    NSMutableString *dest = [NSMutableString string];
+    for (NSUInteger code = 0; code < fields.count; ++code) {
+        NSString *prefix = [NSString stringWithFormat:@"%02lu", (unsigned long)code];
+        NSString *text = fields[code];
+        NSUInteger n = text.length;
+        unichar (^at)(NSInteger) = ^unichar(NSInteger i) {
+            return (i >= 0 && (NSUInteger)i < n) ? [text characterAtIndex:(NSUInteger)i] : 0;
+        };
+        if (dest.length) [dest appendString:@" "];
+        [dest appendString:prefix];
+        BOOL inGroup = NO;
+        for (NSInteger i = 0; (NSUInteger)i < n; ++i) {
+            if (i == 0 && at(i) == '(' && at(i + 1) == '(') {
+                inGroup = YES;
+            } else if (at(i) == ' ' && at(i + 1) == '(' && at(i + 2) == '(') {
+                inGroup = YES;
+                [dest appendFormat:@" %@", prefix];
+                ++i;
+            }
+            if (inGroup && at(i - 1) == ')' && at(i - 2) == ')') inGroup = NO;
+            if (at(i) == ' ') {
+                if (at(i + 1) != ' ' && at(i + 1) != 0) {
+                    [dest appendString:@" "];
+                    if (!inGroup) [dest appendString:prefix];
+                }
+            } else {
+                [dest appendFormat:@"%C", at(i)];
+            }
+        }
+    }
+    return dest;
+}
+
+- (NSXMLElement *)xmlElement {
+    NSXMLElement *lang = [NSXMLElement elementWithName:@"UserLang"];
+    [lang addAttribute:[NSXMLNode attributeWithName:@"name" stringValue:self.name ?: @""]];
+    [lang addAttribute:[NSXMLNode attributeWithName:@"ext"
+                                        stringValue:[self.extensions componentsJoinedByString:@" "] ?: @""]];
+    if (self.darkModeTheme) [lang addAttribute:[NSXMLNode attributeWithName:@"darkModeTheme" stringValue:@"yes"]];
+    [lang addAttribute:[NSXMLNode attributeWithName:@"udlVersion" stringValue:@"2.1"]];
+
+    NSXMLElement *settings = [NSXMLElement elementWithName:@"Settings"];
+    NSXMLElement *global = [NSXMLElement elementWithName:@"Global"];
+    NSString *(^yn)(BOOL) = ^NSString *(BOOL b) { return b ? @"yes" : @"no"; };
+    [global addAttribute:[NSXMLNode attributeWithName:@"caseIgnored" stringValue:yn(self.caseIgnored)]];
+    [global addAttribute:[NSXMLNode attributeWithName:@"allowFoldOfComments" stringValue:yn(self.allowFoldOfComments)]];
+    [global addAttribute:[NSXMLNode attributeWithName:@"foldCompact" stringValue:yn(self.foldCompact)]];
+    [global addAttribute:[NSXMLNode attributeWithName:@"forcePureLC" stringValue:[@(self.forcePureLC) stringValue]]];
+    [global addAttribute:[NSXMLNode attributeWithName:@"decimalSeparator" stringValue:[@(self.decimalSeparator) stringValue]]];
+    [settings addChild:global];
+    NSXMLElement *prefix = [NSXMLElement elementWithName:@"Prefix"];
+    for (int i = 0; i < 8; ++i) {
+        BOOL on = i < (int)self.prefixes.count && [self.prefixes[i] boolValue];
+        [prefix addAttribute:[NSXMLNode attributeWithName:[NSString stringWithFormat:@"Keywords%d", i + 1]
+                                              stringValue:yn(on)]];
+    }
+    [settings addChild:prefix];
+    [lang addChild:settings];
+
+    NSXMLElement *lists = [NSXMLElement elementWithName:@"KeywordLists"];
+    NSArray *names = [NppUserLanguage keywordListNames];
+    for (NSUInteger i = 0; i < names.count; ++i) {
+        NSXMLElement *keywords = [NSXMLElement elementWithName:@"Keywords"
+                                                   stringValue:i < self.keywordLists.count ? self.keywordLists[i] : @""];
+        [keywords addAttribute:[NSXMLNode attributeWithName:@"name" stringValue:names[i]]];
+        [lists addChild:keywords];
+    }
+    [lang addChild:lists];
+
+    NSXMLElement *styles = [NSXMLElement elementWithName:@"Styles"];
+    NSArray *styleNames = [NppUserLanguage styleNames];
+    for (NSUInteger i = 0; i < styleNames.count; ++i) {
+        NSDictionary *attrs = self.styles[@(i)] ?: @{};
+        NSXMLElement *style = [NSXMLElement elementWithName:@"WordsStyle"];
+        [style addAttribute:[NSXMLNode attributeWithName:@"name" stringValue:styleNames[i]]];
+        [style addAttribute:[NSXMLNode attributeWithName:@"fgColor" stringValue:attrs[@"fgColor"] ?: @"000000"]];
+        [style addAttribute:[NSXMLNode attributeWithName:@"bgColor" stringValue:attrs[@"bgColor"] ?: @"FFFFFF"]];
+        if ([attrs[@"colorStyle"] length]) {
+            [style addAttribute:[NSXMLNode attributeWithName:@"colorStyle" stringValue:attrs[@"colorStyle"]]];
+        }
+        if ([attrs[@"fontName"] length]) {
+            [style addAttribute:[NSXMLNode attributeWithName:@"fontName" stringValue:attrs[@"fontName"]]];
+        }
+        [style addAttribute:[NSXMLNode attributeWithName:@"fontStyle" stringValue:attrs[@"fontStyle"] ?: @"0"]];
+        if (attrs[@"fontSize"]) {
+            [style addAttribute:[NSXMLNode attributeWithName:@"fontSize" stringValue:attrs[@"fontSize"]]];
+        }
+        [style addAttribute:[NSXMLNode attributeWithName:@"nesting" stringValue:attrs[@"nesting"] ?: @"0"]];
+        [styles addChild:style];
+    }
+    [lang addChild:styles];
+    return lang;
+}
+
++ (BOOL)writeLanguages:(NSArray<NppUserLanguage *> *)languages toFile:(NSString *)path {
+    NSXMLElement *root = [NSXMLElement elementWithName:@"NotepadPlus"];
+    for (NppUserLanguage *udl in languages) [root addChild:[udl xmlElement]];
+    NSXMLDocument *doc = [[NSXMLDocument alloc] initWithRootElement:root];
+    doc.version = @"1.0";
+    doc.characterEncoding = @"UTF-8";
+    NSData *data = [doc XMLDataWithOptions:NSXMLNodePrettyPrint | NSXMLNodeCompactEmptyElement];
+    [[NSFileManager defaultManager] createDirectoryAtPath:path.stringByDeletingLastPathComponent
+                              withIntermediateDirectories:YES attributes:nil error:NULL];
+    return [data writeToFile:path options:NSDataWritingAtomic error:NULL];
+}
+
 + (NSArray<NppUserLanguage *> *)languagesInFile:(NSString *)path {
     NSData *data = [NSData dataWithContentsOfFile:path];
     if (!data.length) return @[];
@@ -100,6 +290,8 @@ static BOOL YesAttribute(NSXMLElement *element, NSString *name) {
         if (!name.length) continue;
         NppUserLanguage *udl = [[NppUserLanguage alloc] init];
         udl.name = name;
+        udl.sourcePath = path;
+        udl.darkModeTheme = YesAttribute(userLang, @"darkModeTheme");
         NSString *udlVersion = [userLang attributeForName:@"udlVersion"].stringValue ?: @"";
         NSMutableArray *exts = [NSMutableArray array];
         for (NSString *e in [[userLang attributeForName:@"ext"].stringValue ?: @"" componentsSeparatedByString:@" "]) {
@@ -176,7 +368,7 @@ static BOOL YesAttribute(NSXMLElement *element, NSString *name) {
             NSNumber *styleID = StyleIndexes()[[style attributeForName:@"name"].stringValue ?: @""];
             if (!styleID) continue;
             NSMutableDictionary *attrs = [NSMutableDictionary dictionary];
-            for (NSString *key in @[@"fgColor", @"bgColor", @"fontName", @"fontStyle", @"fontSize", @"nesting"]) {
+            for (NSString *key in @[@"fgColor", @"bgColor", @"colorStyle", @"fontName", @"fontStyle", @"fontSize", @"nesting"]) {
                 NSString *value = [style attributeForName:key].stringValue;
                 if (value.length) attrs[key] = value;
             }
@@ -194,19 +386,38 @@ static BOOL YesAttribute(NSXMLElement *element, NSString *name) {
 
 static const char kUserDefinitionKey = 0;
 static const char kUserLanguagesKey = 0;
+static const char kUserDirectoryKey = 0;
 
 @implementation LanguageCatalog (UserLanguages)
+
+NSString *const NppUserLanguagesDidChangeNotification = @"NppUserLanguagesDidChangeNotification";
+
++ (NSString *)bundledUserLanguagesDirectory {
+    return [[NSBundle mainBundle] pathForResource:@"userDefineLangs" ofType:nil];
+}
 
 - (NSArray<NppUserLanguage *> *)reloadUserLanguagesFromDirectory:(NSString *)directory {
     NSMutableArray<NppUserLanguage *> *found = [NSMutableArray array];
     NSMutableArray<NSString *> *files = [NSMutableArray array];
     [files addObject:[directory stringByAppendingPathComponent:@"userDefineLang.xml"]];
     NSString *folder = [directory stringByAppendingPathComponent:@"userDefineLangs"];
-    for (NSString *name in [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:folder error:NULL]
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSMutableSet *userFileNames = [NSMutableSet set];
+    for (NSString *name in [[fm contentsOfDirectoryAtPath:folder error:NULL]
                             sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]) {
         if ([name.pathExtension caseInsensitiveCompare:@"xml"] == NSOrderedSame) {
             [files addObject:[folder stringByAppendingPathComponent:name]];
+            [userFileNames addObject:name.lowercaseString];
         }
+    }
+    // The ones Notepad++ ships, unless the user has a file of the same name
+    // (an edited or removed copy of a shipped one).
+    NSString *bundled = [LanguageCatalog bundledUserLanguagesDirectory];
+    for (NSString *name in [[fm contentsOfDirectoryAtPath:bundled ?: @"" error:NULL]
+                            sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]) {
+        if ([name.pathExtension caseInsensitiveCompare:@"xml"] != NSOrderedSame) continue;
+        if ([userFileNames containsObject:name.lowercaseString]) continue;
+        [files addObject:[bundled stringByAppendingPathComponent:name]];
     }
     for (NSString *path in files) [found addObjectsFromArray:[NppUserLanguage languagesInFile:path]];
     int identifier = 0;
@@ -229,12 +440,137 @@ static const char kUserLanguagesKey = 0;
             if ([code isEqualToString:@"03"] && !lang.commentStart) lang.commentStart = token;
             if ([code isEqualToString:@"04"] && !lang.commentEnd) lang.commentEnd = token;
         }
+        lang.darkModeTheme = udl.darkModeTheme;
         objc_setAssociatedObject(lang, &kUserDefinitionKey, udl, OBJC_ASSOCIATION_RETAIN);
         [entries addObject:lang];
     }
     [self registerUserLanguages:entries];
     objc_setAssociatedObject(self, &kUserLanguagesKey, found, OBJC_ASSOCIATION_RETAIN);
+    objc_setAssociatedObject(self, &kUserDirectoryKey, directory, OBJC_ASSOCIATION_RETAIN);
+    [[NSNotificationCenter defaultCenter] postNotificationName:NppUserLanguagesDidChangeNotification object:self];
     return found;
+}
+
+- (NSArray<NppUserLanguage *> *)allUserLanguages {
+    return objc_getAssociatedObject(self, &kUserLanguagesKey) ?: @[];
+}
+
+#pragma mark Keeping them
+
+- (NSString *)defaultUserLanguageFileIn:(NSString *)directory {
+    return [directory stringByAppendingPathComponent:@"userDefineLang.xml"];
+}
+
+/// Where a language is written: its own file, unless that file is one the
+/// application ships - then a copy of it in the user's folder, which from
+/// then on shadows the shipped one.
+- (NSString *)writableFileFor:(NppUserLanguage *)udl directory:(NSString *)directory {
+    NSString *source = udl.sourcePath;
+    if (!source.length) return [self defaultUserLanguageFileIn:directory];
+    NSString *bundled = [LanguageCatalog bundledUserLanguagesDirectory];
+    if (bundled.length && [source hasPrefix:[bundled stringByAppendingString:@"/"]]) {
+        return [[directory stringByAppendingPathComponent:@"userDefineLangs"]
+                stringByAppendingPathComponent:source.lastPathComponent];
+    }
+    return source;
+}
+
+/// Every language read from `file` (as currently known), with `replace`
+/// applied to it: returns the list to write back.
+- (NSMutableArray<NppUserLanguage *> *)languagesOfFile:(NSString *)file directory:(NSString *)directory {
+    NSMutableArray *out = [NSMutableArray array];
+    for (NppUserLanguage *u in [self allUserLanguages]) {
+        if ([[self writableFileFor:u directory:directory] isEqualToString:file]) [out addObject:[u copy]];
+    }
+    return out;
+}
+
+- (BOOL)nameTaken:(NSString *)name except:(nullable NppUserLanguage *)udl {
+    for (NppUserLanguage *u in [self allUserLanguages]) {
+        if (u != udl && [u.name isEqualToString:name]) return YES;
+    }
+    return NO;
+}
+
+- (BOOL)writeFile:(NSString *)file languages:(NSArray<NppUserLanguage *> *)languages directory:(NSString *)directory {
+    if (![NppUserLanguage writeLanguages:languages toFile:file]) return NO;
+    [self reloadUserLanguagesFromDirectory:directory];
+    return YES;
+}
+
+- (BOOL)saveUserLanguage:(NppUserLanguage *)udl directory:(NSString *)directory {
+    NSString *file = [self writableFileFor:udl directory:directory];
+    NSMutableArray *languages = [self languagesOfFile:file directory:directory];
+    NSUInteger at = [languages indexOfObjectPassingTest:^BOOL(NppUserLanguage *u, NSUInteger i, BOOL *stop) {
+        return [u.name isEqualToString:udl.name];
+    }];
+    if (at == NSNotFound) {
+        if ([self nameTaken:udl.name except:nil]) return NO;
+        [languages addObject:udl];
+    } else {
+        languages[at] = udl;
+    }
+    return [self writeFile:file languages:languages directory:directory];
+}
+
+- (BOOL)saveUserLanguage:(NppUserLanguage *)udl asName:(NSString *)name directory:(NSString *)directory {
+    if (!name.length || [self nameTaken:name except:nil]) return NO;
+    NppUserLanguage *copy = [udl copy];
+    copy.name = name;
+    copy.sourcePath = nil;
+    NSString *file = [self defaultUserLanguageFileIn:directory];
+    NSMutableArray *languages = [self languagesOfFile:file directory:directory];
+    [languages addObject:copy];
+    return [self writeFile:file languages:languages directory:directory];
+}
+
+- (BOOL)renameUserLanguage:(NppUserLanguage *)udl to:(NSString *)name directory:(NSString *)directory {
+    if (!name.length || [self nameTaken:name except:udl]) return NO;
+    NSString *file = [self writableFileFor:udl directory:directory];
+    NSMutableArray *languages = [self languagesOfFile:file directory:directory];
+    for (NppUserLanguage *u in languages) {
+        if ([u.name isEqualToString:udl.name]) u.name = name;
+    }
+    return [self writeFile:file languages:languages directory:directory];
+}
+
+- (BOOL)removeUserLanguage:(NppUserLanguage *)udl directory:(NSString *)directory {
+    NSString *file = [self writableFileFor:udl directory:directory];
+    NSMutableArray *languages = [self languagesOfFile:file directory:directory];
+    NSUInteger before = languages.count;
+    [languages filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NppUserLanguage *u, NSDictionary *b) {
+        return ![u.name isEqualToString:udl.name];
+    }]];
+    if (languages.count == before) return NO;
+    // A file of the user's own that is left empty goes; the default file and
+    // a copy shadowing a shipped one stay, empty, so nothing comes back.
+    NSString *bundled = [LanguageCatalog bundledUserLanguagesDirectory];
+    BOOL shadowsShipped = bundled.length && [[NSFileManager defaultManager] fileExistsAtPath:
+        [bundled stringByAppendingPathComponent:file.lastPathComponent]];
+    if (!languages.count && ![file isEqualToString:[self defaultUserLanguageFileIn:directory]] && !shadowsShipped) {
+        [[NSFileManager defaultManager] removeItemAtPath:file error:NULL];
+        [self reloadUserLanguagesFromDirectory:directory];
+        return YES;
+    }
+    return [self writeFile:file languages:languages directory:directory];
+}
+
+- (NSArray<NSString *> *)importUserLanguagesFromFile:(NSString *)path directory:(NSString *)directory {
+    NSString *file = [self defaultUserLanguageFileIn:directory];
+    NSMutableArray *languages = [self languagesOfFile:file directory:directory];
+    NSMutableArray *added = [NSMutableArray array];
+    for (NppUserLanguage *u in [NppUserLanguage languagesInFile:path]) {
+        if ([self nameTaken:u.name except:nil] || [added containsObject:u.name]) continue;
+        u.sourcePath = nil;
+        [languages addObject:u];
+        [added addObject:u.name];
+    }
+    if (added.count && ![self writeFile:file languages:languages directory:directory]) return @[];
+    return added;
+}
+
+- (BOOL)exportUserLanguage:(NppUserLanguage *)udl toFile:(NSString *)path {
+    return [NppUserLanguage writeLanguages:@[udl] toFile:path];
 }
 
 - (NppUserLanguage *)userLanguageNamed:(NSString *)name {

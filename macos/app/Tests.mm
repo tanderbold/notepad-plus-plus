@@ -34,6 +34,7 @@
 #import "LanguageCatalog.h"
 #import "LanguageDetection.h"
 #import "UserLanguages.h"
+#import "UserLanguageDialog.h"
 #import "LanguageModel.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -1008,7 +1009,142 @@ int NppMacRunTests(AppDelegate *app) {
             Check(@"IDM_LANG_USER (a user-defined language highlights)",
                   @"a language in userDefineLang.xml is listed, claims its extension, and its keywords, "
                   @"comments and styles reach the lexer",
-                  loaded.count == 1 && listed && highlighted && bold);
+                  [[loaded valueForKey:@"name"] containsObject:@"TestLang"] && listed && highlighted && bold);
+        }
+
+        // The User Defined Language dialog and what it keeps.
+        {
+            NSFileManager *fm = [NSFileManager defaultManager];
+            NSString *dir = [ed supportDirectory];
+            NSString *mainFile = [dir stringByAppendingPathComponent:@"userDefineLang.xml"];
+            NSString *folder = [dir stringByAppendingPathComponent:@"userDefineLangs"];
+            NSString *stash = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-udl-stash"];
+            [fm removeItemAtPath:stash error:NULL];
+            [fm createDirectoryAtPath:stash withIntermediateDirectories:YES attributes:nil error:NULL];
+            BOOL hadMain = [fm fileExistsAtPath:mainFile], hadFolder = [fm fileExistsAtPath:folder];
+            if (hadMain) [fm moveItemAtPath:mainFile toPath:[stash stringByAppendingPathComponent:@"main.xml"] error:NULL];
+            if (hadFolder) [fm moveItemAtPath:folder toPath:[stash stringByAppendingPathComponent:@"folder"] error:NULL];
+            LanguageCatalog *catalog = [LanguageCatalog sharedCatalog];
+            [catalog reloadUserLanguagesFromDirectory:dir];
+
+            // The prefixed lists, both ways, as the Windows dialog reads and writes them.
+            NSString *list = @"00# 00// 01 02((EOL)) 03/* 04*/";
+            BOOL decoded = [[NppUserLanguage fieldForCode:0 inList:list] isEqualToString:@"# //"] &&
+                           [[NppUserLanguage fieldForCode:2 inList:list] isEqualToString:@"((EOL))"] &&
+                           [[NppUserLanguage fieldForCode:4 inList:list] isEqualToString:@"*/"];
+            BOOL encoded = [[NppUserLanguage listFromFields:@[@"# //", @"", @"((EOL))", @"/*", @"*/"]] isEqualToString:list];
+            Check(@"IDM_LANG_USER_DLG (comment and delimiter fields)",
+                  @"a prefixed list reads into the dialog's fields and writes back the same",
+                  decoded && encoded);
+
+            // The Markdown languages Notepad++ ships are there, and the variant
+            // for the current mode claims .md.
+            NppLanguage *light = [catalog languageNamed:@"Markdown (preinstalled)"];
+            NppLanguage *dark = [catalog languageNamed:@"Markdown (preinstalled dark mode)"];
+            BOOL wasDark = catalog.darkMode;
+            catalog.darkMode = NO;
+            BOOL lightChosen = [catalog languageForFileName:@"a.md"] == light;
+            catalog.darkMode = YES;
+            BOOL darkChosen = [catalog languageForFileName:@"a.md"] == dark;
+            catalog.darkMode = wasDark;
+            Check(@"IDM_LANG_USER (the languages Notepad++ ships)",
+                  @"both Markdown languages are listed, and .md opens in the one for the current mode",
+                  light && dark && lightChosen && darkChosen);
+
+            // Written as Windows writes it, and read back the same.
+            NppUserLanguage *md = [catalog userLanguageNamed:@"Markdown (preinstalled)"];
+            NSString *copyPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-udl-roundtrip.xml"];
+            [NppUserLanguage writeLanguages:@[md] toFile:copyPath];
+            NppUserLanguage *back = [NppUserLanguage languagesInFile:copyPath].firstObject;
+            BOOL sameStyles = YES;
+            for (NSNumber *sid in md.styles) {
+                for (NSString *k in @[@"fgColor", @"bgColor", @"fontStyle", @"nesting"]) {
+                    NSString *a = md.styles[sid][k] ?: @"", *b = back.styles[sid][k] ?: @"";
+                    if (![a isEqualToString:b]) sameStyles = NO;
+                }
+            }
+            BOOL roundTrip = [back.name isEqualToString:md.name] && [back.extensions isEqualToArray:md.extensions] &&
+                             [back.keywordLists isEqualToArray:md.keywordLists] && [back.prefixes isEqualToArray:md.prefixes] &&
+                             back.caseIgnored == md.caseIgnored && back.forcePureLC == md.forcePureLC && sameStyles;
+            NSString *xml = [NSString stringWithContentsOfFile:copyPath encoding:NSUTF8StringEncoding error:NULL];
+            BOOL windowsNames = [xml containsString:@"<Keywords name=\"Numbers, prefix1\">"] &&
+                                [xml containsString:@"<WordsStyle name=\"FOLDER IN COMMENT\""] &&
+                                [xml containsString:@"udlVersion=\"2.1\""];
+            [fm removeItemAtPath:copyPath error:NULL];
+            Check(@"IDM_LANG_USER_DLG (written as Windows writes it)",
+                  @"a language written out and read back is the same, under Notepad++'s names", roundTrip && windowsNames);
+
+            // The dialog: create, fill in, style, rename, save as, export,
+            // import, remove - and the document in the language follows.
+            NppUserLanguageDialog *dialog = [[NppUserLanguageDialog alloc] initWithEditor:ed];
+            BOOL created = [dialog createLanguageNamed:@"DialogLang"];
+            ((NSTextField *)[dialog controlNamed:@"ext"]).stringValue = @"dlang";
+            [dialog textViewNamed:@"keywords1"].string = @"begin end";
+            ((NSTextField *)[dialog controlNamed:@"commentLineOpen"]).stringValue = @"--";
+            ((NSTextField *)[dialog controlNamed:@"delimiter1Open"]).stringValue = @"\"";
+            ((NSTextField *)[dialog controlNamed:@"delimiter1Close"]).stringValue = @"\"";
+            [dialog commit];
+            [dialog setStyle:SCE_USER_STYLE_KEYWORD1 attributes:@{@"fgColor": @"0000FF", @"bgColor": @"FFFFFF",
+                                                                   @"fontStyle": @"1", @"nesting": @"0"}];
+            NSString *written = [NSString stringWithContentsOfFile:mainFile encoding:NSUTF8StringEncoding error:NULL];
+            BOOL saved = [written containsString:@"name=\"DialogLang\""] && [written containsString:@"ext=\"dlang\""] &&
+                         [written containsString:@">begin end<"] && [written containsString:@"00-- 01 02 03 04"] &&
+                         [written containsString:@"00&quot; 01 02&quot;"] == NO && [written containsString:@"00\" 01 02\""] &&
+                         [written containsString:@"fgColor=\"0000FF\""];
+
+            NSString *docPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-dialog.dlang"];
+            [@"begin x -- note\nend\n" writeToFile:docPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [ed openFileAtPath:docPath error:NULL];
+            NppDocument *doc = ed.currentDocument;
+            [ed.sci message:SCI_COLOURISE wParam:0 lParam:-1];
+            BOOL shown = [doc.language.name isEqualToString:@"DialogLang"] &&
+                         [ed.sci message:SCI_GETSTYLEAT wParam:0 lParam:0] == SCE_USER_STYLE_KEYWORD1 &&
+                         [ed.sci message:SCI_GETSTYLEAT wParam:10 lParam:0] == SCE_USER_STYLE_COMMENTLINE &&
+                         [ed.sci message:SCI_STYLEGETBOLD wParam:SCE_USER_STYLE_KEYWORD1 lParam:0] != 0;
+
+            BOOL renamed = [dialog renameCurrentTo:@"DialogLang2"] && [doc.language.name isEqualToString:@"DialogLang2"] &&
+                           ![catalog languageNamed:@"DialogLang"];
+            BOOL copied = [dialog saveCurrentAs:@"DialogLang3"] && [catalog userLanguageNamed:@"DialogLang3"] &&
+                          [[catalog userLanguageNamed:@"DialogLang3"].keywordLists[SCE_USER_KWLIST_KEYWORDS1] isEqualToString:@"begin end"];
+            BOOL taken = ![dialog saveCurrentAs:@"DialogLang2"];
+            NSString *exported = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-exported.xml"];
+            BOOL exportedOK = [dialog exportCurrentToFile:exported] &&
+                              [[NppUserLanguage languagesInFile:exported].firstObject.name isEqualToString:@"DialogLang3"];
+            BOOL importSkipsTaken = [dialog importFromFile:exported].count == 0;
+            [dialog removeCurrent];                                   // DialogLang3
+            [dialog selectLanguageNamed:@"DialogLang2"];
+            BOOL removed = [dialog removeCurrent] && ![catalog languageNamed:@"DialogLang2"] &&
+                           [doc.language.name isEqualToString:@"normal"];
+            BOOL imported = [[dialog importFromFile:exported] isEqualToArray:@[@"DialogLang3"]];
+            [dialog removeCurrent];
+
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:doc] discardChanges:YES];
+            [ed forgetRecentFile:docPath];
+            [fm removeItemAtPath:docPath error:NULL];
+            [fm removeItemAtPath:exported error:NULL];
+            Check(@"IDM_LANG_USER_DLG (the dialog)",
+                  @"a language made in the dialog is written in Notepad++'s shape, highlights its document, "
+                  @"and can be renamed, copied, exported, imported and removed",
+                  created && saved && shown && renamed && copied && taken && exportedOK && importSkipsTaken &&
+                  removed && imported);
+
+            // Editing a shipped language writes a copy in the user's folder.
+            [dialog selectLanguageNamed:@"Markdown (preinstalled)"];
+            ((NSButton *)[dialog controlNamed:@"caseIgnored"]).state = NSControlStateValueOff;
+            [dialog commit];
+            NSString *userCopy = [folder stringByAppendingPathComponent:@"markdown._preinstalled.udl.xml"];
+            BOOL copyWritten = [fm fileExistsAtPath:userCopy] &&
+                               ![catalog userLanguageNamed:@"Markdown (preinstalled)"].caseIgnored &&
+                               [[catalog userLanguageNamed:@"Markdown (preinstalled)"].sourcePath isEqualToString:userCopy];
+            Check(@"IDM_LANG_USER_DLG (a shipped language)",
+                  @"editing a language the application ships writes a copy of its file in the user's folder",
+                  copyWritten);
+
+            [fm removeItemAtPath:mainFile error:NULL];
+            [fm removeItemAtPath:folder error:NULL];
+            if (hadMain) [fm moveItemAtPath:[stash stringByAppendingPathComponent:@"main.xml"] toPath:mainFile error:NULL];
+            if (hadFolder) [fm moveItemAtPath:[stash stringByAppendingPathComponent:@"folder"] toPath:folder error:NULL];
+            [catalog reloadUserLanguagesFromDirectory:dir];
         }
 
         // Every setting that existed only as a property now has a control.

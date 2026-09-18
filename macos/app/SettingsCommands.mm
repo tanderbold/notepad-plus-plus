@@ -323,6 +323,8 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
 
 - (NSString *)effectiveThemeName {
     BOOL dark = self.appearanceMode == 2 || (self.appearanceMode == 0 && [self systemIsDark]);
+    // A user language made for dark mode is chosen by extension in dark mode.
+    [LanguageCatalog sharedCatalog].darkMode = dark;
     return dark ? (self.darkThemeName ?: @"DarkModeDefault") : (self.lightThemeName ?: @"Default");
 }
 

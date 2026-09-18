@@ -10,7 +10,9 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NppLanguage *> *byExtension;
 @property (nonatomic, strong, nullable) NSDictionary<NSString *, NppLanguage *> *builtInByExtension;
 @property (nonatomic, strong, nullable) NSDictionary<NSString *, NppLanguage *> *builtInByName;
-@property (nonatomic, strong) NSArray<NppLanguage *> *userLanguages;
+@property (nonatomic, strong, readwrite) NSArray<NppLanguage *> *userLanguages;
+/// extension -> the user languages claiming it, in the order they were read.
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray<NppLanguage *> *> *userByExtension;
 // parse state
 @property (nonatomic, strong, nullable) NppLanguage *current;
 @property (nonatomic, strong, nullable) NSMutableDictionary<NSNumber *, NSString *> *currentKeywords;
@@ -150,11 +152,15 @@ static NSString *LexerIDForLanguage(NSString *langName) {
     self.byName = [self.builtInByName mutableCopy];
     self.userLanguages = [languages copy];
     NSMutableSet *claimed = [NSMutableSet set];
+    self.userByExtension = [NSMutableDictionary dictionary];
     for (NppLanguage *lang in languages) {
+        lang.userDefined = YES;
         [self.languages addObject:lang];
         self.byName[lang.name] = lang;
         for (NSString *ext in lang.extensions) {
             NSString *key = ext.lowercaseString;
+            if (!self.userByExtension[key]) self.userByExtension[key] = [NSMutableArray array];
+            [self.userByExtension[key] addObject:lang];
             if ([claimed containsObject:key]) continue;
             [claimed addObject:key];
             self.byExtension[key] = lang;
@@ -162,14 +168,25 @@ static NSString *LexerIDForLanguage(NSString *langName) {
     }
 }
 
+/// Among the user languages claiming an extension, the first made for the
+/// current mode; failing that, the first of any (getUserDefinedLangNameFromExt).
+- (NppLanguage *)userLanguageForExtension:(NSString *)key {
+    NSArray<NppLanguage *> *candidates = self.userByExtension[key];
+    for (NppLanguage *lang in candidates) {
+        if (lang.darkModeTheme == self.darkMode) return lang;
+    }
+    return candidates.firstObject;
+}
+
 - (NppLanguage *)languageNamed:(NSString *)name { return self.byName[name]; }
 
 - (NppLanguage *)languageForFileName:(NSString *)fileName {
     NSString *ext = fileName.pathExtension.lowercaseString;
-    NppLanguage *lang = ext.length ? self.byExtension[ext] : nil;
+    NppLanguage *lang = ext.length ? ([self userLanguageForExtension:ext] ?: self.byExtension[ext]) : nil;
     if (!lang) {
         // Extension-less files Notepad++ still recognises by full name (e.g. "makefile").
-        lang = self.byExtension[fileName.lastPathComponent.lowercaseString];
+        NSString *whole = fileName.lastPathComponent.lowercaseString;
+        lang = [self userLanguageForExtension:whole] ?: self.byExtension[whole];
     }
     return lang ?: self.byName[@"normal"];
 }

@@ -128,6 +128,10 @@ cp "$ROOT"/macos/resources/toolbar/order.txt        "$APP/Contents/Resources/too
 cp "$ROOT"/macos/resources/toolbar/light/*.png      "$APP/Contents/Resources/toolbar/light/"
 cp "$ROOT"/macos/resources/toolbar/dark/*.png       "$APP/Contents/Resources/toolbar/dark/"
 
+# The user languages Notepad++ ships (Markdown, light and dark).
+mkdir -p "$APP/Contents/Resources/userDefineLangs"
+cp "$ROOT"/PowerEditor/bin/userDefineLangs/*.xml "$APP/Contents/Resources/userDefineLangs/"
+
 mkdir -p "$APP/Contents/Resources/APIs"
 cp "$ROOT"/PowerEditor/installer/APIs/*.xml "$APP/Contents/Resources/APIs/"
 

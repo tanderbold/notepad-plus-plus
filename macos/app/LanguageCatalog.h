@@ -14,6 +14,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) NSString *commentLine;
 @property (nonatomic, copy, nullable) NSString *commentStart;
 @property (nonatomic, copy, nullable) NSString *commentEnd;
+/// A user-defined language, driven by the user lexer.
+@property (nonatomic) BOOL userDefined;
+/// A user language made for dark mode; among several claiming an
+/// extension, the one matching the current mode is chosen, as on Windows.
+@property (nonatomic) BOOL darkModeTheme;
 @end
 
 @interface LanguageCatalog : NSObject
@@ -28,6 +33,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// Lists user-defined languages, replacing the ones listed before: their
 /// names join the catalog and their extensions win over the built-in ones.
 - (void)registerUserLanguages:(NSArray<NppLanguage *> *)languages;
+/// The user languages listed, in the order they were read.
+@property (nonatomic, readonly) NSArray<NppLanguage *> *userLanguages;
+/// Whether dark mode is on, for choosing between a light and a dark user
+/// language that claim the same extension. Set by whoever applies themes.
+@property (nonatomic) BOOL darkMode;
 @end
 
 NS_ASSUME_NONNULL_END

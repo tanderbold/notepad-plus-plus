@@ -10,7 +10,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// One <UserLang> as the file describes it.
-@interface NppUserLanguage : NSObject
+@interface NppUserLanguage : NSObject <NSCopying>
 @property (nonatomic, copy) NSString *name;
 @property (nonatomic, copy) NSArray<NSString *> *extensions;
 @property (nonatomic) BOOL caseIgnored, allowFoldOfComments, foldCompact;
@@ -24,9 +24,31 @@ NS_ASSUME_NONNULL_BEGIN
 /// A small number of its own, for the lexer's cache; a pointer would not
 /// survive the lexer's int conversion.
 @property (nonatomic) int identifier;
+/// darkModeTheme="yes": the variant for dark mode.
+@property (nonatomic) BOOL darkModeTheme;
+/// The file it was read from, and so where it is written back.
+@property (nonatomic, copy, nullable) NSString *sourcePath;
 
 /// Every language in an XML file of Notepad++'s userDefineLang shape.
 + (NSArray<NppUserLanguage *> *)languagesInFile:(NSString *)path;
+
+/// A new language with nothing in it and the styles a new one gets on
+/// Windows: black on white, nothing nested.
++ (instancetype)emptyLanguageNamed:(NSString *)name;
+
+/// Writes languages as Notepad++ writes userDefineLang.xml, so the file
+/// reads back on Windows unchanged.
++ (BOOL)writeLanguages:(NSArray<NppUserLanguage *> *)languages toFile:(NSString *)path;
+
+/// The names Notepad++ writes: keyword list i, style id i.
++ (NSArray<NSString *> *)keywordListNames;
++ (NSArray<NSString *> *)styleNames;
+
+/// The field values of a prefixed list ("00# 01 02 03/* 04*/"): the text of
+/// code `code`, as the dialog shows it ((groups)) kept whole. The inverse
+/// builds the list back from the fields in code order (convertTo/retrieve).
++ (NSString *)fieldForCode:(int)code inList:(NSString *)list;
++ (NSString *)listFromFields:(NSArray<NSString *> *)fields;
 @end
 
 @interface LanguageCatalog (UserLanguages)
@@ -37,7 +59,32 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSArray<NppUserLanguage *> *)reloadUserLanguagesFromDirectory:(NSString *)directory;
 /// The definition behind a language listed from a file, or nil.
 - (nullable NppUserLanguage *)userLanguageNamed:(NSString *)name;
+/// Every user language read, in order.
+- (NSArray<NppUserLanguage *> *)allUserLanguages;
+
+/// Where the application bundles the user languages Notepad++ ships
+/// (markdown, light and dark); read after the user's own, and shadowed by a
+/// user file of the same name.
++ (nullable NSString *)bundledUserLanguagesDirectory;
+
+// Keeping them. Each writes the file concerned, reads everything back, and
+// returns NO with nothing changed when it cannot.
+/// Writes the language back to the file it came from (a bundled one goes to
+/// a copy of that file in the user's folder); a new one goes to
+/// userDefineLang.xml.
+- (BOOL)saveUserLanguage:(NppUserLanguage *)udl directory:(NSString *)directory;
+/// A copy under a new name, in userDefineLang.xml. NO when the name is taken.
+- (BOOL)saveUserLanguage:(NppUserLanguage *)udl asName:(NSString *)name directory:(NSString *)directory;
+- (BOOL)renameUserLanguage:(NppUserLanguage *)udl to:(NSString *)name directory:(NSString *)directory;
+- (BOOL)removeUserLanguage:(NppUserLanguage *)udl directory:(NSString *)directory;
+/// The languages of an XML file, added to userDefineLang.xml as Windows adds
+/// them; those whose names are taken are skipped. Returns the names added.
+- (NSArray<NSString *> *)importUserLanguagesFromFile:(NSString *)path directory:(NSString *)directory;
+- (BOOL)exportUserLanguage:(NppUserLanguage *)udl toFile:(NSString *)path;
 @end
+
+/// Posted when the user languages were read again, so menus can follow.
+extern NSString *const NppUserLanguagesDidChangeNotification;
 
 @interface EditorController (UserLanguages)
 /// Sets the "user" lexer up for the language: the properties and keyword
