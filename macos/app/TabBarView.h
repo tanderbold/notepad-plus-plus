@@ -11,6 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)tabBar:(NppTabBarView *)bar didSelectIndex:(NSInteger)index;
 - (void)tabBar:(NppTabBarView *)bar didRequestCloseIndex:(NSInteger)index;
 - (void)tabBar:(NppTabBarView *)bar didMoveIndex:(NSInteger)from toIndex:(NSInteger)to;
+@optional
+/// The right-click menu of a tab, which is brought to the front first.
+- (nullable NSMenu *)tabBar:(NppTabBarView *)bar menuForIndex:(NSInteger)index;
 @end
 
 /// What the bar needs to know about one tab.

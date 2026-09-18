@@ -59,4 +59,5 @@
 @property (nonatomic, readonly) NppShortcutStore *shortcutStore;
 @property (nonatomic, readonly) NSMenu *macroMenu;
 - (void)rebuildMacroMenu;
+- (NSMenu *)buildTabContextMenu;
 @end

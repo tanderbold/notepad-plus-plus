@@ -29,6 +29,30 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @implementation NppDocument
 @end
 
+/// Document Map's view zone: the lines the editor shows, drawn over the map,
+/// and the place the map is clicked or dragged in, which scrolls the editor.
+@interface NppMapZoneView : NSView
+@property (nonatomic) NSRect zone;
+@property (nonatomic, strong) NSColor *colour;
+@property (nonatomic, copy) void (^scrollTo)(CGFloat y);
+@property (nonatomic, copy) void (^wheel)(NSEvent *event);
+@end
+
+@implementation NppMapZoneView
+- (BOOL)isFlipped { return YES; }
+- (NSView *)hitTest:(NSPoint)point { return NSPointInRect([self convertPoint:point fromView:self.superview], self.bounds) ? self : nil; }
+- (void)drawRect:(NSRect)dirty {
+    if (NSIsEmptyRect(self.zone)) return;
+    [[self.colour colorWithAlphaComponent:0.25] setFill];
+    NSRectFillUsingOperation(self.zone, NSCompositingOperationSourceOver);
+    [[self.colour colorWithAlphaComponent:0.7] setStroke];
+    [NSBezierPath strokeRect:NSInsetRect(self.zone, 0.5, 0.5)];
+}
+- (void)mouseDown:(NSEvent *)e { if (self.scrollTo) self.scrollTo([self convertPoint:e.locationInWindow fromView:nil].y); }
+- (void)mouseDragged:(NSEvent *)e { [self mouseDown:e]; }
+- (void)scrollWheel:(NSEvent *)e { if (self.wheel) self.wheel(e); }
+@end
+
 /// ScintillaNotificationProtocol gives no sender, so the secondary pane gets its
 /// own delegate object that tags the callback.
 @interface NppSecondaryPaneDelegate : NSObject <ScintillaNotificationProtocol>
@@ -52,6 +76,7 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @property (nonatomic) BOOL syncH;
 @property (nonatomic) BOOL syncZ;
 @property (nonatomic, strong) ScintillaView *docMapView;
+@property (nonatomic, strong) NppMapZoneView *docMapZone;
 /// The document the other pane shows, so that closing it can move the pane off it.
 @property (nonatomic, strong) NppDocument *secondaryDocument;
 @property (nonatomic, strong) NSMutableArray<NppProjectPanel *> *projects;
@@ -544,6 +569,8 @@ static long SciColor(NSColor *c) {
     // The map mirrors whatever is in front, not whatever was when it opened.
     if (self.docMapView.superview) {
         [self.docMapView message:SCI_SETDOCPOINTER wParam:0 lParam:(sptr_t)doc.docPointer];
+        [self mirrorStylesToDocumentMap];
+        [self updateDocumentMap];
     }
     [self applyDocumentSettings];
     [self applyLanguage];
@@ -555,6 +582,11 @@ static long SciColor(NSColor *c) {
 
 - (void)tabBar:(NppTabBarView *)bar didSelectIndex:(NSInteger)index {
     [self selectDocumentAtIndex:index];
+}
+
+- (NSMenu *)tabBar:(NppTabBarView *)bar menuForIndex:(NSInteger)index {
+    [self selectDocumentAtIndex:index];
+    return self.tabContextMenu ? self.tabContextMenu() : nil;
 }
 
 - (void)tabBar:(NppTabBarView *)bar didRequestCloseIndex:(NSInteger)index {
@@ -1292,6 +1324,7 @@ static BOOL gCheckingFilesOnDisk;
     [self applyTheme];
     if (udl) [self applyUserLanguageStyles:udl];
     [sci message:SCI_COLOURISE wParam:0 lParam:-1];
+    if (self.docMapView.superview) { [self mirrorStylesToDocumentMap]; [self updateDocumentMap]; }
     [self applyWordCharacters];
     [self markClickableLinks];
 }
@@ -1879,6 +1912,75 @@ static const char kEditorMenuItemsKey = 0;
     [self.split adjustSubviews];
     [self.split setPosition:NSWidth(self.split.frame) - 120
            ofDividerAtIndex:self.split.subviews.count - 2];
+    if (!self.docMapZone) {
+        self.docMapZone = [[NppMapZoneView alloc] initWithFrame:self.docMapView.bounds];
+        self.docMapZone.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        __weak __typeof(self) weakSelf = self;
+        self.docMapZone.scrollTo = ^(CGFloat y) { [weakSelf scrollFromDocumentMapAtY:y]; };
+        self.docMapZone.wheel = ^(NSEvent *e) { [weakSelf.sciView scrollWheel:e]; };
+    }
+    self.docMapZone.frame = self.docMapView.bounds;
+    [self.docMapView addSubview:self.docMapZone positioned:NSWindowAbove relativeTo:nil];
+    [self mirrorStylesToDocumentMap];
+    [self.docMapView layoutSubtreeIfNeeded];
+    [self updateDocumentMap];
+}
+
+/// Makes the map look like the editor: the same colours per style (the
+/// styling itself is in the shared document) and the same wrapping.
+- (void)mirrorStylesToDocumentMap {
+    ScintillaView *map = self.docMapView, *sci = self.sciView;
+    if (!map) return;
+    for (int st = 0; st <= STYLE_MAX; ++st) {
+        [map message:SCI_STYLESETFORE wParam:(uptr_t)st lParam:[sci message:SCI_STYLEGETFORE wParam:(uptr_t)st]];
+        [map message:SCI_STYLESETBACK wParam:(uptr_t)st lParam:[sci message:SCI_STYLEGETBACK wParam:(uptr_t)st]];
+        [map message:SCI_STYLESETBOLD wParam:(uptr_t)st lParam:[sci message:SCI_STYLEGETBOLD wParam:(uptr_t)st]];
+        [map message:SCI_STYLESETITALIC wParam:(uptr_t)st lParam:[sci message:SCI_STYLEGETITALIC wParam:(uptr_t)st]];
+        [map message:SCI_STYLESETSIZE wParam:(uptr_t)st lParam:[sci message:SCI_STYLEGETSIZE wParam:(uptr_t)st]];
+    }
+    [map message:SCI_SETWRAPMODE wParam:(uptr_t)[sci message:SCI_GETWRAPMODE] lParam:0];
+    NppStyle *zone = [StyleCatalog sharedCatalog].globalStyles[@"Document map"];
+    self.docMapZone.colour = zone.foreground ?: [NSColor systemOrangeColor];
+}
+
+/// DocumentMap::scrollMap and the view zone: the map follows the editor so
+/// the zone is in sight, and the zone covers the lines the editor shows.
+- (void)updateDocumentMap {
+    if (![self documentMapVisible]) return;
+    ScintillaView *map = self.docMapView, *sci = self.sciView;
+    long first = [sci message:SCI_GETFIRSTVISIBLELINE];
+    long onScreen = [sci message:SCI_LINESONSCREEN];
+    long total = [sci message:SCI_GETLINECOUNT];
+    long firstDoc = [sci message:SCI_DOCLINEFROMVISIBLE wParam:(uptr_t)first];
+    long lastDoc = [sci message:SCI_DOCLINEFROMVISIBLE wParam:(uptr_t)(first + onScreen)];
+
+    long mapOnScreen = [map message:SCI_LINESONSCREEN];
+    long mapVisibleTotal = [map message:SCI_VISIBLEFROMDOCLINE wParam:(uptr_t)total];
+    long mainScrollable = MAX(1, [sci message:SCI_VISIBLEFROMDOCLINE wParam:(uptr_t)total] - onScreen);
+    long mapScrollable = MAX(0, mapVisibleTotal - mapOnScreen);
+    long mapFirst = mapScrollable > 0 ? (long)((double)first / (double)mainScrollable * (double)mapScrollable) : 0;
+    [map message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)MAX(0, MIN(mapFirst, mapScrollable)) lParam:0];
+
+    long height = [map message:SCI_TEXTHEIGHT wParam:0];
+    long topVisible = [map message:SCI_VISIBLEFROMDOCLINE wParam:(uptr_t)firstDoc] - [map message:SCI_GETFIRSTVISIBLELINE];
+    long bottomVisible = [map message:SCI_VISIBLEFROMDOCLINE wParam:(uptr_t)MIN(lastDoc, total)] - [map message:SCI_GETFIRSTVISIBLELINE];
+    self.docMapZone.zone = NSMakeRect(0, (CGFloat)(topVisible * height), NSWidth(self.docMapZone.bounds),
+                                      (CGFloat)(MAX(1, bottomVisible - topVisible) * height));
+    [self.docMapZone setNeedsDisplay:YES];
+}
+
+- (NSRect)documentMapZone { return self.docMapZone.zone; }
+
+/// A click or drag at `y` in the map centres the editor on that line.
+- (void)scrollFromDocumentMapAtY:(CGFloat)y {
+    ScintillaView *map = self.docMapView, *sci = self.sciView;
+    long height = MAX(1, [map message:SCI_TEXTHEIGHT wParam:0]);
+    long mapVisible = [map message:SCI_GETFIRSTVISIBLELINE] + (long)(y / (CGFloat)height);
+    long docLine = [map message:SCI_DOCLINEFROMVISIBLE wParam:(uptr_t)MAX(0, mapVisible)];
+    long onScreen = [sci message:SCI_LINESONSCREEN];
+    long target = [sci message:SCI_VISIBLEFROMDOCLINE wParam:(uptr_t)docLine] - onScreen / 2;
+    [sci message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)MAX(0, target) lParam:0];
+    [self updateDocumentMap];
 }
 
 #pragma mark - Project panels
@@ -1948,6 +2050,7 @@ static const char kEditorMenuItemsKey = 0;
         case SCN_SAVEPOINTLEFT:    self.currentDocument.modified = YES; [self refreshChrome]; break;
         case SCN_UPDATEUI:
             [self refreshChrome];
+            if (n->updated & (SC_UPDATE_V_SCROLL | SC_UPDATE_CONTENT)) [self updateDocumentMap];
             [self mirrorScrollToSecondary];
             [self updateBraceMatch];
             if (n->updated & SC_UPDATE_SELECTION) [self updateSmartHighlight];

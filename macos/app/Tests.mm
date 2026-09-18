@@ -40,6 +40,7 @@
 #import "LanguageModel.h"
 #import "StyleCatalog.h"
 #import "StyleConfigurator.h"
+#import "DocumentListPanel.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -3826,6 +3827,63 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_VIEW_DOCLIST", @"lists documents and survives a stale row index",
               listOn && staleValue != nil);
 
+        // Name, Ext. and Path, sorting by a column, the tab menu on one file
+        // and close/save for several - VerticalFileSwitcher's behaviour.
+        {
+            DocumentListPanel *list = [app valueForKey:@"docList"];
+            NppPreferences *lp = [NppPreferences shared];
+            BOOL extBefore = lp.docListExtColumn, pathBefore = lp.docListPathColumn;
+            NSUInteger docsBefore = ed.documents.count;
+            NSString *zeta = TempFile(@"zeta_list.txt", @"z\n"), *alpha = TempFile(@"alpha_list.py", @"a\n");
+            [ed openFileAtPath:zeta error:NULL];
+            [ed openFileAtPath:alpha error:NULL];
+            [list setColumn:@"ext" shown:YES];
+            [list setColumn:@"path" shown:YES];
+            [list sortByColumn:@"name" ascending:YES];
+            NSArray<NppDocument *> *byName = list.rows;
+            NSUInteger ia = [byName indexOfObjectPassingTest:^BOOL(NppDocument *d, NSUInteger i, BOOL *st) { return [d.path isEqualToString:alpha]; }];
+            NSUInteger iz = [byName indexOfObjectPassingTest:^BOOL(NppDocument *d, NSUInteger i, BOOL *st) { return [d.path isEqualToString:zeta]; }];
+            BOOL sorted = ia < iz;
+            BOOL columns = [[list textOfColumn:@"name" row:(NSInteger)ia] isEqualToString:@"alpha_list"] &&
+                           [[list textOfColumn:@"ext" row:(NSInteger)ia] isEqualToString:@"py"] &&
+                           [[list textOfColumn:@"path" row:(NSInteger)ia] isEqualToString:alpha.stringByDeletingLastPathComponent];
+            [list sortByColumn:@"name" ascending:NO];
+            BOOL reversed = [list.rows indexOfObject:byName[ia]] > [list.rows indexOfObject:byName[iz]];
+            [list activateRow:(NSInteger)[list.rows indexOfObject:byName[iz]]];
+            BOOL activated = [ed.currentDocument.path isEqualToString:zeta];
+
+            NSMenu *one = [list menuForSelectedRows:[NSIndexSet indexSetWithIndex:0]];
+            NSMenu *several = [list menuForSelectedRows:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)]];
+            BOOL menus = [one itemWithTitle:@"Close"] != nil && [several itemWithTitle:@"Close Selected Files"] != nil &&
+                         [several itemWithTitle:@"Save Selected Files"] != nil;
+            [list sortByColumn:nil ascending:YES];
+            NSMutableIndexSet *mine = [NSMutableIndexSet indexSet];
+            [list.rows enumerateObjectsUsingBlock:^(NppDocument *d, NSUInteger i, BOOL *st) {
+                if ([d.path isEqualToString:zeta] || [d.path isEqualToString:alpha]) [mine addIndex:i];
+            }];
+            [list closeRows:mine];
+            BOOL closed = ed.documents.count == docsBefore;
+            [list setColumn:@"ext" shown:extBefore];
+            [list setColumn:@"path" shown:pathBefore];
+            Check(@"IDM_VIEW_DOCLIST (columns)",
+                  @"Name, Ext. and Path columns, sorting by a column, a click brings the file up, and selected files close together",
+                  sorted && columns && reversed && activated && menus && closed);
+        }
+
+        // The tab's right-click menu, as Notepad++ lays it out.
+        {
+            NSMenu *tabMenu = [app buildTabContextMenu];
+            NSMenu *closeMany = [tabMenu itemWithTitle:@"Close Multiple Tabs"].submenu;
+            NSMenu *clip = [tabMenu itemWithTitle:@"Copy to Clipboard"].submenu;
+            NSMenu *colours = [tabMenu itemWithTitle:@"Apply Color to Tab"].submenu;
+            printf("    tab menu: %ld items, close many %ld, clip %ld, colours %ld\n", (long)tabMenu.numberOfItems,
+                   (long)closeMany.numberOfItems, (long)clip.numberOfItems, (long)colours.numberOfItems);
+            Check(@"IDM_FILE_CLOSE (tab menu)",
+                  @"a tab's right-click menu has Close, the Close Multiple Tabs, Copy to Clipboard and colour submenus",
+                  [tabMenu indexOfItemWithTitle:@"Close"] == 0 && closeMany.numberOfItems >= 5 &&
+                  clip.numberOfItems == 3 && colours.numberOfItems == 6 && [tabMenu itemWithTitle:@"Save"] != nil);
+        }
+
         [ed setMonitoring:YES];
         BOOL monitoring = [ed monitoringEnabled];
         [ed setMonitoring:NO];
@@ -3916,6 +3974,39 @@ int NppMacRunTests(AppDelegate *app) {
         [ed setDocumentMapVisible:NO];
         Check(@"IDM_VIEW_DOC_MAP", @"shows and hides the shrunken mirror",
               mapOn && ![ed documentMapVisible]);
+
+        // As DocumentMap does: the zone covers what the editor shows, the map
+        // scrolls with it, a click centres the editor there, and the map has
+        // the editor's colours.
+        {
+            NSMutableString *lines = [NSMutableString string];
+            for (int i = 0; i < 3000; ++i) [lines appendFormat:@"int line%d = %d;\n", i, i];
+            [ed newDocument];
+            [ed setLanguageNamed:@"cpp"];
+            SetDoc(ed, lines);
+            [ed setDocumentMapVisible:YES];
+            ScintillaView *map = [ed valueForKey:@"docMapView"];
+            [ed.sci message:SCI_SETFIRSTVISIBLELINE wParam:1500 lParam:0];
+            [ed updateDocumentMap];
+            NSRect zone = [ed documentMapZone];
+            long mapFirst = [map message:SCI_GETFIRSTVISIBLELINE];
+            long mapHeight = [map message:SCI_TEXTHEIGHT wParam:0];
+            long zoneLine = mapFirst + (long)(NSMidY(zone) / MAX(1, mapHeight));
+            long shown = [ed.sci message:SCI_LINESONSCREEN];
+            BOOL zoneRight = zone.size.height > 0 && mapFirst > 0 &&
+                             labs(zoneLine - (1500 + shown / 2)) <= shown / 2 + 2;
+            [ed scrollFromDocumentMapAtY:NSMidY(zone) + 40 * mapHeight];
+            long afterClick = [ed.sci message:SCI_GETFIRSTVISIBLELINE];
+            BOOL clicked = afterClick > 1500 + 20 && afterClick < 1500 + 60 + shown;
+            BOOL coloured = [map message:SCI_STYLEGETFORE wParam:SCE_C_WORD] == [ed.sci message:SCI_STYLEGETFORE wParam:SCE_C_WORD] &&
+                            [map message:SCI_STYLEGETBOLD wParam:SCE_C_WORD] == [ed.sci message:SCI_STYLEGETBOLD wParam:SCE_C_WORD];
+            [ed setDocumentMapVisible:NO];
+            [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+            printf("    map: first %ld zone %.0f+%.0f line %ld click %ld\n", mapFirst, zone.origin.y, zone.size.height, zoneLine, afterClick);
+            Check(@"IDM_VIEW_DOC_MAP (view zone)",
+                  @"the zone marks the lines on screen, a click in the map scrolls the editor there, and the colours match",
+                  zoneRight && clicked && coloured);
+        }
 
         [ed setLanguageNamed:@"python"];
         SetDoc(ed, @"def alpha(x):\n    return x\n\ndef beta():\n    pass\n");

@@ -122,6 +122,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger findTransparencyLevel;
 /// Search results: each search replaces the last instead of stacking up.
 @property (nonatomic) BOOL searchResultsPurge;
+/// Document List's optional columns.
+@property (nonatomic) BOOL docListExtColumn;
+@property (nonatomic) BOOL docListPathColumn;
 
 /// New documents.
 @property (nonatomic, copy) NSString *defaultLanguage;

@@ -70,6 +70,8 @@ typedef NS_ENUM(NSInteger, NppShortcutCategory) {
 /// The Scintilla command keys on a view, as assigned.
 - (void)applyScintillaKeysTo:(id)scintillaView;
 - (BOOL)save;
+/// The menu item behind each of Notepad++'s command ids the port has.
+- (NSDictionary<NSNumber *, NSMenuItem *> *)menuItemsByIdentifier;
 @end
 
 @interface NppShortcutMapper : NSObject <NSTableViewDataSource, NSTableViewDelegate, NSSearchFieldDelegate>

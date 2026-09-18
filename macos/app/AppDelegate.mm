@@ -20,6 +20,7 @@
 #import "BackupAndPrint.h"
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
+#include "CommandIDs.h"
 #import "JsonCommands.h"
 #import "CompareCommands.h"
 #import "FtpCommands.h"
@@ -354,6 +355,8 @@ static NSString *Ordinal(NSUInteger n) {
     [StyleCatalog setImportedThemesDirectory:
         [[self.editor supportDirectory] stringByAppendingPathComponent:@"themes"]];
 
+    __weak __typeof(self) weakApp = self;
+    self.editor.tabContextMenu = ^NSMenu *{ return [weakApp buildTabContextMenu]; };
     self.toolbar = [[NppToolbar alloc] initWithWindow:self.window target:self];
     [[NppPreferences shared] applyToEditor:self.editor];
     [self applyToolbarPreferences];
@@ -2713,6 +2716,98 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     return field.stringValue;
 }
 
+/// The tab right-click menu, with the items and submenus Notepad++ gives it
+/// by default (NppNotification.cpp), taken from the port's own menu items.
+- (NSMenu *)buildTabContextMenu {
+    // Upstream's labels (with Finder, Terminal and Trash for their Windows
+    // namesakes); the command behind each is found by its id, or by action.
+    struct { const char *label; const char *identifier; const char *action; const char *submenu; } layout[] = {
+        {"Close", "IDM_FILE_CLOSE", NULL, NULL},
+        {"Close All BUT This", "IDM_FILE_CLOSEALL_BUT_CURRENT", NULL, "Close Multiple Tabs"},
+        {"Close All BUT Pinned", "IDM_FILE_CLOSEALL_BUT_PINNED", NULL, "Close Multiple Tabs"},
+        {"Close All to the Left", "IDM_FILE_CLOSEALL_TOLEFT", NULL, "Close Multiple Tabs"},
+        {"Close All to the Right", "IDM_FILE_CLOSEALL_TORIGHT", NULL, "Close Multiple Tabs"},
+        {"Close All Unchanged", "IDM_FILE_CLOSEALL_UNCHANGED", NULL, "Close Multiple Tabs"},
+        {"Pin Tab", "IDM_PINTAB", "togglePin:", NULL},
+        {"Save", "IDM_FILE_SAVE", NULL, NULL},
+        {"Save As...", "IDM_FILE_SAVEAS", NULL, NULL},
+        {"Open Containing Folder in Finder", "IDM_FILE_OPEN_FOLDER", NULL, "Open into"},
+        {"Open Containing Folder in Terminal", "IDM_FILE_OPEN_CMD", NULL, "Open into"},
+        {"Open Containing Folder as Workspace", "IDM_FILE_CONTAININGFOLDERASWORKSPACE", NULL, "Open into"},
+        {NULL, NULL, NULL, "Open into"},
+        {"Open in Default Viewer", "IDM_FILE_OPEN_DEFAULT_VIEWER", NULL, "Open into"},
+        {"Rename", "IDM_FILE_RENAME", NULL, NULL},
+        {"Move to Trash", "IDM_FILE_DELETE", NULL, NULL},
+        {"Reload", "IDM_FILE_RELOAD", NULL, NULL},
+        {"Print", "IDM_FILE_PRINT", NULL, NULL},
+        {NULL, NULL, NULL, NULL},
+        {"Read-Only in Notepad++", "IDM_EDIT_TOGGLEREADONLY", "toggleReadOnly:", NULL},
+        {"Read-Only Attribute on Disk", "IDM_EDIT_TOGGLESYSTEMREADONLY", "toggleSystemReadOnly:", NULL},
+        {NULL, NULL, NULL, NULL},
+        {"Copy Full File Path", "IDM_EDIT_FULLPATHTOCLIP", NULL, "Copy to Clipboard"},
+        {"Copy Filename", "IDM_EDIT_FILENAMETOCLIP", NULL, "Copy to Clipboard"},
+        {"Copy Current Dir. Path", "IDM_EDIT_CURRENTDIRTOCLIP", NULL, "Copy to Clipboard"},
+        {"Move to Start", "IDM_VIEW_GOTO_START", NULL, "Move Document"},
+        {"Move to End", "IDM_VIEW_GOTO_END", NULL, "Move Document"},
+        {NULL, NULL, NULL, "Move Document"},
+        {"Move to Other View", "IDM_VIEW_GOTO_ANOTHER_VIEW", NULL, "Move Document"},
+        {"Clone to Other View", "IDM_VIEW_CLONE_TO_ANOTHER_VIEW", NULL, "Move Document"},
+        {"Move to New Instance", "IDM_VIEW_GOTO_NEW_INSTANCE", NULL, "Move Document"},
+        {"Open in New Instance", "IDM_VIEW_LOAD_IN_NEW_INSTANCE", NULL, "Move Document"},
+        {"Apply Color 1", "IDM_VIEW_TAB_COLOUR_1", NULL, "Apply Color to Tab"},
+        {"Apply Color 2", "IDM_VIEW_TAB_COLOUR_2", NULL, "Apply Color to Tab"},
+        {"Apply Color 3", "IDM_VIEW_TAB_COLOUR_3", NULL, "Apply Color to Tab"},
+        {"Apply Color 4", "IDM_VIEW_TAB_COLOUR_4", NULL, "Apply Color to Tab"},
+        {"Apply Color 5", "IDM_VIEW_TAB_COLOUR_5", NULL, "Apply Color to Tab"},
+        {"Remove Color", "IDM_VIEW_TAB_COLOUR_NONE", NULL, "Apply Color to Tab"},
+    };
+    NSDictionary<NSNumber *, NSMenuItem *> *items = [self.shortcutStore menuItemsByIdentifier];
+    NSMenuItem *(^byAction)(SEL) = ^NSMenuItem *(SEL action) {
+        NSMutableArray *queue = [NSApp.mainMenu.itemArray mutableCopy];
+        while (queue.count) {
+            NSMenuItem *it = queue.firstObject;
+            [queue removeObjectAtIndex:0];
+            if (it.submenu) [queue addObjectsFromArray:it.submenu.itemArray];
+            if (it.action == action) return it;
+        }
+        return nil;
+    };
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Tab"];
+    NSMutableDictionary<NSString *, NSMenu *> *submenus = [NSMutableDictionary dictionary];
+    for (auto &entry : layout) {
+        NSMenu *into = menu;
+        if (entry.submenu) {
+            NSString *name = @(entry.submenu);
+            into = submenus[name];
+            if (!into) {
+                into = submenus[name] = [[NSMenu alloc] initWithTitle:name];
+                [menu addItemWithTitle:name action:nil keyEquivalent:@""].submenu = into;
+            }
+        }
+        if (!entry.label) {
+            if (into.numberOfItems && !into.itemArray.lastObject.isSeparatorItem) [into addItem:[NSMenuItem separatorItem]];
+            continue;
+        }
+        int identifier = 0;
+        for (int i = 0; i < kNppMenuCommandIDCount; ++i) {
+            if (!strcmp(kNppMenuCommandIDs[i].name, entry.identifier)) { identifier = kNppMenuCommandIDs[i].identifier; break; }
+        }
+        NSMenuItem *real = identifier ? items[@(identifier)] : nil;
+        if (!real && entry.action) real = byAction(NSSelectorFromString(@(entry.action)));
+        if (!real) continue;
+        NSMenuItem *copy = [[NSMenuItem alloc] initWithTitle:@(entry.label) action:real.action keyEquivalent:@""];
+        copy.target = real.target;
+        copy.tag = real.tag;
+        copy.representedObject = real.representedObject;
+        [into addItem:copy];
+    }
+    // Submenus none of whose commands the port has are left out.
+    for (NSMenuItem *it in menu.itemArray.copy) {
+        if (it.submenu && !it.submenu.numberOfItems) [menu removeItem:it];
+    }
+    return menu;
+}
+
 - (void)showFind:(id)sender    { [self openFindPanelOnTab:0]; }
 - (void)showReplace:(id)sender { [self openFindPanelOnTab:1]; }
 - (void)showMarkTab:(id)sender { [self openFindPanelOnTab:4]; }
@@ -3512,6 +3607,11 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         [self.editor cloneCurrentToOtherView];
         [self.editor setSyncVerticalScroll:YES];
         [self.editor.secondarySci message:SCI_SETFIRSTVISIBLELINE wParam:40 lParam:0];
+    }
+    if (getenv("NPPMAC_SNAPSHOT_MAP")) {
+        [self.editor setDocumentMapVisible:YES];
+        [self.editor.sci message:SCI_SETFIRSTVISIBLELINE wParam:(uptr_t)atoi(getenv("NPPMAC_SNAPSHOT_MAP")) lParam:0];
+        [self.editor updateDocumentMap];
     }
     [self.editor refreshChrome];
     // Force the whole hierarchy to redraw before capturing; a split pane can

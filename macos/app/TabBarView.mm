@@ -107,6 +107,12 @@ static const CGFloat kPadding = 8;
     return -1;
 }
 
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+    NSInteger index = [self indexOfTabAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
+    if (index < 0 || ![self.tabDelegate respondsToSelector:@selector(tabBar:menuForIndex:)]) return nil;
+    return [self.tabDelegate tabBar:self menuForIndex:index];
+}
+
 - (NSRect)closeButtonRectForIndex:(NSInteger)index {
     NSRect tab = [self frameOfTabAtIndex:index];
     if (NSIsEmptyRect(tab)) return NSZeroRect;

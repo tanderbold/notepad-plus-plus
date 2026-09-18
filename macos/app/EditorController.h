@@ -59,6 +59,9 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 @property (nonatomic, weak, nullable) NSWindow *window;
 /// Added to the window title, as -titleAdd= on the command line asks.
 @property (nonatomic, copy, nullable) NSString *titleSuffix;
+/// Builds the tab right-click menu (for the document in front); the Document
+/// List offers the same one for a file.
+@property (nonatomic, copy, nullable) NSMenu *_Nonnull (^tabContextMenu)(void);
 
 /// The text of the document in front, and its replacement: read and written
 /// by length, so that a NUL byte inside a file is kept rather than ending it.
@@ -199,6 +202,11 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 // Document Map: a shrunken read-only view of the same buffer.
 - (BOOL)documentMapVisible;
 - (void)setDocumentMapVisible:(BOOL)visible;
+/// Where the map's view zone is, in the map's own (flipped) coordinates.
+- (NSRect)documentMapZone;
+/// What a click or drag in the map at `y` does: centres the editor there.
+- (void)scrollFromDocumentMapAtY:(CGFloat)y;
+- (void)updateDocumentMap;
 
 // Project panels 1..3, each keeping its own folder root.
 - (void)showProjectPanel:(NSInteger)index;        // 1..3; same index again hides it

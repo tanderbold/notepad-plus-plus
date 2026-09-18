@@ -365,6 +365,16 @@ static NSString *MenuKey(NSMenuItem *item, NSArray<NSString *> *path) {
     return [[path arrayByAddingObject:item.title] componentsJoinedByString:@"/"];
 }
 
+- (NSDictionary<NSNumber *, NSMenuItem *> *)menuItemsByIdentifier {
+    NSMutableDictionary *found = [NSMutableDictionary dictionary];
+    [self walkMenu:NSApp.mainMenu path:@[] block:^(NSMenuItem *item, NSArray<NSString *> *path) {
+        if (!item.action) return;
+        int identifier = [self identifierForItem:item path:path];
+        if (identifier > 0 && !found[@(identifier)]) found[@(identifier)] = item;
+    }];
+    return found;
+}
+
 - (void)captureMenuDefaults {
     [self walkMenu:NSApp.mainMenu path:@[] block:^(NSMenuItem *item, NSArray<NSString *> *path) {
         if (IsListedElsewhere(item)) return;
