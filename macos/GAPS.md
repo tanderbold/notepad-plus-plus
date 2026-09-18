@@ -30,6 +30,15 @@ alone; the Style Configurator, Preferences Reset, word characters, saved
 macros, print variables, backups, the Function List, userDefineLang.xml,
 auto-close pairs and smart highlighting do what they say.
 
+Plan item 3.5 (2026-09-18) tidied what the audit left: the compiler and
+the static analyzer are silent over `macos/app` (nullability annotations,
+two dead stores, three nil paths); a Project Panel with no workspace shows
+an empty tree instead of a nil row; a zero-width column sort takes the rest
+of the line, as upstream's `getSortKey` does, and every sort is stable in
+both directions; tabs are not dragged across the edge of the pinned run, so
+Close All But Pinned keeps exactly the tabs at the left. No `kNppCP…` table
+was unused, so none was removed.
+
 ### Still open
 
 The thirteen bugs listed here after the first round were fixed on

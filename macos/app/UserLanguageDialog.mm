@@ -214,7 +214,7 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
               labels:@[@"Open:", @"Middle:", @"Close:"] style:SCE_USER_STYLE_FOLDER_IN_CODE1 y:y in:v];
     y = [self triple:@"Folding in code 2 style (separators needed):" names:@[@"code2Open", @"code2Middle", @"code2Close"]
               labels:@[@"Open:", @"Middle:", @"Close:"] style:SCE_USER_STYLE_FOLDER_IN_CODE2 y:y in:v];
-    y = [self triple:@"Folding in comment style:" names:@[@"commentFoldOpen", @"commentFoldMiddle", @"commentFoldClose"]
+    [self triple:@"Folding in comment style:" names:@[@"commentFoldOpen", @"commentFoldMiddle", @"commentFoldClose"]
               labels:@[@"Open:", @"Middle:", @"Close:"] style:SCE_USER_STYLE_FOLDER_IN_COMMENT y:y in:v];
 
     // Keywords Lists: eight groups, two columns.

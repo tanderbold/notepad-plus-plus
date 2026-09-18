@@ -5,6 +5,8 @@
 #import <Cocoa/Cocoa.h>
 @class EditorController;
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface FunctionListPanel : NSObject
 - (instancetype)initWithEditor:(EditorController *)editor;
 - (void)toggle;
@@ -17,3 +19,5 @@
 /// written to <file>.result.json (or `path`). NO when there is no file.
 + (BOOL)exportFunctionListOf:(EditorController *)editor to:(nullable NSString *)path;
 @end
+
+NS_ASSUME_NONNULL_END

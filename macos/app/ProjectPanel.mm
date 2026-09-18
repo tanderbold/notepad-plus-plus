@@ -370,11 +370,15 @@ static NSString *PortablePath(NSString *path) {
 }
 
 - (NSInteger)outlineView:(NSOutlineView *)ov numberOfChildrenOfItem:(id)item {
-    return item ? (NSInteger)[(NppProjectNode *)item children].count : 1;
+    // No workspace yet: nothing at the top, rather than a nil row AppKit would reject.
+    return item ? (NSInteger)[(NppProjectNode *)item children].count : (self.root ? 1 : 0);
 }
 
 - (id)outlineView:(NSOutlineView *)ov child:(NSInteger)index ofItem:(id)item {
-    return item ? [(NppProjectNode *)item children][(NSUInteger)index] : self.root;
+    // AppKit can ask with a stale index while the tree changes under it.
+    if (!item) return self.root ?: [[NppProjectNode alloc] init];
+    NSArray *children = [(NppProjectNode *)item children];
+    return index >= 0 && index < (NSInteger)children.count ? children[(NSUInteger)index] : [[NppProjectNode alloc] init];
 }
 
 - (BOOL)outlineView:(NSOutlineView *)ov isItemExpandable:(id)item {

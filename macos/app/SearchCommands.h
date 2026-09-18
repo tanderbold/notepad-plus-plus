@@ -58,12 +58,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// when the search was of the document itself. `line` is one-based.
 + (nullable NSString *)searchResultTargetInReport:(NSString *)report
                                            atLine:(NSInteger)line
-                                         fileLine:(NSInteger *)fileLine;
+                                         fileLine:(nullable NSInteger *)fileLine;
 /// The file and line a results line refers to, or nil when it refers to none.
 /// `line` is one-based, as the report writes it.
 + (nullable NSString *)searchResultFileInReport:(NSString *)report
                                          atLine:(NSInteger)line
-                                       fileLine:(NSInteger *)fileLine;
+                                       fileLine:(nullable NSInteger *)fileLine;
 /// The text of one line, as Scintilla counts lines.
 - (NSString *)textOfLine:(NSInteger)line;
 /// Puts the caret on a line of the current document and selects that line.

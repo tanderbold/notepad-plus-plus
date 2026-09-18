@@ -385,7 +385,9 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
         if (columns.location == NSNotFound) return line;
         NSData *bytes = [line dataUsingEncoding:NSUTF8StringEncoding];
         if (columns.location >= bytes.length) return @"";
-        NSUInteger end = MIN(bytes.length, NSMaxRange(columns));
+        // A column of no width (a caret in each line) sorts on the rest of the
+        // line from there, as Sorters.h's getSortKey does.
+        NSUInteger end = columns.length ? MIN(bytes.length, NSMaxRange(columns)) : bytes.length;
         NSData *slice = [bytes subdataWithRange:NSMakeRange(columns.location, end - columns.location)];
         return [[NSString alloc] initWithData:slice encoding:NSUTF8StringEncoding]
             ?: [[NSString alloc] initWithData:slice encoding:NSISOLatin1StringEncoding] ?: @"";
@@ -418,10 +420,11 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
             }
             if (failedLine != NSNotFound) return bodies;
 
-            [numbered sortUsingComparator:^NSComparisonResult(NSArray *a, NSArray *b) {
-                return [a[1] compare:b[1]];
+            // Stable either way, as std::stable_sort is: lines with the same
+            // number keep their order, descending too.
+            [numbered sortWithOptions:NSSortStable usingComparator:^NSComparisonResult(NSArray *a, NSArray *b) {
+                return descending ? [b[1] compare:a[1]] : [a[1] compare:b[1]];
             }];
-            if (descending) numbered = [numbered.reverseObjectEnumerator.allObjects mutableCopy];
 
             NSMutableArray *out = [NSMutableArray array];
             // Lines with no number go first ascending, last descending.
@@ -446,8 +449,8 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
             return shuffled;
         }
 
-        NSArray *sorted = [bodies sortedArrayUsingComparator:^NSComparisonResult(NSString *wholeA, NSString *wholeB) {
-            NSString *a = keyOf(wholeA), *b = keyOf(wholeB);
+        NSArray *sorted = [bodies sortedArrayWithOptions:NSSortStable usingComparator:^NSComparisonResult(NSString *wholeA, NSString *wholeB) {
+            NSString *a = keyOf(descending ? wholeB : wholeA), *b = keyOf(descending ? wholeA : wholeB);
             switch (key) {
                 case NppSortLexicographic:                return [a compare:b];
                 case NppSortLexicographicCaseInsensitive: return [a caseInsensitiveCompare:b];
@@ -459,7 +462,7 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
                 default: return NSOrderedSame;
             }
         }];
-        return descending ? sorted.reverseObjectEnumerator.allObjects : sorted;
+        return sorted;
     }];
     return NSNotFound;
 }

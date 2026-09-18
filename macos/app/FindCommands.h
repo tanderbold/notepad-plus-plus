@@ -88,10 +88,10 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
                                    filters:(nullable NSString *)filters
                                  recursive:(BOOL)recursive
                              includeHidden:(BOOL)includeHidden
-                                  progress:(void (^)(NSUInteger scanned, NSUInteger hits,
-                                                     NSString *reportSoFar))progress
-                                completion:(void (^)(NSUInteger hits, NSString *report,
-                                                     BOOL cancelled))completion;
+                                  progress:(nullable void (^)(NSUInteger scanned, NSUInteger hits,
+                                                              NSString *reportSoFar))progress
+                                completion:(nullable void (^)(NSUInteger hits, NSString *report,
+                                                              BOOL cancelled))completion;
 
 /// Replacing across files, off the main thread, and stoppable the same way.
 - (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec
@@ -99,9 +99,9 @@ typedef NS_OPTIONS(NSInteger, NppFindOptions) {
                                       filters:(nullable NSString *)filters
                                     recursive:(BOOL)recursive
                                 includeHidden:(BOOL)includeHidden
-                                     progress:(void (^)(NSUInteger scanned, NSUInteger replaced))progress
-                                   completion:(void (^)(NSUInteger replaced, NSUInteger files,
-                                                        BOOL cancelled))completion;
+                                     progress:(nullable void (^)(NSUInteger scanned, NSUInteger replaced))progress
+                                   completion:(nullable void (^)(NSUInteger replaced, NSUInteger files,
+                                                                 BOOL cancelled))completion;
 
 /// Replace in Projects: the same over a list of files.
 - (NppFileSearch *)replaceInFilesInBackground:(NppFindSpec *)spec

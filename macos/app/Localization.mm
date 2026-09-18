@@ -259,14 +259,15 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
 - (void)localizeMenu:(NSMenu *)menu byItem:(NSMapTable *)byItem top:(BOOL)top {
     for (NSMenuItem *item in menu.itemArray) {
         if (item.isSeparatorItem) continue;
-        NSString *english = Original(item, @"title", item.title);
+        NSString *english = Original(item, @"title", item.title) ?: @"";
         NSString *text = nil;
         if (item.submenu) {
-            NSString *englishMenu = Original(item.submenu, @"title", item.submenu.title);
+            NSString *englishMenu = Original(item.submenu, @"title", item.submenu.title) ?: @"";
             NSString *ident = self.englishMenuIds[Normalised(english)] ?: self.englishMenuIds[Normalised(englishMenu)];
             // The application menu keeps its name.
-            if (top && menu.itemArray.firstObject == item) ident = nil, text = english;
-            text = text ?: (ident ? self.menuNames[ident] : nil) ?: [self translate:english];
+            if (top && menu.itemArray.firstObject == item) text = english;
+            else if (ident) text = self.menuNames[ident];
+            if (!text) text = [self translate:english];
             item.submenu.title = self.active ? text : englishMenu;
             [self localizeMenu:item.submenu byItem:byItem top:NO];
         } else {
@@ -274,7 +275,7 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
             text = identifier ? [self commandName:identifier.intValue] : nil;
             text = text ?: [self translate:english];
         }
-        item.title = self.active ? text : english;
+        item.title = (self.active ? text : english) ?: @"";
     }
 }
 

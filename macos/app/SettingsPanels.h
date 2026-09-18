@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL visible;
 /// Writes every control into the preferences and applies them, as the
 /// Apply button does; here so the suite can drive it.
-- (void)apply:(id)sender;
+- (void)apply:(nullable id)sender;
 @end
 
 

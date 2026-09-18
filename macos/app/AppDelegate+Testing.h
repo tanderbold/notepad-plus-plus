@@ -74,5 +74,6 @@
 /// NppExec: a menu command by its path, and the menu of saved scripts.
 - (BOOL)performMenuCommandAtPath:(NSString *)path;
 - (void)rebuildExecMenu;
+- (void)executeScriptText:(NSString *)text;
 @property (nonatomic, strong) NSMenu *execMenu;
 @end

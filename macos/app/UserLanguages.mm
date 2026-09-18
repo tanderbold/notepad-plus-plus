@@ -412,8 +412,8 @@ NSString *const NppUserLanguagesDidChangeNotification = @"NppUserLanguagesDidCha
     }
     // The ones Notepad++ ships, unless the user has a file of the same name
     // (an edited or removed copy of a shipped one).
-    NSString *bundled = [LanguageCatalog bundledUserLanguagesDirectory];
-    for (NSString *name in [[fm contentsOfDirectoryAtPath:bundled ?: @"" error:NULL]
+    NSString *bundled = [LanguageCatalog bundledUserLanguagesDirectory] ?: @"";
+    for (NSString *name in [[fm contentsOfDirectoryAtPath:bundled error:NULL]
                             sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]) {
         if ([name.pathExtension caseInsensitiveCompare:@"xml"] != NSOrderedSame) continue;
         if ([userFileNames containsObject:name.lowercaseString]) continue;

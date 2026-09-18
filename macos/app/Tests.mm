@@ -1406,6 +1406,34 @@ int NppMacRunTests(AppDelegate *app) {
         [ed closeAllButPinned];
         Check(@"IDM_FILE_CLOSEALL_BUT_PINNED", @"keeps pinned documents",
               isPinned && ed.documents.count == 1 && ed.currentDocument.pinned);
+
+        // Dragging: pinned tabs reorder among themselves but never cross into
+        // the unpinned run (nor the other way), so the pinned run stays whole
+        // and Close All But Pinned still keeps exactly those.
+        [ed openFileAtPath:TempFile(@"t_pinned2.txt", @"pin2\n") error:&err];
+        [ed togglePinCurrent];
+        [ed openFileAtPath:TempFile(@"t_loose1.txt", @"a\n") error:&err];
+        [ed openFileAtPath:TempFile(@"t_loose2.txt", @"b\n") error:&err];
+        id<NppTabBarDelegate> tabs = (id<NppTabBarDelegate>)ed;
+        NSString *(^order)(void) = ^NSString *{
+            NSMutableArray *names = [NSMutableArray array];
+            for (NppDocument *d in ed.documents) [names addObject:d.displayName];
+            return [names componentsJoinedByString:@","];
+        };
+        NSString *start = order();
+        [tabs tabBar:[ed valueForKey:@"tabBar"] didMoveIndex:0 toIndex:3];          // pinned into the unpinned run
+        [tabs tabBar:[ed valueForKey:@"tabBar"] didMoveIndex:3 toIndex:0];          // unpinned into the pinned run
+        BOOL refused = [order() isEqualToString:start];
+        [tabs tabBar:[ed valueForKey:@"tabBar"] didMoveIndex:0 toIndex:1];          // pinned among pinned
+        [tabs tabBar:[ed valueForKey:@"tabBar"] didMoveIndex:2 toIndex:3];          // unpinned among unpinned
+        BOOL moved = [order() isEqualToString:@"t_pinned2.txt,t_pinned.txt,t_loose2.txt,t_loose1.txt"];
+        [ed closeAllButPinned];
+        BOOL kept = [order() isEqualToString:@"t_pinned2.txt,t_pinned.txt"];
+        printf("    pinned drag: %s -> %s\n", start.UTF8String, order().UTF8String);
+        Check(@"IDM_FILE_CLOSEALL_BUT_PINNED (after dragging)",
+              @"tabs are not dragged across the pinned edge, pinned ones reorder among themselves, and those are what stays",
+              [start isEqualToString:@"t_pinned.txt,t_pinned2.txt,t_loose1.txt,t_loose2.txt"] && refused && moved && kept);
+        for (NppDocument *d in [ed.documents copy]) if (d.pinned) { [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:d]]; [ed togglePinCurrent]; }
     }
 
     printf("\n== File: folders and workspace ==\n");
@@ -2446,6 +2474,29 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_EDIT_SORTLINES_LEXICOGRAPHIC_ASCENDING (CR line endings)",
               @"lines ending in a bare carriage return sort like any others",
               [DocText(ed) isEqualToString:@"A\rB\rC\r"]);
+
+        // Tab-separated decimals sorted by a column of no width after the first
+        // tab: the key runs to the end of the line, as upstream's getSortKey
+        // takes it, and equal numbers keep their order in both directions.
+        NSString *table = @"a\t2.5\tx\nb\t10\ty\nc\t-1\tz\nd\t2.5\tw\n";
+        BOOL (^sortColumn)(BOOL, NSString *) = ^BOOL(BOOL down, NSString *want) {
+            SetDoc(ed, table);
+            [sci message:SCI_SETSELECTIONMODE wParam:SC_SEL_RECTANGLE];
+            [sci message:SCI_SETRECTANGULARSELECTIONANCHOR wParam:2];
+            [sci message:SCI_SETRECTANGULARSELECTIONCARET wParam:24];
+            NSInteger r = [ed sortLines:NppSortDecimalDot descending:down];
+            [sci message:SCI_SETSELECTIONMODE wParam:SC_SEL_STREAM];
+            return r == NSNotFound && [DocText(ed) isEqualToString:want];
+        };
+        BOOL columnUp = sortColumn(NO, @"c\t-1\tz\na\t2.5\tx\nd\t2.5\tw\nb\t10\ty\n");
+        BOOL columnDown = sortColumn(YES, @"b\t10\ty\na\t2.5\tx\nd\t2.5\tw\nc\t-1\tz\n");
+        SetDoc(ed, @"b 1\na 1\nc 0\n");
+        [sci message:SCI_SETSEL wParam:0 lParam:0];
+        [ed sortLines:NppSortLength descending:YES];
+        BOOL stableDown = [DocText(ed) isEqualToString:@"b 1\na 1\nc 0\n"];
+        Check(@"IDM_EDIT_SORTLINES_DECIMALDOT_ASCENDING (column after tabs)",
+              @"a caret column after a tab sorts tab-separated decimals by the rest of the line, stably both ways",
+              columnUp && columnDown && stableDown);
     }
 
     printf("\n== Search: modes and options ==\n");
@@ -4872,6 +4923,20 @@ int NppMacRunTests(AppDelegate *app) {
                   shown && [ed activeProjectPanel] == 0);
         }
 
+        // With no workspace at all the tree is empty rather than a nil row,
+        // and a stale index answers a node rather than an exception.
+        NppProjectPanel *bare = [[NppProjectPanel alloc] initWithNumber:9 frame:NSMakeRect(0, 0, 200, 300)];
+        [bare setValue:nil forKey:@"root"];
+        id<NSOutlineViewDataSource> bareSource = (id<NSOutlineViewDataSource>)bare;
+        NSOutlineView *bareOutline = [bare valueForKey:@"outline"];
+        BOOL emptyTop = [bareSource outlineView:bareOutline numberOfChildrenOfItem:nil] == 0 &&
+                        [bareSource outlineView:bareOutline child:0 ofItem:nil] != nil;
+        NppProjectNode *leaf = [[NppProjectNode alloc] init];
+        BOOL staleIndex = [bareSource outlineView:bareOutline child:5 ofItem:leaf] != nil;
+        [bareOutline reloadData];
+        Check(@"IDM_VIEW_PROJECT_PANEL_1 (no root)", @"a panel without a workspace shows an empty tree and survives a stale index",
+              emptyTop && staleIndex && bareOutline.numberOfRows == 0);
+
         NppProjectPanel *panel = [ed projectPanel:2];
         [panel newWorkspace];
         NppProjectNode *project = [panel addProjectNamed:@"Engine"];
@@ -5212,7 +5277,6 @@ int NppMacRunTests(AppDelegate *app) {
             NSString *probe = languageProbes[name]
                             ?: (word.length ? [word stringByAppendingString:@"\n"] : nil);
             if (!probe.length) continue;
-            word = probe;
 
             [ed setLanguageNamed:name];
             SetDoc(ed, probe);
@@ -8085,7 +8149,7 @@ int NppMacRunTests(AppDelegate *app) {
         NSString *lastBefore = [[NSUserDefaults standardUserDefaults] stringForKey:@"NppMac.execLastScript"];
         SetDoc(ed, @"background");
         [[ed console] clear];
-        [app performSelector:NSSelectorFromString(@"executeScriptText:") withObject:@"ECHO bg $(CURRENT_WORD)\nSLEEP 50\nNPP_MENUCOMMAND Edit|Select All"];
+        [app executeScriptText:@"ECHO bg $(CURRENT_WORD)\nSLEEP 50\nNPP_MENUCOMMAND Edit|Select All"];
         NSDate *bgLimit = [NSDate dateWithTimeIntervalSinceNow:5];
         while ([app valueForKey:@"runningScript"] && [bgLimit timeIntervalSinceNow] > 0) {
             [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];

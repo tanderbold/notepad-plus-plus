@@ -17,9 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// A menu command's text, by upstream's command id.
 - (nullable NSString *)commandName:(int)identifier;
 /// The translation of an English string, or the string itself.
-- (NSString *)translate:(NSString *)english;
+- (NSString *)translate:(nullable NSString *)english;
 /// As translate:, preferring the names upstream gives windows and tabs.
-- (NSString *)translateTitle:(NSString *)english;
+- (NSString *)translateTitle:(nullable NSString *)english;
 /// The main menu: commands by id (from `idsByItem`), menus and submenus by name.
 - (void)localizeMenu:(NSMenu *)menu identifiers:(NSDictionary<NSNumber *, NSMenuItem *> *)idsByItem;
 /// A window's controls and title.

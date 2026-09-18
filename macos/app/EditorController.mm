@@ -871,6 +871,7 @@ static long SciColor(NSColor *c) {
     NSMutableArray *docs = (NSMutableArray *)self.documents;
     if (from < 0 || to < 0 || from >= (NSInteger)docs.count || to >= (NSInteger)docs.count) return;
     NppDocument *moving = docs[(NSUInteger)from];
+    if (moving.pinned != ((NppDocument *)docs[(NSUInteger)to]).pinned) return;   // the pinned run stays whole
     NppDocument *inFront = self.currentDocument;
     [docs removeObjectAtIndex:(NSUInteger)from];
     [docs insertObject:moving atIndex:(NSUInteger)to];
@@ -2101,7 +2102,7 @@ static const char kEditorMenuItemsKey = 0;
 
     NSString *title = (doc.path && ![NppPreferences shared].titleBarFileNameOnly)
         ? [NSString stringWithFormat:@"%@ — %@", doc.displayName, doc.path.stringByDeletingLastPathComponent]
-        : doc.displayName;
+        : (doc.displayName ?: @"");
     if (self.titleSuffix.length) title = [title stringByAppendingFormat:@" - %@", self.titleSuffix];
     self.window.title = title;
     self.window.representedFilename = doc.path ?: @"";

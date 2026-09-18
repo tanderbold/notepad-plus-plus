@@ -271,6 +271,10 @@ static NSColor *TabColour(NSInteger colour) {
     NSPoint p = [self convertPoint:event.locationInWindow fromView:nil];
     NSInteger over = [self indexOfTabAtPoint:p];
     if (over < 0 || over == self.dragIndex) return;
+    // Pinned tabs stay among themselves, as TabBarPlus::exchangeTabItemData
+    // refuses a move across the edge of the pinned run.
+    if (over < (NSInteger)self.items.count && self.dragIndex < (NSInteger)self.items.count &&
+        self.items[(NSUInteger)over].pinned != self.items[(NSUInteger)self.dragIndex].pinned) return;
 
     [self.tabDelegate tabBar:self didMoveIndex:self.dragIndex toIndex:over];
     self.dragIndex = over;
