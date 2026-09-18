@@ -41,6 +41,7 @@
 #import "StyleCatalog.h"
 #import "StyleConfigurator.h"
 #import "DocumentListPanel.h"
+#import "WorkspacePanel.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -6412,6 +6413,144 @@ int NppMacRunTests(AppDelegate *app) {
               afterIf == 4 && afterStatement == 0 && closer == 4 && pyBlock == 4 && pyString == 0);
         [ed setLanguageNamed:@"cpp"];
         SetDoc(ed, @"");
+    }
+
+    printf("\n== Preferences: Language, Indentation, MISC., Search Engine ==\n");
+    {
+        NppPreferences *mp = [NppPreferences shared];
+        // Per-language indent settings, and Backspace unindenting.
+        NSDictionary *indentBefore = mp.languageIndent;
+        mp.languageIndent = @{@"python": @{@"size": @2, @"spaces": @YES}};
+        mp.backspaceUnindents = YES;
+        [ed newDocument];
+        [ed setLanguageNamed:@"python"];
+        [ed applyDocumentSettings];
+        BOOL pyIndent = [sci message:SCI_GETTABWIDTH] == 2 && [sci message:SCI_GETUSETABS] == 0 &&
+                        [sci message:SCI_GETBACKSPACEUNINDENTS] == 1;
+        [ed setLanguageNamed:@"cpp"];
+        [ed applyDocumentSettings];
+        BOOL cppDefault = [sci message:SCI_GETTABWIDTH] == MAX(1, mp.tabWidth);
+        mp.languageIndent = indentBefore ?: @{};
+        mp.backspaceUnindents = NO;
+        [ed applyDocumentSettings];
+        Check(@"IDM_SETTING_PREFERENCE (indent per language)",
+              @"a language's own indent settings apply to it alone, and Backspace can unindent",
+              pyIndent && cppDefault);
+
+        // The Language menu: letter submenus by default, upstream's titles,
+        // and the languages Preferences leaves out.
+        NSMenu *langMenu = app.languageMenu;
+        mp.languageMenuCompact = YES;
+        mp.languageMenuHidden = @[@"python"];
+        [app rebuildLanguageMenu];
+        NSMenu *cMenu = [langMenu itemWithTitle:@"C"].submenu;
+        NSMenu *pMenu = [langMenu itemWithTitle:@"P"].submenu;
+        BOOL compact = [langMenu indexOfItemWithTitle:@"None (Normal Text)"] == 0 && [cMenu itemWithTitle:@"C++"] != nil &&
+                       [[cMenu itemWithTitle:@"C++"].representedObject isEqualToString:@"cpp"] &&
+                       pMenu && ![pMenu itemWithTitle:@"Python"];
+        mp.languageMenuCompact = NO;
+        mp.languageMenuHidden = @[];
+        [app rebuildLanguageMenu];
+        BOOL flat = [langMenu itemWithTitle:@"C++"] != nil && [langMenu itemWithTitle:@"Python"] != nil &&
+                    [langMenu itemWithTitle:@"User Defined Language"] != nil;
+        mp.languageMenuCompact = YES;
+        [app rebuildLanguageMenu];
+        Check(@"IDM_SETTING_PREFERENCE (language menu)",
+              @"the Language menu has upstream's titles in letter submenus, or flat, less the hidden languages",
+              compact && flat);
+
+        // Search Engine.
+        NSInteger engineBefore = mp.searchEngine;
+        mp.searchEngine = 0;
+        NSString *duck = [mp searchEngineTemplate];
+        mp.searchEngine = 4;
+        mp.searchEngineCustom = @"https://example.org/find?w=$(CURRENT_WORD)&x=1";
+        NSString *custom = [mp searchEngineTemplate];
+        mp.searchEngine = engineBefore;
+        Check(@"IDM_SETTING_PREFERENCE (search engine)",
+              @"the engine chosen, or a URL with $(CURRENT_WORD), is what Search on Internet opens",
+              [duck hasPrefix:@"https://duckduckgo.com/"] &&
+              [[NSString stringWithFormat:custom, @"abc"] isEqualToString:@"https://example.org/find?w=abc&x=1"]);
+
+        // MISC.: file name only in the title, the status bar hidden, files
+        // with the session and workspace extensions opening as such.
+        mp.titleBarFileNameOnly = YES;
+        NSString *titled = TempFile(@"t_title.txt", @"t\n");
+        [ed openFileAtPath:titled error:NULL];
+        [ed refreshChrome];
+        BOOL shortTitle = [ed.window.title isEqualToString:@"t_title.txt"];
+        mp.titleBarFileNameOnly = NO;
+        [ed refreshChrome];
+        BOOL longTitle = [ed.window.title containsString:@" — "];
+        mp.statusBarHidden = YES;
+        [ed applyStatusBarVisibility];
+        BOOL noStatus = ![ed statusBarVisible];
+        mp.statusBarHidden = NO;
+        [ed applyStatusBarVisibility];
+        BOOL status = [ed statusBarVisible];
+
+        NSString *sessionFile = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_session.npps"];
+        [ed saveSessionTo:sessionFile error:NULL];
+        [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+        mp.sessionFileExtension = @"npps";
+        BOOL sessionOpened = [ed openFileAtPath:sessionFile error:NULL] &&
+            [ed.documents indexOfObjectPassingTest:^BOOL(NppDocument *d, NSUInteger i, BOOL *st) { return [d.path isEqualToString:titled]; }] != NSNotFound;
+        mp.sessionFileExtension = @"";
+        NSString *workspace = TempFile(@"t_ws.nppw", @"<NotepadPlus><Project name=\"P\"><File name=\"a.txt\"/></Project></NotepadPlus>");
+        mp.workspaceFileExtension = @".nppw";
+        [ed openFileAtPath:workspace error:NULL];
+        BOOL workspaceOpened = [[ed projectPanel:1].workspacePath isEqualToString:workspace];
+        mp.workspaceFileExtension = @"";
+        for (NSInteger i = (NSInteger)ed.documents.count - 1; i >= 0; --i) {
+            if ([ed.documents[(NSUInteger)i].path isEqualToString:titled]) [ed closeDocumentAtIndex:i discardChanges:YES];
+        }
+        Check(@"IDM_SETTING_PREFERENCE (MISC.)",
+              @"file name only in the title, a hidden status bar, and the session / workspace extensions work",
+              shortTitle && longTitle && noStatus && status && sessionOpened && workspaceOpened);
+
+        // Folder as Workspace leaves symbolic links out unless allowed.
+        NSString *wsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_symlinks"];
+        [[NSFileManager defaultManager] removeItemAtPath:wsDir error:NULL];
+        [[NSFileManager defaultManager] createDirectoryAtPath:wsDir withIntermediateDirectories:YES attributes:nil error:NULL];
+        [@"x" writeToFile:[wsDir stringByAppendingPathComponent:@"real.txt"] atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [[NSFileManager defaultManager] createSymbolicLinkAtPath:[wsDir stringByAppendingPathComponent:@"link.txt"]
+                                             withDestinationPath:[wsDir stringByAppendingPathComponent:@"real.txt"] error:NULL];
+        WorkspacePanel *wsp = [[WorkspacePanel alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
+        mp.workspaceSymlinks = NO;
+        [wsp setRootPath:wsDir];
+        NSArray *withoutLinks = [wsp topLevelNames];
+        mp.workspaceSymlinks = YES;
+        [wsp setRootPath:wsDir];
+        NSArray *withLinks = [wsp topLevelNames];
+        mp.workspaceSymlinks = NO;
+        Check(@"IDM_FILE_OPENFOLDERASWORKSPACE (symlinks)",
+              @"symbolic links are listed only when MISC. allows them",
+              ![withoutLinks containsObject:@"link.txt"] && [withLinks containsObject:@"link.txt"]);
+
+        // Document Switcher: Ctrl+Tab in most-recently-used order while
+        // Control is held, or through the tabs in order.
+        NSUInteger docsBefore = ed.documents.count;
+        [ed newDocument]; NppDocument *da = ed.currentDocument;
+        [ed newDocument]; NppDocument *db = ed.currentDocument;
+        [ed newDocument]; NppDocument *dc = ed.currentDocument;
+        [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:da]];
+        [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:dc]];
+        mp.docSwitcherEnabled = YES; mp.docSwitcherMRU = YES;
+        [app switchDocumentForward:YES];
+        BOOL mruFirst = ed.currentDocument == da && [app documentSwitcherShown];
+        [app switchDocumentForward:YES];
+        BOOL mruSecond = ed.currentDocument != da && ed.currentDocument != dc;
+        [app endDocumentSwitch];
+        BOOL hidden = ![app documentSwitcherShown];
+        mp.docSwitcherEnabled = NO;
+        [ed selectDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:db]];
+        [app switchDocumentForward:YES];
+        BOOL inOrder = ed.currentDocument == dc && ![app documentSwitcherShown];
+        mp.docSwitcherEnabled = YES;
+        while (ed.documents.count > docsBefore) [ed closeDocumentAtIndex:(NSInteger)ed.documents.count - 1 discardChanges:YES];
+        Check(@"IDM_SETTING_PREFERENCE (document switcher)",
+              @"Ctrl+Tab goes to the document used last and shows the list, or steps through the tabs when off",
+              mruFirst && mruSecond && hidden && inOrder);
     }
 
     printf("\n== New documents, recent files, directories ==\n");

@@ -159,6 +159,12 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"searchResultsPurge"): @NO,
         Key(@"docListExtColumn"): @YES, Key(@"docListPathColumn"): @NO,
         Key(@"docPeekOnTab"): @NO, Key(@"docPeekOnMap"): @NO,
+        Key(@"docSwitcherEnabled"): @YES, Key(@"docSwitcherMRU"): @YES,
+        Key(@"titleBarFileNameOnly"): @NO, Key(@"confirmSaveAll"): @YES, Key(@"muteSounds"): @NO,
+        Key(@"sessionFileExtension"): @"", Key(@"workspaceFileExtension"): @"",
+        Key(@"workspaceSymlinks"): @NO, Key(@"searchEngine"): @1, Key(@"searchEngineCustom"): @"",
+        Key(@"languageMenuHidden"): @[], Key(@"languageMenuCompact"): @YES, Key(@"sqlBackslashEscape"): @YES,
+        Key(@"languageIndent"): @{}, Key(@"backspaceUnindents"): @NO, Key(@"statusBarHidden"): @NO,
         Key(@"shortcutOverrides"): @{},
         Key(@"contextMenuCommands"): @[@"Cut", @"Copy", @"Paste", @"Select All",
                                        @"Toggle Line Comment", @"Go to Matching Brace"],
@@ -241,6 +247,22 @@ NPP_PREF_BOOL(docListExtColumn, setDocListExtColumn, @"docListExtColumn")
 NPP_PREF_BOOL(docListPathColumn, setDocListPathColumn, @"docListPathColumn")
 NPP_PREF_BOOL(docPeekOnTab, setDocPeekOnTab, @"docPeekOnTab")
 NPP_PREF_BOOL(docPeekOnMap, setDocPeekOnMap, @"docPeekOnMap")
+NPP_PREF_BOOL(docSwitcherEnabled, setDocSwitcherEnabled, @"docSwitcherEnabled")
+NPP_PREF_BOOL(docSwitcherMRU, setDocSwitcherMRU, @"docSwitcherMRU")
+NPP_PREF_BOOL(titleBarFileNameOnly, setTitleBarFileNameOnly, @"titleBarFileNameOnly")
+NPP_PREF_BOOL(confirmSaveAll, setConfirmSaveAll, @"confirmSaveAll")
+NPP_PREF_BOOL(muteSounds, setMuteSounds, @"muteSounds")
+NPP_PREF_OBJ(sessionFileExtension, setSessionFileExtension, NSString, @"sessionFileExtension")
+NPP_PREF_OBJ(workspaceFileExtension, setWorkspaceFileExtension, NSString, @"workspaceFileExtension")
+NPP_PREF_BOOL(workspaceSymlinks, setWorkspaceSymlinks, @"workspaceSymlinks")
+NPP_PREF_INT(searchEngine, setSearchEngine, @"searchEngine")
+NPP_PREF_OBJ(searchEngineCustom, setSearchEngineCustom, NSString, @"searchEngineCustom")
+NPP_PREF_OBJ(languageMenuHidden, setLanguageMenuHidden, NSArray, @"languageMenuHidden")
+NPP_PREF_BOOL(languageMenuCompact, setLanguageMenuCompact, @"languageMenuCompact")
+NPP_PREF_BOOL(sqlBackslashEscape, setSqlBackslashEscape, @"sqlBackslashEscape")
+NPP_PREF_OBJ(languageIndent, setLanguageIndent, NSDictionary, @"languageIndent")
+NPP_PREF_BOOL(backspaceUnindents, setBackspaceUnindents, @"backspaceUnindents")
+NPP_PREF_BOOL(statusBarHidden, setStatusBarHidden, @"statusBarHidden")
 NPP_PREF_OBJ(shortcutOverrides, setShortcutOverrides, NSDictionary, @"shortcutOverrides")
 NPP_PREF_OBJ(contextMenuCommands, setContextMenuCommands, NSArray, @"contextMenuCommands")
 NPP_PREF_INT(fontSize, setFontSize, @"fontSize")
@@ -365,6 +387,33 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
     return nil;
 }
 
+- (NSInteger)tabWidthForLanguage:(NSString *)language {
+    NSDictionary *own = language ? self.languageIndent[language] : nil;
+    return [own[@"size"] integerValue] > 0 ? [own[@"size"] integerValue] : MAX(1, self.tabWidth);
+}
+
+- (BOOL)useSpacesForLanguage:(NSString *)language {
+    NSDictionary *own = language ? self.languageIndent[language] : nil;
+    return own[@"spaces"] ? [own[@"spaces"] boolValue] : self.useSpaces;
+}
+
+- (NSString *)searchEngineTemplate {
+    switch (self.searchEngine) {
+        case 0: return @"https://duckduckgo.com/?q=%@";
+        case 2: return @"https://www.bing.com/search?q=%@";
+        case 3: return @"https://search.yahoo.com/search?q=%@";
+        case 4: {
+            // Upstream writes the words as $(CURRENT_WORD).
+            NSString *custom = [self.searchEngineCustom stringByReplacingOccurrencesOfString:@"%" withString:@"%%"];
+            custom = [custom stringByReplacingOccurrencesOfString:@"$(CURRENT_WORD)" withString:@"%@"];
+            if ([custom rangeOfString:@"%@"].location != NSNotFound) return custom;
+            break;
+        }
+        default: break;
+    }
+    return @"https://www.google.com/search?q=%@";
+}
+
 - (void)setShortcutOverride:(NSString *)spec forCommand:(NSString *)title {
     NSMutableDictionary *all = [self.shortcutOverrides mutableCopy] ?: [NSMutableDictionary dictionary];
     if (spec.length) all[title] = spec; else [all removeObjectForKey:title];
@@ -381,9 +430,7 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
     ScintillaView *sci = editor.sci;
     [sci setStringProperty:SCI_STYLESETFONT parameter:STYLE_DEFAULT value:self.fontName];
     [sci message:SCI_STYLESETSIZE wParam:STYLE_DEFAULT lParam:self.fontSize];
-    [sci message:SCI_SETTABWIDTH wParam:(uptr_t)MAX(1, self.tabWidth) lParam:0];
-    [sci message:SCI_SETINDENT wParam:(uptr_t)MAX(1, self.tabWidth) lParam:0];
-    [sci message:SCI_SETUSETABS wParam:(uptr_t)(self.useSpaces ? 0 : 1) lParam:0];
+    [editor applyDocumentSettings];
     [sci message:SCI_SETWRAPMODE wParam:(uptr_t)(self.wordWrap ? SC_WRAP_WORD : SC_WRAP_NONE) lParam:0];
     [sci message:SCI_SETVIEWWS
            wParam:(uptr_t)(self.showWhitespace ? SCWS_VISIBLEALWAYS : SCWS_INVISIBLE) lParam:0];
@@ -402,6 +449,10 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
 @end
 
 #pragma mark - Editor side
+
+void NppBeep(void) {
+    if (![NppPreferences shared].muteSounds) NSBeep();
+}
 
 @implementation EditorController (SettingsCommands)
 

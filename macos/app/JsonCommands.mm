@@ -91,7 +91,7 @@
 #pragma mark - Commands
 
 - (BOOL)replaceDocumentWithJSON:(NSString *)json {
-    if (!json) { NSBeep(); return NO; }
+    if (!json) { NppBeep(); return NO; }
     ScintillaView *sci = self.sci;
     long caretLine = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
     [sci message:SCI_BEGINUNDOACTION];

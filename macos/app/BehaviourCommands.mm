@@ -408,7 +408,7 @@ static BOOL UrlLooksReal(NSString *candidate) {
         if (c == closeChar) { to = (NSInteger)i; break; }
         if (!p.delimiterMultiline && (c == '\n' || c == '\r')) break;
     }
-    if (from < 0 || to < 0 || to <= from) { NSBeep(); return NO; }
+    if (from < 0 || to < 0 || to <= from) { NppBeep(); return NO; }
 
     long byteFrom = Utf8Len([text substringToIndex:(NSUInteger)from + 1]);
     long byteTo = Utf8Len([text substringToIndex:(NSUInteger)to]);

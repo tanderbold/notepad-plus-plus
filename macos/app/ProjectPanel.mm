@@ -422,7 +422,7 @@ static NSString *PortablePath(NSString *path) {
     NppProjectNode *node = [self clicked];
     if (node.kind == NppProjectNodeFile && node.path) {
         if ([[NSFileManager defaultManager] fileExistsAtPath:node.path]) [self.delegate workspaceDidActivateFile:node.path];
-        else NSBeep();
+        else NppBeep();
     }
 }
 
@@ -493,7 +493,7 @@ static NSString *PortablePath(NSString *path) {
     NSOpenPanel *open = [NSOpenPanel openPanel];
     open.allowedFileTypes = @[@"xml", @"workspace"];
     if ([open runModal] != NSModalResponseOK || !open.URL) return;
-    if (![self openWorkspace:open.URL.path]) NSBeep();
+    if (![self openWorkspace:open.URL.path]) NppBeep();
 }
 - (void)menuReloadWorkspace:(id)sender {
     if (self.dirty) {
@@ -503,7 +503,7 @@ static NSString *PortablePath(NSString *path) {
         [ask addButtonWithTitle:@"Cancel"];
         if ([ask runModal] != NSAlertFirstButtonReturn) return;
     }
-    if (![self reloadWorkspace]) NSBeep();
+    if (![self reloadWorkspace]) NppBeep();
 }
 - (void)menuSaveWorkspace:(id)sender { [self saveWorkspace]; }
 - (void)menuSaveWorkspaceAs:(id)sender {

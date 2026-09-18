@@ -21,6 +21,7 @@
 #import "BehaviourCommands.h"
 #import "TypingCommands.h"
 #include "CommandIDs.h"
+#include "LangMap.h"
 #import "JsonCommands.h"
 #import "CompareCommands.h"
 #import "FtpCommands.h"
@@ -76,6 +77,11 @@
 @property (nonatomic, strong) NppUserLanguageDialog *userLanguageDialog;
 @property (nonatomic, strong) NSMenu *languageMenu;
 @property (nonatomic, strong) NSPanel *findPanel;
+@property (nonatomic, strong) NSPanel *switcherPanel;
+@property (nonatomic, strong) NSTableView *switcherTable;
+@property (nonatomic, copy) NSArray<NppDocument *> *switcherOrder;
+@property (nonatomic) BOOL switching;
+@property (nonatomic, strong) id switcherMonitor;
 @property (nonatomic, strong) NSTextField *findField;
 @property (nonatomic, strong) NSTextField *replaceField;
 @property (nonatomic, strong) NSMatrix *modeRadios;
@@ -357,6 +363,7 @@ static NSString *Ordinal(NSUInteger n) {
 
     __weak __typeof(self) weakApp = self;
     self.editor.tabContextMenu = ^NSMenu *{ return [weakApp buildTabContextMenu]; };
+    [self installDocumentSwitcher];
     self.toolbar = [[NppToolbar alloc] initWithWindow:self.window target:self];
     [[NppPreferences shared] applyToEditor:self.editor];
     [self applyToolbarPreferences];
@@ -1055,22 +1062,7 @@ static NSString *Ordinal(NSUInteger n) {
     [bar addItem:langItem];
     NSMenu *langMenu = [[NSMenu alloc] initWithTitle:@"Language"];
     self.languageMenu = langMenu;
-    // The built-in languages, in order; the user languages go at the end,
-    // after the User Defined Language submenu, as on Windows.
-    NSArray *langs = [[[LanguageCatalog sharedCatalog].allLanguages
-        filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NppLanguage *l, NSDictionary *b) {
-            return !l.userDefined;
-        }]]
-        sortedArrayUsingComparator:^NSComparisonResult(NppLanguage *a, NppLanguage *b) {
-            return [a.name caseInsensitiveCompare:b.name];
-        }];
-    for (NppLanguage *lang in langs) {
-        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:lang.name
-                                                    action:@selector(pickLanguage:) keyEquivalent:@""];
-        mi.target = self;
-        mi.representedObject = lang.name;
-        [langMenu addItem:mi];
-    }
+    [self fillBuiltInLanguageItems:langMenu];
     [langMenu addItem:[NSMenuItem separatorItem]];
     NSMenu *udlMenu = [[NSMenu alloc] initWithTitle:@"User Defined Language"];
     [self item:@"Define your language…" action:@selector(defineUserLanguage:) key:@"" flags:0 menu:udlMenu];
@@ -1458,7 +1450,7 @@ static NSString *Ordinal(NSUInteger n) {
     if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
     NSString *schema = [NSString stringWithContentsOfFile:panel.URL.path
                                                  encoding:NSUTF8StringEncoding error:NULL];
-    if (!schema) { NSBeep(); return; }
+    if (!schema) { NppBeep(); return; }
     NppXmlError *error = [EditorController validateXML:([self.editor.sci string] ?: @"")
                                          againstSchema:schema];
     [self reportXMLError:error title:@"The document does not match the schema."];
@@ -1496,7 +1488,7 @@ static NSString *Ordinal(NSUInteger n) {
     if ([panel runModal] != NSModalResponseOK || !panel.URL) return;
     NSString *sheet = [NSString stringWithContentsOfFile:panel.URL.path
                                                 encoding:NSUTF8StringEncoding error:NULL];
-    if (!sheet) { NSBeep(); return; }
+    if (!sheet) { NppBeep(); return; }
 
     NSString *failure = nil;
     NSString *result = [EditorController applyXSL:sheet
@@ -1554,7 +1546,7 @@ static NSString *Ordinal(NSUInteger n) {
         [NSString stringWithFormat:@"Connect to which? (%@)", [names componentsJoinedByString:@", "]]
                                      default:names.firstObject];
     NppFtpProfile *profile = [self.editor ftpProfileNamed:chosen];
-    if (!profile) { NSBeep(); return; }
+    if (!profile) { NppBeep(); return; }
 
     if (![self.editor connectToFtpProfile:profile]) {
         NSAlert *alert = [[NSAlert alloc] init];
@@ -1611,10 +1603,12 @@ static NSString *Ordinal(NSUInteger n) {
 }
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv {
+    if (tv == self.switcherTable) return [self switcherRowCount];
     return (NSInteger)self.ftpEntries.count + 1;          // row 0 walks up
 }
 
 - (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row {
+    if (tv == self.switcherTable) return [self switcherTitleAtRow:row];
     if (row == 0) return @"..";
     NSInteger index = row - 1;
     if (index < 0 || index >= (NSInteger)self.ftpEntries.count) return @"";
@@ -1643,7 +1637,7 @@ static NSString *Ordinal(NSUInteger n) {
 }
 
 - (void)ftpUpload:(id)sender {
-    if (![self.editor ftpConnected]) { NSBeep(); return; }
+    if (![self.editor ftpConnected]) { NppBeep(); return; }
     if ([self.editor uploadCurrentDocument]) {
         [self presentText:[NSString stringWithFormat:@"Uploaded to %@",
                            [self.editor remotePathForCurrentDocument] ?: @"the server"]
@@ -1756,6 +1750,80 @@ static const NSInteger kUserLanguageItemTag = 0x55444C;
 
 - (void)userLanguagesChanged:(NSNotification *)note { [self rebuildUserLanguageMenuItems]; }
 
+static const NSInteger kBuiltInLanguageItemTag = 0x4C414E;
+
+/// The title upstream's Language menu gives a language: "C++", "None
+/// (Normal Text)"; the langs.model.xml name when it has no menu entry.
+static NSString *LanguageMenuTitle(NSString *name) {
+    static NSDictionary<NSString *, NSString *> *titles;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSMutableDictionary *m = [NSMutableDictionary dictionary];
+        for (int i = 0; i < kNppLangLexerCount; ++i) {
+            if (!kNppLangLexers[i].menuID || !*kNppLangLexers[i].menuID) continue;
+            for (int j = 0; j < kNppMenuCommandIDCount; ++j) {
+                if (!strcmp(kNppMenuCommandIDs[j].name, kNppLangLexers[i].menuID)) {
+                    m[@(kNppLangLexers[i].langName)] = @(kNppMenuCommandIDs[j].label);
+                    break;
+                }
+            }
+        }
+        titles = m;
+    });
+    return titles[name] ?: name;
+}
+
+/// The built-in languages at the top of the Language menu: Normal Text, then
+/// the others by title, in letter submenus when the menu is compact (the
+/// default upstream), leaving out those Preferences > Language hides.
+- (void)fillBuiltInLanguageItems:(NSMenu *)menu {
+    for (NSMenuItem *item in [menu.itemArray copy]) {
+        if (item.tag == kBuiltInLanguageItemTag) [menu removeItem:item];
+    }
+    NppPreferences *p = [NppPreferences shared];
+    NSSet *hidden = [NSSet setWithArray:p.languageMenuHidden ?: @[]];
+    NSArray<NppLanguage *> *langs = [[LanguageCatalog sharedCatalog].allLanguages
+        filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NppLanguage *l, NSDictionary *b) {
+            return !l.userDefined && ![l.name isEqualToString:@"normal"] && ![l.name isEqualToString:@"searchResult"] &&
+                   ![hidden containsObject:l.name];
+        }]];
+    langs = [langs sortedArrayUsingComparator:^NSComparisonResult(NppLanguage *a, NppLanguage *b) {
+        return [LanguageMenuTitle(a.name) caseInsensitiveCompare:LanguageMenuTitle(b.name)];
+    }];
+    NSInteger at = 0;
+    NSMenuItem *(^itemFor)(NSString *) = ^NSMenuItem *(NSString *name) {
+        NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:LanguageMenuTitle(name) action:@selector(pickLanguage:) keyEquivalent:@""];
+        mi.target = self;
+        mi.representedObject = name;
+        mi.tag = kBuiltInLanguageItemTag;
+        return mi;
+    };
+    if (![hidden containsObject:@"normal"]) [menu insertItem:itemFor(@"normal") atIndex:at++];
+    NSMenuItem *separator = [NSMenuItem separatorItem];
+    separator.tag = kBuiltInLanguageItemTag;
+    [menu insertItem:separator atIndex:at++];
+    if (!p.languageMenuCompact) {
+        for (NppLanguage *lang in langs) [menu insertItem:itemFor(lang.name) atIndex:at++];
+        return;
+    }
+    NSMenu *letter = nil;
+    for (NppLanguage *lang in langs) {
+        NSString *initial = [LanguageMenuTitle(lang.name) substringToIndex:1].uppercaseString;
+        if (!letter || ![letter.title isEqualToString:initial]) {
+            letter = [[NSMenu alloc] initWithTitle:initial];
+            NSMenuItem *holder = [[NSMenuItem alloc] initWithTitle:initial action:nil keyEquivalent:@""];
+            holder.submenu = letter;
+            holder.tag = kBuiltInLanguageItemTag;
+            [menu insertItem:holder atIndex:at++];
+        }
+        [letter addItem:itemFor(lang.name)];
+    }
+}
+
+- (void)rebuildLanguageMenu {
+    if (self.languageMenu) [self fillBuiltInLanguageItems:self.languageMenu];
+}
+
 - (void)openUDLFolder:(id)sender {
     NSString *path = [self.editor userDefinedLanguagePath];
     [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:path]]];
@@ -1795,7 +1863,7 @@ static const NSInteger kUserLanguageItemTag = 0x55444C;
 - (void)hashToClipboard:(NSMenuItem *)sender {
     NppDigest d = (NppDigest)sender.tag;
     NSString *hash = [self.editor hashOfSelection:d];
-    if (!hash) { NSBeep(); return; }
+    if (!hash) { NppBeep(); return; }
     [self.editor copyToClipboard:hash];
 }
 
@@ -2067,9 +2135,9 @@ static const NSInteger kUserLanguageItemTag = 0x55444C;
     [self rebuildRecentMenu];
 }
 
-- (void)revealInFinder:(id)sender      { if (![self.editor revealInFinder]) NSBeep(); }
-- (void)openInTerminal:(id)sender      { if (![self.editor openContainingFolderInTerminal]) NSBeep(); }
-- (void)openInDefaultViewer:(id)sender { if (![self.editor openInDefaultViewer]) NSBeep(); }
+- (void)revealInFinder:(id)sender      { if (![self.editor revealInFinder]) NppBeep(); }
+- (void)openInTerminal:(id)sender      { if (![self.editor openContainingFolderInTerminal]) NppBeep(); }
+- (void)openInDefaultViewer:(id)sender { if (![self.editor openInDefaultViewer]) NppBeep(); }
 
 - (void)reloadDocument:(id)sender {
     NppDocument *doc = self.editor.currentDocument;
@@ -2100,7 +2168,21 @@ static const NSInteger kUserLanguageItemTag = 0x55444C;
     }
 }
 
-- (void)saveAll:(id)sender { [self.editor saveAllDocuments]; }
+- (void)saveAll:(id)sender {
+    // Enable Save All confirm dialog, as upstream asks.
+    if ([NppPreferences shared].confirmSaveAll && !getenv("NPPMAC_TEST")) {
+        NSAlert *ask = [[NSAlert alloc] init];
+        ask.messageText = @"Save All Confirmation";
+        ask.informativeText = @"Are you sure you want to save all modified documents?\n\nChoose \"Always Yes\" if you don't want to see this dialog again.";
+        [ask addButtonWithTitle:@"Yes"];
+        [ask addButtonWithTitle:@"No"];
+        [ask addButtonWithTitle:@"Always Yes"];
+        NSModalResponse answer = [ask runModal];
+        if (answer == NSAlertSecondButtonReturn) return;
+        if (answer == NSAlertThirdButtonReturn) [NppPreferences shared].confirmSaveAll = NO;
+    }
+    [self.editor saveAllDocuments];
+}
 
 - (void)renameDocument:(id)sender {
     NSString *current = self.editor.currentDocument.path;
@@ -2133,13 +2215,13 @@ static const NSInteger kUserLanguageItemTag = 0x55444C;
 
 - (void)containingFolderAsWorkspace:(id)sender {
     NSURL *folder = [self.editor containingFolderURL];
-    if (!folder) { NSBeep(); return; }
+    if (!folder) { NppBeep(); return; }
     [self.editor openFolderAsWorkspace:folder.path];
 }
 
 - (void)moveToTrash:(id)sender {
     NppDocument *doc = self.editor.currentDocument;
-    if (!doc.path) { NSBeep(); return; }
+    if (!doc.path) { NppBeep(); return; }
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = [NSString stringWithFormat:@"Move %@ to the Trash?", doc.displayName];
     [alert addButtonWithTitle:@"Move to Trash"];
@@ -2413,7 +2495,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 }
 
 - (void)columnEditor:(id)sender {
-    if ([self.editor selectionCount] < 1) { NSBeep(); return; }
+    if ([self.editor selectionCount] < 1) { NppBeep(); return; }
     NSString *mode = [self promptForString:@"Column Editor - \"text\" or \"number\"?" default:@"text"];
     if (!mode.length) return;
     if ([mode hasPrefix:@"n"]) {
@@ -2468,9 +2550,13 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 }
 
 - (void)changeSearchEngine:(id)sender {
-    NSString *t = [self promptForString:@"Search URL (%@ is the query)"
-                                default:self.editor.searchEngineTemplate];
-    if (t.length) self.editor.searchEngineTemplate = t;
+    NSString *current = [[NppPreferences shared].searchEngineCustom length] ? [NppPreferences shared].searchEngineCustom
+        : [[self.editor.searchEngineTemplate stringByReplacingOccurrencesOfString:@"%@" withString:@"$(CURRENT_WORD)"]
+           stringByReplacingOccurrencesOfString:@"%%" withString:@"%"];
+    NSString *t = [self promptForString:@"Search URL ($(CURRENT_WORD) is the query)" default:current];
+    if (!t.length) return;
+    [NppPreferences shared].searchEngineCustom = t;
+    [NppPreferences shared].searchEngine = 4;
 }
 
 #pragma mark - Bookmarks
@@ -2561,7 +2647,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 - (void)textLTR:(id)sender { [self.editor setTextDirectionRTL:NO]; }
 
 - (void)viewInBrowser:(NSMenuItem *)sender {
-    if (![self.editor openCurrentInBrowserBundleID:sender.representedObject]) NSBeep();
+    if (![self.editor openCurrentInBrowserBundleID:sender.representedObject]) NppBeep();
 }
 
 - (void)goToTabNumber:(NSMenuItem *)s { [self.editor selectTabNumber:s.tag]; }
@@ -2686,6 +2772,86 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 - (void)eolCR:(id)sender   { [self.editor convertEOLTo:SC_EOL_CR]; }
 
 #pragma mark - Tabs
+
+#pragma mark - Document Switcher (Ctrl+Tab)
+
+- (void)installDocumentSwitcher {
+    __weak __typeof(self) weakSelf = self;
+    self.switcherMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskKeyDown | NSEventMaskFlagsChanged
+                                                                 handler:^NSEvent *(NSEvent *e) {
+        __typeof(self) me = weakSelf;
+        if (e.type == NSEventTypeFlagsChanged) {
+            if (me.switching && !(e.modifierFlags & NSEventModifierFlagControl)) [me endDocumentSwitch];
+            return e;
+        }
+        NSEventModifierFlags f = e.modifierFlags & NSEventModifierFlagDeviceIndependentFlagsMask;
+        if (e.keyCode == 48 && (f & NSEventModifierFlagControl) && !(f & NSEventModifierFlagCommand)) {
+            [me switchDocumentForward:!(f & NSEventModifierFlagShift)];
+            return nil;
+        }
+        return e;
+    }];
+}
+
+/// Ctrl+Tab and Ctrl+Shift+Tab. With the Document Switcher on, a list shows
+/// while Control is held and the order is most recently used first when MRU
+/// is on; with it off, they step through the tabs in order.
+- (void)switchDocumentForward:(BOOL)forward {
+    NppPreferences *p = [NppPreferences shared];
+    NSArray<NppDocument *> *docs = self.editor.documents;
+    if (docs.count < 2) return;
+    if (!self.switching) {
+        self.switcherOrder = (p.docSwitcherEnabled && p.docSwitcherMRU) ? [self.editor documentsInRecentOrder] : docs;
+        self.switching = p.docSwitcherEnabled;
+    }
+    NSArray<NppDocument *> *order = self.switcherOrder;
+    NSUInteger at = [order indexOfObjectIdenticalTo:self.editor.currentDocument];
+    if (at == NSNotFound) at = 0;
+    NSUInteger next = forward ? (at + 1) % order.count : (at + order.count - 1) % order.count;
+    NSUInteger index = [self.editor.documents indexOfObjectIdenticalTo:order[next]];
+    if (index != NSNotFound) [self.editor selectDocumentAtIndex:(NSInteger)index];
+    if (self.switching) [self showDocumentSwitcherAt:next];
+}
+
+- (void)showDocumentSwitcherAt:(NSUInteger)row {
+    if (!self.switcherPanel) {
+        NSRect frame = NSMakeRect(0, 0, 360, 240);
+        self.switcherPanel = [[NSPanel alloc] initWithContentRect:frame
+                                                        styleMask:NSWindowStyleMaskBorderless | NSWindowStyleMaskNonactivatingPanel
+                                                          backing:NSBackingStoreBuffered defer:YES];
+        self.switcherPanel.floatingPanel = YES;
+        self.switcherPanel.hasShadow = YES;
+        self.switcherTable = [[NSTableView alloc] initWithFrame:frame];
+        NSTableColumn *col = [[NSTableColumn alloc] initWithIdentifier:@"doc"];
+        col.width = NSWidth(frame) - 8;
+        [self.switcherTable addTableColumn:col];
+        self.switcherTable.headerView = nil;
+        self.switcherTable.dataSource = (id<NSTableViewDataSource>)self;
+        NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:frame];
+        scroll.documentView = self.switcherTable;
+        self.switcherPanel.contentView = scroll;
+    }
+    [self.switcherTable reloadData];
+    [self.switcherTable selectRowIndexes:[NSIndexSet indexSetWithIndex:row] byExtendingSelection:NO];
+    [self.switcherTable scrollRowToVisible:(NSInteger)row];
+    NSRect w = self.window.frame;
+    [self.switcherPanel setFrameOrigin:NSMakePoint(NSMidX(w) - 180, NSMidY(w) - 120)];
+    [self.switcherPanel orderFront:nil];
+}
+
+- (void)endDocumentSwitch {
+    self.switching = NO;
+    [self.switcherPanel orderOut:nil];
+}
+
+- (BOOL)documentSwitcherShown { return self.switcherPanel.isVisible; }
+
+- (NSInteger)switcherRowCount { return (NSInteger)self.switcherOrder.count; }
+
+- (NSString *)switcherTitleAtRow:(NSInteger)row {
+    if (row < 0 || row >= (NSInteger)self.switcherOrder.count) return @"";
+    return self.switcherOrder[(NSUInteger)row].displayName;
+}
 
 - (void)nextTab:(id)sender {
     NSInteger n = (NSInteger)self.editor.documents.count;
@@ -3483,7 +3649,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     NppFindSpec *spec = self.lastFindSpec;
     NppFindOptions saved = spec.options;
     spec.options = saved & ~NppFindBackward;
-    if (![self.editor findNext:spec]) NSBeep();
+    if (![self.editor findNext:spec]) NppBeep();
     spec.options = saved;
 }
 
@@ -3492,7 +3658,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     NppFindSpec *spec = self.lastFindSpec;
     NppFindOptions saved = spec.options;
     spec.options = saved | NppFindBackward;
-    if (![self.editor findNext:spec]) NSBeep();
+    if (![self.editor findNext:spec]) NppBeep();
     spec.options = saved;
 }
 
@@ -3519,7 +3685,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
                                 to:forward ? docLen : 0
                             needle:needle length:needleLen];
     }
-    if (found < 0) { NSBeep(); return NO; }
+    if (found < 0) { NppBeep(); return NO; }
 
     // Backwards: SCI_SEARCHINTARGET reports the first hit in the range, so take
     // the last one before the caret instead.
@@ -3560,13 +3726,13 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     // leading @ here. Out of range is refused, not clamped.
     if ([s hasPrefix:@"@"]) {
         long offset = [s substringFromIndex:1].integerValue;
-        if (offset < 0 || offset > length) { NSBeep(); return; }
+        if (offset < 0 || offset > length) { NppBeep(); return; }
         // Never inside a character or a CRLF.
         offset = [sci message:SCI_POSITIONBEFORE wParam:(uptr_t)[sci message:SCI_POSITIONAFTER wParam:(uptr_t)offset]];
         [sci message:SCI_GOTOPOS wParam:(uptr_t)offset lParam:0];
     } else {
         long line = s.integerValue;
-        if (line < 1 || line > lines) { NSBeep(); return; }
+        if (line < 1 || line > lines) { NppBeep(); return; }
         [sci message:SCI_GOTOLINE wParam:(uptr_t)(line - 1) lParam:0];
     }
     [self.editor refreshChrome];

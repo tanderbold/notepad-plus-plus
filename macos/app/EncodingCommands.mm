@@ -156,7 +156,7 @@ static NSData *EncodeWithTable(NSString *text, const uint16_t *high) {
 }
 
 - (BOOL)reinterpretAsCodepage:(unsigned int)codepage {
-    if (![EditorController supportsCodepage:codepage]) { NSBeep(); return NO; }
+    if (![EditorController supportsCodepage:codepage]) { NppBeep(); return NO; }
     NSStringEncoding target = [EditorController encodingForCodepage:codepage];
 
     NppDocument *doc = self.currentDocument;
@@ -166,7 +166,7 @@ static NSData *EncodeWithTable(NSString *text, const uint16_t *high) {
         ? [EditorController dataFromString:text codepage:doc.codepage]
         : [text dataUsingEncoding:doc.encoding ?: NSUTF8StringEncoding allowLossyConversion:YES];
     NSString *reread = [EditorController stringFromData:bytes codepage:codepage];
-    if (!reread) { NSBeep(); return NO; }
+    if (!reread) { NppBeep(); return NO; }
 
     [self.sci message:SCI_BEGINUNDOACTION];
     [self setDocumentText:reread];
@@ -181,7 +181,7 @@ static NSData *EncodeWithTable(NSString *text, const uint16_t *high) {
 }
 
 - (BOOL)convertToCodepage:(unsigned int)codepage {
-    if (![EditorController supportsCodepage:codepage]) { NSBeep(); return NO; }
+    if (![EditorController supportsCodepage:codepage]) { NppBeep(); return NO; }
     NSStringEncoding target = [EditorController encodingForCodepage:codepage];
     if (!target) {                                   // code-page-only charset
         self.currentDocument.codepage = codepage;

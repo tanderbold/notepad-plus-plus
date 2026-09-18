@@ -10,7 +10,7 @@
 
 - (BOOL)selectTabNumber:(NSInteger)oneBased {
     NSInteger idx = oneBased - 1;
-    if (idx < 0 || idx >= (NSInteger)self.documents.count) { NSBeep(); return NO; }
+    if (idx < 0 || idx >= (NSInteger)self.documents.count) { NppBeep(); return NO; }
     [self selectDocumentAtIndex:idx];
     return YES;
 }
@@ -36,7 +36,7 @@
     NSMutableArray *docs = (NSMutableArray *)self.documents;
     NSInteger from = [docs indexOfObject:self.currentDocument];
     NSInteger to = from + (forward ? 1 : -1);
-    if (from == NSNotFound || to < 0 || to >= (NSInteger)docs.count) { NSBeep(); return NO; }
+    if (from == NSNotFound || to < 0 || to >= (NSInteger)docs.count) { NppBeep(); return NO; }
     [docs exchangeObjectAtIndex:(NSUInteger)from withObjectAtIndex:(NSUInteger)to];
     [self selectDocumentAtIndex:to];
     return YES;
@@ -215,9 +215,9 @@ static const char kMonitorSourceKey = 0;
     if (!on) { [self refreshChrome]; return; }
 
     NSString *path = self.currentDocument.path;
-    if (!path.length) { NSBeep(); return; }
+    if (!path.length) { NppBeep(); return; }
     int fd = open(path.fileSystemRepresentation, O_EVTONLY);
-    if (fd < 0) { NSBeep(); return; }
+    if (fd < 0) { NppBeep(); return; }
 
     dispatch_source_t src = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, (uintptr_t)fd,
         DISPATCH_VNODE_WRITE | DISPATCH_VNODE_EXTEND | DISPATCH_VNODE_DELETE,

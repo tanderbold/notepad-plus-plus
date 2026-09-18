@@ -283,7 +283,7 @@ static void CollectSchemaError(void *context, const char *format, ...) {
 #pragma mark - Commands
 
 - (BOOL)replaceDocumentWithXML:(NSString *)xml {
-    if (!xml) { NSBeep(); return NO; }
+    if (!xml) { NppBeep(); return NO; }
     ScintillaView *sci = self.sci;
     long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
     [sci message:SCI_BEGINUNDOACTION];

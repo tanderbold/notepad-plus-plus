@@ -107,7 +107,7 @@ static int IndicatorFor(NSInteger style) {
                                   matchCase:(BOOL)matchCase wholeWord:(BOOL)wholeWord {
     ScintillaView *sci = self.sci;
     NSString *term = [self selectedText];
-    if (!term.length) { NSBeep(); return 0; }
+    if (!term.length) { NppBeep(); return 0; }
     int ind = IndicatorFor(style);
     [self ensureIndicatorConfigured:ind];
     [sci message:SCI_SETINDICATORCURRENT wParam:(uptr_t)ind lParam:0];
@@ -124,7 +124,7 @@ static int IndicatorFor(NSInteger style) {
 - (void)markOneOccurrenceOfSelection:(NSInteger)style {
     ScintillaView *sci = self.sci;
     long a = [sci message:SCI_GETSELECTIONSTART], b = [sci message:SCI_GETSELECTIONEND];
-    if (b <= a) { NSBeep(); return; }
+    if (b <= a) { NppBeep(); return; }
     int ind = IndicatorFor(style);
     [self ensureIndicatorConfigured:ind];
     [sci message:SCI_SETINDICATORCURRENT wParam:(uptr_t)ind lParam:0];
@@ -166,7 +166,7 @@ static int IndicatorFor(NSInteger style) {
 - (BOOL)jumpToMarker:(NSInteger)style forward:(BOOL)forward {
     ScintillaView *sci = self.sci;
     NSArray *ranges = [self rangesOfStyle:style];
-    if (!ranges.count) { NSBeep(); return NO; }
+    if (!ranges.count) { NppBeep(); return NO; }
     // Measure from the far edge of the current selection, otherwise jumping back
     // from a selected marker lands on that same marker.
     long caret = forward ? [sci message:SCI_GETSELECTIONEND]
@@ -283,7 +283,7 @@ static int IndicatorFor(NSInteger style) {
 - (void)pasteOverBookmarkedLines {
     NSString *clip = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] ?: @"";
     NSArray *lines = [self bookmarkedLines];
-    if (!lines.count) { NSBeep(); return; }
+    if (!lines.count) { NppBeep(); return; }
 
     // Every marked line becomes the whole of the clipboard, as on Windows;
     // a clipboard of several lines goes into each marked line whole.
@@ -326,7 +326,7 @@ static int IndicatorFor(NSInteger style) {
         pos -= 1;
         match = [sci message:SCI_BRACEMATCH wParam:(uptr_t)pos lParam:0];
     }
-    if (match < 0) { NSBeep(); return NO; }
+    if (match < 0) { NppBeep(); return NO; }
     [sci message:SCI_GOTOPOS wParam:(uptr_t)match lParam:0];
     [self refreshChrome];
     return YES;
@@ -340,7 +340,7 @@ static int IndicatorFor(NSInteger style) {
         pos -= 1;
         match = [sci message:SCI_BRACEMATCH wParam:(uptr_t)pos lParam:0];
     }
-    if (match < 0) { NSBeep(); return NO; }
+    if (match < 0) { NppBeep(); return NO; }
     // Both braces are part of it, as on Windows.
     long from = MIN(pos, match), to = MAX(pos, match) + 1;
     [sci message:SCI_SETSEL wParam:(uptr_t)from lParam:to];
@@ -518,14 +518,14 @@ static const char kOlderResultsKey = 0;
 
 - (void)copySearchResultLines {
     NSString *text = [self selectedSearchResultText];
-    if (!text.length) { NSBeep(); return; }
+    if (!text.length) { NppBeep(); return; }
     [[NSPasteboard generalPasteboard] clearContents];
     [[NSPasteboard generalPasteboard] setString:text forType:NSPasteboardTypeString];
 }
 
 - (void)copySearchResultPaths {
     NSArray *paths = [self selectedSearchResultPaths];
-    if (!paths.count) { NSBeep(); return; }
+    if (!paths.count) { NppBeep(); return; }
     [[NSPasteboard generalPasteboard] clearContents];
     [[NSPasteboard generalPasteboard] setString:[paths componentsJoinedByString:@"\n"] forType:NSPasteboardTypeString];
 }
@@ -552,7 +552,7 @@ static const char kOlderResultsKey = 0;
     long caretLine = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
     long start = caretLine;
     while (start >= 0 && ![lines[(NSUInteger)start] hasPrefix:@"Search \""]) start--;
-    if (start < 0) { NSBeep(); return; }
+    if (start < 0) { NppBeep(); return; }
     long end = caretLine + 1;
     while (end < (long)lines.count && ![lines[(NSUInteger)end] hasPrefix:@"Search \""]) end++;
     long from = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)start];
@@ -726,7 +726,7 @@ static const char kOlderResultsKey = 0;
 
 - (BOOL)focusSearchResults {
     NSInteger idx = [self searchResultsTabIndex];
-    if (idx < 0) { NSBeep(); return NO; }
+    if (idx < 0) { NppBeep(); return NO; }
     [self selectDocumentAtIndex:idx];
     return YES;
 }
@@ -745,7 +745,7 @@ static const char kOlderResultsKey = 0;
             return YES;
         }
     }
-    NSBeep();
+    NppBeep();
     return NO;
 }
 
@@ -754,10 +754,10 @@ static const char kOlderResultsKey = 0;
 - (BOOL)findNextOccurrenceOfSelection:(BOOL)forward extendSelection:(BOOL)extend {
     ScintillaView *sci = self.sci;
     NSString *term = [self selectedText];
-    if (!term.length) { NSBeep(); return NO; }
+    if (!term.length) { NppBeep(); return NO; }
 
     NSArray *hits = [self occurrencesOf:term];
-    if (!hits.count) { NSBeep(); return NO; }
+    if (!hits.count) { NppBeep(); return NO; }
     long caret = [sci message:SCI_GETSELECTIONSTART];
     long len = Utf8Len(term);
 
@@ -837,7 +837,7 @@ static const char kOlderResultsKey = 0;
             return YES;
         }
     }
-    NSBeep();
+    NppBeep();
     return NO;
 }
 

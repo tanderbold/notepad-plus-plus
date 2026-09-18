@@ -221,10 +221,10 @@ static const char kCurrentDiffKey = 0;
 
 - (BOOL)compareWithFileAtPath:(NSString *)path {
     NSData *data = [NSData dataWithContentsOfFile:path];
-    if (!data) { NSBeep(); return NO; }
+    if (!data) { NppBeep(); return NO; }
     NSString *other = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]
                    ?: [[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
-    if (!other) { NSBeep(); return NO; }
+    if (!other) { NppBeep(); return NO; }
 
     NSArray *oldLines = [EditorController linesForComparison:other];
     NSArray *newLines = [self linesOfCurrentDocument];
@@ -248,8 +248,8 @@ static const char kCurrentDiffKey = 0;
 
 - (BOOL)compareWithFirst {
     NSString *first = [self firstToCompare];
-    if (!first.length) { NSBeep(); return NO; }
-    if ([first isEqualToString:self.currentDocument.path]) { NSBeep(); return NO; }
+    if (!first.length) { NppBeep(); return NO; }
+    if ([first isEqualToString:self.currentDocument.path]) { NppBeep(); return NO; }
     return [self compareWithFileAtPath:first];
 }
 
@@ -298,7 +298,7 @@ static const char kCurrentDiffKey = 0;
 
 - (BOOL)goToDiff:(NSInteger)direction {
     NSArray *lines = [self markedLines];
-    if (!lines.count) { NSBeep(); return NO; }
+    if (!lines.count) { NppBeep(); return NO; }
     ScintillaView *sci = self.sci;
     NSInteger current = [sci message:SCI_LINEFROMPOSITION
                               wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
@@ -320,7 +320,7 @@ static const char kCurrentDiffKey = 0;
 
 - (BOOL)goToFirstDiff {
     NSArray *lines = [self markedLines];
-    if (!lines.count) { NSBeep(); return NO; }
+    if (!lines.count) { NppBeep(); return NO; }
     [self.sci message:SCI_GOTOLINE wParam:(uptr_t)[lines.firstObject integerValue] lParam:0];
     [self refreshChrome];
     return YES;
@@ -328,7 +328,7 @@ static const char kCurrentDiffKey = 0;
 
 - (BOOL)goToLastDiff {
     NSArray *lines = [self markedLines];
-    if (!lines.count) { NSBeep(); return NO; }
+    if (!lines.count) { NppBeep(); return NO; }
     [self.sci message:SCI_GOTOLINE wParam:(uptr_t)[lines.lastObject integerValue] lParam:0];
     [self refreshChrome];
     return YES;

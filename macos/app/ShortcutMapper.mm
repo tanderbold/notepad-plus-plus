@@ -977,7 +977,7 @@ static void AddComboAttributes(NSXMLElement *e, NppKeyCombo *combo) {
 /// Asks for a key by having it pressed, shows what else uses it, and assigns.
 - (void)modify:(id)sender {
     NppShortcutCommand *command = [self selected];
-    if (!command || command.category == NppShortcutPlugin) { NSBeep(); return; }
+    if (!command || command.category == NppShortcutPlugin) { NppBeep(); return; }
     NSAlert *ask = [[NSAlert alloc] init];
     ask.messageText = [NSString stringWithFormat:@"Shortcut for \"%@\"", command.name];
     ask.informativeText = @"Press the keys.";
@@ -1040,7 +1040,7 @@ static void AddComboAttributes(NSXMLElement *e, NppKeyCombo *combo) {
 
 - (void)clear:(id)sender {
     NppShortcutCommand *command = [self selected];
-    if (!command || command.category == NppShortcutPlugin) { NSBeep(); return; }
+    if (!command || command.category == NppShortcutPlugin) { NppBeep(); return; }
     if (command.category == NppShortcutScintilla) command.extraCombos = @[];
     [self.store setCombo:nil forCommand:command];
     [self reload];
@@ -1048,10 +1048,10 @@ static void AddComboAttributes(NSXMLElement *e, NppKeyCombo *combo) {
 
 - (void)deleteCommand:(id)sender {
     NppShortcutCommand *command = [self selected];
-    if (!command) { NSBeep(); return; }
+    if (!command) { NppBeep(); return; }
     if (command.category == NppShortcutMacro) [self.editor removeSavedMacroNamed:command.key];
     else if (command.category == NppShortcutRunCommand) [self.editor removeSavedCommandNamed:command.key];
-    else { NSBeep(); return; }
+    else { NppBeep(); return; }
     [self.store setCombo:nil forCommand:command];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"NppSavedCommandsDidChange" object:self];
     [self reload];

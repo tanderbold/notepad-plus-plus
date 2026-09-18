@@ -11,6 +11,135 @@
 
 #pragma mark - Preferences
 
+/// Preferences > Language: languages shown in the menu and those left out,
+/// moved between the two lists as upstream's "->" and "<-" do.
+@interface NppLanguageListsView : NSView <NSTableViewDataSource>
+@property (nonatomic, strong) NSMutableArray<NSString *> *shown;
+@property (nonatomic, strong) NSMutableArray<NSString *> *hiddenLanguages;
+@property (nonatomic, strong) NSTableView *shownTable, *hiddenTable;
+- (instancetype)initWithFrame:(NSRect)frame hidden:(NSArray<NSString *> *)hiddenNames;
+- (void)hideSelected:(nullable id)sender;
+- (void)showSelected:(nullable id)sender;
+@end
+
+@implementation NppLanguageListsView
+- (instancetype)initWithFrame:(NSRect)frame hidden:(NSArray<NSString *> *)hiddenNames {
+    if (!(self = [super initWithFrame:frame])) return nil;
+    _hiddenLanguages = [hiddenNames mutableCopy] ?: [NSMutableArray array];
+    _shown = [NSMutableArray array];
+    for (NppLanguage *l in [LanguageCatalog sharedCatalog].allLanguages) {
+        if (!l.userDefined && ![_hiddenLanguages containsObject:l.name]) [_shown addObject:l.name];
+    }
+    [_shown sortUsingSelector:@selector(caseInsensitiveCompare:)];
+    CGFloat w = (NSWidth(frame) - 60) / 2, h = NSHeight(frame) - 20;
+    NSTableView *(^list)(CGFloat, NSString *) = ^NSTableView *(CGFloat x, NSString *title) {
+        NSTextField *label = [NSTextField labelWithString:title];
+        label.frame = NSMakeRect(x, h + 2, w, 18);
+        [self addSubview:label];
+        NSTableView *t = [[NSTableView alloc] initWithFrame:NSMakeRect(0, 0, w, h)];
+        NSTableColumn *c = [[NSTableColumn alloc] initWithIdentifier:@"lang"];
+        c.width = w - 4;
+        [t addTableColumn:c];
+        t.headerView = nil;
+        t.allowsMultipleSelection = YES;
+        t.dataSource = self;
+        NSScrollView *sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(x, 0, w, h)];
+        sv.hasVerticalScroller = YES;
+        sv.borderType = NSBezelBorder;
+        sv.documentView = t;
+        [self addSubview:sv];
+        return t;
+    };
+    _shownTable = list(0, @"Available items");
+    _hiddenTable = list(w + 60, @"Disabled items");
+    NSButton *right = [NSButton buttonWithTitle:@"→" target:self action:@selector(hideSelected:)];
+    right.frame = NSMakeRect(w + 10, h / 2 + 4, 40, 26);
+    NSButton *left = [NSButton buttonWithTitle:@"←" target:self action:@selector(showSelected:)];
+    left.frame = NSMakeRect(w + 10, h / 2 - 28, 40, 26);
+    [self addSubview:right];
+    [self addSubview:left];
+    return self;
+}
+- (void)move:(NSTableView *)from source:(NSMutableArray *)src to:(NSMutableArray *)dst {
+    NSArray *picked = [src objectsAtIndexes:[from.selectedRowIndexes indexesPassingTest:^BOOL(NSUInteger i, BOOL *st) { return i < src.count; }]];
+    [src removeObjectsInArray:picked];
+    [dst addObjectsFromArray:picked];
+    [dst sortUsingSelector:@selector(caseInsensitiveCompare:)];
+    [self.shownTable reloadData];
+    [self.hiddenTable reloadData];
+}
+- (void)hideSelected:(id)sender { [self move:self.shownTable source:self.shown to:self.hiddenLanguages]; }
+- (void)showSelected:(id)sender { [self move:self.hiddenTable source:self.hiddenLanguages to:self.shown]; }
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tv { return (NSInteger)(tv == self.shownTable ? self.shown : self.hiddenLanguages).count; }
+- (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)c row:(NSInteger)row {
+    NSArray *a = tv == self.shownTable ? self.shown : self.hiddenLanguages;
+    return row >= 0 && row < (NSInteger)a.count ? a[(NSUInteger)row] : @"";
+}
+@end
+
+/// Preferences > Indentation: the indent settings of one language at a time,
+/// "[Default]" first, as upstream's list of languages does.
+@interface NppLanguageIndentView : NSView
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *draft;
+@property (nonatomic, strong) NSPopUpButton *language;
+@property (nonatomic, strong) NSButton *useDefault;
+@property (nonatomic, strong) NSTextField *size;
+@property (nonatomic, strong) NSPopUpButton *using_;
+- (instancetype)initWithFrame:(NSRect)frame settings:(NSDictionary *)settings;
+@end
+
+@implementation NppLanguageIndentView
+- (instancetype)initWithFrame:(NSRect)frame settings:(NSDictionary *)settings {
+    if (!(self = [super initWithFrame:frame])) return nil;
+    _draft = [settings mutableCopy] ?: [NSMutableDictionary dictionary];
+    NSTextField *label = [NSTextField labelWithString:@"Indent Settings for"];
+    label.frame = NSMakeRect(0, 64, 190, 20);
+    [self addSubview:label];
+    _language = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(200, 60, 220, 26)];
+    NSMutableArray *names = [NSMutableArray array];
+    for (NppLanguage *l in [LanguageCatalog sharedCatalog].allLanguages) if (!l.userDefined) [names addObject:l.name];
+    [names sortUsingSelector:@selector(caseInsensitiveCompare:)];
+    [_language addItemsWithTitles:names];
+    _language.target = self;
+    _language.action = @selector(languageChosen:);
+    [self addSubview:_language];
+    _useDefault = [NSButton checkboxWithTitle:@"Use default value" target:self action:@selector(changed:)];
+    _useDefault.frame = NSMakeRect(0, 34, 200, 20);
+    [self addSubview:_useDefault];
+    NSTextField *sizeLabel = [NSTextField labelWithString:@"Indent size:"];
+    sizeLabel.frame = NSMakeRect(200, 34, 80, 20);
+    [self addSubview:sizeLabel];
+    _size = [[NSTextField alloc] initWithFrame:NSMakeRect(280, 32, 40, 22)];
+    _size.target = self;
+    _size.action = @selector(changed:);
+    [self addSubview:_size];
+    _using_ = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(200, 0, 220, 26)];
+    [_using_ addItemsWithTitles:@[@"Tab character", @"Space character(s)"]];
+    _using_.target = self;
+    _using_.action = @selector(changed:);
+    [self addSubview:_using_];
+    [self languageChosen:nil];
+    return self;
+}
+- (void)languageChosen:(id)sender {
+    NSDictionary *own = self.draft[self.language.titleOfSelectedItem];
+    NppPreferences *p = [NppPreferences shared];
+    self.useDefault.state = own ? NSControlStateValueOff : NSControlStateValueOn;
+    self.size.stringValue = [@(own ? [own[@"size"] integerValue] : p.tabWidth) stringValue];
+    [self.using_ selectItemAtIndex:(own ? [own[@"spaces"] boolValue] : p.useSpaces) ? 1 : 0];
+    self.size.enabled = self.using_.enabled = !own ? NO : YES;
+}
+- (void)changed:(id)sender {
+    NSString *lang = self.language.titleOfSelectedItem;
+    if (self.useDefault.state == NSControlStateValueOn) {
+        [self.draft removeObjectForKey:lang];
+    } else {
+        self.draft[lang] = @{@"size": @(MAX(1, self.size.integerValue)), @"spaces": @(self.using_.indexOfSelectedItem == 1)};
+    }
+    self.size.enabled = self.using_.enabled = self.useDefault.state != NSControlStateValueOn;
+}
+@end
+
 @interface PreferencesWindow () <NSTableViewDataSource, NSTableViewDelegate>
 @property (nonatomic, strong) NSPanel *panel;
 @property (nonatomic, weak) EditorController *editor;
@@ -176,6 +305,7 @@
                        on:p.fileAutoDetectionScrollToEnd to:v atY:y];
     y = [self addCheckbox:@"Autodetect the character set of files that are not UTF-8"
                       key:@"autoDetectCharacterEncoding" on:p.autoDetectCharacterEncoding to:v atY:y];
+    y = [self addCheckbox:@"Hide the status bar" key:@"statusBarHidden" on:p.statusBarHidden to:v atY:y];
     [self endPage:@"General" atY:y];
 
     y = [self beginPage:@"Toolbar"]; v = [self page:@"Toolbar"];
@@ -278,7 +408,25 @@
                  items:@[@"None", @"Keep the indent of the line above",
                          @"Also open a level after a brace"]
               selected:p.autoIndentMode to:v atY:y];
+    y = [self addCheckbox:@"Backspace key unindents instead of removing single space" key:@"backspaceUnindents"
+                       on:p.backspaceUnindents to:v atY:y];
+    NppLanguageIndentView *perLanguage = [[NppLanguageIndentView alloc] initWithFrame:NSMakeRect(20, y - 70, 440, 90)
+                                                                            settings:p.languageIndent];
+    [v addSubview:perLanguage];
+    self.controls[@"languageIndent"] = perLanguage;
+    y -= 100;
     [self endPage:@"Indentation" atY:y];
+
+    y = [self beginPage:@"Language"]; v = [self page:@"Language"];
+    NppLanguageListsView *lists = [[NppLanguageListsView alloc] initWithFrame:NSMakeRect(20, y - 250, 440, 270)
+                                                                      hidden:p.languageMenuHidden];
+    [v addSubview:lists];
+    self.controls[@"languageMenuHidden"] = lists;
+    y -= 280;
+    y = [self addCheckbox:@"Make language menu compact" key:@"languageMenuCompact" on:p.languageMenuCompact to:v atY:y];
+    y = [self addCheckbox:@"Treat backslash as escape character for SQL" key:@"sqlBackslashEscape"
+                       on:p.sqlBackslashEscape to:v atY:y];
+    [self endPage:@"Language" atY:y];
 
     y = [self beginPage:@"Highlighting"]; v = [self page:@"Highlighting"];
     y = [self addCheckbox:@"Highlight matching braces" key:@"braceMatchEnabled"
@@ -460,7 +608,28 @@
     y = [self beginPage:@"MISC."]; v = [self page:@"MISC."];
     y = [self addCheckbox:@"Document Peeker: peek on tab" key:@"docPeekOnTab" on:p.docPeekOnTab to:v atY:y];
     y = [self addCheckbox:@"Document Peeker: peek on document map" key:@"docPeekOnMap" on:p.docPeekOnMap to:v atY:y];
+    y = [self addCheckbox:@"Document Switcher (Ctrl+Tab): enable" key:@"docSwitcherEnabled" on:p.docSwitcherEnabled to:v atY:y];
+    y = [self addCheckbox:@"    Enable MRU behaviour" key:@"docSwitcherMRU" on:p.docSwitcherMRU to:v atY:y];
+    y = [self addCheckbox:@"Show only filename in title bar" key:@"titleBarFileNameOnly" on:p.titleBarFileNameOnly to:v atY:y];
+    y = [self addCheckbox:@"Enable Save All confirm dialog" key:@"confirmSaveAll" on:p.confirmSaveAll to:v atY:y];
+    y = [self addCheckbox:@"Mute all sounds" key:@"muteSounds" on:p.muteSounds to:v atY:y];
+    y = [self addCheckbox:@"Allow loading symlinks in Folder as Workspace panel" key:@"workspaceSymlinks"
+                       on:p.workspaceSymlinks to:v atY:y];
+    y = [self addField:@"Session file ext." key:@"sessionFileExtension" value:p.sessionFileExtension to:v atY:y];
+    y = [self addField:@"Workspace file ext." key:@"workspaceFileExtension" value:p.workspaceFileExtension to:v atY:y];
     [self endPage:@"MISC." atY:y];
+
+    y = [self beginPage:@"Search Engine"]; v = [self page:@"Search Engine"];
+    y = [self addPopup:@"Search Engine (for \"Search on Internet\")" key:@"searchEngine"
+                 items:@[@"DuckDuckGo", @"Google", @"Bing", @"Yahoo!", @"Set your search engine here:"]
+              selected:p.searchEngine to:v atY:y];
+    y = [self addField:@"Custom URL" key:@"searchEngineCustom" value:p.searchEngineCustom to:v atY:y];
+    NSTextField *example = [NSTextField labelWithString:@"Example: https://www.google.com/search?q=$(CURRENT_WORD)"];
+    example.frame = NSMakeRect(20, y, 440, 18);
+    example.textColor = [NSColor secondaryLabelColor];
+    [v addSubview:example];
+    y -= 26;
+    [self endPage:@"Search Engine" atY:y];
 }
 
 - (CGFloat)addField:(NSString *)label key:(NSString *)key value:(NSString *)value
@@ -641,6 +810,22 @@
     p.autoInsertSingleQuote = [self.controls[@"autoInsertSingleQuote"] state] == NSControlStateValueOn;
     p.autoInsertDoubleQuote = [self.controls[@"autoInsertDoubleQuote"] state] == NSControlStateValueOn;
     p.autoInsertCloseTag = [self.controls[@"autoInsertCloseTag"] state] == NSControlStateValueOn;
+    p.statusBarHidden = on(@"statusBarHidden");
+    p.backspaceUnindents = on(@"backspaceUnindents");
+    p.languageIndent = [(NppLanguageIndentView *)self.controls[@"languageIndent"] draft];
+    p.languageMenuHidden = [(NppLanguageListsView *)self.controls[@"languageMenuHidden"] hiddenLanguages];
+    p.languageMenuCompact = on(@"languageMenuCompact");
+    p.sqlBackslashEscape = on(@"sqlBackslashEscape");
+    p.docSwitcherEnabled = on(@"docSwitcherEnabled");
+    p.docSwitcherMRU = on(@"docSwitcherMRU");
+    p.titleBarFileNameOnly = on(@"titleBarFileNameOnly");
+    p.confirmSaveAll = on(@"confirmSaveAll");
+    p.muteSounds = on(@"muteSounds");
+    p.workspaceSymlinks = on(@"workspaceSymlinks");
+    p.sessionFileExtension = text(@"sessionFileExtension");
+    p.workspaceFileExtension = text(@"workspaceFileExtension");
+    p.searchEngine = [self.controls[@"searchEngine"] indexOfSelectedItem];
+    p.searchEngineCustom = text(@"searchEngineCustom");
     p.docPeekOnTab = [self.controls[@"docPeekOnTab"] state] == NSControlStateValueOn;
     p.docPeekOnMap = [self.controls[@"docPeekOnMap"] state] == NSControlStateValueOn;
     NSMutableArray *pairs = [NSMutableArray array];
@@ -664,6 +849,11 @@
     if ([NSApp.delegate respondsToSelector:@selector(applyToolbarPreferences)]) {
         [NSApp.delegate performSelector:@selector(applyToolbarPreferences)];
     }
+    if ([NSApp.delegate respondsToSelector:@selector(rebuildLanguageMenu)]) {
+        [NSApp.delegate performSelector:@selector(rebuildLanguageMenu)];
+    }
+    [self.editor applyLanguage];
+    [self.editor refreshChrome];
 }
 
 - (void)resetAll:(id)sender {

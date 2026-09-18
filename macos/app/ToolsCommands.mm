@@ -126,7 +126,7 @@ static BOOL gPlayingMacro = NO;
 }
 
 - (BOOL)playSteps:(NSArray *)steps times:(NSUInteger)times {
-    if (!steps.count || times == 0) { NSBeep(); return NO; }
+    if (!steps.count || times == 0) { NppBeep(); return NO; }
     ScintillaView *sci = self.sci;
     [sci message:SCI_BEGINUNDOACTION];
     gPlayingMacro = YES;
@@ -181,7 +181,7 @@ static BOOL gPlayingMacro = NO;
 }
 
 - (BOOL)saveRecordedMacroAs:(NSString *)name {
-    if (!name.length || ![self macroSteps].count) { NSBeep(); return NO; }
+    if (!name.length || ![self macroSteps].count) { NppBeep(); return NO; }
     [self savedMacros][name] = [[self macroSteps] copy];
 
     // Persist alongside the session so macros survive a restart.
@@ -199,7 +199,7 @@ static BOOL gPlayingMacro = NO;
 
 - (BOOL)playSavedMacroNamed:(NSString *)name {
     NSArray *steps = [self stepsOfSavedMacroNamed:name];
-    if (!steps.count) { NSBeep(); return NO; }
+    if (!steps.count) { NppBeep(); return NO; }
     return [self playSteps:steps times:1];
 }
 
@@ -285,7 +285,7 @@ static const char kPreviousTabKey = 0;
     NppDocument *current = self.currentDocument;
     NSUInteger where = prev ? [self.documents indexOfObject:prev] : NSNotFound;
     if (where == NSNotFound || prev == current) {
-        NSBeep();
+        NppBeep();
         return NO;
     }
     [self selectDocumentAtIndex:(NSInteger)where];

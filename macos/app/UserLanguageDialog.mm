@@ -470,7 +470,7 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
 #pragma mark - The style of a group
 
 - (void)editStyle:(NSButton *)sender {
-    if (!self.current) { NSBeep(); return; }
+    if (!self.current) { NppBeep(); return; }
     int styleID = (int)sender.tag;
     NSDictionary *attrs = self.current.styles[@(styleID)] ?: @{};
     NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 420, styleID == SCE_USER_STYLE_DEFAULT ? 150 : 330)];
@@ -653,19 +653,19 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
 }
 
 - (void)saveAs:(id)sender {
-    if (!self.current) { NSBeep(); return; }
+    if (!self.current) { NppBeep(); return; }
     NSString *name = [self askName:@"Save the language as:" initial:self.current.name];
     if (name && ![self saveCurrentAs:name]) [self refuse:@"That name is taken."];
 }
 
 - (void)rename:(id)sender {
-    if (!self.current) { NSBeep(); return; }
+    if (!self.current) { NppBeep(); return; }
     NSString *name = [self askName:@"New name:" initial:self.current.name];
     if (name && ![self renameCurrentTo:name]) [self refuse:@"That name is taken."];
 }
 
 - (void)remove:(id)sender {
-    if (!self.current) { NSBeep(); return; }
+    if (!self.current) { NppBeep(); return; }
     NSAlert *ask = [[NSAlert alloc] init];
     ask.messageText = [NSString stringWithFormat:@"Remove \"%@\"?", self.current.name];
     [ask addButtonWithTitle:@"Remove"];
@@ -682,7 +682,7 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
 }
 
 - (void)export:(id)sender {
-    if (!self.current) { NSBeep(); return; }
+    if (!self.current) { NppBeep(); return; }
     NSSavePanel *save = [NSSavePanel savePanel];
     save.nameFieldStringValue = [self.current.name stringByAppendingPathExtension:@"xml"];
     if ([save runModal] != NSModalResponseOK || !save.URL) return;

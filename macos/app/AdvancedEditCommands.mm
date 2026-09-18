@@ -1,4 +1,5 @@
 #import "AdvancedEditCommands.h"
+#import "SettingsCommands.h"
 #import "ApiCatalog.h"
 #import "EditCommands.h"
 #import "LanguageCatalog.h"
@@ -72,7 +73,7 @@ static NSString *SliceBytes(NSData *data, long start, long end) {
     ScintillaView *sci = self.sci;
     NSString *term = [self currentSelectionOrWord];
     NSArray *hits = [self matchesOf:term flags:flags];
-    if (!hits.count) { NSBeep(); return 0; }
+    if (!hits.count) { NppBeep(); return 0; }
 
     long len = Utf8Len(term);
     [sci message:SCI_SETSELECTION wParam:(uptr_t)[hits.firstObject longValue]
@@ -89,7 +90,7 @@ static NSString *SliceBytes(NSData *data, long start, long end) {
     ScintillaView *sci = self.sci;
     NSString *term = [self currentSelectionOrWord];
     NSArray *hits = [self matchesOf:term flags:flags];
-    if (hits.count < 2) { NSBeep(); return NO; }
+    if (hits.count < 2) { NppBeep(); return NO; }
 
     long len = Utf8Len(term);
     long last = [sci message:SCI_GETSELECTIONNCARET
@@ -108,7 +109,7 @@ static NSString *SliceBytes(NSData *data, long start, long end) {
 - (BOOL)undoLastMultiSelection {
     ScintillaView *sci = self.sci;
     long n = [sci message:SCI_GETSELECTIONS];
-    if (n < 2) { NSBeep(); return NO; }
+    if (n < 2) { NppBeep(); return NO; }
     [sci message:SCI_DROPSELECTIONN wParam:(uptr_t)(n - 1) lParam:0];
     [self refreshChrome];
     return YES;
@@ -117,7 +118,7 @@ static NSString *SliceBytes(NSData *data, long start, long end) {
 - (BOOL)skipCurrentMultiSelection {
     ScintillaView *sci = self.sci;
     long n = [sci message:SCI_GETSELECTIONS];
-    if (n < 1) { NSBeep(); return NO; }
+    if (n < 1) { NppBeep(); return NO; }
     // Drop the selection the caret is on, then take the one after it.
     long main = [sci message:SCI_GETMAINSELECTION];
     if (n > 1) [sci message:SCI_DROPSELECTIONN wParam:(uptr_t)main lParam:0];
@@ -291,13 +292,13 @@ static const char kBeginEndAnchorKey = 0;
 
 - (BOOL)openSelectedFile {
     NSString *path = [self selectionAsPath];
-    if (!path) { NSBeep(); return NO; }
+    if (!path) { NppBeep(); return NO; }
     return [self openFileAtPath:path error:NULL];
 }
 
 - (BOOL)revealSelectedFile {
     NSString *path = [self selectionAsPath];
-    if (!path) { NSBeep(); return NO; }
+    if (!path) { NppBeep(); return NO; }
     [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[[NSURL fileURLWithPath:path]]];
     return YES;
 }
@@ -326,7 +327,7 @@ static const char kBeginEndAnchorKey = 0;
     }
     [sci message:SCI_ENDUNDOACTION];
     [self refreshChrome];
-    if (!any) NSBeep();
+    if (!any) NppBeep();
     return any;
 }
 
@@ -334,7 +335,7 @@ static const char kSearchEngineKey = 0;
 
 - (NSString *)searchEngineTemplate {
     NSString *stored = objc_getAssociatedObject(self, &kSearchEngineKey);
-    return stored ?: @"https://duckduckgo.com/?q=%@";
+    return stored ?: [[NppPreferences shared] searchEngineTemplate];
 }
 
 - (void)setSearchEngineTemplate:(NSString *)engineTemplate {
@@ -343,11 +344,11 @@ static const char kSearchEngineKey = 0;
 
 - (BOOL)searchSelectionOnInternet {
     NSString *term = [self currentSelectionOrWord];
-    if (!term.length) { NSBeep(); return NO; }
+    if (!term.length) { NppBeep(); return NO; }
     NSString *escaped = [term stringByAddingPercentEncodingWithAllowedCharacters:
                          [NSCharacterSet URLQueryAllowedCharacterSet]] ?: @"";
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:self.searchEngineTemplate, escaped]];
-    if (!url) { NSBeep(); return NO; }
+    if (!url) { NppBeep(); return NO; }
     return [[NSWorkspace sharedWorkspace] openURL:url];
 }
 
@@ -370,7 +371,7 @@ static const char kSearchEngineKey = 0;
         NSData *data = [pb dataForType:NSPasteboardTypeHTML];
         html = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : nil;
     }
-    if (!html.length) { NSBeep(); return NO; }
+    if (!html.length) { NppBeep(); return NO; }
     [self insertStringAtCaret:html];
     return YES;
 }
@@ -378,9 +379,9 @@ static const char kSearchEngineKey = 0;
 - (BOOL)pasteAsRTF {
     NSPasteboard *pb = [NSPasteboard generalPasteboard];
     NSData *rtf = [pb dataForType:NSPasteboardTypeRTF];
-    if (!rtf) { NSBeep(); return NO; }
+    if (!rtf) { NppBeep(); return NO; }
     NSString *text = [[NSString alloc] initWithData:rtf encoding:NSASCIIStringEncoding];
-    if (!text.length) { NSBeep(); return NO; }
+    if (!text.length) { NppBeep(); return NO; }
     [self insertStringAtCaret:text];
     return YES;
 }
@@ -405,7 +406,7 @@ static const char kSearchEngineKey = 0;
 
 - (BOOL)copySelectionAsBinary {
     NSString *hex = [self hexOfSelection];
-    if (!hex) { NSBeep(); return NO; }
+    if (!hex) { NppBeep(); return NO; }
     [self copyToClipboard:hex];
     return YES;
 }
@@ -419,7 +420,7 @@ static const char kSearchEngineKey = 0;
 
 - (BOOL)pasteBinary {
     NSString *hex = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
-    if (!hex.length) { NSBeep(); return NO; }
+    if (!hex.length) { NppBeep(); return NO; }
     NSMutableData *bytes = [NSMutableData data];
     for (NSString *pair in [hex componentsSeparatedByCharactersInSet:
                             [NSCharacterSet whitespaceAndNewlineCharacterSet]]) {
@@ -429,10 +430,10 @@ static const char kSearchEngineKey = 0;
         unsigned char b = (unsigned char)value;
         [bytes appendBytes:&b length:1];
     }
-    if (!bytes.length) { NSBeep(); return NO; }
+    if (!bytes.length) { NppBeep(); return NO; }
     NSString *text = [[NSString alloc] initWithData:bytes encoding:NSUTF8StringEncoding]
                   ?: [[NSString alloc] initWithData:bytes encoding:NSISOLatin1StringEncoding];
-    if (!text) { NSBeep(); return NO; }
+    if (!text) { NppBeep(); return NO; }
     [self insertStringAtCaret:text];
     return YES;
 }
@@ -465,12 +466,12 @@ static NSInteger PathStart(NSString *line) {
     // What was typed, and the folder to list: the folder itself when the
     // typing names one, otherwise the one its last "/" ends.
     NSInteger start = PathStart(before);
-    if (start == NSNotFound) { NSBeep(); return NO; }
+    if (start == NSNotFound) { NppBeep(); return NO; }
     NSString *raw = [before substringFromIndex:(NSUInteger)start];
     NSFileManager *fm = [NSFileManager defaultManager];
     BOOL isDir = NO;
     NSString *expanded = raw.stringByExpandingTildeInPath;
-    if ([fm fileExistsAtPath:expanded isDirectory:&isDir] && !isDir) { NSBeep(); return NO; }
+    if ([fm fileExistsAtPath:expanded isDirectory:&isDir] && !isDir) { NppBeep(); return NO; }
     NSString *typedFolder;
     if (isDir) typedFolder = raw;
     else {
@@ -480,7 +481,7 @@ static NSInteger PathStart(NSString *line) {
     }
     NSString *folder = typedFolder.stringByExpandingTildeInPath;
     NSArray<NSString *> *names = [fm contentsOfDirectoryAtPath:folder error:NULL];
-    if (!names) { NSBeep(); return NO; }
+    if (!names) { NppBeep(); return NO; }
 
     NSString *withSlash = [typedFolder hasSuffix:@"/"] ? typedFolder : [typedFolder stringByAppendingString:@"/"];
     NSMutableArray *entries = [NSMutableArray array];
@@ -490,7 +491,7 @@ static NSInteger PathStart(NSString *line) {
         [fm fileExistsAtPath:[folder stringByAppendingPathComponent:name] isDirectory:&dir];
         [entries addObject:[NSString stringWithFormat:@"%@%@%@", withSlash, name, dir ? @"/" : @""]];
     }
-    if (!entries.count) { NSBeep(); return NO; }
+    if (!entries.count) { NppBeep(); return NO; }
 
     [sci message:SCI_AUTOCSETSEPARATOR wParam:(uptr_t)'\n' lParam:0];
     [sci message:SCI_AUTOCSETIGNORECASE wParam:1 lParam:0];
@@ -680,7 +681,7 @@ static const char kApiCallTipKey = 0;
     // shows it; failing that, what callTipCandidates finds for the word.
     if ([self updateCallTipForCharacter:0 force:YES]) return YES;
     NSArray *tips = [self callTipCandidates];
-    if (!tips.count) { NSBeep(); return NO; }
+    if (!tips.count) { NppBeep(); return NO; }
     objc_setAssociatedObject(self, &kCallTipIndexKey, @0, OBJC_ASSOCIATION_RETAIN);
     NSString *body = tips.count > 1
         ? [NSString stringWithFormat:@"%@   (1 of %lu)", tips[0], (unsigned long)tips.count]
@@ -695,7 +696,7 @@ static const char kApiCallTipKey = 0;
     if (state && [self.sci message:SCI_CALLTIPACTIVE] != 0) {
         NppApiEntry *entry = state[@"entry"];
         NSUInteger n = entry.overloads.count;
-        if (n < 2) { NSBeep(); return NO; }
+        if (n < 2) { NppBeep(); return NO; }
         NSUInteger cur = [state[@"overload"] unsignedIntegerValue];
         state[@"overload"] = @(forward ? (cur + 1) % n : (cur + n - 1) % n);
         // Stepping by hand chooses the overload; the parameter no longer does.
@@ -704,7 +705,7 @@ static const char kApiCallTipKey = 0;
         return YES;
     }
     NSArray *tips = [self callTipCandidates];
-    if (tips.count < 2) { NSBeep(); return NO; }
+    if (tips.count < 2) { NppBeep(); return NO; }
     NSNumber *stored = objc_getAssociatedObject(self, &kCallTipIndexKey);
     NSInteger idx = (stored.integerValue + (forward ? 1 : -1) + (NSInteger)tips.count)
                     % (NSInteger)tips.count;
@@ -728,15 +729,15 @@ static const char kApiCallTipKey = 0;
 
 - (BOOL)toggleSystemReadOnly {
     NSString *path = self.currentDocument.path;
-    if (!path.length) { NSBeep(); return NO; }
+    if (!path.length) { NppBeep(); return NO; }
     NSFileManager *fm = [NSFileManager defaultManager];
     NSDictionary *attrs = [fm attributesOfItemAtPath:path error:NULL];
-    if (!attrs) { NSBeep(); return NO; }
+    if (!attrs) { NppBeep(); return NO; }
 
     NSUInteger perms = [attrs[NSFilePosixPermissions] unsignedIntegerValue];
     NSUInteger updated = [self systemReadOnly] ? (perms | 0200) : (perms & ~(NSUInteger)0222);
     if (![fm setAttributes:@{NSFilePosixPermissions: @(updated)} ofItemAtPath:path error:NULL]) {
-        NSBeep();
+        NppBeep();
         return NO;
     }
     [self refreshChrome];

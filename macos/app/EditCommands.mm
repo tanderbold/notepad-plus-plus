@@ -708,7 +708,7 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
 
 - (void)uncommentLines {
     NSString *token = self.currentDocument.language.commentLine;
-    if (!token.length) { NSBeep(); return; }
+    if (!token.length) { NppBeep(); return; }
     [self transformSelectedLines:^NSArray *(NSArray *bodies) {
         NSMutableArray *out = [NSMutableArray array];
         for (NSString *line in bodies) {
@@ -730,7 +730,7 @@ static BOOL PreparedLineIsEmpty(NSString *prepared) {
 - (void)streamComment:(BOOL)comment {
     NSString *open = self.currentDocument.language.commentStart;
     NSString *close = self.currentDocument.language.commentEnd;
-    if (!open.length || !close.length) { NSBeep(); return; }
+    if (!open.length || !close.length) { NppBeep(); return; }
 
     if (comment) { [self toggleBlockComment]; return; }
 

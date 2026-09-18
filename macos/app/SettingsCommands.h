@@ -129,6 +129,40 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL docPeekOnTab;
 @property (nonatomic) BOOL docPeekOnMap;
 
+// MISC.
+/// Document Switcher (Ctrl+Tab): on, and in most-recently-used order.
+@property (nonatomic) BOOL docSwitcherEnabled;
+@property (nonatomic) BOOL docSwitcherMRU;
+/// Only the file name in the title bar.
+@property (nonatomic) BOOL titleBarFileNameOnly;
+@property (nonatomic) BOOL confirmSaveAll;
+@property (nonatomic) BOOL muteSounds;
+/// Files with these extensions open as a session / a project workspace.
+@property (nonatomic, copy) NSString *sessionFileExtension;
+@property (nonatomic, copy) NSString *workspaceFileExtension;
+/// Folder as Workspace lists symbolic links.
+@property (nonatomic) BOOL workspaceSymlinks;
+// Search Engine: 0 DuckDuckGo, 1 Google, 2 Bing, 3 Yahoo!, 4 the custom URL.
+@property (nonatomic) NSInteger searchEngine;
+@property (nonatomic, copy) NSString *searchEngineCustom;
+// Language
+/// Languages left out of the Language menu (their langs.model.xml names).
+@property (nonatomic, copy) NSArray<NSString *> *languageMenuHidden;
+/// The Language menu in letter submenus, as upstream does by default.
+@property (nonatomic) BOOL languageMenuCompact;
+@property (nonatomic) BOOL sqlBackslashEscape;
+// Indentation
+/// Per language: {"size": n, "spaces": BOOL}; absent means the default.
+@property (nonatomic, copy) NSDictionary<NSString *, NSDictionary *> *languageIndent;
+@property (nonatomic) BOOL backspaceUnindents;
+// General
+@property (nonatomic) BOOL statusBarHidden;
+/// The tab width and tab/space choice in force for a language.
+- (NSInteger)tabWidthForLanguage:(nullable NSString *)language;
+- (BOOL)useSpacesForLanguage:(nullable NSString *)language;
+/// The "Search on Internet" URL, with %@ where the words go.
+- (NSString *)searchEngineTemplate;
+
 /// New documents.
 @property (nonatomic, copy) NSString *defaultLanguage;
 @property (nonatomic) BOOL openNewDocumentAtStartup;

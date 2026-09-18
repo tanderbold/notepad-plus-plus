@@ -78,6 +78,7 @@ NSString *const NppEditorDocumentsDidChangeNotification = @"NppEditorDocumentsDi
 @property (nonatomic, strong) ScintillaView *docMapView;
 @property (nonatomic, strong) NppMapZoneView *docMapZone;
 @property (nonatomic, strong) NSPanel *peekPanel;
+@property (nonatomic, strong) NSMutableArray<NppDocument *> *mru;
 @property (nonatomic, strong) ScintillaView *peekView;
 /// The document the other pane shows, so that closing it can move the pane off it.
 @property (nonatomic, strong) NppDocument *secondaryDocument;
@@ -297,12 +298,16 @@ static long SciColor(NSColor *c) {
     // From the preferences, not literals: these live in the Scintilla
     // document, so whatever was applied to the last one is gone on a switch.
     NppPreferences *prefs = [NppPreferences shared];
-    [sci message:SCI_SETTABWIDTH wParam:(uptr_t)MAX(1, prefs.tabWidth) lParam:0];
-    [sci message:SCI_SETINDENT wParam:(uptr_t)MAX(1, prefs.tabWidth) lParam:0];
-    [sci message:SCI_SETUSETABS wParam:(uptr_t)(prefs.useSpaces ? 0 : 1) lParam:0];
+    // The language's own indent settings when it has some, as upstream's
+    // per-language Indent Settings.
+    NSString *lang = self.currentDocument.language.name;
+    NSInteger width = [prefs tabWidthForLanguage:lang];
+    [sci message:SCI_SETTABWIDTH wParam:(uptr_t)width lParam:0];
+    [sci message:SCI_SETINDENT wParam:(uptr_t)width lParam:0];
+    [sci message:SCI_SETUSETABS wParam:(uptr_t)([prefs useSpacesForLanguage:lang] ? 0 : 1) lParam:0];
     [sci message:SCI_SETINDENTATIONGUIDES
            wParam:(uptr_t)(prefs.showIndentGuides ? SC_IV_LOOKBOTH : SC_IV_NONE) lParam:0];
-    [sci message:SCI_SETBACKSPACEUNINDENTS wParam:1 lParam:0];
+    [sci message:SCI_SETBACKSPACEUNINDENTS wParam:prefs.backspaceUnindents ? 1 : 0 lParam:0];
     [sci message:SCI_SETTABINDENTS wParam:1 lParam:0];
     // Change History powers Search > Change History; it is per document.
     // Change History must have a margin of its own. A marker that belongs to no
@@ -327,6 +332,7 @@ static long SciColor(NSColor *c) {
 - (void)applyEditorPreferences {
     ScintillaView *sci = self.sciView;
     NppPreferences *prefs = [NppPreferences shared];
+    [self applyStatusBarVisibility];
 
     // A vertical edge can be a line or a change of background, and Notepad++
     // takes a list of columns rather than one.
@@ -463,6 +469,17 @@ static long SciColor(NSColor *c) {
 }
 
 - (BOOL)openFileAtPath:(NSString *)path error:(NSError **)error {
+    // Files with the extensions set in MISC. are a session or a workspace.
+    NppPreferences *extPrefs = [NppPreferences shared];
+    NSString *ext = path.pathExtension;
+    NSString *(^bare)(NSString *) = ^NSString *(NSString *e) { return [e hasPrefix:@"."] ? [e substringFromIndex:1] : e; };
+    if (ext.length && [ext caseInsensitiveCompare:bare(extPrefs.sessionFileExtension ?: @"")] == NSOrderedSame) {
+        return [self loadSessionFrom:path error:error];
+    }
+    if (ext.length && [ext caseInsensitiveCompare:bare(extPrefs.workspaceFileExtension ?: @"")] == NSOrderedSame) {
+        [self showProjectPanel:1];
+        return [[self projectPanel:1] openWorkspace:path];
+    }
     // Already open? Just focus it.
     for (NSUInteger i = 0; i < self.docs.count; ++i) {
         if ([self.docs[i].path isEqualToString:path]) { [self selectDocumentAtIndex:(NSInteger)i]; return YES; }
@@ -540,6 +557,9 @@ static long SciColor(NSColor *c) {
 
 - (void)selectDocumentAtIndex:(NSInteger)index {
     if (index < 0 || index >= (NSInteger)self.docs.count) return;
+    if (!self.mru) self.mru = [NSMutableArray array];
+    [self.mru removeObjectIdenticalTo:self.docs[(NSUInteger)index]];
+    [self.mru insertObject:self.docs[(NSUInteger)index] atIndex:0];
     if (self.currentIndex >= 0 && self.currentIndex != index &&
         self.currentIndex < (NSInteger)self.docs.count) {
         [self rememberPreviousTab:self.docs[self.currentIndex]];   // backs Window > Recent Window
@@ -644,6 +664,13 @@ static long SciColor(NSColor *c) {
 }
 
 - (BOOL)documentPeekerVisible { return self.peekPanel.isVisible; }
+
+- (NSArray<NppDocument *> *)documentsInRecentOrder {
+    NSMutableArray *out = [NSMutableArray array];
+    for (NppDocument *d in self.mru) if ([self.docs indexOfObjectIdenticalTo:d] != NSNotFound) [out addObject:d];
+    for (NppDocument *d in self.docs) if ([out indexOfObjectIdenticalTo:d] == NSNotFound) [out addObject:d];
+    return out;
+}
 
 - (nullable void *)documentPeekerDocument {
     return self.peekPanel.isVisible ? (void *)[self.peekView message:SCI_GETDOCPOINTER] : NULL;
@@ -1370,6 +1397,9 @@ static BOOL gCheckingFilesOnDisk;
     [sci message:SCI_SETILEXER wParam:0 lParam:(sptr_t)lexer];
     [sci setLexerProperty:@"fold" value:@"1"];
     [sci setLexerProperty:@"fold.compact" value:@"0"];
+    if ([lang.name isEqualToString:@"sql"]) {
+        [sci setLexerProperty:@"sql.backslash.escapes" value:[NppPreferences shared].sqlBackslashEscape ? @"1" : @"0"];
+    }
 
     NppUserLanguage *udl = [[LanguageCatalog sharedCatalog] userLanguageNamed:lang.name];
     if (udl) {
@@ -1576,7 +1606,7 @@ static BOOL gCheckingFilesOnDisk;
 - (void)toggleLineComment {
     NppDocument *doc = self.currentDocument;
     NSString *token = doc.language.commentLine;
-    if (!token.length) { NSBeep(); return; }
+    if (!token.length) { NppBeep(); return; }
 
     ScintillaView *sci = self.sciView;
     long selStart = [sci message:SCI_GETSELECTIONSTART];
@@ -1618,12 +1648,12 @@ static BOOL gCheckingFilesOnDisk;
 - (void)toggleBlockComment {
     NppDocument *doc = self.currentDocument;
     NSString *open = doc.language.commentStart, *close = doc.language.commentEnd;
-    if (!open.length || !close.length) { NSBeep(); return; }
+    if (!open.length || !close.length) { NppBeep(); return; }
 
     ScintillaView *sci = self.sciView;
     long selStart = [sci message:SCI_GETSELECTIONSTART];
     long selEnd   = [sci message:SCI_GETSELECTIONEND];
-    if (selEnd == selStart) { NSBeep(); return; }
+    if (selEnd == selStart) { NppBeep(); return; }
 
     [sci message:SCI_BEGINUNDOACTION];
     [sci setStringProperty:SCI_INSERTTEXT parameter:selEnd value:close];
@@ -1650,7 +1680,7 @@ static BOOL gCheckingFilesOnDisk;
     long line = [sci message:SCI_LINEFROMPOSITION wParam:(uptr_t)[sci message:SCI_GETCURRENTPOS]];
     long found = [sci message:SCI_MARKERNEXT wParam:(uptr_t)(line + 1) lParam:(1 << NPPMAC_BOOKMARK_MARKER)];
     if (found < 0) found = [sci message:SCI_MARKERNEXT wParam:0 lParam:(1 << NPPMAC_BOOKMARK_MARKER)];
-    if (found < 0) { NSBeep(); return; }
+    if (found < 0) { NppBeep(); return; }
     [sci message:SCI_GOTOLINE wParam:(uptr_t)found lParam:0];
     [self refreshChrome];
 }
@@ -1663,7 +1693,7 @@ static BOOL gCheckingFilesOnDisk;
         found = [sci message:SCI_MARKERPREVIOUS
                        wParam:(uptr_t)[sci message:SCI_GETLINECOUNT] lParam:(1 << NPPMAC_BOOKMARK_MARKER)];
     }
-    if (found < 0) { NSBeep(); return; }
+    if (found < 0) { NppBeep(); return; }
     [sci message:SCI_GOTOLINE wParam:(uptr_t)found lParam:0];
     [self refreshChrome];
 }
@@ -1805,9 +1835,9 @@ static const char kEditorMenuItemsKey = 0;
         doc.path ?: @"(unsaved)", line, col, lines, len,
         doc.language.name ?: @"normal", [self encodingDisplayName], eol, typing];
 
-    NSString *title = doc.path ? [NSString stringWithFormat:@"%@ — %@", doc.displayName,
-                                  doc.path.stringByDeletingLastPathComponent]
-                               : doc.displayName;
+    NSString *title = (doc.path && ![NppPreferences shared].titleBarFileNameOnly)
+        ? [NSString stringWithFormat:@"%@ — %@", doc.displayName, doc.path.stringByDeletingLastPathComponent]
+        : doc.displayName;
     if (self.titleSuffix.length) title = [title stringByAppendingFormat:@" - %@", self.titleSuffix];
     self.window.title = title;
     self.window.representedFilename = doc.path ?: @"";
@@ -1826,11 +1856,21 @@ static const char kEditorMenuItemsKey = 0;
     self.tabBar.hidden = p.hideTabBar;
 }
 
+/// General > Status Bar > Hide.
+- (void)applyStatusBarVisibility {
+    BOOL hidden = [NppPreferences shared].statusBarHidden || ![self chromeVisible];
+    self.statusField.hidden = hidden;
+    CGFloat statusH = hidden ? 0 : 22;
+    self.split.frame = NSMakeRect(0, statusH, NSWidth(self.container.frame), NSHeight(self.container.frame) - statusH);
+}
+
+- (BOOL)statusBarVisible { return !self.statusField.hidden; }
+
 - (void)setChromeVisible:(BOOL)visible {
     self.tabBar.hidden = !visible;
-    self.statusField.hidden = !visible;
+    self.statusField.hidden = !visible || [NppPreferences shared].statusBarHidden;
     NSRect upper = self.split.frame;
-    CGFloat tabH = visible ? 28 : 0, statusH = visible ? 22 : 0;
+    CGFloat tabH = visible ? 28 : 0, statusH = self.statusField.hidden ? 0 : 22;
     self.split.frame = NSMakeRect(0, statusH, NSWidth(self.container.frame),
                                   NSHeight(self.container.frame) - statusH);
     self.sciView.frame = NSMakeRect(0, 0, NSWidth(self.editorArea.frame),
@@ -1860,7 +1900,7 @@ static const char kEditorMenuItemsKey = 0;
 }
 
 - (void)focusOtherView {
-    if (![self secondaryViewVisible]) { NSBeep(); return; }
+    if (![self secondaryViewVisible]) { NppBeep(); return; }
     NSResponder *first = self.window.firstResponder;
     BOOL primaryFocused = !(first == self.secondaryView ||
                             [first isKindOfClass:[NSView class]] &&
@@ -1887,7 +1927,7 @@ static const char kEditorMenuItemsKey = 0;
 
 - (BOOL)restoreLastClosedFile {
     NSString *last = [self recentFiles].firstObject;
-    if (!last.length) { NSBeep(); return NO; }
+    if (!last.length) { NppBeep(); return NO; }
     return [self openFileAtPath:last error:NULL];
 }
 
@@ -2094,7 +2134,7 @@ static const char kEditorMenuItemsKey = 0;
 /// Notepad++ opens a second process; `open -n` is the macOS equivalent.
 - (BOOL)openCurrentInNewInstanceMoving:(BOOL)closeHere {
     NppDocument *doc = self.currentDocument;
-    if (!doc.path) { NSBeep(); return NO; }
+    if (!doc.path) { NppBeep(); return NO; }
     NSURL *bundle = [[NSBundle mainBundle] bundleURL];
     NSWorkspaceOpenConfiguration *config = [NSWorkspaceOpenConfiguration configuration];
     config.createsNewApplicationInstance = YES;

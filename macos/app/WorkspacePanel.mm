@@ -1,4 +1,5 @@
 #import "WorkspacePanel.h"
+#import "SettingsCommands.h"
 
 @interface WSNode : NSObject
 @property (nonatomic, copy) NSString *path;
@@ -17,6 +18,9 @@
     for (NSString *name in names) {
         if ([name hasPrefix:@"."]) continue;         // hidden entries stay hidden
         NSString *full = [_path stringByAppendingPathComponent:name];
+        // Symbolic links only when MISC. allows them, as upstream.
+        NSString *type = [fm attributesOfItemAtPath:full error:NULL][NSFileType];
+        if ([type isEqualToString:NSFileTypeSymbolicLink] && ![NppPreferences shared].workspaceSymlinks) continue;
         BOOL dir = NO;
         if (![fm fileExistsAtPath:full isDirectory:&dir]) continue;
         WSNode *n = [[WSNode alloc] init];

@@ -60,4 +60,10 @@
 @property (nonatomic, readonly) NSMenu *macroMenu;
 - (void)rebuildMacroMenu;
 - (NSMenu *)buildTabContextMenu;
+- (void)rebuildLanguageMenu;
+- (void)switchDocumentForward:(BOOL)forward;
+- (void)endDocumentSwitch;
+- (BOOL)documentSwitcherShown;
+- (void)saveAll:(id)sender;
+@property (nonatomic, strong) NSMenu *languageMenu;
 @end

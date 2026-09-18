@@ -10,6 +10,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// NSBeep, unless MISC. > Mute all sounds is on.
+FOUNDATION_EXPORT void NppBeep(void);
+
 /// Posted whenever the set of open documents changes, so panels listing them
 /// can reload instead of drawing from a stale row count.
 extern NSString *const NppEditorDocumentsDidChangeNotification;
@@ -209,6 +212,12 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (void)updateDocumentMap;
 /// Document Peeker: what hovering tab `index` does (-1 leaves the tabs).
 - (void)peekAtTabIndex:(NSInteger)index;
+- (void)applyStatusBarVisibility;
+/// The open documents, the one used last first: the Document Switcher's order.
+- (NSArray<NppDocument *> *)documentsInRecentOrder;
+/// Tab width, tabs or spaces and the rest Scintilla keeps per document.
+- (void)applyDocumentSettings;
+- (BOOL)statusBarVisible;
 - (BOOL)documentPeekerVisible;
 - (nullable void *)documentPeekerDocument;
 
