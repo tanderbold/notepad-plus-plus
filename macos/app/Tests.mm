@@ -5776,6 +5776,12 @@ int NppMacRunTests(AppDelegate *app) {
                                             characters:@"D" charactersIgnoringModifiers:@"D" isARepeat:NO keyCode:2];
             [[ed.sci content] keyDown:press];
             BOOL scintillaKey = [[ed documentText] isEqualToString:@"two\n"];
+            // Given another key, the command leaves the old one at once.
+            [reread setCombo:[NppKeyCombo comboFromScintillaKey:'J' modifiers:SCMOD_CTRL | SCMOD_ALT] forCommand:lineDelete];
+            [ed setDocumentText:@"one\ntwo\n"];
+            [ed.sci message:SCI_GOTOPOS wParam:0 lParam:0];
+            [[ed.sci content] keyDown:press];
+            scintillaKey = scintillaKey && [[ed documentText] hasPrefix:@"one"];
             [ed closeDocumentAtIndex:ed.documents.count - 1 discardChanges:YES];
 
             // Written back: the plugin command is kept as it was.

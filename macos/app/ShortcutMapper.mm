@@ -1,4 +1,5 @@
 #import "ShortcutMapper.h"
+#import <objc/runtime.h>
 #import "Localization.h"
 #import "NppPanel.h"
 #import "ScintillaView.h"
@@ -594,6 +595,27 @@ static NSString *MenuKey(NSMenuItem *item, NSArray<NSString *> *path) {
 - (void)applyScintillaKeysTo:(id)view {
     ScintillaView *sci = view;
     if (!sci) return;
+    // What an earlier call gave this view goes first: a key that was
+    // reassigned or cleared since must stop working now, not at the next launch.
+    static const char kAppliedKey = 0;
+    for (NSNumber *definition in objc_getAssociatedObject(sci, &kAppliedKey) ?: @[]) {
+        [sci message:SCI_CLEARCMDKEY wParam:(uptr_t)definition.longValue lParam:0];
+    }
+    // A key taken from another command's defaults and now given up goes back to it.
+    NSSet<NSNumber *> *cleared = [NSSet setWithArray:objc_getAssociatedObject(sci, &kAppliedKey) ?: @[]];
+    for (NSNumber *message in self.scintillaDefaults) {
+        if (self.scintillaOverrides[message]) continue;
+        for (NppKeyCombo *combo in self.scintillaDefaults[message]) {
+            if ([cleared containsObject:@(combo.scintillaKeyDefinition)]) {
+                [sci message:SCI_ASSIGNCMDKEY wParam:(uptr_t)combo.scintillaKeyDefinition lParam:message.intValue];
+            }
+        }
+    }
+    NSMutableArray<NSNumber *> *applied = [NSMutableArray array];
+    for (NSNumber *message in self.scintillaOverrides) {
+        for (NppKeyCombo *combo in self.scintillaOverrides[message]) [applied addObject:@(combo.scintillaKeyDefinition)];
+    }
+    objc_setAssociatedObject(sci, &kAppliedKey, applied, OBJC_ASSOCIATION_RETAIN);
     for (NSNumber *message in self.scintillaOverrides) {
         for (NppKeyCombo *old in self.scintillaDefaults[message] ?: @[]) {
             [sci message:SCI_CLEARCMDKEY wParam:(uptr_t)old.scintillaKeyDefinition lParam:0];

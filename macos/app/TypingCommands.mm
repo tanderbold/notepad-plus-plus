@@ -122,7 +122,9 @@ static const char kLastCompletionKey = 0;
     NSArray<NSString *> *list;
     if (kind == NppCompletionKindFunctions) {
         // The whole list; Scintilla scrolls to what fits the typing.
-        list = [self functionNames];
+        // Sorted, as AutoCompletion.cpp sorts its API list: Scintilla finds the
+        // typed text by binary search, and the API files are not in order.
+        list = [self sortedForCompletion:[NSOrderedSet orderedSetWithArray:[self functionNames]].array];
         if (!list.count) return NO;
     } else {
         NSMutableOrderedSet *words = [NSMutableOrderedSet orderedSet];
