@@ -22,6 +22,7 @@ fi
 
 CXXFLAGS=(-std=c++17 -DNDEBUG -DSCI_LEXER -O2 -fPIC -Wno-deprecated-declarations ${ARCHS[@]+"${ARCHS[@]}"})
 INCLUDES=(-I"$SCI/include" -I"$SCI/src" -I"$SCI/cocoa" -I"$LEX/include" -I"$SRC"
+          -I"$ROOT/PowerEditor/src/uchardet"
           -I"$(xcrun --show-sdk-path)/usr/include/libxml2")
 
 # Objects built for one set of architectures must not serve another, so the
@@ -48,16 +49,26 @@ for f in PlatCocoa ScintillaCocoa ScintillaView InfoBar; do
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SCI/cocoa/$f.mm" -o "$o"
 done
 
+echo "==> uchardet"
+UCHARDET="$ROOT/PowerEditor/src/uchardet"
+UCOBJ="$OUT/uchardet-${NPPMAC_ARCH:-universal}"
+mkdir -p "$UCOBJ"
+for f in "$UCHARDET"/*.cpp; do
+    o="$UCOBJ/$(basename "${f%.cpp}").o"
+    [ "$o" -nt "$f" ] && [ "$o" -nt "$0" ] && continue
+    clang++ -std=c++17 -DNDEBUG -O2 -fPIC -w ${ARCHS[@]+"${ARCHS[@]}"} -I "$UCHARDET" -c "$f" -o "$o"
+done
+
 echo "==> libscintilla-cocoa.a"
 libtool -static -o "$OUT/libscintilla-cocoa.a" "$OBJ"/*.o 2>/dev/null
 
 echo "==> NotepadMac"
 APPOBJ="$OUT/appobj"
 mkdir -p "$APPOBJ"
-for f in NppPanel NppRegex ApiCatalog LanguageCatalog LanguageModel LanguageDetection StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands FindCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
+for f in NppPanel NppRegex ApiCatalog CharsetDetection LanguageCatalog LanguageModel LanguageDetection StyleCatalog FunctionListCatalog TabBarView FtpClient WorkspacePanel DocumentListPanel FunctionListPanel AuxPanels EditorController EditCommands SearchCommands FindCommands ViewCommands EncodingCommands AdvancedEditCommands ToolsCommands SettingsCommands SettingsPanels Toolbar BackupAndPrint BehaviourCommands TypingCommands CompareCommands JsonCommands FtpCommands XmlCommands RunCommands AppDelegate Tests main; do
     clang++ "${CXXFLAGS[@]}" "${INCLUDES[@]}" -fobjc-arc -c "$SRC/$f.mm" -o "$APPOBJ/$f.o"
 done
-clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o \
+clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o "$UCOBJ"/*.o \
     "$OUT/libscintilla-cocoa.a" "$LEX/bin/liblexilla.a" \
     -framework Cocoa -framework QuartzCore -framework Security -lcurl -lxml2 -lz \
     -o "$OUT/NotepadMac"

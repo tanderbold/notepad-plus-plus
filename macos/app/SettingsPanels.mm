@@ -174,6 +174,8 @@
                        on:p.fileAutoDetectionSilent to:v atY:y];
     y = [self addCheckbox:@"    Scroll to the last line after a reload" key:@"fileAutoDetectionScrollToEnd"
                        on:p.fileAutoDetectionScrollToEnd to:v atY:y];
+    y = [self addCheckbox:@"Autodetect the character set of files that are not UTF-8"
+                      key:@"autoDetectCharacterEncoding" on:p.autoDetectCharacterEncoding to:v atY:y];
     [self endPage:@"General" atY:y];
 
     y = [self beginPage:@"Toolbar"]; v = [self page:@"Toolbar"];
@@ -452,6 +454,7 @@
     p.fileAutoDetection = [self.controls[@"fileAutoDetection"] state] == NSControlStateValueOn;
     p.fileAutoDetectionSilent = [self.controls[@"fileAutoDetectionSilent"] state] == NSControlStateValueOn;
     p.fileAutoDetectionScrollToEnd = [self.controls[@"fileAutoDetectionScrollToEnd"] state] == NSControlStateValueOn;
+    p.autoDetectCharacterEncoding = [self.controls[@"autoDetectCharacterEncoding"] state] == NSControlStateValueOn;
     p.autosaveInterval = MAX(5, [[self.controls[@"autosaveInterval"] stringValue] integerValue]);
     p.printLineNumbers = [self.controls[@"printLineNumbers"] state] == NSControlStateValueOn;
     p.printColourMode = [self.controls[@"printColourMode"] indexOfSelectedItem];

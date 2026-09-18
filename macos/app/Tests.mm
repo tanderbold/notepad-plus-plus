@@ -870,6 +870,66 @@ int NppMacRunTests(AppDelegate *app) {
                   @"with a rectangular selection the lines are ordered by what is inside its columns", byColumn);
         }
 
+        // Character sets are detected the way Windows detects them.
+        {
+            NSString *russian = @"Привет, это тестовый файл на русском языке. Он нужен для того, чтобы "
+                                @"определитель кодировки увидел достаточно текста и назвал кодовую страницу "
+                                @"правильно, а не прочитал файл как латиницу.\n";
+            NSData *cp1251 = [russian dataUsingEncoding:[EditorController encodingForCodepage:1251]];
+            NSString *cpPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-detect-1251.txt"];
+            [cp1251 writeToFile:cpPath atomically:YES];
+            [ed openFileAtPath:cpPath error:NULL];
+            BOOL cyrillic = [[ed documentText] isEqualToString:russian];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+            [ed forgetRecentFile:cpPath];
+            [[NSFileManager defaultManager] removeItemAtPath:cpPath error:NULL];
+
+            NSString *wide = @"plain ascii text, wide\n";
+            NSString *widePath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-detect-utf16.txt"];
+            [[wide dataUsingEncoding:NSUTF16LittleEndianStringEncoding] writeToFile:widePath atomically:YES];
+            [ed openFileAtPath:widePath error:NULL];
+            BOOL utf16 = [[ed documentText] isEqualToString:wide] &&
+                         ed.currentDocument.encoding == NSUTF16LittleEndianStringEncoding;
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+            [ed forgetRecentFile:widePath];
+            [[NSFileManager defaultManager] removeItemAtPath:widePath error:NULL];
+            Check(@"IDM_FORMAT_ANSI (the character set is detected)",
+                  @"a Windows-1251 file reads as Cyrillic and UTF-16 without a mark as itself",
+                  cyrillic && utf16);
+        }
+
+        // The command line, as Notepad++ reads it.
+        {
+            NSDictionary *parsed = [app parseCommandLine:
+                @[@"-n12", @"-c3", @"-lpython", @"-ro", @"-nosession", @"-z", @"skipped",
+                  @"-titleAdd=Here", @"-NSDocumentRevisionsDebugMode", @"YES", @"a.txt", @"b c.txt"]];
+            BOOL parsedRight = [parsed[@"-n"] integerValue] == 12 && [parsed[@"-c"] integerValue] == 3 &&
+                [parsed[@"-l"] isEqualToString:@"python"] && [parsed[@"-ro"] boolValue] &&
+                [parsed[@"-nosession"] boolValue] && [parsed[@"-titleAdd="] isEqualToString:@"Here"] &&
+                [parsed[@"files"] isEqualToArray:@[@"YES", @"a.txt", @"b c.txt"]];
+            NSDictionary *notepadStyle = [app parseCommandLine:@[@"-notepadStyleCmdline", @"my", @"file.txt"]];
+            BOOL oneName = [notepadStyle[@"files"] isEqualToArray:@[@"my file.txt"]];
+
+            NSString *clPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-cmdline.txt"];
+            [@"one\ntwo\nthree\n" writeToFile:clPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+            [app applyCommandLine:[app parseCommandLine:@[@"-n2", @"-c2", @"-lpython", @"-ro", @"-titleAdd=Here", clPath]]];
+            NppDocument *doc = ed.currentDocument;
+            BOOL applied = [doc.path isEqualToString:clPath] &&
+                [ed.sci message:SCI_GETCURRENTPOS] == 5 && [ed isReadOnly] &&
+                [doc.language.name isEqualToString:@"python"] && [ed.window.title hasSuffix:@"- Here"];
+            [ed setReadOnly:NO];
+            ed.titleSuffix = nil;
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:doc] discardChanges:YES];
+            [ed forgetRecentFile:clPath];
+            [[NSFileManager defaultManager] removeItemAtPath:clPath error:NULL];
+            [app applyCommandLine:[app parseCommandLine:@[@"-qt=quoted text"]]];
+            BOOL quoted = [[ed documentText] isEqualToString:@"quoted text"];
+            [ed closeDocumentAtIndex:(NSInteger)[ed.documents indexOfObject:ed.currentDocument] discardChanges:YES];
+            Check(@"IDM_ABOUT (command line switches)",
+                  @"-n -c -l -ro -titleAdd= -qt= -z and -notepadStyleCmdline are read and applied as on Windows",
+                  parsedRight && oneName && applied && quoted);
+        }
+
         // A NUL byte inside a file is content, not the end of it.
         {
             NSString *nulPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"npp-nul-test.txt"];

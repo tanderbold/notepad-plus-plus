@@ -38,6 +38,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// File Status Auto-Detection, as Windows calls it: notice a file changed or
 /// removed by another program when the application comes to the front.
 @property (nonatomic) BOOL fileAutoDetection;
+/// Files with no byte-order mark that are not UTF-8 are run through uchardet
+/// to find their character set, as Windows does; off, they are read as Latin-1.
+@property (nonatomic) BOOL autoDetectCharacterEncoding;
 @property (nonatomic) BOOL fileAutoDetectionSilent;       // reload without asking
 @property (nonatomic) BOOL fileAutoDetectionScrollToEnd;  // after a reload
 @property (nonatomic) NSInteger autosaveInterval;        // seconds
@@ -237,6 +240,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// Folder holding macros, plugins, themes and user-defined languages.
 - (NSString *)supportDirectory;
 - (NSString *)userDefinedLanguagePath;
+/// Where settings live for this launch, as -settingsDir= asks; not remembered.
++ (void)setSettingsDirectoryForThisLaunch:(nullable NSString *)directory;
 
 - (NSUInteger)importFiles:(NSArray<NSString *> *)paths intoSubdirectory:(NSString *)subdir;
 - (NSArray<NSString *> *)importedFilesIn:(NSString *)subdir;

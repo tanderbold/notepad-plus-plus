@@ -63,6 +63,8 @@
 /// The window's close was already put to the user: quitting after it must
 /// not ask again about what was declined.
 @property (nonatomic) BOOL closingConfirmed;
+/// What the command line asked for, parsed once and applied after launch.
+@property (nonatomic, strong) NSDictionary *commandLine;
 @property (nonatomic, strong) NSPanel *findPanel;
 @property (nonatomic, strong) NSTextField *findField;
 @property (nonatomic, strong) NSTextField *replaceField;
@@ -154,7 +156,144 @@
 
 #pragma mark - Launch
 
+#pragma mark - The command line
+
+/// The switches Notepad++ takes, read the way winmain.cpp reads them: a
+/// switch is a word starting with "-"; -n, -c, -p, -l carry their value
+/// attached; the =-switches carry it after the sign; -z skips the next word;
+/// after -notepadStyleCmdline the rest of the line is one file name. What
+/// starts with "-" and is none of them is left alone (macOS adds a few of
+/// its own); everything else is a file.
+- (NSDictionary *)parseCommandLine:(NSArray<NSString *> *)arguments {
+    NSMutableDictionary *options = [NSMutableDictionary dictionary];
+    NSMutableArray *files = [NSMutableArray array];
+    NSSet *flags = [NSSet setWithArray:@[@"-multiInst", @"-noPlugin", @"-ro", @"-fullReadOnly",
+        @"-fullReadOnlySavingForbidden", @"-nosession", @"-notabbar", @"-systemtray", @"-loadingTime",
+        @"-alwaysOnTop", @"-openSession", @"-r", @"-quickPrint", @"-openFoldersAsWorkspace",
+        @"-monitor", @"-monitoringMode", @"-export=functionList"]];
+    NSArray *valued = @[@"-settingsDir=", @"-titleAdd=", @"-udl=", @"-pluginMessage=", @"-qt=", @"-qf=", @"-qn="];
+
+    for (NSUInteger i = 0; i < arguments.count; ++i) {
+        NSString *arg = arguments[i];
+        if ([arg isEqualToString:@"-z"]) { i++; continue; }
+        if ([arg isEqualToString:@"-notepadStyleCmdline"]) {
+            NSArray *rest = [arguments subarrayWithRange:NSMakeRange(i + 1, arguments.count - i - 1)];
+            if (rest.count) [files addObject:[rest componentsJoinedByString:@" "]];
+            break;
+        }
+        if ([flags containsObject:arg]) { options[arg] = @YES; continue; }
+        BOOL taken = NO;
+        for (NSString *prefix in valued) {
+            if ([arg hasPrefix:prefix]) { options[prefix] = [arg substringFromIndex:prefix.length]; taken = YES; break; }
+        }
+        if (taken) continue;
+        if (arg.length > 2 && [arg hasPrefix:@"-"]) {
+            unichar which = [arg characterAtIndex:1];
+            NSString *rest = [arg substringFromIndex:2];
+            if ((which == 'n' || which == 'c' || which == 'p' || which == 'x' || which == 'y') &&
+                [[NSCharacterSet decimalDigitCharacterSet] isSupersetOfSet:
+                    [NSCharacterSet characterSetWithCharactersInString:rest]]) {
+                options[[NSString stringWithFormat:@"-%C", which]] = @(rest.integerValue);
+                continue;
+            }
+            if (which == 'l') { options[@"-l"] = rest; continue; }
+        }
+        if ([arg hasPrefix:@"-"]) continue;       // -NSDocumentRevisionsDebugMode and its kin
+        [files addObject:arg];
+    }
+    options[@"files"] = files;
+    return options;
+}
+
+- (void)applyCommandLine:(NSDictionary *)options {
+    if (!options) return;
+    if ([options[@"-alwaysOnTop"] boolValue] && !self.alwaysOnTop) [self toggleAlwaysOnTop:nil];
+    if ([options[@"-titleAdd="] length]) self.editor.titleSuffix = options[@"-titleAdd="];
+    if ([options[@"-notabbar"] boolValue]) [self.editor setChromeVisible:NO];
+
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *cwd = fm.currentDirectoryPath;
+    NSMutableArray<NppDocument *> *opened = [NSMutableArray array];
+    for (NSString *given in options[@"files"]) {
+        NSString *path = given.isAbsolutePath ? given : [cwd stringByAppendingPathComponent:given];
+        path = path.stringByStandardizingPath;
+        BOOL isDirectory = NO;
+        if (![fm fileExistsAtPath:path isDirectory:&isDirectory]) continue;
+        if ([options[@"-openSession"] boolValue]) {
+            [self.editor loadSessionFrom:path error:NULL];
+            continue;
+        }
+        if (isDirectory) {
+            if ([options[@"-openFoldersAsWorkspace"] boolValue]) {
+                [self.editor openFolderAsWorkspace:path];
+            } else if ([options[@"-r"] boolValue]) {
+                NSUInteger taken = 0;
+                for (NSString *relative in [fm enumeratorAtPath:path]) {
+                    NSString *full = [path stringByAppendingPathComponent:relative];
+                    BOOL sub = NO;
+                    if ([fm fileExistsAtPath:full isDirectory:&sub] && !sub &&
+                        [self.editor openFileAtPath:full error:NULL] && ++taken >= 200) break;
+                    if (self.editor.currentDocument.path && [self.editor.currentDocument.path isEqualToString:full]) {
+                        [opened addObject:self.editor.currentDocument];
+                    }
+                }
+            }
+            continue;
+        }
+        if ([self.editor openFileAtPath:path error:NULL] && self.editor.currentDocument) {
+            [opened addObject:self.editor.currentDocument];
+        }
+    }
+    for (NSString *key in @[@"-qt=", @"-qf="]) {
+        NSString *value = options[key];
+        if (!value.length) continue;
+        NSString *text = [key isEqualToString:@"-qt="] ? value
+            : [NSString stringWithContentsOfFile:value encoding:NSUTF8StringEncoding error:NULL];
+        if (!text) continue;
+        [self.editor newDocument];
+        [self.editor setDocumentText:text];
+        [self.editor.sci message:SCI_EMPTYUNDOBUFFER wParam:0 lParam:0];
+        [opened addObject:self.editor.currentDocument];
+    }
+
+    BOOL readOnly = [options[@"-ro"] boolValue] || [options[@"-fullReadOnly"] boolValue] ||
+                    [options[@"-fullReadOnlySavingForbidden"] boolValue];
+    NSString *language = [options[@"-udl="] length] ? options[@"-udl="] : options[@"-l"];
+    for (NppDocument *doc in opened) {
+        [self.editor selectDocumentAtIndex:(NSInteger)[self.editor.documents indexOfObject:doc]];
+        if (language.length) [self.editor chooseLanguageNamed:language];
+        if (readOnly) [self.editor setReadOnly:YES];
+    }
+    if (opened.count) {
+        [self.editor selectDocumentAtIndex:(NSInteger)[self.editor.documents indexOfObject:opened.lastObject]];
+        ScintillaView *sci = self.editor.sci;
+        if (options[@"-p"]) {
+            [sci message:SCI_GOTOPOS wParam:(uptr_t)[options[@"-p"] longValue] lParam:0];
+        } else if (options[@"-n"]) {
+            long line = MAX(0, [options[@"-n"] longValue] - 1);
+            [sci message:SCI_GOTOLINE wParam:(uptr_t)line lParam:0];
+            if (options[@"-c"]) {
+                long column = MAX(0, [options[@"-c"] longValue] - 1);
+                [sci message:SCI_GOTOPOS wParam:(uptr_t)[sci message:SCI_FINDCOLUMN wParam:(uptr_t)line lParam:column] lParam:0];
+            }
+        }
+        if ([options[@"-monitor"] boolValue] || [options[@"-monitoringMode"] boolValue]) {
+            [self.editor setMonitoring:YES];
+        }
+    }
+    [self.editor refreshChrome];
+    [self rebuildRecentMenu];
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)note {
+    // The command line comes first: -settingsDir= decides where everything
+    // below reads its settings from.
+    NSArray *arguments = [[NSProcessInfo processInfo] arguments];
+    self.commandLine = [self parseCommandLine:
+        arguments.count > 1 ? [arguments subarrayWithRange:NSMakeRange(1, arguments.count - 1)] : @[]];
+    if ([self.commandLine[@"-settingsDir="] length]) {
+        [EditorController setSettingsDirectoryForThisLaunch:self.commandLine[@"-settingsDir="]];
+    }
     NSRect frame = NSMakeRect(0, 0, 1000, 700);
     self.window = [[NSWindow alloc]
         initWithContentRect:frame
@@ -190,7 +329,7 @@
     [self.editor setAutosaveEnabled:[NppPreferences shared].autosaveEnabled
                            interval:[NppPreferences shared].autosaveInterval];
     [self.editor restorePanelState];
-    if ([NppPreferences shared].restoreSession) {
+    if ([NppPreferences shared].restoreSession && ![self.commandLine[@"-nosession"] boolValue]) {
         [self.editor loadSessionFrom:[self.editor defaultSessionPath] error:NULL];
     }
     // The documents this instance was launched with arrive through
@@ -200,6 +339,7 @@
         if (![self.editor openFileAtPath:path error:&err] && err) [[NSAlert alertWithError:err] runModal];
     }
     self.pendingOpenPaths = nil;
+    [self applyCommandLine:self.commandLine];
 
     // Follow the system appearance while Preferences is set to do so.
     [NSApp addObserver:self forKeyPath:@"effectiveAppearance"

@@ -55,6 +55,8 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 @property (nonatomic, readonly) NSArray<NppDocument *> *documents;
 @property (nonatomic, readonly, nullable) NppDocument *currentDocument;
 @property (nonatomic, weak, nullable) NSWindow *window;
+/// Added to the window title, as -titleAdd= on the command line asks.
+@property (nonatomic, copy, nullable) NSString *titleSuffix;
 
 /// The text of the document in front, and its replacement: read and written
 /// by length, so that a NUL byte inside a file is kept rather than ending it.

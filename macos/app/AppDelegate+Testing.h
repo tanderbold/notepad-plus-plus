@@ -44,4 +44,7 @@
 - (void)zoomReset:(id)sender;
 - (void)toggleWordWrap:(id)sender;
 - (void)toggleWhitespace:(id)sender;
+/// The command line, parsed and applied; here so the suite can drive them.
+- (NSDictionary *)parseCommandLine:(NSArray<NSString *> *)arguments;
+- (void)applyCommandLine:(NSDictionary *)options;
 @end

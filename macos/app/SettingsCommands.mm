@@ -39,6 +39,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"backupDirectory"): @"",
         Key(@"autosaveEnabled"): @NO,
         Key(@"fileAutoDetection"): @YES,
+        Key(@"autoDetectCharacterEncoding"): @YES,
         Key(@"fileAutoDetectionSilent"): @NO,
         Key(@"fileAutoDetectionScrollToEnd"): @NO,
         Key(@"autosaveInterval"): @60,
@@ -247,6 +248,7 @@ NPP_PREF_BOOL(detectLanguageFromContent, setDetectLanguageFromContent, @"detectL
 NPP_PREF_BOOL(showToolbar, setShowToolbar, @"showToolbar")
 NPP_PREF_BOOL(autosaveEnabled, setAutosaveEnabled, @"autosaveEnabled")
 NPP_PREF_BOOL(fileAutoDetection, setFileAutoDetection, @"fileAutoDetection")
+NPP_PREF_BOOL(autoDetectCharacterEncoding, setAutoDetectCharacterEncoding, @"autoDetectCharacterEncoding")
 NPP_PREF_BOOL(fileAutoDetectionSilent, setFileAutoDetectionSilent, @"fileAutoDetectionSilent")
 NPP_PREF_BOOL(fileAutoDetectionScrollToEnd, setFileAutoDetectionScrollToEnd, @"fileAutoDetectionScrollToEnd")
 NPP_PREF_BOOL(printLineNumbers, setPrintLineNumbers, @"printLineNumbers")
@@ -379,8 +381,17 @@ NPP_PREF_DOUBLE(printMarginBottom, setPrintMarginBottom, @"printMarginBottom")
 
 @implementation EditorController (SettingsCommands)
 
+static NSString *gSettingsDirectoryForThisLaunch;
+
++ (void)setSettingsDirectoryForThisLaunch:(NSString *)directory {
+    gSettingsDirectoryForThisLaunch = [directory copy];
+}
+
 - (NSString *)supportDirectory {
-    NSString *override = [NppPreferences shared].settingsDirectory;
+    // -settingsDir= on the command line, for this launch only; then the
+    // preference; then the default.
+    NSString *override = gSettingsDirectoryForThisLaunch.length
+        ? gSettingsDirectoryForThisLaunch : [NppPreferences shared].settingsDirectory;
     NSString *dir = override.length
         ? override
         : self.defaultSessionPath.stringByDeletingLastPathComponent;

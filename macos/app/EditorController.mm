@@ -1,5 +1,6 @@
 #include <string>
 #import "EditorController.h"
+#import "CharsetDetection.h"
 #import "LanguageCatalog.h"
 #import "StyleCatalog.h"
 #import "ScintillaView.h"
@@ -87,8 +88,23 @@ static NSString *DecodeText(NSData *data, NSStringEncoding *outEnc, BOOL *outBOM
     }
 
     *outBOM = NO;
+    // UTF-16 without a mark gives itself away before anything is decoded.
+    NSStringEncoding wide = [NppCharsetDetection utf16EncodingWithoutMarkForData:data];
+    if (wide) {
+        NSString *s = [[NSString alloc] initWithData:data encoding:wide];
+        if (s) { *outEnc = wide; return s; }
+    }
     NSString *s = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     if (s) { *outEnc = NSUTF8StringEncoding; return s; }
+    // Not UTF-8: asked of uchardet, as Windows asks, before falling back to
+    // Latin-1, which reads anything and understands nothing.
+    if ([NppPreferences shared].autoDetectCharacterEncoding) {
+        NSStringEncoding guessed = [NppCharsetDetection encodingGuessedForData:data];
+        if (guessed) {
+            NSString *s = [[NSString alloc] initWithData:data encoding:guessed];
+            if (s) { *outEnc = guessed; return s; }
+        }
+    }
     *outEnc = NSISOLatin1StringEncoding;
     return [[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
 }
@@ -1584,9 +1600,11 @@ static long SciColor(NSColor *c) {
         doc.path ?: @"(unsaved)", line, col, lines, len,
         doc.language.name ?: @"normal", [self encodingDisplayName], eol, typing];
 
-    self.window.title = doc.path ? [NSString stringWithFormat:@"%@ — %@", doc.displayName,
-                                    doc.path.stringByDeletingLastPathComponent]
-                                 : doc.displayName;
+    NSString *title = doc.path ? [NSString stringWithFormat:@"%@ — %@", doc.displayName,
+                                  doc.path.stringByDeletingLastPathComponent]
+                               : doc.displayName;
+    if (self.titleSuffix.length) title = [title stringByAppendingFormat:@" - %@", self.titleSuffix];
+    self.window.title = title;
     self.window.representedFilename = doc.path ?: @"";
     self.window.documentEdited = doc.modified;
 }
