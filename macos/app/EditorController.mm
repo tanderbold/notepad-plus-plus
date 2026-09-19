@@ -1460,7 +1460,14 @@ static BOOL gCheckingFilesOnDisk;
                      stringByAppendingPathComponent:@"NotepadMac"];
     [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES
                                                attributes:nil error:NULL];
-    return [dir stringByAppendingPathComponent:@"session.json"];
+    // session.xml, as upstream names it. A session.json left by an earlier
+    // build is read once in its place, and the next save writes the XML.
+    NSString *xml = [dir stringByAppendingPathComponent:@"session.xml"];
+    NSString *old = [dir stringByAppendingPathComponent:@"session.json"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:xml] && [[NSFileManager defaultManager] fileExistsAtPath:old]) {
+        [[NSFileManager defaultManager] moveItemAtPath:old toPath:xml error:NULL];   // the loader reads either
+    }
+    return xml;
 }
 
 /// What the session keeps of a document beyond its path: where the caret and
@@ -1537,16 +1544,182 @@ static BOOL gCheckingFilesOnDisk;
     }
     // Folder as Workspace's roots, as upstream's FileBrowser section.
     if ([self workspaceVisible] && [self workspaceRootPaths].count) session[@"workspaceRoots"] = [self workspaceRootPaths];
-    NSData *json = [NSJSONSerialization dataWithJSONObject:session
-                                                   options:NSJSONWritingPrettyPrinted error:error];
-    if (!json) return NO;
-    return [json writeToFile:path options:NSDataWritingAtomic error:error];
+    // Written as Notepad++ writes session.xml, so a session goes from one
+    // system to the other; what only the port keeps rides in mac… attributes.
+    NSData *xml = [[EditorController sessionXMLFromDictionary:session] XMLDataWithOptions:NSXMLNodePrettyPrint];
+    if (!xml) return NO;
+    return [xml writeToFile:path options:NSDataWritingAtomic error:error];
+}
+
+#pragma mark Session as upstream's XML
+
+static NSString *YesNo(id value) { return [value boolValue] ? @"yes" : @"no"; }
+
+/// The name a language has in the Language menu, which is what session.xml calls it by.
+static NSString *SessionLanguageName(NSString *internal) { return [LanguageCatalog menuTitleForLanguage:internal ?: @"normal"]; }
+
+static NSString *InternalLanguageName(NSString *sessionName) {
+    if (!sessionName.length) return nil;
+    for (NppLanguage *l in [LanguageCatalog sharedCatalog].allLanguages) {
+        if ([[LanguageCatalog menuTitleForLanguage:l.name] caseInsensitiveCompare:sessionName] == NSOrderedSame ||
+            [l.name caseInsensitiveCompare:sessionName] == NSOrderedSame) return l.name;
+    }
+    return nil;
+}
+
++ (NSXMLElement *)sessionFileElement:(NSDictionary *)entry name:(NSString *)filename {
+    NSXMLElement *file = [NSXMLElement elementWithName:@"File"];
+    void (^set)(NSString *, NSString *) = ^(NSString *name, NSString *value) {
+        [file addAttribute:[NSXMLNode attributeWithName:name stringValue:value ?: @""]];
+    };
+    long caret = [entry[@"caret"] longValue], anchor = entry[@"anchor"] ? [entry[@"anchor"] longValue] : caret;
+    set(@"firstVisibleLine", [entry[@"firstLine"] ?: @0 stringValue]);
+    set(@"xOffset", @"0");
+    set(@"scrollWidth", @"1");
+    set(@"startPos", @(anchor).stringValue);
+    set(@"endPos", @(caret).stringValue);
+    set(@"selMode", @"0");
+    set(@"offset", @"0");
+    set(@"wrapCount", @"1");
+    set(@"lang", SessionLanguageName(entry[@"language"]));
+    // -1: no code page of its own (UTF-8, UTF-16 or plain ANSI), else the code page's number.
+    set(@"encoding", [entry[@"codepage"] intValue] ? [entry[@"codepage"] stringValue] : @"-1");
+    set(@"userReadOnly", YesNo(entry[@"userReadOnly"]));
+    set(@"filename", filename);
+    set(@"backupFilePath", entry[@"backup"]);
+    set(@"originalFileLastModifTimestamp", @"0");
+    set(@"originalFileLastModifTimestampHigh", @"0");
+    // Upstream counts tab colours from 0 with -1 for none; here 0 is none.
+    set(@"tabColourId", @([entry[@"tabColour"] integerValue] - 1).stringValue);
+    set(@"RTL", @"no");
+    set(@"tabPinned", YesNo(entry[@"pinned"]));
+    set(@"untitleTabRenamed", @"no");
+    set(@"macLanguage", entry[@"language"]);
+    set(@"macEncoding", [entry[@"encoding"] ?: @0 stringValue]);
+    set(@"macBOM", YesNo(entry[@"bom"]));
+    set(@"macEOL", [entry[@"eol"] ?: @0 stringValue]);
+    set(@"macMonitoring", YesNo(entry[@"monitoring"]));
+    for (NSString *kind in @[@"bookmarks", @"folds"]) {
+        for (NSNumber *line in [entry[kind] isKindOfClass:[NSArray class]] ? entry[kind] : @[]) {
+            NSXMLElement *mark = [NSXMLElement elementWithName:[kind isEqualToString:@"folds"] ? @"Fold" : @"Mark"];
+            [mark addAttribute:[NSXMLNode attributeWithName:@"line" stringValue:line.stringValue]];
+            [file addChild:mark];
+        }
+    }
+    return file;
+}
+
++ (NSXMLDocument *)sessionXMLFromDictionary:(NSDictionary *)session {
+    NSXMLElement *root = [NSXMLElement elementWithName:@"NotepadPlus"];
+    NSXMLElement *node = [NSXMLElement elementWithName:@"Session"];
+    NSXMLElement *main = [NSXMLElement elementWithName:@"mainView"], *sub = [NSXMLElement elementWithName:@"subView"];
+    NSDictionary *secondary = [session[@"secondary"] isKindOfClass:[NSDictionary class]] ? session[@"secondary"] : nil;
+    [node addAttribute:[NSXMLNode attributeWithName:@"activeView" stringValue:@"0"]];
+    NSInteger active = 0, index = 0;
+    for (NSDictionary *f in session[@"files"]) {
+        if ([f[@"path"] isEqualToString:session[@"currentPath"] ?: @""]) active = index;
+        [main addChild:[self sessionFileElement:f name:f[@"path"]]];
+        index++;
+    }
+    // Untitled documents: by their tab's name, with the backup that holds their text.
+    for (NSDictionary *u in session[@"unsaved"]) [main addChild:[self sessionFileElement:u name:u[@"name"]]];
+    [main addAttribute:[NSXMLNode attributeWithName:@"activeIndex" stringValue:@(active).stringValue]];
+    [sub addAttribute:[NSXMLNode attributeWithName:@"activeIndex" stringValue:@"0"]];
+    if (secondary) {
+        [sub addChild:[self sessionFileElement:@{@"caret": secondary[@"caret"] ?: @0, @"firstLine": secondary[@"firstLine"] ?: @0,
+                                                  @"language": @""} name:secondary[@"path"]]];
+        [sub addAttribute:[NSXMLNode attributeWithName:@"macSplit" stringValue:[secondary[@"split"] ?: @0.5 stringValue]]];
+    }
+    [node addChild:main];
+    [node addChild:sub];
+    NSArray *roots = [session[@"workspaceRoots"] isKindOfClass:[NSArray class]] ? session[@"workspaceRoots"] : @[];
+    if (roots.count) {
+        NSXMLElement *browser = [NSXMLElement elementWithName:@"FileBrowser"];
+        [browser addAttribute:[NSXMLNode attributeWithName:@"latestSelectedItem" stringValue:@""]];
+        for (NSString *folder in roots) {
+            NSXMLElement *r = [NSXMLElement elementWithName:@"root"];
+            [r addAttribute:[NSXMLNode attributeWithName:@"foldername" stringValue:folder]];
+            [browser addChild:r];
+        }
+        [node addChild:browser];
+    }
+    [root addChild:node];
+    NSXMLDocument *doc = [[NSXMLDocument alloc] initWithRootElement:root];
+    doc.version = @"1.0";
+    doc.characterEncoding = @"UTF-8";
+    return doc;
+}
+
+/// session.xml - Notepad++'s, or this port's - as the dictionary the loader works from.
++ (NSDictionary *)sessionDictionaryFromXML:(NSData *)data {
+    NSXMLDocument *doc = [[NSXMLDocument alloc] initWithData:data options:0 error:NULL];
+    NSXMLElement *node = [doc.rootElement.name isEqualToString:@"NotepadPlus"] ? [doc.rootElement elementsForName:@"Session"].firstObject : nil;
+    if (!node) return nil;
+    NSDictionary *(^entryOf)(NSXMLElement *) = ^NSDictionary *(NSXMLElement *file) {
+        NSString *(^attr)(NSString *) = ^NSString *(NSString *name) { return [file attributeForName:name].stringValue; };
+        NSMutableDictionary *e = [NSMutableDictionary dictionary];
+        NSString *language = attr(@"macLanguage").length ? attr(@"macLanguage") : InternalLanguageName(attr(@"lang"));
+        if (language.length) e[@"language"] = language;
+        e[@"caret"] = @(attr(@"endPos").longLongValue);
+        e[@"anchor"] = @(attr(@"startPos").longLongValue);
+        e[@"firstLine"] = @(attr(@"firstVisibleLine").longLongValue);
+        e[@"pinned"] = @([attr(@"tabPinned") isEqualToString:@"yes"]);
+        e[@"userReadOnly"] = @([attr(@"userReadOnly") isEqualToString:@"yes"]);
+        e[@"tabColour"] = @(attr(@"tabColourId").length ? MAX(0, attr(@"tabColourId").integerValue + 1) : 0);
+        e[@"monitoring"] = @([attr(@"macMonitoring") isEqualToString:@"yes"]);
+        if (attr(@"encoding").intValue > 0) e[@"codepage"] = @(attr(@"encoding").intValue);
+        if (attr(@"backupFilePath").length) e[@"backup"] = attr(@"backupFilePath");
+        NSMutableArray *marks = [NSMutableArray array], *folds = [NSMutableArray array];
+        for (NSXMLElement *m in [file elementsForName:@"Mark"]) [marks addObject:@([m attributeForName:@"line"].stringValue.longLongValue)];
+        for (NSXMLElement *m in [file elementsForName:@"Fold"]) [folds addObject:@([m attributeForName:@"line"].stringValue.longLongValue)];
+        e[@"bookmarks"] = marks;
+        if (folds.count) e[@"folds"] = folds;
+        return e;
+    };
+    NSMutableArray *files = [NSMutableArray array], *unsaved = [NSMutableArray array];
+    NSXMLElement *main = [node elementsForName:@"mainView"].firstObject, *sub = [node elementsForName:@"subView"].firstObject;
+    NSInteger active = [main attributeForName:@"activeIndex"].stringValue.integerValue, index = 0;
+    NSString *currentPath = @"";
+    for (NSXMLElement *file in [main elementsForName:@"File"]) {
+        NSString *name = [file attributeForName:@"filename"].stringValue ?: @"";
+        NSMutableDictionary *e = [entryOf(file) mutableCopy];
+        // A name that is not a path is an untitled tab, which lives in its backup.
+        // (A Windows path is a path too; its file is simply not here, and is passed over when loading.)
+        BOOL isPath = name.isAbsolutePath || [name hasPrefix:@"\\\\"] ||
+                      (name.length > 2 && [name characterAtIndex:1] == ':' && ([name characterAtIndex:2] == '\\' || [name characterAtIndex:2] == '/'));
+        if (isPath) { e[@"path"] = name; [files addObject:e]; if (index == active) currentPath = name; }
+        else if (e[@"backup"]) { e[@"name"] = name; [unsaved addObject:e]; }
+        index++;
+    }
+    NSMutableDictionary *session = [@{@"version": @3, @"files": files, @"unsaved": unsaved, @"currentPath": currentPath} mutableCopy];
+    NSXMLElement *second = [sub elementsForName:@"File"].firstObject;
+    NSString *secondPath = [second attributeForName:@"filename"].stringValue;
+    if (secondPath.isAbsolutePath) {
+        NSDictionary *e = entryOf(second);
+        // Windows keeps a file in one view or the other; here the second view shows one of the open files.
+        if (![[files valueForKey:@"path"] containsObject:secondPath]) {
+            NSMutableDictionary *asFile = [e mutableCopy];
+            asFile[@"path"] = secondPath;
+            [files addObject:asFile];
+        }
+        session[@"secondary"] = @{@"path": secondPath, @"firstLine": e[@"firstLine"], @"caret": e[@"caret"],
+                                  @"split": @([sub attributeForName:@"macSplit"].stringValue.doubleValue ?: 0.5)};
+    }
+    NSMutableArray *roots = [NSMutableArray array];
+    for (NSXMLElement *r in [[node elementsForName:@"FileBrowser"].firstObject elementsForName:@"root"]) {
+        NSString *folder = [r attributeForName:@"foldername"].stringValue;
+        if (folder.length) [roots addObject:folder];
+    }
+    if (roots.count) session[@"workspaceRoots"] = roots;
+    return session;
 }
 
 - (BOOL)loadSessionFrom:(NSString *)path error:(NSError **)error {
     NSData *json = [NSData dataWithContentsOfFile:path options:0 error:error];
     if (!json) return NO;
-    NSDictionary *session = [NSJSONSerialization JSONObjectWithData:json options:0 error:error];
+    // Notepad++'s session.xml (from Windows, or written here), or the JSON this port wrote before.
+    NSDictionary *session = [EditorController sessionDictionaryFromXML:json]
+        ?: [NSJSONSerialization JSONObjectWithData:json options:0 error:error];
     if (![session isKindOfClass:[NSDictionary class]]) return NO;
 
     NSArray *files = session[@"files"];

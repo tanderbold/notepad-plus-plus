@@ -128,7 +128,10 @@ and the Folder as Workspace roots, of which there can now be several as
 upstream has them, with its right-click menu (Add, Remove, Remove All,
 Copy path, Copy file name, Find in Files..., Reveal in Finder, Terminal
 here, Run by system, Fold / Unfold all, Locate current file). The session
-file is still the port's JSON, not upstream's session XML.
+file is upstream's `session.xml` (mainView / subView, Mark, Fold,
+FileBrowser): one written on Windows is read here and the other way round,
+what only the port keeps riding in `mac…` attributes Windows ignores; a
+`session.json` from an earlier build is read once and replaced.
 
 **Preferences.** 24 pages. Done since the audit (plan 2.4): Language
 (menu hiding, compact letter submenus, SQL backslash), Search Engine and
@@ -175,8 +178,11 @@ while it is typed - writing `userDefineLang.xml` in upstream's format.
 Run commands, plugin commands - empty - and Scintilla commands), a filter,
 any command assignable, conflicts shown before saving, `shortcuts.xml` in
 upstream's format read and written, macros from Windows with every kind of
-step. Still different: the editor's context menu is a comma-separated list
-of command titles in a prompt; there is no `contextMenu.xml` with submenus.
+step. The editor's context menu is `contextMenu.xml` in upstream's format
+(commands by menu and item name or by id, FolderName submenus, ItemNameAs,
+separators), upstream's default the first time, read at every right click;
+`tabContextMenu.xml` does the same for the tabs when there is one. Commands
+of Windows plugins named there (MIME Tools, NppExport) are left out.
 
 **Docking.** Done since the audit (plan 2.7): four containers with tabs,
 drag between docked and floating, the layout saved. Still different: see the

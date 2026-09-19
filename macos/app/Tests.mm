@@ -7622,6 +7622,48 @@ int NppMacRunTests(AppDelegate *app) {
             NSString *p = ed.documents[(NSUInteger)i].path;
             if ([p isEqualToString:foldFile] || [p isEqualToString:otherFile]) [ed closeDocumentAtIndex:i discardChanges:YES];
         }
+        // The file is Notepad++'s session.xml: a Windows build reads what is
+        // written here, and what Windows wrote is read here.
+        NSString *written = [NSString stringWithContentsOfFile:sessionPath encoding:NSUTF8StringEncoding error:NULL] ?: @"";
+        BOOL upstreamShape = [written containsString:@"<NotepadPlus>"] && [written containsString:@"<Session activeView=\"0\">"] &&
+                             [written containsString:@"<mainView activeIndex="] && [written containsString:@"<subView activeIndex="] &&
+                             [written containsString:@"<Fold line="] && [written containsString:@"userReadOnly=\"yes\""] &&
+                             [written containsString:@"<FileBrowser"] && [written containsString:@"foldername="] &&
+                             [written containsString:@"lang=\"C++\""];
+        NSString *fromWindows = [NSString stringWithFormat:
+            @"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus>\n    <Session activeView=\"0\">\n"
+            @"        <mainView activeIndex=\"1\">\n"
+            @"            <File firstVisibleLine=\"0\" xOffset=\"0\" scrollWidth=\"64\" startPos=\"2\" endPos=\"5\" selMode=\"0\" offset=\"0\" wrapCount=\"1\" "
+            @"lang=\"Python\" encoding=\"-1\" userReadOnly=\"no\" filename=\"C:\\Users\\someone\\gone.py\" backupFilePath=\"\" "
+            @"originalFileLastModifTimestamp=\"0\" originalFileLastModifTimestampHigh=\"0\" tabColourId=\"-1\" RTL=\"no\" tabPinned=\"no\" untitleTabRenamed=\"no\" />\n"
+            @"            <File firstVisibleLine=\"0\" xOffset=\"0\" scrollWidth=\"64\" startPos=\"3\" endPos=\"7\" selMode=\"0\" offset=\"0\" wrapCount=\"1\" "
+            @"lang=\"C++\" encoding=\"-1\" userReadOnly=\"yes\" filename=\"%@\" backupFilePath=\"\" "
+            @"originalFileLastModifTimestamp=\"0\" originalFileLastModifTimestampHigh=\"0\" tabColourId=\"2\" RTL=\"no\" tabPinned=\"yes\" untitleTabRenamed=\"no\">\n"
+            @"                <Mark line=\"1\" />\n            </File>\n        </mainView>\n        <subView activeIndex=\"0\" />\n    </Session>\n</NotepadPlus>\n", foldFile];
+        NSDictionary *read = [EditorController sessionDictionaryFromXML:[fromWindows dataUsingEncoding:NSUTF8StringEncoding]];
+        NSDictionary *second2 = [read[@"files"] lastObject];
+        BOOL windowsRead = [read[@"files"] count] == 2 && [read[@"currentPath"] isEqualToString:foldFile] &&
+                           [second2[@"language"] isEqualToString:@"cpp"] && [second2[@"pinned"] boolValue] && [second2[@"userReadOnly"] boolValue] &&
+                           [second2[@"tabColour"] integerValue] == 3 && [second2[@"caret"] longValue] == 7 && [second2[@"anchor"] longValue] == 3 &&
+                           [second2[@"bookmarks"] isEqualToArray:@[@1]] && read[@"secondary"] == nil;
+        NSString *winSession = [NSTemporaryDirectory() stringByAppendingPathComponent:@"t_windows_session.xml"];
+        [fromWindows writeToFile:winSession atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        NSUInteger docsBeforeWin = ed.documents.count;
+        BOOL loadedWin = [ed loadSessionFrom:winSession error:NULL];
+        NppDocument *fromWin = ed.currentDocument;
+        BOOL windowsLoaded = loadedWin && [fromWin.path isEqualToString:foldFile] && fromWin.pinned && fromWin.userReadOnly &&
+                             fromWin.tabColour == 3 && ed.documents.count == docsBeforeWin + 1 &&
+                             [ed.sci message:SCI_MARKERGET wParam:1] & (1 << 1);
+        if (fromWin.pinned) [ed togglePinCurrent];
+        [ed setReadOnly:NO];
+        fromWin.tabColour = 0;
+        NSUInteger winIndex = [ed.documents indexOfObject:fromWin];
+        if (winIndex != NSNotFound && [fromWin.path isEqualToString:foldFile]) [ed closeDocumentAtIndex:(NSInteger)winIndex discardChanges:YES];
+        printf("    session.xml: shape=%d read=%d loaded=%d\n", upstreamShape, windowsRead, windowsLoaded);
+        Check(@"IDM_FILE_SAVESESSION (session.xml)",
+              @"a session is written in Notepad++'s own format, and one written on Windows is read: language, caret, pin, colour, read-only, bookmarks",
+              upstreamShape && windowsRead && windowsLoaded);
+
         Check(@"IDM_FILE_SAVESESSION (depth)",
               @"a session brings back folds, the user's read-only, the second view and every workspace root",
               foldBack && readOnlyBack && secondBack && rootsBack);

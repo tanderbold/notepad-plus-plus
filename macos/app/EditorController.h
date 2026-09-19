@@ -173,6 +173,10 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 
 // Sessions
 - (BOOL)saveSessionTo:(NSString *)path error:(NSError **)error;
+/// A session is written as Notepad++'s session.xml and read from that, from
+/// one Windows wrote, or from the JSON earlier builds of the port wrote.
++ (NSXMLDocument *)sessionXMLFromDictionary:(NSDictionary *)session;
++ (nullable NSDictionary *)sessionDictionaryFromXML:(NSData *)data;
 - (BOOL)loadSessionFrom:(NSString *)path error:(NSError **)error;
 - (NSString *)defaultSessionPath;
 - (void)selectDocumentAtIndex:(NSInteger)index;
