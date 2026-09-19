@@ -153,8 +153,9 @@ static NSColor *ColourOf(NSString *hex, NSColor *fallback) {
     y -= 24;
     for (NSUInteger i = 0; i < names.count; ++i) {
         CGFloat x = 16 + (CGFloat)i * 260;
-        [self label:labels[i] at:NSMakePoint(x, y + 3) width:60 in:v];
-        [self field:names[i] at:NSMakeRect(x + 60, y, 190, 22) in:v];
+        // (Room for the label in a longer language: "Середина:", "Schließen:".)
+        [self label:labels[i] at:NSMakePoint(x, y + 3) width:84 in:v];
+        [self field:names[i] at:NSMakeRect(x + 86, y, 164, 22) in:v];
     }
     return y - 36;
 }

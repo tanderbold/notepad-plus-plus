@@ -155,27 +155,27 @@ static NSTextView *KeywordView(NSRect frame, NSView *parent, BOOL editable) {
     _descriptionLabel.font = [NSFont boldSystemFontOfSize:12];
     [content addSubview:_descriptionLabel];
 
-    [content addSubview:Label(@"Foreground colour", NSMakeRect(x, top - 100, 120, 18))];
+    [content addSubview:Label(@"Foreground color", NSMakeRect(x, top - 100, 120, 18))];
     _foregroundWell = [[NSColorWell alloc] initWithFrame:NSMakeRect(x + 124, top - 104, 48, 26)];
     _foregroundWell.target = self;
     _foregroundWell.action = @selector(colourChanged:);
     [content addSubview:_foregroundWell];
-    [content addSubview:Label(@"Background colour", NSMakeRect(x + 190, top - 100, 124, 18))];
+    [content addSubview:Label(@"Background color", NSMakeRect(x + 190, top - 100, 124, 18))];
     _backgroundWell = [[NSColorWell alloc] initWithFrame:NSMakeRect(x + 316, top - 104, 48, 26)];
     _backgroundWell.target = self;
     _backgroundWell.action = @selector(colourChanged:);
     [content addSubview:_backgroundWell];
 
     [content addSubview:Label(@"Font name:", NSMakeRect(x, top - 134, 74, 18))];
-    _fontPicker = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(x + 76, top - 138, 180, 26)];
+    _fontPicker = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(x + 76, top - 138, 160, 26)];
     [_fontPicker addItemWithTitle:@""];
     [_fontPicker addItemsWithTitles:[[[NSFontManager sharedFontManager] availableFontFamilies]
                                      sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)]];
     _fontPicker.target = self;
     _fontPicker.action = @selector(fontChanged:);
     [content addSubview:_fontPicker];
-    [content addSubview:Label(@"Size:", NSMakeRect(x + 266, top - 134, 34, 18))];
-    _sizePicker = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(x + 300, top - 138, 70, 26)];
+    [content addSubview:Label(@"Size:", NSMakeRect(x + 244, top - 134, 34, 18))];
+    _sizePicker = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(x + 280, top - 138, 70, 26)];
     [_sizePicker addItemWithTitle:@""];
     for (NSNumber *n in @[@5, @6, @7, @8, @9, @10, @11, @12, @14, @16, @18, @20, @22, @24, @26, @28]) {
         [_sizePicker addItemWithTitle:n.stringValue];
@@ -194,11 +194,11 @@ static NSTextView *KeywordView(NSRect frame, NSView *parent, BOOL editable) {
     // The system's font panel, for choosing by sight; what is chosen there
     // lands in the same attributes the pop-ups write.
     _fontPanelButton = [NSButton buttonWithTitle:@"Fonts…" target:self action:@selector(showFontPanel:)];
-    _fontPanelButton.frame = NSMakeRect(x + 270, top - 170, 100, 28);
+    _fontPanelButton.frame = NSMakeRect(x - 4, top - 202, 110, 28);      // a row of its own: translated, the three boxes need theirs
     [content addSubview:_fontPanelButton];
 
     // Only for the Global override style.
-    _overrideGroup = [[NSView alloc] initWithFrame:NSMakeRect(x, 60, 380, top - 240)];
+    _overrideGroup = [[NSView alloc] initWithFrame:NSMakeRect(x, 60, 380, top - 272)];
     CGFloat oy = NSHeight(_overrideGroup.frame) - 24;
     for (NSArray<NSString *> *flag in OverrideFlags()) {
         NSButton *b = [NSButton checkboxWithTitle:flag[1] target:self action:@selector(overrideToggled:)];
@@ -211,20 +211,20 @@ static NSTextView *KeywordView(NSRect frame, NSView *parent, BOOL editable) {
     [content addSubview:_overrideGroup];
 
     // Only for languages.
-    _extensionGroup = [[NSView alloc] initWithFrame:NSMakeRect(x, top - 232, 380, 56)];
-    [_extensionGroup addSubview:Label(@"Default ext.:", NSMakeRect(0, 32, 84, 18))];
-    _defaultExtLabel = Label(@"", NSMakeRect(86, 32, 294, 18));
+    _extensionGroup = [[NSView alloc] initWithFrame:NSMakeRect(x, top - 264, 380, 56)];   // below the Fonts… row
+    [_extensionGroup addSubview:Label(@"Default ext.:", NSMakeRect(0, 32, 118, 18))];
+    _defaultExtLabel = Label(@"", NSMakeRect(122, 32, 258, 18));
     _defaultExtLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     [_extensionGroup addSubview:_defaultExtLabel];
-    [_extensionGroup addSubview:Label(@"User ext.:", NSMakeRect(0, 4, 84, 18))];
-    _userExtField = [[NSTextField alloc] initWithFrame:NSMakeRect(86, 2, 200, 22)];
+    [_extensionGroup addSubview:Label(@"User ext.:", NSMakeRect(0, 4, 118, 18))];
+    _userExtField = [[NSTextField alloc] initWithFrame:NSMakeRect(122, 2, 200, 22)];
     _userExtField.placeholderString = @"ext1 ext2";
     _userExtField.delegate = self;
     [_extensionGroup addSubview:_userExtField];
     [content addSubview:_extensionGroup];
 
     // Only for styles with a keyword class.
-    _keywordGroup = [[NSView alloc] initWithFrame:NSMakeRect(x, 60, 380, top - 300)];
+    _keywordGroup = [[NSView alloc] initWithFrame:NSMakeRect(x, 60, 380, top - 332)];
     CGFloat kh = (NSHeight(_keywordGroup.frame) - 44) / 2;
     [_keywordGroup addSubview:Label(@"Default keywords", NSMakeRect(0, NSHeight(_keywordGroup.frame) - 18, 200, 18))];
     _defaultKeywordsView = KeywordView(NSMakeRect(0, kh + 22, 380, kh), _keywordGroup, NO);
@@ -246,7 +246,7 @@ static NSTextView *KeywordView(NSRect frame, NSView *parent, BOOL editable) {
     cancel.frame = NSMakeRect(NSWidth(frame) - 240, 14, 100, 30);
     cancel.keyEquivalent = @"\033";
     [content addSubview:cancel];
-    NSButton *save = [NSButton buttonWithTitle:@"Save & Close" target:self action:@selector(saveAndClose:)];
+    NSButton *save = [NSButton buttonWithTitle:@"Save && Close" target:self action:@selector(saveAndClose:)];
     save.frame = NSMakeRect(NSWidth(frame) - 130, 14, 110, 30);
     save.keyEquivalent = @"\r";
     [content addSubview:save];

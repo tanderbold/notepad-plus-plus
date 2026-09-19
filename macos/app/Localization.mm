@@ -135,6 +135,26 @@ static void FitTitledControl(NSControl *c) {
         BOOL sameRow = NSMinY(other.frame) < NSMaxY(frame) - 2 && NSMaxY(other.frame) > NSMinY(frame) + 2;
         if (sameRow && NSMinX(other.frame) >= NSMinX(frame) + 8) limit = MIN(limit, NSMinX(other.frame) - 4);
     }
+    CGFloat short_ = needed - (limit - NSMinX(frame));
+    if (short_ > 0) {
+        // Not enough room before the next thing on the row: the rest of the row
+        // moves right, when the row as a whole still fits its parent.
+        NSMutableArray<NSView *> *rest = [NSMutableArray array];
+        CGFloat rowEnd = 0;
+        for (NSView *other in c.superview.subviews) {
+            if (other == c || other.hidden != c.hidden) continue;
+            BOOL sameRow = NSMinY(other.frame) < NSMaxY(frame) - 2 && NSMaxY(other.frame) > NSMinY(frame) + 2;
+            if (sameRow && NSMinX(other.frame) >= NSMinX(frame) + 8) { [rest addObject:other]; rowEnd = MAX(rowEnd, NSMaxX(other.frame)); }
+        }
+        if (rest.count && rowEnd + short_ <= NSWidth(c.superview.bounds) - 4) {
+            for (NSView *other in rest) {
+                NSRect r = other.frame;
+                r.origin.x += short_;
+                other.frame = r;
+            }
+            limit += short_;
+        }
+    }
     frame.size.width = MAX(NSWidth(frame), MIN(needed, limit - NSMinX(frame)));
     c.frame = frame;
 }

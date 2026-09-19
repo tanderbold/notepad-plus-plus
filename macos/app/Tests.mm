@@ -7726,6 +7726,48 @@ int NppMacRunTests(AppDelegate *app) {
                 [composite hasPrefix:@"    "] && [composite containsString:@": "] && ![composite containsString:@"|"] &&
                 ![composite containsString:@"Custom Color"];
 
+        // The other dialogs in this language: no checkbox, radio button or label
+        // that is shown has its text cut.
+        NSMutableArray<NSString *> *cutElsewhere = [NSMutableArray array];
+        __block void (^scan)(NSView *, NSString *);
+        void (^__block __weak weakScan)(NSView *, NSString *);
+        scan = ^(NSView *v, NSString *where) {
+            if (v.hidden) return;
+            BOOL lbl = [v isKindOfClass:[NSTextField class]] && !((NSTextField *)v).editable && !((NSTextField *)v).bezeled;
+            BOOL tog = [v isKindOfClass:[NSButton class]] && ![v isKindOfClass:[NSPopUpButton class]] &&
+                       (((NSButtonCell *)((NSButton *)v).cell).showsStateBy & NSContentsCellMask);
+            if ((lbl || tog) && !((NSControl *)v).cell.wraps) {
+                NSControl *c = (NSControl *)v;
+                NSString *text = lbl ? c.stringValue : ((NSButton *)c).title;
+                if (text.length && c.cell.cellSize.width > NSWidth(c.frame) + 1.5) {
+                    [cutElsewhere addObject:[NSString stringWithFormat:@"%@: \"%@\" needs %.0f of %.0f", where, text, c.cell.cellSize.width, NSWidth(c.frame)]];
+                }
+            }
+            for (NSView *sub in v.subviews) weakScan(sub, where);
+        };
+        weakScan = scan;
+        NSSegmentedControl *findTabsToScan = [app valueForKey:@"findTabs"];
+        for (NSInteger tab = 0; tab < findTabsToScan.segmentCount; ++tab) {
+            [app openFindPanelOnTab:tab];
+            [[NppLocalization shared] localizeWindow:findDialog];
+            scan(findDialog.contentView, [NSString stringWithFormat:@"Find tab %ld", (long)tab]);
+        }
+        [findDialog orderOut:nil];
+        StyleConfiguratorWindow *styleToScan = [[StyleConfiguratorWindow alloc] initWithEditor:ed];
+        [styleToScan show];
+        NSWindow *styleWindowToScan = [styleToScan valueForKey:@"panel"];
+        [[NppLocalization shared] localizeWindow:styleWindowToScan];
+        scan(styleWindowToScan.contentView, @"Style Configurator");
+        [styleToScan cancel:nil];
+        NppUserLanguageDialog *udlToScan = [[NppUserLanguageDialog alloc] initWithEditor:ed];
+        [udlToScan toggle];
+        NSWindow *udlWindowToScan = [udlToScan valueForKey:@"panel"];
+        [[NppLocalization shared] localizeWindow:udlWindowToScan];
+        scan(udlWindowToScan.contentView, @"User Defined Language");
+        [udlToScan toggle];
+        if (cutElsewhere.count) printf("    cut texts (ru):\n        %s\n", [cutElsewhere componentsJoinedByString:@"\n        "].UTF8String);
+        names = names && !cutElsewhere.count;
+
         // Context menus: the tab's in its own wording, the editor's still found
         // by the English titles the setting keeps.
         NSMenu *tabMenu = [app buildTabContextMenu];
