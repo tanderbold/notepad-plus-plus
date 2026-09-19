@@ -4811,6 +4811,27 @@ int NppMacRunTests(AppDelegate *app) {
                   @"examples, and one language is offered alone only past the level fitted for that",
                   !addedWrong.count && aloneIsSure && modelLanguages.count >= 80);
 
+            // A type declared behind an access modifier is C#'s or Java's way of
+            // writing it, however little else there is: a bare enum pasted into an
+            // empty document is offered as both, C# first when its members are numbered.
+            NSArray<NSString *> *(^offeredFor)(NSString *) = ^NSArray<NSString *> *(NSString *code) {
+                NSMutableArray *out = [NSMutableArray array];
+                for (NppLanguage *one in [lc languagesMatchingContents:code]) [out addObject:one.name];
+                return out;
+            };
+            NSArray *numberedEnum = offeredFor(@"public enum UserTransactionStatus\n{\n    Created = 1,\n    Pending = 2,\n    Success = 3,\n    Failed = 4\n}\n");
+            NSArray *plainEnum = offeredFor(@"public enum Direction {\n    NORTH,\n    SOUTH,\n    EAST,\n    WEST\n}\n");
+            NSArray *sealedClass = offeredFor(@"internal sealed class Cache : IDisposable\n{\n    private readonly Dictionary<string, int> _items = new();\n    public void Dispose() { _items.Clear(); }\n}\n");
+            NSArray *finalClass = offeredFor(@"public final class Point implements Comparable<Point> {\n    private final int x;\n    private final int y;\n    public Point(int x, int y) { this.x = x; this.y = y; }\n}\n");
+            printf("    declarations: enum=%s plain=%s sealed=%s final=%s\n", [numberedEnum componentsJoinedByString:@","].UTF8String,
+                   [plainEnum componentsJoinedByString:@","].UTF8String, [sealedClass componentsJoinedByString:@","].UTF8String,
+                   [finalClass componentsJoinedByString:@","].UTF8String);
+            Check(@"IDM_LANG_DETECT (a type declaration)",
+                  @"\"public enum …\" is offered as C# and Java and nothing else; sealed, internal and a base list mean C#, final and implements mean Java",
+                  [numberedEnum isEqualToArray:(@[@"cs", @"java"])] && [plainEnum containsObject:@"java"] && [plainEnum containsObject:@"cs"] &&
+                  plainEnum.count == 2 && [sealedClass isEqualToArray:@[@"cs"]] && [finalClass.firstObject isEqualToString:@"java"] &&
+                  ![finalClass containsObject:@"cs"]);
+
             // A short piece of C-shaped code: what is offered is a choice of
             // no more than ten with C in it, whether C alone or a list. A
             // single answer that is not C, or a list without it, is the
