@@ -48,6 +48,7 @@
 #import "DockingManager.h"
 #import "ScriptCommands.h"
 #import "MacroableCommands.h"
+#import "ContextMenuFile.h"
 #import <objc/runtime.h>
 
 @interface AppDelegate () <NSWindowDelegate>
@@ -415,6 +416,12 @@ static NSString *Ordinal(NSUInteger n) {
 
     __weak __typeof(self) weakApp = self;
     self.editor.tabContextMenu = ^NSMenu *{ return [weakApp buildTabContextMenu]; };
+    // The editor's popup menu, from contextMenu.xml in the settings folder -
+    // upstream's default the first time, the user's own after that.
+    self.editor.editorContextMenu = ^NSMenu *{
+        return [NppContextMenuFile menuFromFile:[weakApp contextMenuPathCreatingDefault:YES] root:@"ScintillaContextMenu"
+                                       mainMenu:NSApp.mainMenu identifiers:[weakApp.shortcutStore menuItemsByIdentifier]];
+    };
     // And are recorded from here: the menu says when one of its commands runs.
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(menuWillSendAction:)
                                                  name:NSMenuWillSendActionNotification object:nil];
@@ -1801,17 +1808,29 @@ static NSString *Ordinal(NSUInteger n) {
                        (unsigned long)n, subdir] title:title];
 }
 
-- (void)editContextMenu:(id)sender {
-    NSString *current = [[NppPreferences shared].contextMenuCommands componentsJoinedByString:@", "];
-    NSString *edited = [self promptForString:@"Context menu commands, comma separated" default:current];
-    if (!edited) return;
-    NSMutableArray *commands = [NSMutableArray array];
-    for (NSString *raw in [edited componentsSeparatedByString:@","]) {
-        NSString *t = [raw stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-        if (t.length) [commands addObject:t];
+/// contextMenu.xml beside the other settings; upstream's default is written
+/// there the first time it is wanted.
+- (NSString *)contextMenuPathCreatingDefault:(BOOL)create {
+    NSString *path = [[self.editor supportDirectory] stringByAppendingPathComponent:@"contextMenu.xml"];
+    if (create && ![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:path.stringByDeletingLastPathComponent
+                                  withIntermediateDirectories:YES attributes:nil error:NULL];
+        [[NppContextMenuFile defaultContents] writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:NULL];
     }
-    [NppPreferences shared].contextMenuCommands = commands;
-    [self.editor rebuildContextMenu];
+    return path;
+}
+
+/// IDM_SETTING_EDITCONTEXTMENU: the file itself, opened to be edited. Here it
+/// is read at every right click, so saving it is enough.
+- (void)editContextMenu:(id)sender {
+    if (!getenv("NPPMAC_TEST")) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = @"Editing contextMenu";
+        alert.informativeText = @"Editing contextMenu.xml allows you to modify your Notepad++ popup context menu on edit zone.\n"
+                                @"Here the change shows as soon as the file is saved.";
+        [alert runModal];
+    }
+    [self.editor openFileAtPath:[self contextMenuPathCreatingDefault:YES] error:NULL];
 }
 
 #pragma mark - Language: user defined
@@ -3309,6 +3328,11 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
 /// The tab right-click menu, with the items and submenus Notepad++ gives it
 /// by default (NppNotification.cpp), taken from the port's own menu items.
 - (NSMenu *)buildTabContextMenu {
+    // tabContextMenu.xml, when the user has made one (upstream ships an example to rename).
+    NSString *own = [[self.editor supportDirectory] stringByAppendingPathComponent:@"tabContextMenu.xml"];
+    NSMenu *described = [NppContextMenuFile menuFromFile:own root:@"TabContextMenu" mainMenu:NSApp.mainMenu
+                                             identifiers:[self.shortcutStore menuItemsByIdentifier]];
+    if (described.numberOfItems) return described;
     // Upstream's labels (with Finder, Terminal and Trash for their Windows
     // namesakes); the command behind each is found by its id, or by action.
     struct { const char *label; const char *identifier; const char *action; const char *submenu; } layout[] = {

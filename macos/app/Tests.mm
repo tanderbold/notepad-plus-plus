@@ -49,6 +49,7 @@
 #import "InfoWindows.h"
 #import "UpdateChecker.h"
 #import "ScriptCommands.h"
+#import "ContextMenuFile.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -6108,13 +6109,49 @@ int NppMacRunTests(AppDelegate *app) {
               copiedThemes == 1 &&
               [[ed importedFilesIn:@"themes"] containsObject:@"t_theme.xml"]);
 
-        p.contextMenuCommands = @[@"Copy", @"Paste", @"Toggle Line Comment"];
+        // contextMenu.xml in upstream's format: by menu and item name, by id, in a
+        // folder, renamed, separated; what this build does not have is left out.
+        NSString *cmPath = [[ed supportDirectory] stringByAppendingPathComponent:@"contextMenu.xml"];
+        NSData *cmWas = [NSData dataWithContentsOfFile:cmPath];
+        [@"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus><ScintillaContextMenu>\n"
+         @"<Item id=\"0\"/>\n"
+         @"<Item MenuEntryName=\"Edit\" MenuItemName=\"Copy\"/>\n"
+         @"<Item MenuEntryName=\"edit\" MenuItemName=\"&amp;Paste\" ItemNameAs=\"Put it here\"/>\n"
+         @"<Item id=\"0\"/><Item id=\"0\"/>\n"
+         @"<Item MenuEntryName=\"Edit\" MenuItemName=\"No Such Command\"/>\n"
+         @"<Item FolderName=\"Case\" id=\"42016\"/>\n"
+         @"<Item FolderName=\"Case\" MenuEntryName=\"Edit\" MenuItemName=\"lowercase\"/>\n"
+         @"<Item FolderName=\"Nothing here\" MenuEntryName=\"Edit\" MenuItemName=\"Nor This\"/>\n"
+         @"<Item FolderName=\"Plugin commands\" PluginEntryName=\"JSON\" PluginCommandItemName=\"Format\"/>\n"
+         @"<Item id=\"0\"/>\n"
+         @"</ScintillaContextMenu></NotepadPlus>\n" writeToFile:cmPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
         [ed rebuildContextMenu];
         NSMenu *ctx = ed.sci.menu;
         NSMutableArray *ctxTitles = [NSMutableArray array];
-        for (NSMenuItem *mi in ctx.itemArray) [ctxTitles addObject:mi.title];
-        Check(@"IDM_SETTING_EDITCONTEXTMENU", @"the right-click menu follows the setting",
-              ctx.numberOfItems == 3 && [ctxTitles containsObject:@"Toggle Line Comment"]);
+        for (NSMenuItem *mi in ctx.itemArray) [ctxTitles addObject:mi.isSeparatorItem ? @"-" : mi.title];
+        NSMenuItem *caseFolder = [ctx itemWithTitle:@"Case"], *pluginFolder = [ctx itemWithTitle:@"Plugin commands"];
+        BOOL fromFile = [ctxTitles isEqualToArray:(@[@"Copy", @"Put it here", @"-", @"Case", @"Plugin commands"])] &&
+                        caseFolder.submenu.numberOfItems == 2 && [caseFolder.submenu.itemArray.firstObject action] == NSSelectorFromString(@"convertCase:") &&
+                        pluginFolder.submenu.numberOfItems == 1 && [ctx itemWithTitle:@"Put it here"].action == NSSelectorFromString(@"pasteText:");
+        printf("    context menu: %s | case=%ld %s\n", [ctxTitles componentsJoinedByString:@", "].UTF8String, (long)caseFolder.submenu.numberOfItems,
+               NSStringFromSelector([caseFolder.submenu.itemArray.firstObject action]).UTF8String);
+        // Upstream's default: most of it is here (the plugin commands of Windows are not).
+        [[NppContextMenuFile defaultContents] writeToFile:cmPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        [ed rebuildContextMenu];
+        NSMenu *stock = ed.sci.menu;
+        BOOL stockMenu = stock.numberOfItems >= 12 && [stock itemWithTitle:@"Style all occurrences of token"].submenu.numberOfItems == 5 &&
+                         [stock.itemArray.firstObject action] == NSSelectorFromString(@"cutText:");
+        printf("    context menu default: %ld items\n", (long)stock.numberOfItems);
+        // Without the file's menu (no such root) the list in Preferences is what shows.
+        [@"<NotepadPlus></NotepadPlus>" writeToFile:cmPath atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        p.contextMenuCommands = @[@"Copy", @"Paste", @"Toggle Line Comment"];
+        [ed rebuildContextMenu];
+        BOOL fallsBack = ed.sci.menu.numberOfItems == 3 && [ed.sci.menu itemWithTitle:@"Toggle Line Comment"];
+        if (cmWas) [cmWas writeToFile:cmPath atomically:YES]; else [[NSFileManager defaultManager] removeItemAtPath:cmPath error:NULL];
+        [ed rebuildContextMenu];
+        printf("    context menu checks: file=%d stock=%d fallback=%d\n", fromFile, stockMenu, fallsBack);
+        Check(@"IDM_SETTING_EDITCONTEXTMENU", @"the right-click menu is what contextMenu.xml says, upstream's default included, and the Preferences list without it",
+              fromFile && stockMenu && fallsBack);
     }
 
     printf("\n== Preferences: pages ==\n");
@@ -7818,7 +7855,7 @@ int NppMacRunTests(AppDelegate *app) {
         for (NSMenuItem *it in fileTop.submenu.itemArray) for (NSMenuItem *sub in it.submenu.itemArray) if (sub.action == NSSelectorFromString(@"closeAllButCurrent:")) closeOthers = sub;
         BOOL contextMenus = [tabMenu.itemArray.firstObject.title isEqualToString:@"Закрыть"] &&
                             [[tabMenu.itemArray[1].submenu.itemArray.firstObject title] isEqualToString:@"Закрыть все Кроме Текущей"] &&
-                            editorMenu.numberOfItems >= 3 && [editorMenu.itemArray.firstObject.title isEqualToString:@"Копировать"];
+                            editorMenu.numberOfItems >= 3 && [editorMenu.itemArray.firstObject.title isEqualToString:@"Вырезать"];
         printf("    l10n context: tab=%s/%s editor=%ld first=%s main=%s\n", tabMenu.itemArray.firstObject.title.UTF8String,
                [tabMenu.itemArray[1].submenu.itemArray.firstObject title].UTF8String, (long)editorMenu.numberOfItems,
                editorMenu.itemArray.firstObject.title.UTF8String, closeOthers.title.UTF8String);

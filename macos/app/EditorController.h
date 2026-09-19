@@ -197,6 +197,9 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (void)showAutoCompletion;
 - (void)applyTheme;                               // re-apply npp styles (e.g. on appearance change)
 - (void)applyLanguage;                            // re-attach lexer, keywords and styles
+/// The editor's popup menu as contextMenu.xml describes it; without one (or
+/// when it names nothing this build has) the commands listed in Preferences.
+@property (nonatomic, copy, nullable) NSMenu *_Nullable (^editorContextMenu)(void);
 - (void)rebuildContextMenu;                       // right-click menu from Preferences
 - (void)applyTabBarPreferences;                   // layout and behaviour of the tab bar
 /// Overtype: what the status bar shows as INS or OVR, and what the Insert key

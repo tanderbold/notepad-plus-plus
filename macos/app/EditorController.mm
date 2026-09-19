@@ -2056,11 +2056,18 @@ static BOOL gCheckingFilesOnDisk;
     [self showCompletion:NppCompletionKindWords autoInsert:YES];
 }
 
-static const char kEditorMenuItemsKey = 0;
-
 /// Right-click menu, built from the commands listed in Preferences.
-- (void)rebuildContextMenu {
-    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Context"];
+/// The commands of the popup menu, as contextMenu.xml has them now (it is
+/// read each time, so an edit shows at the next right click) or, without
+/// one, as Preferences lists them.
+- (NSArray<NSMenuItem *> *)contextMenuItems {
+    NSMenu *described = self.editorContextMenu ? self.editorContextMenu() : nil;
+    if (described.numberOfItems) {
+        NSArray *items = [described.itemArray copy];
+        [described removeAllItems];
+        return items;
+    }
+    NSMutableArray<NSMenuItem *> *items = [NSMutableArray array];
     for (NSString *title in [NppPreferences shared].contextMenuCommands) {
         NSMenuItem *found = nil;
         NSMutableArray *queue = [NSMutableArray arrayWithArray:NSApp.mainMenu.itemArray];
@@ -2077,10 +2084,15 @@ static const char kEditorMenuItemsKey = 0;
         copy.target = found.target;
         copy.tag = found.tag;
         copy.representedObject = found.representedObject;
-        [menu addItem:copy];
+        [items addObject:copy];
     }
+    return items;
+}
+
+- (void)rebuildContextMenu {
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Context"];
+    for (NSMenuItem *item in [self contextMenuItems]) [menu addItem:item];
     menu.delegate = (id<NSMenuDelegate>)self;
-    objc_setAssociatedObject(self, &kEditorMenuItemsKey, [menu.itemArray copy], OBJC_ASSOCIATION_COPY);
     self.sciView.menu = menu;
     self.secondaryView.menu = menu;
 }
@@ -2113,7 +2125,7 @@ static const char kEditorMenuItemsKey = 0;
         }
         return;
     }
-    for (NSMenuItem *item in objc_getAssociatedObject(self, &kEditorMenuItemsKey)) [menu addItem:[item copy]];
+    for (NSMenuItem *item in [self contextMenuItems]) [menu addItem:item];
 }
 
 - (void)resultsFoldAll:(id)sender   { [self foldAllSearchResults:YES]; }

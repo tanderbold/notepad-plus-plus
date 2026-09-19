@@ -124,6 +124,8 @@ cp "$ROOT/PowerEditor/src/stylers.model.xml" "$APP/Contents/Resources/"
 # read back by the coverage meta-test in the built-in suite
 cp "$ROOT/macos/implemented.txt"            "$APP/Contents/Resources/"
 cp "$ROOT/macos/resources/encoding-reference.txt" "$APP/Contents/Resources/"
+# Upstream's default context menu (gen_context_menu.py), which a new settings folder starts with.
+cp "$ROOT/macos/resources/contextMenu.xml" "$APP/Contents/Resources/"
 # The trained language model, fitted offline by macos/train-language-model.py.
 cp "$ROOT/macos/resources/language-model.bin"    "$APP/Contents/Resources/"
 # The FTP tests need a server to talk to; this one exists only for them.
