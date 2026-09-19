@@ -7784,6 +7784,14 @@ int NppMacRunTests(AppDelegate *app) {
         [[NppLocalization shared] localizeWindow:udlWindowToScan];
         scan(udlWindowToScan.contentView, @"User Defined Language");
         [udlToScan toggle];
+        NppShortcutMapper *mapperToScan = [[NppShortcutMapper alloc] initWithStore:app.shortcutStore editor:ed];
+        [mapperToScan toggle];
+        NSWindow *mapperWindowToScan = [mapperToScan valueForKey:@"panel"];
+        [[NppLocalization shared] localizeWindow:mapperWindowToScan];
+        scan(mapperWindowToScan.contentView, @"Shortcut Mapper");
+        BOOL mapperScanned = mapperWindowToScan.contentView != nil;
+        [mapperToScan toggle];
+        names = names && mapperScanned;
         if (cutElsewhere.count) printf("    cut texts (ru):\n        %s\n", [cutElsewhere componentsJoinedByString:@"\n        "].UTF8String);
         names = names && !cutElsewhere.count;
 

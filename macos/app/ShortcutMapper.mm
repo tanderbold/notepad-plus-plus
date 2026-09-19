@@ -984,7 +984,16 @@ static void AddComboAttributes(NSXMLElement *e, NppKeyCombo *combo) {
     if (row < 0 || row >= (NSInteger)self.shownCommands.count) return @"";
     NppShortcutCommand *c = self.shownCommands[(NSUInteger)row];
     if ([column.identifier isEqualToString:@"name"]) return c.name;
-    if ([column.identifier isEqualToString:@"detail"]) return c.detail;
+    if ([column.identifier isEqualToString:@"detail"]) {
+        // The menu path, shown in the interface language; the application's own
+        // menu has no title of its own and goes by the program's name.
+        NSMutableArray *parts = [NSMutableArray array];
+        for (NSString *part in [c.detail componentsSeparatedByString:@" › "]) {
+            if ([part isEqualToString:@"NSMenuItem"]) [parts addObject:[NSProcessInfo processInfo].processName];
+            else [parts addObject:NppL(part)];
+        }
+        return [parts componentsJoinedByString:@" › "];
+    }
     NSMutableArray *parts = [NSMutableArray array];
     if (c.combo) [parts addObject:c.combo.displayString];
     for (NppKeyCombo *extra in c.extraCombos) [parts addObject:extra.displayString];

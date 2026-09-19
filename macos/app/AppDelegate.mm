@@ -4282,7 +4282,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     [self.editor.view displayIfNeeded];
 
     NSView *view = self.window.contentView;
-    // NPPMAC_SNAPSHOT_PANEL=find:<tab>, prefs:<page>, style, about or debug captures that dialog instead.
+    // NPPMAC_SNAPSHOT_PANEL=find:<tab>, prefs:<page>, style, mapper, about or debug captures that dialog instead.
     const char *panel = getenv("NPPMAC_SNAPSHOT_PANEL");
     if (panel && !strncmp(panel, "find", 4)) {
         [self openFindPanelOnTab:strlen(panel) > 5 ? atoi(panel + 5) : 0];
@@ -4296,6 +4296,11 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     } else if (panel && !strcmp(panel, "style")) {
         [self showStyleConfigurator:nil];
         view = [[self.styleWindow valueForKey:@"panel"] contentView];
+    } else if (panel && !strcmp(panel, "mapper")) {
+        [self showShortcutMapper:nil];
+        NSWindow *mapperWindow = [self.shortcutMapper valueForKey:@"panel"];
+        [[NppLocalization shared] localizeWindow:mapperWindow];
+        view = mapperWindow.contentView;
     } else if (panel && !strcmp(panel, "about")) {
         [self showAbout:nil];
         view = [NppAboutWindow shared].panel.contentView;
@@ -4303,7 +4308,7 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
         [self showDebugInfo:nil];
         view = [NppDebugInfoWindow shared].panel.contentView;
     }
-    if (panel && (!strcmp(panel, "about") || !strcmp(panel, "debug"))) {
+    if (panel && (!strcmp(panel, "about") || !strcmp(panel, "debug") || !strcmp(panel, "mapper"))) {
         // The window's frame draws its background, which a view capture leaves out.
         view.wantsLayer = YES;
         [view.effectiveAppearance performAsCurrentDrawingAppearance:^{
