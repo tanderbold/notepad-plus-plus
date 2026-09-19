@@ -4089,6 +4089,24 @@ int NppMacRunTests(AppDelegate *app) {
             BOOL menus = [one itemWithTitle:@"Close"] != nil && [several itemWithTitle:@"Close Selected Files"] != nil &&
                          [several itemWithTitle:@"Save Selected Files"] != nil;
             [list sortByColumn:nil ascending:YES];
+            // Group by View: with the second view in use, a heading above each
+            // view's files; headings are not files, and turning it off removes them.
+            BOOL groupWas = lp.docListGroupByView;
+            [list setGroupByView:YES];
+            NSUInteger plainRows = list.rows.count;
+            [ed cloneCurrentToOtherView];
+            NSArray *grouped = list.rows;
+            BOOL groups = grouped.count == plainRows + 3 && [list isGroupRow:0] && [grouped[0] isEqualToString:@"View 1"] &&
+                          [list isGroupRow:(NSInteger)plainRows + 1] && [grouped.lastObject isKindOfClass:[NppDocument class]] &&
+                          [[list textOfColumn:@"name" row:0] isEqualToString:@"View 1"] &&
+                          [list documentsInRows:[NSIndexSet indexSetWithIndex:0]].count == 0;
+            [list setGroupByView:NO];
+            groups = groups && list.rows.count == plainRows;
+            [list setGroupByView:YES];
+            [ed setSecondaryViewVisible:NO];
+            groups = groups && list.rows.count == plainRows;
+            [list setGroupByView:groupWas];
+            menus = menus && groups;
             NSMutableIndexSet *mine = [NSMutableIndexSet indexSet];
             [list.rows enumerateObjectsUsingBlock:^(NppDocument *d, NSUInteger i, BOOL *st) {
                 if ([d.path isEqualToString:zeta] || [d.path isEqualToString:alpha]) [mine addIndex:i];

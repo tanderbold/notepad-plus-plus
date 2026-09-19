@@ -157,7 +157,7 @@ static NSString *Key(NSString *name) { return [kDefaultsPrefix stringByAppending
         Key(@"filterHistory"): @[], Key(@"directoryHistory"): @[],
         Key(@"findTransparencyMode"): @1, Key(@"findTransparencyLevel"): @150,
         Key(@"searchResultsPurge"): @NO,
-        Key(@"docListExtColumn"): @YES, Key(@"docListPathColumn"): @NO,
+        Key(@"docListExtColumn"): @YES, Key(@"docListGroupByView"): @YES, Key(@"docListPathColumn"): @NO,
         Key(@"docPeekOnTab"): @NO, Key(@"docPeekOnMap"): @NO,
         Key(@"docSwitcherEnabled"): @YES, Key(@"docSwitcherMRU"): @YES,
         Key(@"titleBarFileNameOnly"): @NO, Key(@"confirmSaveAll"): @YES, Key(@"muteSounds"): @NO,
@@ -262,6 +262,7 @@ NPP_PREF_INT(findTransparencyMode, setFindTransparencyMode, @"findTransparencyMo
 NPP_PREF_INT(findTransparencyLevel, setFindTransparencyLevel, @"findTransparencyLevel")
 NPP_PREF_BOOL(searchResultsPurge, setSearchResultsPurge, @"searchResultsPurge")
 NPP_PREF_BOOL(docListExtColumn, setDocListExtColumn, @"docListExtColumn")
+NPP_PREF_BOOL(docListGroupByView, setDocListGroupByView, @"docListGroupByView")
 NPP_PREF_BOOL(docListPathColumn, setDocListPathColumn, @"docListPathColumn")
 NPP_PREF_BOOL(docPeekOnTab, setDocPeekOnTab, @"docPeekOnTab")
 NPP_PREF_BOOL(docPeekOnMap, setDocPeekOnMap, @"docPeekOnMap")

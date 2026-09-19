@@ -73,17 +73,23 @@ commands upstream records by id (192 of them, read from `NppCommands.cpp`)
 and the Find dialog's searches; the language model has examples
 of asn1, fortran77, gui4cli, hollywood and json5.
 
+Since then: a floating dock window holds several panels as tabs (drop one
+on another's window); the Document List has "Group by View"; Preferences
+never cuts a text short - labels widen or go onto a second line, a choice
+that is a sentence is a radio button - and its labels use upstream's wording,
+so every nativeLang file translates them; what the port says and Windows
+does not (JSON, Compare, XML, FTP, NppExec, updates, its own settings) is
+translated from `macos/resources/nativeLang-extra/<language>.xml`, which
+exists for Russian.
+
 What is left of that list, none of it a defect in what exists:
 
-1. A floating dock window holds one panel; upstream's can hold several as tabs.
-2. The Document List has no "Group by View".
-3. Messages the port has and Windows does not (JSON, Compare, XML, FTP,
-   NppExec, the update check) stay English under a translation: no
-   nativeLang file has them.
-4. The plan's wording was wrong in two places and nothing is missing:
+1. `nativeLang-extra` has Russian only; in other languages the port's own
+   commands stay English until someone writes that file.
+2. The plan's wording was wrong in two places and nothing is missing:
    `${name}` and two-digit `\\10` are not Boost's syntax (`$+{name}` and
    `$10` are, and work); Notepad++ has no "line context" in its results.
-5. The single-answer level of the language model comes out equal to the
+3. The single-answer level of the language model comes out equal to the
    ordinary one on the present data, so the short list is not shown; a
    retrain on other data moves it without a code change.
 

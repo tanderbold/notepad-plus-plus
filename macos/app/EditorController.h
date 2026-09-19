@@ -218,6 +218,8 @@ extern NSString *const NppEditorDocumentsDidChangeNotification;
 - (void)focusOtherView;
 - (BOOL)otherViewHasFocus;
 - (BOOL)moveCurrentToOtherView;
+/// What the second view shows, while it is shown.
+- (nullable NppDocument *)documentInSecondaryView;
 - (BOOL)cloneCurrentToOtherView;
 - (BOOL)syncVerticalScroll;
 - (void)setSyncVerticalScroll:(BOOL)on;

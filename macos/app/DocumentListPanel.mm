@@ -1,6 +1,7 @@
 #import "DockingManager.h"
 #import "NppPanel.h"
 #import "DocumentListPanel.h"
+#import "Localization.h"
 #import "EditorController.h"
 #import "SettingsCommands.h"
 
@@ -81,7 +82,8 @@
 
 #pragma mark - Rows and columns
 
-- (NSArray<NppDocument *> *)rows {
+/// The documents, sorted as the header asks.
+- (NSArray<NppDocument *> *)sortedDocuments {
     NSArray<NppDocument *> *docs = self.editor.documents;
     if (!self.sortColumn) return docs;
     NSString *column = self.sortColumn;
@@ -90,6 +92,29 @@
         NSComparisonResult r = [[self textOfColumn:column document:a] localizedStandardCompare:[self textOfColumn:column document:b]];
         return ascending ? r : (NSComparisonResult)-r;
     }];
+}
+
+/// What the table shows, row by row: documents, and - with "Group by View"
+/// on and both views in use - a heading (a string) above each view's files.
+- (NSArray *)rows {
+    NSArray<NppDocument *> *docs = [self sortedDocuments];
+    NppDocument *second = [self.editor documentInSecondaryView];
+    if (!second || ![NppPreferences shared].docListGroupByView) return docs;
+    NSMutableArray *out = [NSMutableArray arrayWithObject:NppL(@"View 1")];
+    [out addObjectsFromArray:docs];
+    [out addObject:NppL(@"View 2")];
+    [out addObject:second];
+    return out;
+}
+
+- (BOOL)isGroupRow:(NSInteger)row {
+    NSArray *rows = self.rows;
+    return row >= 0 && row < (NSInteger)rows.count && [rows[(NSUInteger)row] isKindOfClass:[NSString class]];
+}
+
+- (void)setGroupByView:(BOOL)on {
+    [NppPreferences shared].docListGroupByView = on;
+    [self.table reloadData];
 }
 
 - (NSString *)textOfColumn:(NSString *)identifier document:(NppDocument *)d {
@@ -106,6 +131,7 @@
 - (NSString *)textOfColumn:(NSString *)identifier row:(NSInteger)row {
     NSArray *rows = self.rows;
     if (row < 0 || row >= (NSInteger)rows.count) return @"";
+    if ([rows[(NSUInteger)row] isKindOfClass:[NSString class]]) return [identifier isEqualToString:@"name"] ? rows[(NSUInteger)row] : @"";
     return [self textOfColumn:identifier document:rows[(NSUInteger)row]];
 }
 
@@ -150,7 +176,7 @@
 
 - (void)activateRow:(NSInteger)row {
     NSArray *rows = self.rows;
-    if (row < 0 || row >= (NSInteger)rows.count) return;
+    if (row < 0 || row >= (NSInteger)rows.count || [self isGroupRow:row]) return;
     NSUInteger index = [self.editor.documents indexOfObjectIdenticalTo:rows[(NSUInteger)row]];
     if (index != NSNotFound) [self.editor selectDocumentAtIndex:(NSInteger)index];
 }
@@ -172,7 +198,9 @@
 - (NSArray<NppDocument *> *)documentsInRows:(NSIndexSet *)rows {
     NSArray *all = self.rows;
     NSMutableArray *out = [NSMutableArray array];
-    [rows enumerateIndexesUsingBlock:^(NSUInteger i, BOOL *stop) { if (i < all.count) [out addObject:all[i]]; }];
+    [rows enumerateIndexesUsingBlock:^(NSUInteger i, BOOL *stop) {
+        if (i < all.count && [all[i] isKindOfClass:[NppDocument class]] && ![out containsObject:all[i]]) [out addObject:all[i]];
+    }];
     return out;
 }
 
@@ -228,6 +256,10 @@
             item.representedObject = c[0];
             item.state = [self.shownColumns containsObject:c[0]] ? NSControlStateValueOn : NSControlStateValueOff;
         }
+        [menu addItem:[NSMenuItem separatorItem]];
+        NSMenuItem *group = [menu addItemWithTitle:@"Group by View" action:@selector(toggleGroupByView:) keyEquivalent:@""];
+        group.target = self;
+        group.state = [NppPreferences shared].docListGroupByView ? NSControlStateValueOn : NSControlStateValueOff;
         return;
     }
     // A right click on a row outside the selection works on that row alone.
@@ -249,14 +281,20 @@
 - (void)documentsChanged:(NSNotification *)note { [self.table reloadData]; }
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tv {
-    return (NSInteger)self.editor.documents.count;
+    return (NSInteger)self.rows.count;
 }
+
+- (BOOL)tableView:(NSTableView *)tv isGroupRow:(NSInteger)row { return [self isGroupRow:row]; }
+- (BOOL)tableView:(NSTableView *)tv shouldSelectRow:(NSInteger)row { return ![self isGroupRow:row]; }
+
+- (void)toggleGroupByView:(id)sender { [self setGroupByView:![NppPreferences shared].docListGroupByView]; }
 
 - (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row {
     // AppKit can ask for a row from a count it cached before tabs were closed,
     // so the index is checked rather than trusted.
-    NSArray<NppDocument *> *rows = self.rows;
+    NSArray *rows = self.rows;
     if (row < 0 || row >= (NSInteger)rows.count) return @"";
+    if ([rows[(NSUInteger)row] isKindOfClass:[NSString class]]) return (!col || [col.identifier isEqualToString:@"name"]) ? rows[(NSUInteger)row] : @"";
     NppDocument *d = rows[(NSUInteger)row];
     NSString *text = [self textOfColumn:col.identifier document:d];
     // Unsaved files stand out, as the red icon does upstream.

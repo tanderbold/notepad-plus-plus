@@ -2234,6 +2234,7 @@ static const char kEditorMenuItemsKey = 0;
 - (ScintillaView *)secondarySci { return self.secondaryView; }
 
 - (BOOL)secondaryViewVisible { return self.secondaryView.superview != nil; }
+- (NppDocument *)documentInSecondaryView { return [self secondaryViewVisible] ? self.secondaryDocument : nil; }
 
 - (void)setSecondaryViewVisible:(BOOL)visible {
     if (visible == [self secondaryViewVisible]) return;

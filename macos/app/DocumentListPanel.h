@@ -28,6 +28,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSMenu *)menuForSelectedRows:(NSIndexSet *)rows;
 - (void)closeRows:(NSIndexSet *)rows;
 - (void)saveRows:(NSIndexSet *)rows;
+/// "Group by View", from the header's menu: a heading above each view's files while both views are in use.
+- (void)setGroupByView:(BOOL)on;
+- (BOOL)isGroupRow:(NSInteger)row;
+/// The documents among some rows; headings are none.
+- (NSArray<NppDocument *> *)documentsInRows:(NSIndexSet *)rows;
 @end
 
 NS_ASSUME_NONNULL_END

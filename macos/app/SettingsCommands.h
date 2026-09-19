@@ -124,6 +124,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL searchResultsPurge;
 /// Document List's optional columns.
 @property (nonatomic) BOOL docListExtColumn;
+/// Document List: the files under a heading for each view, while both views are in use.
+@property (nonatomic) BOOL docListGroupByView;
 @property (nonatomic) BOOL docListPathColumn;
 /// Document Peeker: preview a hovered tab, or show it in the Document Map.
 @property (nonatomic) BOOL docPeekOnTab;
