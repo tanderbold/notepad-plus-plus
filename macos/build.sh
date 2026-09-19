@@ -147,6 +147,9 @@ cp "$ROOT"/PowerEditor/bin/userDefineLangs/*.xml "$APP/Contents/Resources/userDe
 # Notepad++'s translations, read by Localization.mm.
 mkdir -p "$APP/Contents/Resources/nativeLang"
 cp "$ROOT"/PowerEditor/installer/nativeLang/*.xml "$APP/Contents/Resources/nativeLang/"
+# What the port says and Windows does not, in the languages someone has written it in.
+mkdir -p "$APP/Contents/Resources/nativeLang-extra"
+cp "$ROOT"/macos/resources/nativeLang-extra/*.xml "$APP/Contents/Resources/nativeLang-extra/" 2>/dev/null || true
 
 mkdir -p "$APP/Contents/Resources/APIs"
 cp "$ROOT"/PowerEditor/installer/APIs/*.xml "$APP/Contents/Resources/APIs/"

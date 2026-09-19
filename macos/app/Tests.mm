@@ -7631,6 +7631,57 @@ int NppMacRunTests(AppDelegate *app) {
                countLine.UTF8String, probe.informativeText.UTF8String);
         names = names && messages;
 
+        // Preferences in this language: every label, checkbox and pop-up shows
+        // its whole text - none is cut or ends in an ellipsis - and none lies on another.
+        NSString *(^cutTexts)(void) = ^NSString *{
+            PreferencesWindow *w = [[PreferencesWindow alloc] initWithEditor:ed];
+            NSMutableArray *bad = [NSMutableArray array];
+            NSDictionary<NSString *, NSView *> *pages = [w valueForKey:@"pages"];
+            for (NSString *pageName in pages) {
+                NSArray<NSView *> *views = pages[pageName].subviews;
+                for (NSView *v in views) {
+                    BOOL isLabel = [v isKindOfClass:[NSTextField class]] && !((NSTextField *)v).editable && !((NSTextField *)v).bezeled;
+                    BOOL isToggle = [v isKindOfClass:[NSButton class]] && ![v isKindOfClass:[NSPopUpButton class]] &&
+                                    (((NSButtonCell *)((NSButton *)v).cell).showsStateBy & NSContentsCellMask);
+                    BOOL isPopup = [v isKindOfClass:[NSPopUpButton class]];
+                    if (!isLabel && !isToggle && !isPopup) continue;
+                    NSControl *c = (NSControl *)v;
+                    NSString *text = isLabel ? c.stringValue : ((NSButton *)c).title;
+                    NSSize need = c.cell.wraps ? [c.cell cellSizeForBounds:NSMakeRect(0, 0, NSWidth(c.frame), 10000)] : c.cell.cellSize;
+                    if (isPopup) {
+                        // Every item has to be readable when it is the one chosen.
+                        need = NSMakeSize(0, 0);
+                        for (NSMenuItem *it in ((NSPopUpButton *)c).itemArray) {
+                            need.width = MAX(need.width, [it.title sizeWithAttributes:@{NSFontAttributeName: c.font ?: [NSFont systemFontOfSize:13]}].width + 38);
+                        }
+                        text = ((NSPopUpButton *)c).titleOfSelectedItem;
+                    }
+                    if (c.cell.wraps && !isPopup) need.width = 0;      // wrapped: as wide as its frame by construction, the height is what tells
+                    if (need.width > NSWidth(c.frame) + 1.5 || need.height > NSHeight(c.frame) + 1.5 || NSMaxX(c.frame) > NSWidth(pages[pageName].bounds)) {
+                        [bad addObject:[NSString stringWithFormat:@"%@: cut \"%@\" needs %.0fx%.0f in %.0fx%.0f at x %.0f", pageName, text,
+                                        need.width, need.height, NSWidth(c.frame), NSHeight(c.frame), NSMinX(c.frame)]];
+                    }
+                    for (NSView *o in views) {
+                        if (o == v || !([o isKindOfClass:[NSControl class]])) continue;
+                        if (NSIntersectsRect(NSInsetRect(v.frame, 2, 2), NSInsetRect(o.frame, 2, 2)) && v.frame.origin.x <= o.frame.origin.x) {
+                            [bad addObject:[NSString stringWithFormat:@"%@: \"%@\" overlaps", pageName, text]];
+                        }
+                    }
+                }
+            }
+            return [bad componentsJoinedByString:@"\n        "];
+        };
+        NSString *cutInRussian = cutTexts();
+        if (cutInRussian.length) printf("    prefs texts (ru):\n        %s\n", cutInRussian.UTF8String);
+        names = names && !cutInRussian.length;
+        // What Windows does not have comes from the port's own file beside the
+        // translation; a "Group|Field" label is put together from both parts.
+        NSString *composite = NppL(@"    Non-Printing Characters|Custom Color");
+        names = names && [NppL(@"Compare Summary") isEqualToString:@"Итоги сравнения"] &&
+                [NppL(@"Remember which panels were open") isEqualToString:@"Запоминать открытые панели"] &&
+                [composite hasPrefix:@"    "] && [composite containsString:@": "] && ![composite containsString:@"|"] &&
+                ![composite containsString:@"Custom Color"];
+
         // Context menus: the tab's in its own wording, the editor's still found
         // by the English titles the setting keeps.
         NSMenu *tabMenu = [app buildTabContextMenu];
@@ -7672,6 +7723,9 @@ int NppMacRunTests(AppDelegate *app) {
         [app applyLocalization];
         printf("    l10n: %d %d %d %d %d file=%s new=%s case=%s\n", menus, mapper, dialog, message, english,
                fileTop.submenu.title.UTF8String, newItem.title.UTF8String, matchCase.title.UTF8String);
+        NSString *cutInEnglish = cutTexts();
+        if (cutInEnglish.length) printf("    prefs texts (en):\n        %s\n", cutInEnglish.UTF8String);
+        english = english && !cutInEnglish.length;
         Check(@"IDM_SETTING_PREFERENCE (localization)",
               @"russian.xml translates the menus by command id and dialogs by English text, and English comes back",
               menus && mapper && dialog && message && english);

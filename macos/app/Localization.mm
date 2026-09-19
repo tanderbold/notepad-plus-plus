@@ -5,6 +5,9 @@
 @property (nonatomic, readwrite, copy, nullable) NSString *languageFile;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSString *> *commands;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSString *> *tabCommands;
+/// What the port says and Windows does not (its own panels and settings),
+/// from macos/resources/nativeLang-extra/<the same file name>.
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *extraStrings;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *menuNames;      // menuId / subMenuId -> text
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *englishMenuIds;  // english name -> menuId / subMenuId
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *strings;        // normalised english -> text
@@ -115,6 +118,25 @@ static void FitPushButton(NSButton *b) {
         if (free) frame = grown;
     }
     b.frame = frame;
+}
+
+/// A checkbox, radio button or label whose words no longer fit takes the
+/// free room to its right, up to the next thing on its row or its parent's edge.
+static void FitTitledControl(NSControl *c) {
+    if (!c.superview || c.cell.wraps) return;
+    if ([c isKindOfClass:[NSTextField class]] && ((NSTextField *)c).alignment != NSTextAlignmentLeft &&
+        ((NSTextField *)c).alignment != NSTextAlignmentNatural) return;
+    CGFloat needed = ceil(c.cell.cellSize.width) + 2;
+    NSRect frame = c.frame;
+    if (needed <= NSWidth(frame)) return;
+    CGFloat limit = NSWidth(c.superview.bounds) - 8;
+    for (NSView *other in c.superview.subviews) {
+        if (other == c || other.hidden != c.hidden) continue;
+        BOOL sameRow = NSMinY(other.frame) < NSMaxY(frame) - 2 && NSMaxY(other.frame) > NSMinY(frame) + 2;
+        if (sameRow && NSMinX(other.frame) >= NSMinX(frame) + 8) limit = MIN(limit, NSMinX(other.frame) - 4);
+    }
+    frame.size.width = MAX(NSWidth(frame), MIN(needed, limit - NSMinX(frame)));
+    c.frame = frame;
 }
 
 @implementation NppLocalization
@@ -268,6 +290,15 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
             self.strings[Normalised(en)] = text;
         }
     }
+    self.extraStrings = [NSMutableDictionary dictionary];
+    NSString *extraPath = [[[dir stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"nativeLang-extra"]
+                           stringByAppendingPathComponent:fileName];
+    NSData *extraData = [NSData dataWithContentsOfFile:extraPath];
+    NSXMLDocument *extra = extraData ? [[NSXMLDocument alloc] initWithData:extraData options:0 error:NULL] : nil;
+    for (NSXMLElement *item in [extra.rootElement elementsForName:@"Item"]) {
+        NSString *en = [item attributeForName:@"english"].stringValue, *text = [item attributeForName:@"text"].stringValue;
+        if (en.length && text.length) self.extraStrings[Normalised(en)] = text;
+    }
     self.languageFile = fileName;
     return YES;
 }
@@ -281,7 +312,7 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
 
 - (NSString *)message:(NSString *)english string:(NSString *)string number:(NSInteger)number {
     // Looked up with its placeholders in, filled in afterwards; line breaks are the translation's own.
-    NSString *hit = self.strings.count ? self.strings[Normalised(english ?: @"")] : nil;
+    NSString *hit = self.strings.count ? (self.strings[Normalised(english ?: @"")] ?: self.extraStrings[Normalised(english ?: @"")]) : nil;
     NSString *text = hit ?: english ?: @"";
     text = [text stringByReplacingOccurrencesOfString:@"$STR_REPLACE$" withString:string ?: @""];
     return [text stringByReplacingOccurrencesOfString:@"$INT_REPLACE$" withString:[NSString stringWithFormat:@"%ld", (long)number]];
@@ -293,7 +324,22 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
 }
 
 - (NSString *)translate:(NSString *)english hit:(NSString *)hit {
-    if (!english.length || !self.strings.count) return english ?: @"";
+    if (!english.length) return @"";
+    // "Group|Field": upstream puts the field's short name inside a titled box;
+    // here they are one label, each part in its own translation.
+    if ([english containsString:@"|"]) {
+        NSRange firstLetter = [english rangeOfCharacterFromSet:NSCharacterSet.whitespaceCharacterSet.invertedSet];
+        NSString *indent = firstLetter.location == NSNotFound ? @"" : [english substringToIndex:firstLetter.location];
+        NSMutableArray *parts = [NSMutableArray array];
+        for (NSString *part in [[english substringFromIndex:indent.length] componentsSeparatedByString:@"|"]) {
+            NSString *t = [self translate:part];
+            while ([t hasSuffix:@":"] || [t hasSuffix:@" "]) t = [t substringToIndex:t.length - 1];
+            if (t.length) [parts addObject:t];
+        }
+        return [indent stringByAppendingString:[parts componentsJoinedByString:@": "]];
+    }
+    if (!self.strings.count) return [english containsString:@"&&"] ? WithoutAccessKeys(english) : english;
+    if (!hit) hit = self.extraStrings[Normalised(english)];
     if (!hit) return english;
     NSString *text = WithoutAccessKeys(hit);
     // Upstream breaks long button texts over two lines; a Mac button has one.
@@ -312,6 +358,10 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
     while (!englishColon && [text hasSuffix:@":"]) {
         text = [[text substringToIndex:text.length - 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     }
+    while ([text containsString:@"  "]) text = [text stringByReplacingOccurrencesOfString:@"  " withString:@" "];
+    // An indented label stays indented.
+    NSRange lead = [english rangeOfCharacterFromSet:NSCharacterSet.whitespaceCharacterSet.invertedSet];
+    if (lead.location != NSNotFound && lead.location > 0) text = [[english substringToIndex:lead.location] stringByAppendingString:text];
     if ([trimmed hasSuffix:@":"] && ![text hasSuffix:@":"]) text = [text stringByAppendingString:@":"];
     if (([trimmed hasSuffix:@"…"] || [trimmed hasSuffix:@"..."]) && ![text hasSuffix:@"…"] && ![text hasSuffix:@"..."]) {
         text = [text stringByAppendingString:@"…"];
@@ -365,7 +415,8 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
         NSButton *b = (NSButton *)view;
         if (b.title.length) {
             b.title = Shown(b, @"title", [self translate:Original(b, @"title", b.title)]);
-            if (b.bezelStyle == NSBezelStyleRounded) FitPushButton(b);
+            if (((NSButtonCell *)b.cell).showsStateBy & NSContentsCellMask) FitTitledControl(b);
+            else if (b.bezelStyle == NSBezelStyleRounded) FitPushButton(b);
         }
     }
     if ([view isKindOfClass:[NSPopUpButton class]]) {
@@ -381,6 +432,7 @@ static NSDictionary<NSString *, NSString *> *Flatten(NSString *path) {
     } else if ([view isKindOfClass:[NSTextField class]] && ![view isKindOfClass:[NSComboBox class]]) {
         NSTextField *f = (NSTextField *)view;
         if (!f.editable && f.stringValue.length) f.stringValue = Shown(f, @"text", [self translate:Original(f, @"text", f.stringValue)]);
+        if (!f.editable && !f.bezeled && f.stringValue.length) FitTitledControl(f);
         if (f.placeholderString.length) f.placeholderString = Shown(f, @"placeholder", [self translate:Original(f, @"placeholder", f.placeholderString)]);
     } else if ([view isKindOfClass:[NSMatrix class]]) {
         for (NSCell *cell in ((NSMatrix *)view).cells) {
