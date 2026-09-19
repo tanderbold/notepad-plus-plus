@@ -3134,14 +3134,24 @@ int NppMacRunTests(AppDelegate *app) {
 
     printf("\n== Edit: indent, delete, comments, read-only ==\n");
     {
+        // With the indent settings this expects, whatever the machine's own are.
+        NppPreferences *indentPrefs = [NppPreferences shared];
+        BOOL spacesWas = indentPrefs.useSpaces;
+        NSInteger widthWas = indentPrefs.tabWidth;
+        indentPrefs.useSpaces = YES;
+        indentPrefs.tabWidth = 4;
+        [ed applyDocumentSettings];
         SetDoc(ed, @"a\n");
         [sci message:SCI_GOTOLINE wParam:0 lParam:0];
         [ed changeIndent:YES];
         BOOL indented = [DocText(ed) isEqualToString:@"    a\n"];
         [ed changeIndent:NO];
+        BOOL unindented = [DocText(ed) isEqualToString:@"a\n"];
+        indentPrefs.useSpaces = spacesWas;
+        indentPrefs.tabWidth = widthWas;
+        [ed applyDocumentSettings];
         Check(@"IDM_EDIT_INS_TAB", @"indents the line by one level", indented);
-        Check(@"IDM_EDIT_RMV_TAB", @"removes that level again",
-              [DocText(ed) isEqualToString:@"a\n"]);
+        Check(@"IDM_EDIT_RMV_TAB", @"removes that level again", unindented);
 
         SetDoc(ed, @"delete me\n");
         [sci message:SCI_SETSEL wParam:0 lParam:7];
@@ -4271,7 +4281,8 @@ int NppMacRunTests(AppDelegate *app) {
                 editorLines += [ed.sci message:SCI_WRAPCOUNT wParam:(uptr_t)l];
                 mapLines += [map message:SCI_WRAPCOUNT wParam:(uptr_t)l];
             }
-            BOOL sameWrap = editorLines > 60 && labs(editorLines - mapLines) <= editorLines / 20;
+            // (Near enough: the map's tiny glyphs have advances rounded differently from the editor's.)
+            BOOL sameWrap = editorLines > 60 && labs(editorLines - mapLines) <= editorLines / 16;
             printf("    map wrap: editor %ld display lines, map %ld, map width %.0f in a panel of %.0f\n", editorLines, mapLines,
                    NSWidth(map.frame), NSWidth(map.superview.bounds));
             [ed.sci message:SCI_SETWRAPMODE wParam:SC_WRAP_NONE lParam:0];
@@ -6582,12 +6593,20 @@ int NppMacRunTests(AppDelegate *app) {
         p.braceMatchEnabled = YES;
 
         // Smart highlighting marks the other occurrences of a selected token.
+        // (Whole words off, so that "subtotal" counts: the default is on.)
         p.smartHighlightEnabled = YES;
+        BOOL wholeWas = p.smartHighlightWholeWord, caseWas2 = p.smartHighlightMatchCase, findWas = p.smartHighlightUseFindSettings;
+        p.smartHighlightWholeWord = NO;
+        p.smartHighlightMatchCase = NO;
+        p.smartHighlightUseFindSettings = NO;
         SetDoc(ed, @"total = total + subtotal\n");
         [sci message:SCI_SETSEL wParam:0 lParam:5];
         NSUInteger marks = [ed updateSmartHighlight];
         p.smartHighlightEnabled = NO;
         NSUInteger none = [ed updateSmartHighlight];
+        p.smartHighlightWholeWord = wholeWas;
+        p.smartHighlightMatchCase = caseWas2;
+        p.smartHighlightUseFindSettings = findWas;
         Check(@"IDM_SETTING_PREFERENCE (smart highlighting)",
               @"occurrences are marked only while the setting is on",
               marks == 3 && none == 0);

@@ -2420,12 +2420,33 @@ static const char kEditorMenuItemsKey = 0;
     if (!map || !self.docMapHost) return;
     CGFloat width = NSWidth(self.docMapHost.bounds);
     if ([sci message:SCI_GETWRAPMODE] != SC_WRAP_NONE) {
-        CGFloat text = NSWidth([sci content].bounds);
-        for (int m = 0; m < 5; ++m) text -= (CGFloat)[sci message:SCI_GETMARGINWIDTHN wParam:(uptr_t)m];
+        // What the editor's text has: the visible part of its content view. The
+        // number, bookmark and fold margins are a view of their own beside it,
+        // so they are not in this width and are not taken off it.
+        CGFloat text = NSWidth(sci.scrollView.contentView.bounds);
         text -= (CGFloat)([sci message:SCI_GETMARGINLEFT] + [sci message:SCI_GETMARGINRIGHT]);
         // Long and mixed: the widths come back as whole pixels, and the map's characters are under two wide.
         const char *probe = "The quick brown fox jumps over the lazy dog 0123456789 {}[]();,. int main(void) return value == other; "
                             "the quick brown fox jumps over the lazy dog 0123456789 {}[]();,. int main(void) return value == other;";
+        // Better still, the document's own words: where glyph advances are rounded
+        // to whole pixels, the ratio depends on which characters are measured.
+        long firstLine = [sci message:SCI_DOCLINEFROMVISIBLE wParam:(uptr_t)[sci message:SCI_GETFIRSTVISIBLELINE]];
+        long from = [sci message:SCI_POSITIONFROMLINE wParam:(uptr_t)firstLine];
+        long to = MIN([sci message:SCI_GETLENGTH], from + 400);
+        NSMutableData *own = [NSMutableData dataWithLength:(NSUInteger)MAX(0, to - from) + 1];
+        if (to - from >= 120) {
+            Sci_TextRangeFull range = {{(Sci_Position)from, (Sci_Position)to}, (char *)own.mutableBytes};
+            [sci message:SCI_GETTEXTRANGEFULL wParam:0 lParam:(sptr_t)&range];
+            // One line of it: tabs and line ends measure differently from text.
+            char *bytes = (char *)own.mutableBytes;
+            for (long k = 0; k < to - from; ++k) if (bytes[k] == '\n' || bytes[k] == '\r' || bytes[k] == '\t') bytes[k] = ' ';
+            // Not cut inside a UTF-8 character.
+            long end = to - from;
+            while (end > 0 && ((unsigned char)bytes[end - 1] & 0xC0) == 0x80) end--;
+            if (end > 0 && ((unsigned char)bytes[end - 1] & 0x80)) end--;
+            bytes[end] = 0;
+            if (end >= 100) probe = bytes;
+        }
         double inEditor = (double)[sci message:SCI_TEXTWIDTH wParam:STYLE_DEFAULT lParam:(sptr_t)probe];
         double inMap = (double)[map message:SCI_TEXTWIDTH wParam:STYLE_DEFAULT lParam:(sptr_t)probe];
         if (text > 0 && inEditor > 0 && inMap > 0) {
