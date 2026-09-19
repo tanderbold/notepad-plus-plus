@@ -15,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, copy, nullable) NSString *languageFile;
 @property (nonatomic, readonly) BOOL active;
 /// A menu command's text, by upstream's command id.
+/// The bundled folder of nativeLang files; the port's own texts are in "nativeLang-extra" beside it.
++ (NSString *)directory;
 - (nullable NSString *)commandName:(int)identifier;
 /// The tab context menu's own wording for a command, when the file has one.
 - (nullable NSString *)tabCommandName:(int)identifier;

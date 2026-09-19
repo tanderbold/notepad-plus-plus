@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/estonian.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Estonian">
+    <Item english="About NotepadMac" text="Teave NotepadMaci kohta"/>
+    <Item english="Hide NotepadMac" text="Peida NotepadMac"/>
+    <Item english="Hide Others" text="Peida teised"/>
+    <Item english="Show All" text="Näita kõiki"/>
+    <Item english="Quit NotepadMac" text="Välju NotepadMacist"/>
+    <Item english="Open Containing Folder in Finder" text="Ava faili sisaldav kaust Finderis"/>
+    <Item english="Open Containing Folder in Terminal" text="Ava faili sisaldav kaust Terminalis"/>
+    <Item english="Toggle Insert/Overtype" text="Lülita lisamine/ülekirjutamine"/>
+    <Item english="Toggle Fold" text="Voldi kinni/lahti"/>
+    <Item english="Show All Hidden Lines" text="Näita kõiki peidetud ridu"/>
+    <Item english="Recent Window" text="Eelmine aken"/>
+    <Item english="Move to Trash" text="Teisalda prügikasti"/>
+    <Item english="Save Current Command…" text="Salvesta praegune käsk…"/>
+    <Item english="Manage Saved Commands…" text="Halda salvestatud käske…"/>
+    <Item english="Show Console" text="Näita konsooli"/>
+    <Item english="Validate shortcuts" text="Kontrolli otseteid"/>
+    <Item english="Open Plugins Folder…" text="Ava pluginate kaust…"/>
+    <Item english="Format" text="Vorminda"/>
+    <Item english="Compact" text="Tihenda"/>
+    <Item english="Sort Keys" text="Sordi võtmed"/>
+    <Item english="Validate" text="Valideeri"/>
+    <Item english="Show JSON Tree" text="Näita JSON-puud"/>
+    <Item english="Set as First to Compare" text="Määra esimeseks võrreldavaks"/>
+    <Item english="Compare" text="Võrdle"/>
+    <Item english="Compare with File…" text="Võrdle failiga…"/>
+    <Item english="Next Difference" text="Järgmine erinevus"/>
+    <Item english="Previous Difference" text="Eelmine erinevus"/>
+    <Item english="First Difference" text="Esimene erinevus"/>
+    <Item english="Last Difference" text="Viimane erinevus"/>
+    <Item english="Compare Summary" text="Võrdluse kokkuvõte"/>
+    <Item english="Ignore Case" text="Mitte-tõstutundlik"/>
+    <Item english="Ignore Spaces" text="Eira tühikuid"/>
+    <Item english="Ignore Empty Lines" text="Eira tühje ridu"/>
+    <Item english="Clear Active Compare" text="Tühista aktiivne võrdlus"/>
+    <Item english="Clear All Compares" text="Tühista kõik võrdlused"/>
+    <Item english="Pretty Print" text="Vorminda loetavaks"/>
+    <Item english="Pretty Print — Indent Attributes" text="Vorminda loetavaks — taanda atribuudid"/>
+    <Item english="Linearize" text="Vii ühele reale"/>
+    <Item english="Check XML Syntax Now" text="Kontrolli XML-i süntaksit kohe"/>
+    <Item english="Validate Against Schema…" text="Valideeri skeemi järgi…"/>
+    <Item english="Validate Against DTD" text="Valideeri DTD järgi"/>
+    <Item english="Evaluate XPath Expression…" text="Arvuta XPath-avaldis…"/>
+    <Item english="Current XML Path" text="Praegune XML-i tee"/>
+    <Item english="Current XML Path with Predicates" text="Praegune XML-i tee koos predikaatidega"/>
+    <Item english="Apply XSL Transformation…" text="Rakenda XSL-teisendus…"/>
+    <Item english="Connections…" text="Ühendused…"/>
+    <Item english="Connect…" text="Ühenda…"/>
+    <Item english="Disconnect" text="Katkesta ühendus"/>
+    <Item english="Show Remote Files" text="Näita kaugfaile"/>
+    <Item english="Upload Current File" text="Laadi praegune fail üles"/>
+    <Item english="Execute NppExec Script…" text="Käivita NppExec-skript…"/>
+    <Item english="Execute Previous NppExec Script" text="Käivita eelmine NppExec-skript"/>
+    <Item english="Stop Running NppExec Script" text="Peata töötav NppExec-skript"/>
+    <Item english="Show NppExec Console" text="Näita NppExec-konsooli"/>
+    <Item english="Execute NppExec Script" text="Käivita NppExec-skript"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;ajutine skript&gt;"/>
+    <Item english="Script name" text="Skripti nimi"/>
+    <Item english="Dock Left" text="Doki vasakule"/>
+    <Item english="Dock Right" text="Doki paremale"/>
+    <Item english="Dock Top" text="Doki üles"/>
+    <Item english="Dock Bottom" text="Doki alla"/>
+    <Item english="Float" text="Eraldi aknas"/>
+    <Item english="Remember which panels were open" text="Jäta meelde, millised paneelid olid avatud"/>
+    <Item english="Show the toolbar" text="Näita tööriistariba"/>
+    <Item english="Toolbar buttons" text="Tööriistariba nupud"/>
+    <Item english="Icons only" text="Ainult ikoonid"/>
+    <Item english="Icons and labels" text="Ikoonid ja sildid"/>
+    <Item english="Labels only" text="Ainult sildid"/>
+    <Item english="Toolbar size" text="Tööriistariba suurus"/>
+    <Item english="Regular" text="Tavaline"/>
+    <Item english="Small" text="Väike"/>
+    <Item english="Icons" text="Ikoonid"/>
+    <Item english="Hidden" text="Peidetud"/>
+    <Item english="1 pixel" text="1 piksel"/>
+    <Item english="2 pixels" text="2 pikslit"/>
+    <Item english="3 pixels" text="3 pikslit"/>
+    <Item english="Selected text can be dragged" text="Valitud teksti saab lohistada"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Luba mitmes kohas redigeerimine (Cmd+klõps/valik)"/>
+    <Item english="Follow the system" text="Nagu süsteemis"/>
+    <Item english="Light theme" text="Hele teema"/>
+    <Item english="Dark theme" text="Tume teema"/>
+    <Item english="Show the fold margin" text="Näita voltimisveerist"/>
+    <Item english="A line" text="Joon"/>
+    <Item english="Columns (space separated)" text="Veerud (tühikutega eraldatud)"/>
+    <Item english="3 parts" text="3 osa"/>
+    <Item english="4 parts" text="4 osa"/>
+    <Item english="5 parts" text="5 osa"/>
+    <Item english="6 parts" text="6 osa"/>
+    <Item english="7 parts" text="7 osa"/>
+    <Item english="8 parts" text="8 osa"/>
+    <Item english="9 parts" text="9 osa"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Tuvasta keel sisu järgi, kui nimi seda ei ütle"/>
+    <Item english="Highlight matching braces" text="Tõsta esile teineteisele vastavad sulud"/>
+    <Item english="Header font (blank for the editor's)" text="Päise font (tühi: sama mis redaktoris)"/>
+    <Item english="Header font size" text="Päise fondi suurus"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Veerised: vasak, ülemine, parem, alumine (punktides)"/>
+    <Item english="Characters before it opens" text="Tähemärke enne avanemist"/>
+    <Item english="Add characters to the word list" text="Lisa tähemärke sõna tähemärkide loendisse"/>
+    <Item english="A fixed folder" text="Kindel kaust"/>
+    <Item english="Fixed folder" text="Kindel kaust"/>
+    <Item english="Confirm Replace All" text="Kinnita „Asenda kõik”"/>
+    <Item english="Compare: ignore case" text="Võrdlus: mitte-tõstutundlik"/>
+    <Item english="Compare: ignore spaces" text="Võrdlus: eira tühikuid"/>
+    <Item english="Compare: ignore empty lines" text="Võrdlus: eira tühje ridu"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Maks. tähemärkide arv otsinguvälja automaatsel täitmisel"/>
+    <Item english="Releases repository" text="Väljalasete hoidla"/>
+    <Item english="Notepad++ update" text="Notepad++-i värskendus"/>
+    <Item english="No update is available." text="Värskendusi ei ole saadaval."/>
+    <Item english="An update package is available, do you want to download it?" text="Värskenduspakett on saadaval. Kas soovid selle alla laadida?"/>
+    <Item english="Open the Releases Page" text="Ava väljalasete leht"/>
+    <Item english="Copy debug info to clipboard" text="Kopeeri silumisinfo lõikepuhvrisse"/>
+    <Item english="Fonts…" text="Fondid…"/>
+    <Item english="This document is not valid JSON." text="See dokument ei ole kehtiv JSON."/>
+    <Item english="Valid JSON." text="Kehtiv JSON."/>
+    <Item english="Invalid JSON." text="Vigane JSON."/>
+    <Item english="Set as the first file to compare." text="Määratud esimeseks võrreldavaks failiks."/>
+    <Item english="Nothing to compare with." text="Pole millegagi võrrelda."/>
+    <Item english="The document is valid XML." text="Dokument on kehtiv XML."/>
+    <Item english="FTP connections" text="FTP-ühendused"/>
+    <Item english="Cannot connect." text="Ühendamine ebaõnnestus."/>
+    <Item english="That file is open in another tab." text="See fail on avatud teisel sakil."/>
+    <Item english="Close it first, or choose another name." text="Sulge see esmalt või vali teine nimi."/>
+    <Item english="Which language is this?" text="Mis keel see on?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Mõnda tähemärki ei saa selles kodeeringus esitada."/>
+    <Item english="Converting will replace them." text="Teisendamisel need asendatakse."/>
+    <Item english="Press the keys." text="Vajuta klahve."/>
+    <Item english="Nothing is marked" text="Midagi pole märgitud"/>
+    <Item english="Marked text copied" text="Märgitud tekst kopeeritud"/>
+    <Item english="Choose a folder first" text="Vali esmalt kaust"/>
+    <Item english="This document has no folder" text="Sellel dokumendil pole kausta"/>
+    <Item english="The ticked project panels have no files" text="Märgitud projektipaneelides pole faile"/>
+    <Item english="Searching..." text="Otsimine..."/>
+    <Item english="Stopping..." text="Peatamine..."/>
+    <Item english="Marks cleared" text="Märkimised eemaldatud"/>
+    <Item english="Transparent" text="Läbipaistev"/>
+    <Item english="View 1" text="Vaade 1"/>
+    <Item english="View 2" text="Vaade 2"/>
+</NativeLangExtra>

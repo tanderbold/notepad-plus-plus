@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/czech.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Čeština">
+    <Item english="About NotepadMac" text="O aplikaci NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Skrýt NotepadMac"/>
+    <Item english="Hide Others" text="Skrýt ostatní"/>
+    <Item english="Show All" text="Zobrazit vše"/>
+    <Item english="Quit NotepadMac" text="Ukončit NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Otevřít složku aktuálního souboru ve Finderu"/>
+    <Item english="Open Containing Folder in Terminal" text="Otevřít složku aktuálního souboru v Terminálu"/>
+    <Item english="Toggle Insert/Overtype" text="Přepnout vkládání/přepisování"/>
+    <Item english="Toggle Fold" text="Sbalit/rozbalit"/>
+    <Item english="Show All Hidden Lines" text="Zobrazit všechny skryté řádky"/>
+    <Item english="Recent Window" text="Předchozí okno"/>
+    <Item english="Move to Trash" text="Přesunout do Koše"/>
+    <Item english="Save Current Command…" text="Uložit aktuální příkaz…"/>
+    <Item english="Manage Saved Commands…" text="Spravovat uložené příkazy…"/>
+    <Item english="Show Console" text="Zobrazit konzoli"/>
+    <Item english="Validate shortcuts" text="Ověřit klávesové zkratky"/>
+    <Item english="Open Plugins Folder…" text="Otevřít složku s pluginy…"/>
+    <Item english="Format" text="Formátovat"/>
+    <Item english="Compact" text="Zhustit"/>
+    <Item english="Sort Keys" text="Setřídit klíče"/>
+    <Item english="Validate" text="Ověřit"/>
+    <Item english="Show JSON Tree" text="Zobrazit strom JSON"/>
+    <Item english="Set as First to Compare" text="Nastavit jako první k porovnání"/>
+    <Item english="Compare" text="Porovnat"/>
+    <Item english="Compare with File…" text="Porovnat se souborem…"/>
+    <Item english="Next Difference" text="Další rozdíl"/>
+    <Item english="Previous Difference" text="Předchozí rozdíl"/>
+    <Item english="First Difference" text="První rozdíl"/>
+    <Item english="Last Difference" text="Poslední rozdíl"/>
+    <Item english="Compare Summary" text="Souhrn porovnání"/>
+    <Item english="Ignore Case" text="Nerozlišovat malá a VELKÁ písmena"/>
+    <Item english="Ignore Spaces" text="Ignorovat mezery"/>
+    <Item english="Ignore Empty Lines" text="Ignorovat prázdné řádky"/>
+    <Item english="Clear Active Compare" text="Zrušit aktivní porovnání"/>
+    <Item english="Clear All Compares" text="Zrušit všechna porovnání"/>
+    <Item english="Pretty Print" text="Přehledně naformátovat"/>
+    <Item english="Pretty Print — Indent Attributes" text="Přehledně naformátovat — odsadit atributy"/>
+    <Item english="Linearize" text="Do jednoho řádku"/>
+    <Item english="Check XML Syntax Now" text="Zkontrolovat syntaxi XML"/>
+    <Item english="Validate Against Schema…" text="Ověřit podle schématu…"/>
+    <Item english="Validate Against DTD" text="Ověřit podle DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Vyhodnotit výraz XPath…"/>
+    <Item english="Current XML Path" text="Aktuální cesta XML"/>
+    <Item english="Current XML Path with Predicates" text="Aktuální cesta XML s predikáty"/>
+    <Item english="Apply XSL Transformation…" text="Použít transformaci XSL…"/>
+    <Item english="Escape Characters in Selection" text="Nahradit speciální znaky ve výběru entitami"/>
+    <Item english="Unescape Characters in Selection" text="Nahradit entity ve výběru znaky"/>
+    <Item english="Connections…" text="Připojení…"/>
+    <Item english="Connect…" text="Připojit…"/>
+    <Item english="Disconnect" text="Odpojit"/>
+    <Item english="Show Remote Files" text="Zobrazit vzdálené soubory"/>
+    <Item english="Upload Current File" text="Nahrát aktuální soubor"/>
+    <Item english="Execute NppExec Script…" text="Spustit skript NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Spustit předchozí skript NppExec"/>
+    <Item english="Stop Running NppExec Script" text="Zastavit běžící skript NppExec"/>
+    <Item english="Show NppExec Console" text="Zobrazit konzoli NppExec"/>
+    <Item english="Execute NppExec Script" text="Spustit skript NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;dočasný skript&gt;"/>
+    <Item english="Script name" text="Název skriptu"/>
+    <Item english="Dock Left" text="Připnout vlevo"/>
+    <Item english="Dock Right" text="Připnout vpravo"/>
+    <Item english="Dock Top" text="Připnout nahoře"/>
+    <Item english="Dock Bottom" text="Připnout dole"/>
+    <Item english="Float" text="Odepnout"/>
+    <Item english="Remember which panels were open" text="Pamatovat si, které panely byly otevřené"/>
+    <Item english="Show the toolbar" text="Zobrazit lištu nástrojů"/>
+    <Item english="Toolbar buttons" text="Tlačítka lišty nástrojů"/>
+    <Item english="Icons only" text="Pouze ikony"/>
+    <Item english="Icons and labels" text="Ikony a popisky"/>
+    <Item english="Labels only" text="Pouze popisky"/>
+    <Item english="Toolbar size" text="Velikost lišty nástrojů"/>
+    <Item english="Regular" text="Běžná"/>
+    <Item english="Small" text="Malá"/>
+    <Item english="Icons" text="Ikony"/>
+    <Item english="Hidden" text="Skrytá"/>
+    <Item english="1 pixel" text="1 pixel"/>
+    <Item english="2 pixels" text="2 pixely"/>
+    <Item english="3 pixels" text="3 pixely"/>
+    <Item english="Selected text can be dragged" text="Vybraný text lze přetahovat"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Povolit vícenásobnou editaci (Cmd+kliknutí/výběr)"/>
+    <Item english="Follow the system" text="Podle systému"/>
+    <Item english="Light theme" text="Světlý motiv"/>
+    <Item english="Dark theme" text="Tmavý motiv"/>
+    <Item english="Show the fold margin" text="Zobrazit okraj se sbalovačem"/>
+    <Item english="A line" text="Čára"/>
+    <Item english="Columns (space separated)" text="Sloupce (oddělené mezerou)"/>
+    <Item english="3 parts" text="3 části"/>
+    <Item english="4 parts" text="4 části"/>
+    <Item english="5 parts" text="5 částí"/>
+    <Item english="6 parts" text="6 částí"/>
+    <Item english="7 parts" text="7 částí"/>
+    <Item english="8 parts" text="8 částí"/>
+    <Item english="9 parts" text="9 částí"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Určit syntaxi podle obsahu, když ji neprozradí název"/>
+    <Item english="Highlight matching braces" text="Zvýrazňovat párové závorky"/>
+    <Item english="Header font (blank for the editor's)" text="Písmo záhlaví (prázdné = písmo editoru)"/>
+    <Item english="Header font size" text="Velikost písma záhlaví"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Okraje: vlevo, nahoře, vpravo, dole (body)"/>
+    <Item english="Characters before it opens" text="Počet znaků před otevřením"/>
+    <Item english="Add characters to the word list" text="Přidat znaky do seznamu znaků pro Slova"/>
+    <Item english="A fixed folder" text="Pevná složka"/>
+    <Item english="Fixed folder" text="Pevná složka"/>
+    <Item english="Confirm Replace All" text="Potvrzovat příkaz Nahradit vše"/>
+    <Item english="Compare: ignore case" text="Porovnání: nerozlišovat malá a VELKÁ písmena"/>
+    <Item english="Compare: ignore spaces" text="Porovnání: ignorovat mezery"/>
+    <Item english="Compare: ignore empty lines" text="Porovnání: ignorovat prázdné řádky"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Maximální počet znaků pro automatické vkládání do políčka &quot;Najít&quot;"/>
+    <Item english="Releases repository" text="Repozitář vydání"/>
+    <Item english="Notepad++ update" text="Aktualizace Notepad++"/>
+    <Item english="No update is available." text="Žádná aktualizace není k dispozici."/>
+    <Item english="An update package is available, do you want to download it?" text="Je k dispozici aktualizace, chcete ji stáhnout?"/>
+    <Item english="Open the Releases Page" text="Otevřít stránku vydání"/>
+    <Item english="Copy debug info to clipboard" text="Kopírovat informace k ladění do Schránky"/>
+    <Item english="Fonts…" text="Písma…"/>
+    <Item english="This document is not valid JSON." text="Tento dokument není platný JSON."/>
+    <Item english="Valid JSON." text="Platný JSON."/>
+    <Item english="Invalid JSON." text="Neplatný JSON."/>
+    <Item english="Set as the first file to compare." text="Nastaven jako první soubor k porovnání."/>
+    <Item english="Nothing to compare with." text="Není s čím porovnávat."/>
+    <Item english="The document is valid XML." text="Dokument je platný XML."/>
+    <Item english="FTP connections" text="Připojení FTP"/>
+    <Item english="Cannot connect." text="Nelze se připojit."/>
+    <Item english="That file is open in another tab." text="Tento soubor je otevřen na jiné kartě."/>
+    <Item english="Close it first, or choose another name." text="Nejprve jej zavřete, nebo zvolte jiný název."/>
+    <Item english="Which language is this?" text="Jaká je to syntaxe?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Některé znaky nelze v tomto kódování vyjádřit."/>
+    <Item english="Converting will replace them." text="Konverze je nahradí."/>
+    <Item english="Press the keys." text="Stiskněte klávesy."/>
+    <Item english="Nothing is marked" text="Nic není označeno"/>
+    <Item english="Marked text copied" text="Označený text zkopírován"/>
+    <Item english="Choose a folder first" text="Nejprve vyberte složku"/>
+    <Item english="This document has no folder" text="Tento dokument nemá složku"/>
+    <Item english="The ticked project panels have no files" text="Zaškrtnuté panely projektu neobsahují žádné soubory"/>
+    <Item english="Searching..." text="Hledání..."/>
+    <Item english="Stopping..." text="Zastavování..."/>
+    <Item english="Marks cleared" text="Označení vymazáno"/>
+    <Item english="Transparent" text="Průhledné"/>
+    <Item english="View 1" text="Pohled 1"/>
+    <Item english="View 2" text="Pohled 2"/>
+</NativeLangExtra>

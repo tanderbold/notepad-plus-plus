@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/swedish.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Svenska">
+    <Item english="About NotepadMac" text="Om NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Dölj NotepadMac"/>
+    <Item english="Hide Others" text="Dölj övriga"/>
+    <Item english="Show All" text="Visa alla"/>
+    <Item english="Quit NotepadMac" text="Avsluta NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Öppna objektets mapp i Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Öppna objektets mapp i Terminal"/>
+    <Item english="Toggle Insert/Overtype" text="Växla mellan infoga/skriv över"/>
+    <Item english="Toggle Fold" text="Minimera/expandera"/>
+    <Item english="Show All Hidden Lines" text="Visa alla dolda rader"/>
+    <Item english="Recent Window" text="Senaste fönster"/>
+    <Item english="Move to Trash" text="Flytta till papperskorgen"/>
+    <Item english="Save Current Command…" text="Spara aktuellt kommando…"/>
+    <Item english="Manage Saved Commands…" text="Hantera sparade kommandon…"/>
+    <Item english="Show Console" text="Visa konsol"/>
+    <Item english="Validate shortcuts" text="Kontrollera kortkommandon"/>
+    <Item english="Open Plugins Folder…" text="Öppna mapp med insticksprogram…"/>
+    <Item english="Format" text="Formatera"/>
+    <Item english="Compact" text="Komprimera"/>
+    <Item english="Sort Keys" text="Sortera nycklar"/>
+    <Item english="Validate" text="Validera"/>
+    <Item english="Show JSON Tree" text="Visa JSON-träd"/>
+    <Item english="Set as First to Compare" text="Ange som första att jämföra"/>
+    <Item english="Compare" text="Jämför"/>
+    <Item english="Compare with File…" text="Jämför med fil…"/>
+    <Item english="Next Difference" text="Nästa skillnad"/>
+    <Item english="Previous Difference" text="Föregående skillnad"/>
+    <Item english="First Difference" text="Första skillnaden"/>
+    <Item english="Last Difference" text="Sista skillnaden"/>
+    <Item english="Compare Summary" text="Sammanfattning av jämförelse"/>
+    <Item english="Ignore Case" text="Ignorera skiftläge"/>
+    <Item english="Ignore Spaces" text="Ignorera blanksteg"/>
+    <Item english="Ignore Empty Lines" text="Ignorera tomma rader"/>
+    <Item english="Clear Active Compare" text="Rensa aktiv jämförelse"/>
+    <Item english="Clear All Compares" text="Rensa alla jämförelser"/>
+    <Item english="Pretty Print" text="Snygg formatering"/>
+    <Item english="Pretty Print — Indent Attributes" text="Snygg formatering — dra in attribut"/>
+    <Item english="Linearize" text="Lägg på en rad"/>
+    <Item english="Check XML Syntax Now" text="Kontrollera XML-syntax nu"/>
+    <Item english="Validate Against Schema…" text="Validera mot schema…"/>
+    <Item english="Validate Against DTD" text="Validera mot DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Utvärdera XPath-uttryck…"/>
+    <Item english="Current XML Path" text="Aktuell XML-sökväg"/>
+    <Item english="Current XML Path with Predicates" text="Aktuell XML-sökväg med predikat"/>
+    <Item english="Apply XSL Transformation…" text="Använd XSL-transformering…"/>
+    <Item english="Escape Characters in Selection" text="Escapa tecken i markering"/>
+    <Item english="Unescape Characters in Selection" text="Ta bort escapning i markering"/>
+    <Item english="Connections…" text="Anslutningar…"/>
+    <Item english="Connect…" text="Anslut…"/>
+    <Item english="Disconnect" text="Koppla från"/>
+    <Item english="Show Remote Files" text="Visa fjärrfiler"/>
+    <Item english="Upload Current File" text="Ladda upp aktuell fil"/>
+    <Item english="Execute NppExec Script…" text="Kör NppExec-skript…"/>
+    <Item english="Execute Previous NppExec Script" text="Kör föregående NppExec-skript"/>
+    <Item english="Stop Running NppExec Script" text="Stoppa NppExec-skript som körs"/>
+    <Item english="Show NppExec Console" text="Visa NppExec-konsol"/>
+    <Item english="Execute NppExec Script" text="Kör NppExec-skript"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;tillfälligt skript&gt;"/>
+    <Item english="Script name" text="Skriptnamn"/>
+    <Item english="Dock Left" text="Fäst till vänster"/>
+    <Item english="Dock Right" text="Fäst till höger"/>
+    <Item english="Dock Top" text="Fäst upptill"/>
+    <Item english="Dock Bottom" text="Fäst nedtill"/>
+    <Item english="Float" text="Flytande"/>
+    <Item english="Remember which panels were open" text="Kom ihåg vilka paneler som var öppna"/>
+    <Item english="Show the toolbar" text="Visa verktygsfältet"/>
+    <Item english="Toolbar buttons" text="Knappar i verktygsfältet"/>
+    <Item english="Icons only" text="Endast ikoner"/>
+    <Item english="Icons and labels" text="Ikoner och text"/>
+    <Item english="Labels only" text="Endast text"/>
+    <Item english="Toolbar size" text="Verktygsfältets storlek"/>
+    <Item english="Regular" text="Normal"/>
+    <Item english="Small" text="Liten"/>
+    <Item english="Icons" text="Ikoner"/>
+    <Item english="Hidden" text="Dold"/>
+    <Item english="1 pixel" text="1 pixel"/>
+    <Item english="2 pixels" text="2 pixlar"/>
+    <Item english="3 pixels" text="3 pixlar"/>
+    <Item english="Selected text can be dragged" text="Markerad text kan dras"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Aktivera multiredigering (Cmd + klick/markering)"/>
+    <Item english="Follow the system" text="Följ systemet"/>
+    <Item english="Light theme" text="Ljust tema"/>
+    <Item english="Dark theme" text="Mörkt tema"/>
+    <Item english="Show the fold margin" text="Visa grupperingsmarginalen"/>
+    <Item english="A line" text="En linje"/>
+    <Item english="Columns (space separated)" text="Kolumner (avgränsade med blanksteg)"/>
+    <Item english="3 parts" text="3 delar"/>
+    <Item english="4 parts" text="4 delar"/>
+    <Item english="5 parts" text="5 delar"/>
+    <Item english="6 parts" text="6 delar"/>
+    <Item english="7 parts" text="7 delar"/>
+    <Item english="8 parts" text="8 delar"/>
+    <Item english="9 parts" text="9 delar"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Avgör språket utifrån innehållet när namnet inte visar det"/>
+    <Item english="Highlight matching braces" text="Markera matchande klamrar"/>
+    <Item english="Header font (blank for the editor's)" text="Teckensnitt för sidhuvud (tomt: redigerarens)"/>
+    <Item english="Header font size" text="Teckenstorlek för sidhuvud"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Marginaler: vänster, överkant, höger, nederkant (punkter)"/>
+    <Item english="Characters before it opens" text="Antal tecken innan listan öppnas"/>
+    <Item english="Add characters to the word list" text="Lägg till tecken i listan över ordtecken"/>
+    <Item english="A fixed folder" text="En fast mapp"/>
+    <Item english="Fixed folder" text="Fast mapp"/>
+    <Item english="Confirm Replace All" text="Bekräfta &quot;Ersätt alla&quot;"/>
+    <Item english="Compare: ignore case" text="Jämför: ignorera skiftläge"/>
+    <Item english="Compare: ignore spaces" text="Jämför: ignorera blanksteg"/>
+    <Item english="Compare: ignore empty lines" text="Jämför: ignorera tomma rader"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Max antal tecken för automatisk ifyllning av sökfältet"/>
+    <Item english="Releases repository" text="Källkodsarkiv för utgåvor"/>
+    <Item english="Notepad++ update" text="Uppdatering av Notepad++"/>
+    <Item english="No update is available." text="Ingen uppdatering finns tillgänglig."/>
+    <Item english="An update package is available, do you want to download it?" text="Ett uppdateringspaket finns tillgängligt. Vill du ladda ner det?"/>
+    <Item english="Open the Releases Page" text="Öppna sidan med utgåvor"/>
+    <Item english="Copy debug info to clipboard" text="Kopiera felsökningsinfo till urklipp"/>
+    <Item english="Fonts…" text="Teckensnitt…"/>
+    <Item english="This document is not valid JSON." text="Detta dokument är inte giltig JSON."/>
+    <Item english="Valid JSON." text="Giltig JSON."/>
+    <Item english="Invalid JSON." text="Ogiltig JSON."/>
+    <Item english="Set as the first file to compare." text="Angiven som första fil att jämföra."/>
+    <Item english="Nothing to compare with." text="Inget att jämföra med."/>
+    <Item english="The document is valid XML." text="Dokumentet är giltig XML."/>
+    <Item english="FTP connections" text="FTP-anslutningar"/>
+    <Item english="Cannot connect." text="Det går inte att ansluta."/>
+    <Item english="That file is open in another tab." text="Den filen är öppen i en annan flik."/>
+    <Item english="Close it first, or choose another name." text="Stäng den först eller välj ett annat namn."/>
+    <Item english="Which language is this?" text="Vilket språk är detta?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Vissa tecken kan inte representeras i denna kodning."/>
+    <Item english="Converting will replace them." text="De ersätts vid konvertering."/>
+    <Item english="Press the keys." text="Tryck på tangenterna."/>
+    <Item english="Nothing is marked" text="Ingenting är markerat"/>
+    <Item english="Marked text copied" text="Markerad text kopierad"/>
+    <Item english="Choose a folder first" text="Välj en mapp först"/>
+    <Item english="This document has no folder" text="Detta dokument har ingen mapp"/>
+    <Item english="The ticked project panels have no files" text="De förbockade projektpanelerna innehåller inga filer"/>
+    <Item english="Searching..." text="Söker..."/>
+    <Item english="Stopping..." text="Stoppar..."/>
+    <Item english="Marks cleared" text="Markeringar rensade"/>
+    <Item english="Transparent" text="Genomskinlig"/>
+    <Item english="View 1" text="Vy 1"/>
+    <Item english="View 2" text="Vy 2"/>
+</NativeLangExtra>

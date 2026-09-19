@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/uzbekCyrillic.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Ўзбекча">
+    <Item english="About NotepadMac" text="NotepadMac ҳақида"/>
+    <Item english="Hide NotepadMac" text="NotepadMac дастурини яшириш"/>
+    <Item english="Hide Others" text="Бошқаларини яшириш"/>
+    <Item english="Show All" text="Барчасини кўрсатиш"/>
+    <Item english="Quit NotepadMac" text="NotepadMac дастуридан чиқиш"/>
+    <Item english="Open Containing Folder in Finder" text="Файл папкасини Finder’да очиш"/>
+    <Item english="Open Containing Folder in Terminal" text="Файл папкасини Терминалда очиш"/>
+    <Item english="Toggle Insert/Overtype" text="Қўйиш/алмаштириш режимини ўзгартириш"/>
+    <Item english="Toggle Fold" text="Блокни тахлаш/тиклаш"/>
+    <Item english="Show All Hidden Lines" text="Барча яширилган сатрларни кўрсатиш"/>
+    <Item english="Recent Window" text="Олдинги ойна"/>
+    <Item english="Move to Trash" text="Саватга кўчириш"/>
+    <Item english="Save Current Command…" text="Жорий буйруқни сақлаш…"/>
+    <Item english="Manage Saved Commands…" text="Сақланган буйруқларни бошқариш…"/>
+    <Item english="Show Console" text="Консолни кўрсатиш"/>
+    <Item english="Validate shortcuts" text="Тезкор тугмаларни текшириш"/>
+    <Item english="Open Plugins Folder…" text="Қўшимчалар папкасини очиш…"/>
+    <Item english="Format" text="Форматлаш"/>
+    <Item english="Compact" text="Ихчамлаш"/>
+    <Item english="Sort Keys" text="Калитларни тартиблаш"/>
+    <Item english="Validate" text="Текшириш"/>
+    <Item english="Show JSON Tree" text="JSON дарахтини кўрсатиш"/>
+    <Item english="Set as First to Compare" text="Таққослаш учун биринчи деб белгилаш"/>
+    <Item english="Compare" text="Таққослаш"/>
+    <Item english="Compare with File…" text="Файл билан таққослаш…"/>
+    <Item english="Next Difference" text="Кейинги фарқ"/>
+    <Item english="Previous Difference" text="Олдинги фарқ"/>
+    <Item english="First Difference" text="Биринчи фарқ"/>
+    <Item english="Last Difference" text="Охирги фарқ"/>
+    <Item english="Compare Summary" text="Таққослаш хулосаси"/>
+    <Item english="Ignore Case" text="Регистрни ҳисобга олмаслик"/>
+    <Item english="Ignore Spaces" text="Бўш жойларни ҳисобга олмаслик"/>
+    <Item english="Ignore Empty Lines" text="Бўш сатрларни ҳисобга олмаслик"/>
+    <Item english="Clear Active Compare" text="Жорий таққослашни тозалаш"/>
+    <Item english="Clear All Compares" text="Барча таққослашларни тозалаш"/>
+    <Item english="Pretty Print" text="Чиройли форматлаш"/>
+    <Item english="Pretty Print — Indent Attributes" text="Чиройли форматлаш — атрибутларни чекиниш билан"/>
+    <Item english="Linearize" text="Бир сатрга келтириш"/>
+    <Item english="Check XML Syntax Now" text="XML синтаксисини ҳозир текшириш"/>
+    <Item english="Validate Against Schema…" text="Схема бўйича текшириш…"/>
+    <Item english="Validate Against DTD" text="DTD бўйича текшириш"/>
+    <Item english="Evaluate XPath Expression…" text="XPath ифодасини ҳисоблаш…"/>
+    <Item english="Current XML Path" text="Жорий XML йўли"/>
+    <Item english="Current XML Path with Predicates" text="Жорий XML йўли предикатлар билан"/>
+    <Item english="Apply XSL Transformation…" text="XSL ўзгартиришини қўллаш…"/>
+    <Item english="Escape Characters in Selection" text="Белгилангандаги белгиларни экранлаш"/>
+    <Item english="Unescape Characters in Selection" text="Белгилангандаги белгилар экранланишини олиб ташлаш"/>
+    <Item english="Connections…" text="Уланишлар…"/>
+    <Item english="Connect…" text="Уланиш…"/>
+    <Item english="Disconnect" text="Узилиш"/>
+    <Item english="Show Remote Files" text="Масофадаги файлларни кўрсатиш"/>
+    <Item english="Upload Current File" text="Жорий файлни серверга юбориш"/>
+    <Item english="Execute NppExec Script…" text="NppExec скриптини ишга тушириш…"/>
+    <Item english="Execute Previous NppExec Script" text="Олдинги NppExec скриптини ишга тушириш"/>
+    <Item english="Stop Running NppExec Script" text="Ишлаётган NppExec скриптини тўхтатиш"/>
+    <Item english="Show NppExec Console" text="NppExec консолини кўрсатиш"/>
+    <Item english="Execute NppExec Script" text="NppExec скриптини ишга тушириш"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;вақтинчалик скрипт&gt;"/>
+    <Item english="Script name" text="Скрипт номи"/>
+    <Item english="Dock Left" text="Чапдан маҳкамлаш"/>
+    <Item english="Dock Right" text="Ўнгдан маҳкамлаш"/>
+    <Item english="Dock Top" text="Тепадан маҳкамлаш"/>
+    <Item english="Dock Bottom" text="Пастдан маҳкамлаш"/>
+    <Item english="Float" text="Ажратиб олиш"/>
+    <Item english="Remember which panels were open" text="Қайси панеллар очиқ бўлганини эслаб қолиш"/>
+    <Item english="Show the toolbar" text="Ускуналар панелини кўрсатиш"/>
+    <Item english="Toolbar buttons" text="Ускуналар панели тугмалари"/>
+    <Item english="Icons only" text="Фақат белгилар"/>
+    <Item english="Icons and labels" text="Белгилар ва ёзувлар"/>
+    <Item english="Labels only" text="Фақат ёзувлар"/>
+    <Item english="Toolbar size" text="Ускуналар панели ўлчами"/>
+    <Item english="Regular" text="Оддий"/>
+    <Item english="Small" text="Кичик"/>
+    <Item english="Icons" text="Белгилар"/>
+    <Item english="Hidden" text="Яширилган"/>
+    <Item english="1 pixel" text="1 пиксел"/>
+    <Item english="2 pixels" text="2 пиксел"/>
+    <Item english="3 pixels" text="3 пиксел"/>
+    <Item english="Selected text can be dragged" text="Белгиланган матнни судраб олиш мумкин"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Кўп жойда таҳрирлашни ёқиш (Cmd+босиш/белгилаш)"/>
+    <Item english="Follow the system" text="Тизимдагидек"/>
+    <Item english="Light theme" text="Ёруғ мавзу"/>
+    <Item english="Dark theme" text="Қоронғи мавзу"/>
+    <Item english="Show the fold margin" text="Блок чегаралари майдонини кўрсатиш"/>
+    <Item english="A line" text="Чизиқ"/>
+    <Item english="Columns (space separated)" text="Устунлар (бўш жой билан ажратилган)"/>
+    <Item english="3 parts" text="3 қисм"/>
+    <Item english="4 parts" text="4 қисм"/>
+    <Item english="5 parts" text="5 қисм"/>
+    <Item english="6 parts" text="6 қисм"/>
+    <Item english="7 parts" text="7 қисм"/>
+    <Item english="8 parts" text="8 қисм"/>
+    <Item english="9 parts" text="9 қисм"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Номидан билинмаса, тилни мазмунига қараб аниқлаш"/>
+    <Item english="Highlight matching braces" text="Жуфт қавсларни ажратиб кўрсатиш"/>
+    <Item english="Header font (blank for the editor's)" text="Колонтитул шрифти (бўш бўлса — муҳаррирники)"/>
+    <Item english="Header font size" text="Колонтитул шрифти ўлчами"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Ҳошиялар: чап, юқори, ўнг, паст (пункт)"/>
+    <Item english="Characters before it opens" text="Очилишидан олдинги белгилар сони"/>
+    <Item english="Add characters to the word list" text="Сўз белгилари рўйхатига белгилар қўшиш"/>
+    <Item english="A fixed folder" text="Белгиланган папка"/>
+    <Item english="Fixed folder" text="Белгиланган папка"/>
+    <Item english="Confirm Replace All" text="«Барчасини алмаштириш»ни тасдиқлаш"/>
+    <Item english="Compare: ignore case" text="Таққослаш: регистрни ҳисобга олмаслик"/>
+    <Item english="Compare: ignore spaces" text="Таққослаш: бўш жойларни ҳисобга олмаслик"/>
+    <Item english="Compare: ignore empty lines" text="Таққослаш: бўш сатрларни ҳисобга олмаслик"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Қидириш майдонини автоматик тўлдириш учун белгиларнинг энг кўп сони"/>
+    <Item english="Releases repository" text="Релизлар репозиторийси"/>
+    <Item english="Notepad++ update" text="Notepad++ янгиланиши"/>
+    <Item english="No update is available." text="Янгиланиш йўқ."/>
+    <Item english="An update package is available, do you want to download it?" text="Янгиланиш тўплами мавжуд, уни юклаб олмоқчимисиз?"/>
+    <Item english="Open the Releases Page" text="Релизлар саҳифасини очиш"/>
+    <Item english="Copy debug info to clipboard" text="Созлаш маълумотини буферга нусхалаш"/>
+    <Item english="Fonts…" text="Шрифтлар…"/>
+    <Item english="This document is not valid JSON." text="Бу ҳужжат яроқли JSON эмас."/>
+    <Item english="Valid JSON." text="Яроқли JSON."/>
+    <Item english="Invalid JSON." text="Яроқсиз JSON."/>
+    <Item english="Set as the first file to compare." text="Таққослаш учун биринчи файл деб белгиланди."/>
+    <Item english="Nothing to compare with." text="Таққослаш учун ҳеч нарса йўқ."/>
+    <Item english="The document is valid XML." text="Ҳужжат — яроқли XML."/>
+    <Item english="FTP connections" text="FTP уланишлари"/>
+    <Item english="Cannot connect." text="Уланиб бўлмади."/>
+    <Item english="That file is open in another tab." text="Бу файл бошқа варақда очиқ."/>
+    <Item english="Close it first, or choose another name." text="Аввал уни ёпинг ёки бошқа ном танланг."/>
+    <Item english="Which language is this?" text="Бу қайси тил?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Айрим белгиларни бу кодировкада ифодалаб бўлмайди."/>
+    <Item english="Converting will replace them." text="Ўзгартиришда улар алмаштирилади."/>
+    <Item english="Press the keys." text="Тугмаларни босинг."/>
+    <Item english="Nothing is marked" text="Ҳеч нарса белгиланмаган"/>
+    <Item english="Marked text copied" text="Белгиланган матндан нусха олинди"/>
+    <Item english="Choose a folder first" text="Аввал папкани танланг"/>
+    <Item english="This document has no folder" text="Бу ҳужжатнинг папкаси йўқ"/>
+    <Item english="The ticked project panels have no files" text="Белгиланган лойиҳа панелларида файллар йўқ"/>
+    <Item english="Searching..." text="Қидирилмоқда..."/>
+    <Item english="Stopping..." text="Тўхтатилмоқда..."/>
+    <Item english="Marks cleared" text="Белгилар олиб ташланди"/>
+    <Item english="Transparent" text="Шаффоф"/>
+    <Item english="View 1" text="Кўриниш 1"/>
+    <Item english="View 2" text="Кўриниш 2"/>
+</NativeLangExtra>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/indonesian.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Indonesian">
+    <Item english="About NotepadMac" text="Ihwal NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Sembunyikan NotepadMac"/>
+    <Item english="Hide Others" text="Sembunyikan Lainnya"/>
+    <Item english="Show All" text="Tampilkan Semua"/>
+    <Item english="Quit NotepadMac" text="Keluar dari NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Buka Folder Terkait di Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Buka Folder Terkait di Terminal"/>
+    <Item english="Toggle Insert/Overtype" text="Sakelar Sisip/Timpa"/>
+    <Item english="Toggle Fold" text="Sakelar Lipatan"/>
+    <Item english="Show All Hidden Lines" text="Tampilkan Semua Baris Tersembunyi"/>
+    <Item english="Recent Window" text="Jendela Terakhir"/>
+    <Item english="Move to Trash" text="Pindahkan ke Tempat Sampah"/>
+    <Item english="Save Current Command…" text="Simpan Perintah Saat Ini…"/>
+    <Item english="Manage Saved Commands…" text="Kelola Perintah Tersimpan…"/>
+    <Item english="Show Console" text="Tampilkan Konsol"/>
+    <Item english="Validate shortcuts" text="Validasi pintasan"/>
+    <Item english="Open Plugins Folder…" text="Buka Folder Plugin…"/>
+    <Item english="Format" text="Format"/>
+    <Item english="Compact" text="Mampatkan"/>
+    <Item english="Sort Keys" text="Urutkan Kunci"/>
+    <Item english="Validate" text="Validasi"/>
+    <Item english="Show JSON Tree" text="Tampilkan Pohon JSON"/>
+    <Item english="Set as First to Compare" text="Tetapkan sebagai yang Pertama untuk Dibandingkan"/>
+    <Item english="Compare" text="Bandingkan"/>
+    <Item english="Compare with File…" text="Bandingkan dengan Berkas…"/>
+    <Item english="Next Difference" text="Perbedaan Selanjutnya"/>
+    <Item english="Previous Difference" text="Perbedaan Sebelumnya"/>
+    <Item english="First Difference" text="Perbedaan Pertama"/>
+    <Item english="Last Difference" text="Perbedaan Terakhir"/>
+    <Item english="Compare Summary" text="Ringkasan Perbandingan"/>
+    <Item english="Ignore Case" text="Abaikan Besar/Kecil"/>
+    <Item english="Ignore Spaces" text="Abaikan Spasi"/>
+    <Item english="Ignore Empty Lines" text="Abaikan Baris Kosong"/>
+    <Item english="Clear Active Compare" text="Hapus Perbandingan Aktif"/>
+    <Item english="Clear All Compares" text="Hapus Semua Perbandingan"/>
+    <Item english="Pretty Print" text="Rapikan"/>
+    <Item english="Pretty Print — Indent Attributes" text="Rapikan — Indentasi Atribut"/>
+    <Item english="Linearize" text="Jadikan Satu Baris"/>
+    <Item english="Check XML Syntax Now" text="Periksa Sintaks XML Sekarang"/>
+    <Item english="Validate Against Schema…" text="Validasi terhadap Skema…"/>
+    <Item english="Validate Against DTD" text="Validasi terhadap DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Evaluasi Ekspresi XPath…"/>
+    <Item english="Current XML Path" text="Jalur XML Saat Ini"/>
+    <Item english="Current XML Path with Predicates" text="Jalur XML Saat Ini dengan Predikat"/>
+    <Item english="Apply XSL Transformation…" text="Terapkan Transformasi XSL…"/>
+    <Item english="Escape Characters in Selection" text="Escape Karakter dalam Pilihan"/>
+    <Item english="Unescape Characters in Selection" text="Unescape Karakter dalam Pilihan"/>
+    <Item english="Connections…" text="Koneksi…"/>
+    <Item english="Connect…" text="Sambungkan…"/>
+    <Item english="Disconnect" text="Putuskan Sambungan"/>
+    <Item english="Show Remote Files" text="Tampilkan Berkas Jarak Jauh"/>
+    <Item english="Upload Current File" text="Unggah Berkas Saat Ini"/>
+    <Item english="Execute NppExec Script…" text="Jalankan Skrip NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Jalankan Skrip NppExec Sebelumnya"/>
+    <Item english="Stop Running NppExec Script" text="Hentikan Skrip NppExec yang Berjalan"/>
+    <Item english="Show NppExec Console" text="Tampilkan Konsol NppExec"/>
+    <Item english="Execute NppExec Script" text="Jalankan Skrip NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;skrip sementara&gt;"/>
+    <Item english="Script name" text="Nama skrip"/>
+    <Item english="Dock Left" text="Tambatkan di Kiri"/>
+    <Item english="Dock Right" text="Tambatkan di Kanan"/>
+    <Item english="Dock Top" text="Tambatkan di Atas"/>
+    <Item english="Dock Bottom" text="Tambatkan di Bawah"/>
+    <Item english="Float" text="Mengambang"/>
+    <Item english="Remember which panels were open" text="Ingat panel mana yang terbuka"/>
+    <Item english="Show the toolbar" text="Tampilkan bilah alat"/>
+    <Item english="Toolbar buttons" text="Tombol bilah alat"/>
+    <Item english="Icons only" text="Ikon saja"/>
+    <Item english="Icons and labels" text="Ikon dan label"/>
+    <Item english="Labels only" text="Label saja"/>
+    <Item english="Toolbar size" text="Ukuran bilah alat"/>
+    <Item english="Regular" text="Biasa"/>
+    <Item english="Small" text="Kecil"/>
+    <Item english="Icons" text="Ikon"/>
+    <Item english="Hidden" text="Tersembunyi"/>
+    <Item english="1 pixel" text="1 piksel"/>
+    <Item english="2 pixels" text="2 piksel"/>
+    <Item english="3 pixels" text="3 piksel"/>
+    <Item english="Selected text can be dragged" text="Teks terpilih dapat diseret"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Aktifkan Multi-Penyuntingan (Cmd+klik/pilihan)"/>
+    <Item english="Follow the system" text="Ikuti sistem"/>
+    <Item english="Light theme" text="Tema terang"/>
+    <Item english="Dark theme" text="Tema gelap"/>
+    <Item english="Show the fold margin" text="Tampilkan margin lipat"/>
+    <Item english="A line" text="Garis"/>
+    <Item english="Columns (space separated)" text="Kolom (dipisahkan spasi)"/>
+    <Item english="3 parts" text="3 bagian"/>
+    <Item english="4 parts" text="4 bagian"/>
+    <Item english="5 parts" text="5 bagian"/>
+    <Item english="6 parts" text="6 bagian"/>
+    <Item english="7 parts" text="7 bagian"/>
+    <Item english="8 parts" text="8 bagian"/>
+    <Item english="9 parts" text="9 bagian"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Tentukan bahasa dari isi bila nama berkas tidak menunjukkannya"/>
+    <Item english="Highlight matching braces" text="Soroti pasangan kurung kurawal"/>
+    <Item english="Header font (blank for the editor's)" text="Fon kepala (kosongkan untuk fon editor)"/>
+    <Item english="Header font size" text="Ukuran fon kepala"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Margin: kiri, atas, kanan, bawah (poin)"/>
+    <Item english="Characters before it opens" text="Jumlah karakter sebelum terbuka"/>
+    <Item english="Add characters to the word list" text="Tambahkan karakter ke daftar karakter kata"/>
+    <Item english="A fixed folder" text="Folder tetap"/>
+    <Item english="Fixed folder" text="Folder tetap"/>
+    <Item english="Confirm Replace All" text="Konfirmasi Ganti Semua"/>
+    <Item english="Compare: ignore case" text="Bandingkan: abaikan besar/kecil"/>
+    <Item english="Compare: ignore spaces" text="Bandingkan: abaikan spasi"/>
+    <Item english="Compare: ignore empty lines" text="Bandingkan: abaikan baris kosong"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Maks Karakter untuk Isi Otomatis Kolom Temukan"/>
+    <Item english="Releases repository" text="Repositori rilis"/>
+    <Item english="Notepad++ update" text="Pembaruan Notepad++"/>
+    <Item english="No update is available." text="Tidak ada pembaruan yang tersedia."/>
+    <Item english="An update package is available, do you want to download it?" text="Paket pembaruan tersedia, apakah Anda ingin mengunduhnya?"/>
+    <Item english="Open the Releases Page" text="Buka Halaman Rilis"/>
+    <Item english="Copy debug info to clipboard" text="Salin info awakutu ke papan klip"/>
+    <Item english="Fonts…" text="Fon…"/>
+    <Item english="This document is not valid JSON." text="Dokumen ini bukan JSON yang valid."/>
+    <Item english="Valid JSON." text="JSON valid."/>
+    <Item english="Invalid JSON." text="JSON tidak valid."/>
+    <Item english="Set as the first file to compare." text="Ditetapkan sebagai berkas pertama untuk dibandingkan."/>
+    <Item english="Nothing to compare with." text="Tidak ada yang bisa dibandingkan."/>
+    <Item english="The document is valid XML." text="Dokumen ini adalah XML yang valid."/>
+    <Item english="FTP connections" text="Koneksi FTP"/>
+    <Item english="Cannot connect." text="Tidak dapat tersambung."/>
+    <Item english="That file is open in another tab." text="Berkas itu sedang terbuka di tab lain."/>
+    <Item english="Close it first, or choose another name." text="Tutup dahulu, atau pilih nama lain."/>
+    <Item english="Which language is this?" text="Bahasa apakah ini?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Beberapa karakter tidak dapat direpresentasikan dalam pengodean ini."/>
+    <Item english="Converting will replace them." text="Konversi akan menggantinya."/>
+    <Item english="Press the keys." text="Tekan tombolnya."/>
+    <Item english="Nothing is marked" text="Tidak ada yang ditandai"/>
+    <Item english="Marked text copied" text="Teks bertanda disalin"/>
+    <Item english="Choose a folder first" text="Pilih folder dahulu"/>
+    <Item english="This document has no folder" text="Dokumen ini tidak memiliki folder"/>
+    <Item english="The ticked project panels have no files" text="Panel proyek yang dicentang tidak memiliki berkas"/>
+    <Item english="Searching..." text="Mencari..."/>
+    <Item english="Stopping..." text="Menghentikan..."/>
+    <Item english="Marks cleared" text="Tanda dihapus"/>
+    <Item english="Transparent" text="Transparan"/>
+    <Item english="View 1" text="Tampilan 1"/>
+    <Item english="View 2" text="Tampilan 2"/>
+</NativeLangExtra>

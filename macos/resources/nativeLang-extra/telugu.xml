@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/telugu.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="తెలుగు">
+    <Item english="About NotepadMac" text="NotepadMac గురించి"/>
+    <Item english="Hide NotepadMac" text="NotepadMac ను దాచు"/>
+    <Item english="Hide Others" text="ఇతరాలను దాచు"/>
+    <Item english="Show All" text="అన్నీ చూపించు"/>
+    <Item english="Quit NotepadMac" text="NotepadMac నుండి నిష్క్రమించు"/>
+    <Item english="Open Containing Folder in Finder" text="ఫైల్ ఉన్న ఫోల్డర్‌ను Finder లో తెరువు"/>
+    <Item english="Open Containing Folder in Terminal" text="ఫైల్ ఉన్న ఫోల్డర్‌ను టెర్మినల్‌లో తెరువు"/>
+    <Item english="Toggle Insert/Overtype" text="ఇన్సర్ట్/ఓవర్‌టైప్ టాగల్ చేయి"/>
+    <Item english="Toggle Fold" text="ఫోల్డ్ టాగల్ చేయి"/>
+    <Item english="Show All Hidden Lines" text="దాచిన అన్ని లైన్లను చూపించు"/>
+    <Item english="Recent Window" text="ఇటీవలి విండో"/>
+    <Item english="Move to Trash" text="ట్రాష్‌కు తరలించు"/>
+    <Item english="Save Current Command…" text="ప్రస్తుత కమాండ్‌ను సేవ్ చేయి…"/>
+    <Item english="Manage Saved Commands…" text="సేవ్ చేసిన కమాండ్‌లను నిర్వహించు…"/>
+    <Item english="Show Console" text="కన్సోల్ చూపించు"/>
+    <Item english="Validate shortcuts" text="షార్ట్‌కట్‌లను తనిఖీ చేయి"/>
+    <Item english="Open Plugins Folder…" text="ప్లగిన్స్ ఫోల్డర్ తెరువు…"/>
+    <Item english="Format" text="ఫార్మాట్ చేయి"/>
+    <Item english="Compact" text="కాంపాక్ట్ చేయి"/>
+    <Item english="Sort Keys" text="కీలను క్రమబద్ధీకరించు"/>
+    <Item english="Validate" text="ధ్రువీకరించు"/>
+    <Item english="Show JSON Tree" text="JSON ట్రీ చూపించు"/>
+    <Item english="Set as First to Compare" text="పోల్చడానికి మొదటిదిగా సెట్ చేయి"/>
+    <Item english="Compare" text="పోల్చు"/>
+    <Item english="Compare with File…" text="ఫైల్‌తో పోల్చు…"/>
+    <Item english="Next Difference" text="తదుపరి తేడా"/>
+    <Item english="Previous Difference" text="మునుపటి తేడా"/>
+    <Item english="First Difference" text="మొదటి తేడా"/>
+    <Item english="Last Difference" text="చివరి తేడా"/>
+    <Item english="Compare Summary" text="పోలిక సారాంశం"/>
+    <Item english="Ignore Case" text="కేస్‌ను విస్మరించు"/>
+    <Item english="Ignore Spaces" text="స్పేస్‌లను విస్మరించు"/>
+    <Item english="Ignore Empty Lines" text="ఖాళీ లైన్లను విస్మరించు"/>
+    <Item english="Clear Active Compare" text="ప్రస్తుత పోలికను తొలగించు"/>
+    <Item english="Clear All Compares" text="అన్ని పోలికలను తొలగించు"/>
+    <Item english="Pretty Print" text="ప్రెట్టీ ప్రింట్"/>
+    <Item english="Pretty Print — Indent Attributes" text="ప్రెట్టీ ప్రింట్ — అట్రిబ్యూట్‌లను ఇండెంట్ చేయి"/>
+    <Item english="Linearize" text="ఒకే లైన్‌గా మార్చు"/>
+    <Item english="Check XML Syntax Now" text="XML సింటాక్స్‌ను ఇప్పుడే తనిఖీ చేయి"/>
+    <Item english="Validate Against Schema…" text="స్కీమాతో ధ్రువీకరించు…"/>
+    <Item english="Validate Against DTD" text="DTD తో ధ్రువీకరించు"/>
+    <Item english="Evaluate XPath Expression…" text="XPath ఎక్స్‌ప్రెషన్‌ను లెక్కించు…"/>
+    <Item english="Current XML Path" text="ప్రస్తుత XML పాత్"/>
+    <Item english="Current XML Path with Predicates" text="ప్రెడికేట్‌లతో ప్రస్తుత XML పాత్"/>
+    <Item english="Apply XSL Transformation…" text="XSL ట్రాన్స్‌ఫర్మేషన్‌ను వర్తింపజేయి…"/>
+    <Item english="Escape Characters in Selection" text="ఎంపికలోని క్యారెక్టర్లను ఎస్కేప్ చేయి"/>
+    <Item english="Unescape Characters in Selection" text="ఎంపికలోని క్యారెక్టర్లను అన్‌ఎస్కేప్ చేయి"/>
+    <Item english="Connections…" text="కనెక్షన్లు…"/>
+    <Item english="Connect…" text="కనెక్ట్ చేయి…"/>
+    <Item english="Disconnect" text="డిస్‌కనెక్ట్ చేయి"/>
+    <Item english="Show Remote Files" text="రిమోట్ ఫైళ్లను చూపించు"/>
+    <Item english="Upload Current File" text="ప్రస్తుత ఫైల్‌ను అప్‌లోడ్ చేయి"/>
+    <Item english="Execute NppExec Script…" text="NppExec స్క్రిప్ట్‌ను అమలు చేయి…"/>
+    <Item english="Execute Previous NppExec Script" text="మునుపటి NppExec స్క్రిప్ట్‌ను అమలు చేయి"/>
+    <Item english="Stop Running NppExec Script" text="నడుస్తున్న NppExec స్క్రిప్ట్‌ను ఆపు"/>
+    <Item english="Show NppExec Console" text="NppExec కన్సోల్ చూపించు"/>
+    <Item english="Execute NppExec Script" text="NppExec స్క్రిప్ట్‌ను అమలు చేయి"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;తాత్కాలిక స్క్రిప్ట్&gt;"/>
+    <Item english="Script name" text="స్క్రిప్ట్ పేరు"/>
+    <Item english="Dock Left" text="ఎడమవైపు డాక్ చేయి"/>
+    <Item english="Dock Right" text="కుడివైపు డాక్ చేయి"/>
+    <Item english="Dock Top" text="పైన డాక్ చేయి"/>
+    <Item english="Dock Bottom" text="కింద డాక్ చేయి"/>
+    <Item english="Float" text="ఫ్లోట్ చేయి"/>
+    <Item english="Remember which panels were open" text="ఏ ప్యానెల్‌లు తెరిచి ఉన్నాయో గుర్తుంచుకో"/>
+    <Item english="Show the toolbar" text="టూల్‌బార్ చూపించు"/>
+    <Item english="Toolbar buttons" text="టూల్‌బార్ బటన్లు"/>
+    <Item english="Icons only" text="ఐకాన్‌లు మాత్రమే"/>
+    <Item english="Icons and labels" text="ఐకాన్‌లు మరియు లేబుల్‌లు"/>
+    <Item english="Labels only" text="లేబుల్‌లు మాత్రమే"/>
+    <Item english="Toolbar size" text="టూల్‌బార్ సైజ్"/>
+    <Item english="Regular" text="సాధారణ"/>
+    <Item english="Small" text="చిన్న"/>
+    <Item english="Icons" text="ఐకాన్‌లు"/>
+    <Item english="Hidden" text="దాచబడింది"/>
+    <Item english="1 pixel" text="1 పిక్సెల్"/>
+    <Item english="2 pixels" text="2 పిక్సెల్‌లు"/>
+    <Item english="3 pixels" text="3 పిక్సెల్‌లు"/>
+    <Item english="Selected text can be dragged" text="ఎంచుకున్న టెక్స్ట్‌ను డ్రాగ్ చేయవచ్చు"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="మల్టీ-ఎడిటింగ్ ఎనేబుల్ చేయి (Cmd+క్లిక్/ఎంపిక)"/>
+    <Item english="Follow the system" text="సిస్టమ్‌ను అనుసరించు"/>
+    <Item english="Light theme" text="లైట్ థీమ్"/>
+    <Item english="Dark theme" text="డార్క్ థీమ్"/>
+    <Item english="Show the fold margin" text="ఫోల్డ్ మార్జిన్ చూపించు"/>
+    <Item english="A line" text="ఒక గీత"/>
+    <Item english="Columns (space separated)" text="కాలమ్‌లు (స్పేస్‌తో వేరుచేసి)"/>
+    <Item english="3 parts" text="3 భాగాలు"/>
+    <Item english="4 parts" text="4 భాగాలు"/>
+    <Item english="5 parts" text="5 భాగాలు"/>
+    <Item english="6 parts" text="6 భాగాలు"/>
+    <Item english="7 parts" text="7 భాగాలు"/>
+    <Item english="8 parts" text="8 భాగాలు"/>
+    <Item english="9 parts" text="9 భాగాలు"/>
+    <Item english="Work the language out from the contents when the name does not say" text="పేరు ద్వారా తెలియనప్పుడు కంటెంట్ నుండి భాషను గుర్తించు"/>
+    <Item english="Highlight matching braces" text="జతకూడే బ్రాకెట్‌లను హైలైట్ చేయి"/>
+    <Item english="Header font (blank for the editor's)" text="హెడర్ ఫాంట్ (ఎడిటర్ ఫాంట్ కోసం ఖాళీగా ఉంచండి)"/>
+    <Item english="Header font size" text="హెడర్ ఫాంట్ సైజ్"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="మార్జిన్‌లు: ఎడమ, పైన, కుడి, కింద (పాయింట్లు)"/>
+    <Item english="Characters before it opens" text="తెరుచుకునే ముందు క్యారెక్టర్ల సంఖ్య"/>
+    <Item english="Add characters to the word list" text="పదాల జాబితాకు క్యారెక్టర్లను జోడించు"/>
+    <Item english="A fixed folder" text="ఒక స్థిర ఫోల్డర్"/>
+    <Item english="Fixed folder" text="స్థిర ఫోల్డర్"/>
+    <Item english="Confirm Replace All" text="&quot;రీప్లేస్ ఆల్&quot; ను నిర్ధారించు"/>
+    <Item english="Compare: ignore case" text="పోలిక: కేస్‌ను విస్మరించు"/>
+    <Item english="Compare: ignore spaces" text="పోలిక: స్పేస్‌లను విస్మరించు"/>
+    <Item english="Compare: ignore empty lines" text="పోలిక: ఖాళీ లైన్లను విస్మరించు"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="ఫైండ్ ఫీల్డ్‌ను ఆటోమేటిక్‌గా నింపడానికి గరిష్ఠ క్యారెక్టర్లు"/>
+    <Item english="Releases repository" text="రిలీజ్‌ల రిపాజిటరీ"/>
+    <Item english="Notepad++ update" text="Notepad++ అప్‌డేట్"/>
+    <Item english="No update is available." text="అప్‌డేట్ ఏదీ అందుబాటులో లేదు."/>
+    <Item english="An update package is available, do you want to download it?" text="అప్‌డేట్ ప్యాకేజీ అందుబాటులో ఉంది, దాన్ని డౌన్‌లోడ్ చేయాలనుకుంటున్నారా?"/>
+    <Item english="Open the Releases Page" text="రిలీజ్‌ల పేజీని తెరువు"/>
+    <Item english="Copy debug info to clipboard" text="డీబగ్ సమాచారాన్ని క్లిప్‌బోర్డ్‌కు కాపీ చేయి"/>
+    <Item english="Fonts…" text="ఫాంట్‌లు…"/>
+    <Item english="This document is not valid JSON." text="ఈ డాక్యుమెంట్ చెల్లుబాటు అయ్యే JSON కాదు."/>
+    <Item english="Valid JSON." text="చెల్లుబాటు అయ్యే JSON."/>
+    <Item english="Invalid JSON." text="చెల్లని JSON."/>
+    <Item english="Set as the first file to compare." text="పోల్చడానికి మొదటి ఫైల్‌గా సెట్ చేయబడింది."/>
+    <Item english="Nothing to compare with." text="పోల్చడానికి ఏమీ లేదు."/>
+    <Item english="The document is valid XML." text="డాక్యుమెంట్ చెల్లుబాటు అయ్యే XML."/>
+    <Item english="FTP connections" text="FTP కనెక్షన్లు"/>
+    <Item english="Cannot connect." text="కనెక్ట్ చేయడం సాధ్యం కాలేదు."/>
+    <Item english="That file is open in another tab." text="ఆ ఫైల్ మరొక ట్యాబ్‌లో తెరిచి ఉంది."/>
+    <Item english="Close it first, or choose another name." text="ముందు దాన్ని మూసివేయండి, లేదా మరొక పేరును ఎంచుకోండి."/>
+    <Item english="Which language is this?" text="ఇది ఏ భాష?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="కొన్ని క్యారెక్టర్లను ఈ ఎన్‌కోడింగ్‌లో సూచించడం సాధ్యం కాదు."/>
+    <Item english="Converting will replace them." text="మార్చితే అవి భర్తీ చేయబడతాయి."/>
+    <Item english="Press the keys." text="కీలను నొక్కండి."/>
+    <Item english="Nothing is marked" text="ఏదీ మార్క్ చేయబడలేదు"/>
+    <Item english="Marked text copied" text="మార్క్ చేసిన టెక్స్ట్ కాపీ చేయబడింది"/>
+    <Item english="Choose a folder first" text="ముందుగా ఒక ఫోల్డర్‌ను ఎంచుకోండి"/>
+    <Item english="This document has no folder" text="ఈ డాక్యుమెంట్‌కు ఫోల్డర్ లేదు"/>
+    <Item english="The ticked project panels have no files" text="టిక్ చేసిన ప్రాజెక్ట్ ప్యానెల్‌లలో ఫైళ్లు లేవు"/>
+    <Item english="Searching..." text="వెతుకుతోంది..."/>
+    <Item english="Stopping..." text="ఆపుతోంది..."/>
+    <Item english="Marks cleared" text="మార్క్‌లు తొలగించబడ్డాయి"/>
+    <Item english="Transparent" text="పారదర్శక"/>
+    <Item english="View 1" text="వ్యూ 1"/>
+    <Item english="View 2" text="వ్యూ 2"/>
+</NativeLangExtra>

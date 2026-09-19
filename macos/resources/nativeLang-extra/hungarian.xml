@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/hungarian.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Magyar">
+    <Item english="About NotepadMac" text="A NotepadMac névjegye"/>
+    <Item english="Hide NotepadMac" text="A NotepadMac elrejtése"/>
+    <Item english="Hide Others" text="A többi elrejtése"/>
+    <Item english="Show All" text="Az összes megjelenítése"/>
+    <Item english="Quit NotepadMac" text="Kilépés a NotepadMac alkalmazásból"/>
+    <Item english="Open Containing Folder in Finder" text="Tartalmazó mappa megnyitása a Finderben"/>
+    <Item english="Open Containing Folder in Terminal" text="Tartalmazó mappa megnyitása a Terminálban"/>
+    <Item english="Toggle Insert/Overtype" text="Váltás beszúrás és felülírás között"/>
+    <Item english="Toggle Fold" text="Blokk összecsukása vagy kibontása"/>
+    <Item english="Show All Hidden Lines" text="Minden rejtett sor megjelenítése"/>
+    <Item english="Recent Window" text="Előző ablak"/>
+    <Item english="Move to Trash" text="Áthelyezés a Kukába"/>
+    <Item english="Save Current Command…" text="Jelenlegi parancs mentése…"/>
+    <Item english="Manage Saved Commands…" text="Mentett parancsok kezelése…"/>
+    <Item english="Show Console" text="Konzol megjelenítése"/>
+    <Item english="Validate shortcuts" text="Billentyűparancsok érvényesítése"/>
+    <Item english="Open Plugins Folder…" text="A bővítmények mappája…"/>
+    <Item english="Format" text="Formázás"/>
+    <Item english="Compact" text="Tömörítés"/>
+    <Item english="Sort Keys" text="Kulcsok rendezése"/>
+    <Item english="Validate" text="Érvényesítés"/>
+    <Item english="Show JSON Tree" text="JSON-fa megjelenítése"/>
+    <Item english="Set as First to Compare" text="Beállítás elsőként az összehasonlításhoz"/>
+    <Item english="Compare" text="Összehasonlítás"/>
+    <Item english="Compare with File…" text="Összehasonlítás fájllal…"/>
+    <Item english="Next Difference" text="Következő eltérés"/>
+    <Item english="Previous Difference" text="Előző eltérés"/>
+    <Item english="First Difference" text="Első eltérés"/>
+    <Item english="Last Difference" text="Utolsó eltérés"/>
+    <Item english="Compare Summary" text="Összehasonlítás összegzése"/>
+    <Item english="Ignore Case" text="Kis- és nagybetűk figyelmen kívül hagyása"/>
+    <Item english="Ignore Spaces" text="Szóközök figyelmen kívül hagyása"/>
+    <Item english="Ignore Empty Lines" text="Üres sorok figyelmen kívül hagyása"/>
+    <Item english="Clear Active Compare" text="Aktív összehasonlítás törlése"/>
+    <Item english="Clear All Compares" text="Minden összehasonlítás törlése"/>
+    <Item english="Pretty Print" text="Olvasható formázás"/>
+    <Item english="Pretty Print — Indent Attributes" text="Olvasható formázás — attribútumok behúzásával"/>
+    <Item english="Linearize" text="Egy sorba rendezés"/>
+    <Item english="Check XML Syntax Now" text="XML-szintaxis ellenőrzése most"/>
+    <Item english="Validate Against Schema…" text="Érvényesítés séma alapján…"/>
+    <Item english="Validate Against DTD" text="Érvényesítés DTD alapján"/>
+    <Item english="Evaluate XPath Expression…" text="XPath-kifejezés kiértékelése…"/>
+    <Item english="Current XML Path" text="Jelenlegi XML-útvonal"/>
+    <Item english="Current XML Path with Predicates" text="Jelenlegi XML-útvonal predikátumokkal"/>
+    <Item english="Apply XSL Transformation…" text="XSL-átalakítás alkalmazása…"/>
+    <Item english="Escape Characters in Selection" text="Karakterek escape-elése a kijelölésben"/>
+    <Item english="Unescape Characters in Selection" text="Escape-elés visszaalakítása a kijelölésben"/>
+    <Item english="Connections…" text="Kapcsolatok…"/>
+    <Item english="Connect…" text="Csatlakozás…"/>
+    <Item english="Disconnect" text="Kapcsolat bontása"/>
+    <Item english="Show Remote Files" text="Távoli fájlok megjelenítése"/>
+    <Item english="Upload Current File" text="Jelenlegi fájl feltöltése"/>
+    <Item english="Execute NppExec Script…" text="NppExec-szkript futtatása…"/>
+    <Item english="Execute Previous NppExec Script" text="Előző NppExec-szkript futtatása"/>
+    <Item english="Stop Running NppExec Script" text="Futó NppExec-szkript leállítása"/>
+    <Item english="Show NppExec Console" text="NppExec-konzol megjelenítése"/>
+    <Item english="Execute NppExec Script" text="NppExec-szkript futtatása"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;ideiglenes szkript&gt;"/>
+    <Item english="Script name" text="Szkript neve"/>
+    <Item english="Dock Left" text="Dokkolás balra"/>
+    <Item english="Dock Right" text="Dokkolás jobbra"/>
+    <Item english="Dock Top" text="Dokkolás felülre"/>
+    <Item english="Dock Bottom" text="Dokkolás alulra"/>
+    <Item english="Float" text="Lebegő ablak"/>
+    <Item english="Remember which panels were open" text="A megnyitott panelek megjegyzése"/>
+    <Item english="Show the toolbar" text="Eszköztár megjelenítése"/>
+    <Item english="Toolbar buttons" text="Eszköztárgombok"/>
+    <Item english="Icons only" text="Csak ikonok"/>
+    <Item english="Icons and labels" text="Ikonok és feliratok"/>
+    <Item english="Labels only" text="Csak feliratok"/>
+    <Item english="Toolbar size" text="Eszköztár mérete"/>
+    <Item english="Regular" text="Normál"/>
+    <Item english="Small" text="Kicsi"/>
+    <Item english="Icons" text="Ikonok"/>
+    <Item english="Hidden" text="Rejtett"/>
+    <Item english="1 pixel" text="1 képpont"/>
+    <Item english="2 pixels" text="2 képpont"/>
+    <Item english="3 pixels" text="3 képpont"/>
+    <Item english="Selected text can be dragged" text="A kijelölt szöveg húzható"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Többszörös szerkesztés engedélyezése (Cmd + kattintás/kijelölés)"/>
+    <Item english="Follow the system" text="Automatikus (rendszerbeállítás)"/>
+    <Item english="Light theme" text="Világos téma"/>
+    <Item english="Dark theme" text="Sötét téma"/>
+    <Item english="Show the fold margin" text="Blokkösszecsukási margó megjelenítése"/>
+    <Item english="A line" text="Vonal"/>
+    <Item english="Columns (space separated)" text="Oszlopok (szóközzel elválasztva)"/>
+    <Item english="3 parts" text="3 rész"/>
+    <Item english="4 parts" text="4 rész"/>
+    <Item english="5 parts" text="5 rész"/>
+    <Item english="6 parts" text="6 rész"/>
+    <Item english="7 parts" text="7 rész"/>
+    <Item english="8 parts" text="8 rész"/>
+    <Item english="9 parts" text="9 rész"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Nyelv megállapítása a tartalomból, ha a név nem árulja el"/>
+    <Item english="Highlight matching braces" text="Az összetartozó zárójelek kiemelése"/>
+    <Item english="Header font (blank for the editor's)" text="Élőfej betűtípusa (üresen: a szerkesztőé)"/>
+    <Item english="Header font size" text="Élőfej betűmérete"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Margók: bal, felső, jobb, alsó (pontban)"/>
+    <Item english="Characters before it opens" text="Karakterek száma a megnyílás előtt"/>
+    <Item english="Add characters to the word list" text="Karakterek hozzáadása a szóegységek karakterlistájához"/>
+    <Item english="A fixed folder" text="Rögzített mappa"/>
+    <Item english="Fixed folder" text="Rögzített mappa"/>
+    <Item english="Confirm Replace All" text="Megerősítés kérése „Az összes cseréje” előtt"/>
+    <Item english="Compare: ignore case" text="Összehasonlítás: kis- és nagybetűk figyelmen kívül hagyása"/>
+    <Item english="Compare: ignore spaces" text="Összehasonlítás: szóközök figyelmen kívül hagyása"/>
+    <Item english="Compare: ignore empty lines" text="Összehasonlítás: üres sorok figyelmen kívül hagyása"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="A karakterek legnagyobb száma a „Keresendő” mező auto. kitöltéséhez"/>
+    <Item english="Releases repository" text="Kiadások tárolója"/>
+    <Item english="Notepad++ update" text="Notepad++ frissítés"/>
+    <Item english="No update is available." text="Nincs elérhető frissítés."/>
+    <Item english="An update package is available, do you want to download it?" text="Frissítőcsomag érhető el. Szeretné letölteni?"/>
+    <Item english="Open the Releases Page" text="A kiadások oldalának megnyitása"/>
+    <Item english="Copy debug info to clipboard" text="Hibakeresési adatok másolása a vágólapra"/>
+    <Item english="Fonts…" text="Betűtípusok…"/>
+    <Item english="This document is not valid JSON." text="Ez a dokumentum nem érvényes JSON."/>
+    <Item english="Valid JSON." text="Érvényes JSON."/>
+    <Item english="Invalid JSON." text="Érvénytelen JSON."/>
+    <Item english="Set as the first file to compare." text="Beállítva első fájlként az összehasonlításhoz."/>
+    <Item english="Nothing to compare with." text="Nincs mivel összehasonlítani."/>
+    <Item english="The document is valid XML." text="A dokumentum érvényes XML."/>
+    <Item english="FTP connections" text="FTP-kapcsolatok"/>
+    <Item english="Cannot connect." text="Nem sikerült csatlakozni."/>
+    <Item english="That file is open in another tab." text="Ez a fájl egy másik fülön meg van nyitva."/>
+    <Item english="Close it first, or choose another name." text="Előbb zárja be, vagy válasszon másik nevet."/>
+    <Item english="Which language is this?" text="Milyen nyelv ez?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Néhány karakter nem ábrázolható ebben a kódolásban."/>
+    <Item english="Converting will replace them." text="Az átalakítás lecseréli őket."/>
+    <Item english="Press the keys." text="Nyomja le a billentyűket."/>
+    <Item english="Nothing is marked" text="Nincs semmi kiemelve"/>
+    <Item english="Marked text copied" text="Kiemelt szöveg másolva"/>
+    <Item english="Choose a folder first" text="Előbb válasszon mappát"/>
+    <Item english="This document has no folder" text="Ennek a dokumentumnak nincs mappája"/>
+    <Item english="The ticked project panels have no files" text="A bejelölt projektpanelekben nincsenek fájlok"/>
+    <Item english="Searching..." text="Keresés..."/>
+    <Item english="Stopping..." text="Leállítás..."/>
+    <Item english="Marks cleared" text="Kiemelések eltávolítva"/>
+    <Item english="Transparent" text="Átlátszó"/>
+    <Item english="View 1" text="1. nézet"/>
+    <Item english="View 2" text="2. nézet"/>
+</NativeLangExtra>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/bulgarian.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Български">
+    <Item english="About NotepadMac" text="Относно NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Скриване на NotepadMac"/>
+    <Item english="Hide Others" text="Скриване на другите"/>
+    <Item english="Show All" text="Показване на всички"/>
+    <Item english="Quit NotepadMac" text="Изход от NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Отваряне папката на файла във Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Отваряне папката на файла в Терминал"/>
+    <Item english="Toggle Insert/Overtype" text="Превключване вмъкване/заместване"/>
+    <Item english="Toggle Fold" text="Свиване/разгъване на блока"/>
+    <Item english="Show All Hidden Lines" text="Показване на всички скрити редове"/>
+    <Item english="Recent Window" text="Предишен прозорец"/>
+    <Item english="Move to Trash" text="Преместване в кошчето"/>
+    <Item english="Save Current Command…" text="Запис на текущата команда…"/>
+    <Item english="Manage Saved Commands…" text="Управление на записаните команди…"/>
+    <Item english="Show Console" text="Показване на конзолата"/>
+    <Item english="Validate shortcuts" text="Проверка на бързите клавиши"/>
+    <Item english="Open Plugins Folder…" text="Отваряне на папката с добавки…"/>
+    <Item english="Format" text="Форматиране"/>
+    <Item english="Compact" text="Компактен вид"/>
+    <Item english="Sort Keys" text="Подреждане на ключовете"/>
+    <Item english="Validate" text="Проверка"/>
+    <Item english="Show JSON Tree" text="Показване на дървото на JSON"/>
+    <Item english="Set as First to Compare" text="Задаване като първи за сравняване"/>
+    <Item english="Compare" text="Сравняване"/>
+    <Item english="Compare with File…" text="Сравняване с файл…"/>
+    <Item english="Next Difference" text="Следваща разлика"/>
+    <Item english="Previous Difference" text="Предходна разлика"/>
+    <Item english="First Difference" text="Първа разлика"/>
+    <Item english="Last Difference" text="Последна разлика"/>
+    <Item english="Compare Summary" text="Обобщение на сравнението"/>
+    <Item english="Ignore Case" text="Пренебрегване на главни/малки букви"/>
+    <Item english="Ignore Spaces" text="Пренебрегване на интервалите"/>
+    <Item english="Ignore Empty Lines" text="Пренебрегване на празните редове"/>
+    <Item english="Clear Active Compare" text="Изчистване на текущото сравнение"/>
+    <Item english="Clear All Compares" text="Изчистване на всички сравнения"/>
+    <Item english="Pretty Print" text="Форматиране"/>
+    <Item english="Pretty Print — Indent Attributes" text="Форматиране — с отстъп на атрибутите"/>
+    <Item english="Linearize" text="На един ред"/>
+    <Item english="Check XML Syntax Now" text="Проверка на синтаксиса на XML"/>
+    <Item english="Validate Against Schema…" text="Проверка по схема…"/>
+    <Item english="Validate Against DTD" text="Проверка по DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Изчисляване на XPath израз…"/>
+    <Item english="Current XML Path" text="Текущ път в XML"/>
+    <Item english="Current XML Path with Predicates" text="Текущ път в XML с предикати"/>
+    <Item english="Apply XSL Transformation…" text="Прилагане на XSL трансформация…"/>
+    <Item english="Escape Characters in Selection" text="Екраниране на знаците в избраното"/>
+    <Item english="Unescape Characters in Selection" text="Премахване на екранирането в избраното"/>
+    <Item english="Connections…" text="Връзки…"/>
+    <Item english="Connect…" text="Свързване…"/>
+    <Item english="Disconnect" text="Прекъсване на връзката"/>
+    <Item english="Show Remote Files" text="Показване на отдалечените файлове"/>
+    <Item english="Upload Current File" text="Качване на текущия файл"/>
+    <Item english="Execute NppExec Script…" text="Изпълнение на NppExec скрипт…"/>
+    <Item english="Execute Previous NppExec Script" text="Изпълнение на предишния NppExec скрипт"/>
+    <Item english="Stop Running NppExec Script" text="Спиране на изпълнявания NppExec скрипт"/>
+    <Item english="Show NppExec Console" text="Показване на конзолата на NppExec"/>
+    <Item english="Execute NppExec Script" text="Изпълнение на NppExec скрипт"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;временен скрипт&gt;"/>
+    <Item english="Script name" text="Име на скрипта"/>
+    <Item english="Dock Left" text="Закачане отляво"/>
+    <Item english="Dock Right" text="Закачане отдясно"/>
+    <Item english="Dock Top" text="Закачане отгоре"/>
+    <Item english="Dock Bottom" text="Закачане отдолу"/>
+    <Item english="Float" text="Откачане"/>
+    <Item english="Remember which panels were open" text="Запомняне на отворените панели"/>
+    <Item english="Show the toolbar" text="Показване на лентата с инструменти"/>
+    <Item english="Toolbar buttons" text="Бутони на лентата с инструменти"/>
+    <Item english="Icons only" text="Само икони"/>
+    <Item english="Icons and labels" text="Икони и надписи"/>
+    <Item english="Labels only" text="Само надписи"/>
+    <Item english="Toolbar size" text="Размер на лентата с инструменти"/>
+    <Item english="Regular" text="Обикновен"/>
+    <Item english="Small" text="Малък"/>
+    <Item english="Icons" text="Икони"/>
+    <Item english="Hidden" text="Скрита"/>
+    <Item english="1 pixel" text="1 пиксел"/>
+    <Item english="2 pixels" text="2 пиксела"/>
+    <Item english="3 pixels" text="3 пиксела"/>
+    <Item english="Selected text can be dragged" text="Избраният текст може да се влачи"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Включване на множествено редактиране (Cmd + щракване/избор)"/>
+    <Item english="Follow the system" text="Използване на системните настройки"/>
+    <Item english="Light theme" text="Светла тема"/>
+    <Item english="Dark theme" text="Тъмна тема"/>
+    <Item english="Show the fold margin" text="Показване на свиващото поле"/>
+    <Item english="A line" text="Линия"/>
+    <Item english="Columns (space separated)" text="Колони (разделени с интервал)"/>
+    <Item english="3 parts" text="3 части"/>
+    <Item english="4 parts" text="4 части"/>
+    <Item english="5 parts" text="5 части"/>
+    <Item english="6 parts" text="6 части"/>
+    <Item english="7 parts" text="7 части"/>
+    <Item english="8 parts" text="8 части"/>
+    <Item english="9 parts" text="9 части"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Определяне на синтаксиса по съдържанието, когато името не го показва"/>
+    <Item english="Highlight matching braces" text="Открояване на съответстващите скоби"/>
+    <Item english="Header font (blank for the editor's)" text="Шрифт на колонтитулите (празно — като в редактора)"/>
+    <Item english="Header font size" text="Размер на шрифта на колонтитулите"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Полета: ляво, горно, дясно, долно (пунктове)"/>
+    <Item english="Characters before it opens" text="Брой знаци преди показване на списъка"/>
+    <Item english="Add characters to the word list" text="Добавяне на знаци към списъка със знаци"/>
+    <Item english="A fixed folder" text="Зададена папка"/>
+    <Item english="Fixed folder" text="Зададена папка"/>
+    <Item english="Confirm Replace All" text="Потвърждение при &quot;Замяна на всичко&quot;"/>
+    <Item english="Compare: ignore case" text="Сравняване: пренебрегване на главни/малки букви"/>
+    <Item english="Compare: ignore spaces" text="Сравняване: пренебрегване на интервалите"/>
+    <Item english="Compare: ignore empty lines" text="Сравняване: пренебрегване на празните редове"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Макс. брой знаци за автоматично попълване на полето за търсене"/>
+    <Item english="Releases repository" text="Хранилище на изданията"/>
+    <Item english="Notepad++ update" text="Обновяване на Notepad++"/>
+    <Item english="No update is available." text="Няма налично обновяване."/>
+    <Item english="An update package is available, do you want to download it?" text="Налично е обновяване. Желаете ли да го изтеглите?"/>
+    <Item english="Open the Releases Page" text="Отваряне на страницата с изданията"/>
+    <Item english="Copy debug info to clipboard" text="Копиране на информацията за отстраняване на грешки в системния буфер"/>
+    <Item english="Fonts…" text="Шрифтове…"/>
+    <Item english="This document is not valid JSON." text="Този документ не е валиден JSON."/>
+    <Item english="Valid JSON." text="Валиден JSON."/>
+    <Item english="Invalid JSON." text="Невалиден JSON."/>
+    <Item english="Set as the first file to compare." text="Зададен като първи файл за сравняване."/>
+    <Item english="Nothing to compare with." text="Няма с какво да се сравни."/>
+    <Item english="The document is valid XML." text="Документът е валиден XML."/>
+    <Item english="FTP connections" text="FTP връзки"/>
+    <Item english="Cannot connect." text="Неуспешно свързване."/>
+    <Item english="That file is open in another tab." text="Този файл е отворен в друг раздел."/>
+    <Item english="Close it first, or choose another name." text="Първо го затворете или изберете друго име."/>
+    <Item english="Which language is this?" text="Какъв е този синтаксис?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Някои знаци не могат да бъдат представени в тази кодировка."/>
+    <Item english="Converting will replace them." text="При преобразуването те ще бъдат заменени."/>
+    <Item english="Press the keys." text="Натиснете клавишите."/>
+    <Item english="Nothing is marked" text="Няма нищо маркирано"/>
+    <Item english="Marked text copied" text="Маркираният текст е копиран"/>
+    <Item english="Choose a folder first" text="Първо изберете папка"/>
+    <Item english="This document has no folder" text="Този документ няма папка"/>
+    <Item english="The ticked project panels have no files" text="В отметнатите проектни панели няма файлове"/>
+    <Item english="Searching..." text="Търсене..."/>
+    <Item english="Stopping..." text="Спиране..."/>
+    <Item english="Marks cleared" text="Маркировките са изчистени"/>
+    <Item english="Transparent" text="Прозрачно"/>
+    <Item english="View 1" text="Изглед 1"/>
+    <Item english="View 2" text="Изглед 2"/>
+</NativeLangExtra>

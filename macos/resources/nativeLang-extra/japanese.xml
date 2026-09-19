@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/japanese.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Japanese">
+    <Item english="About NotepadMac" text="NotepadMacについて"/>
+    <Item english="Hide NotepadMac" text="NotepadMacを隠す"/>
+    <Item english="Hide Others" text="ほかを隠す"/>
+    <Item english="Show All" text="すべてを表示"/>
+    <Item english="Quit NotepadMac" text="NotepadMacを終了"/>
+    <Item english="Open Containing Folder in Finder" text="このファイルのあるフォルダーをFinderで開く"/>
+    <Item english="Open Containing Folder in Terminal" text="このファイルのあるフォルダーをターミナルで開く"/>
+    <Item english="Toggle Insert/Overtype" text="挿入/上書きの切り替え"/>
+    <Item english="Toggle Fold" text="折り畳みの切り替え"/>
+    <Item english="Show All Hidden Lines" text="隠した行をすべて表示"/>
+    <Item english="Recent Window" text="直前のウィンドウ"/>
+    <Item english="Move to Trash" text="ゴミ箱に移動"/>
+    <Item english="Save Current Command…" text="現在のコマンドを保存…"/>
+    <Item english="Manage Saved Commands…" text="保存したコマンドの管理…"/>
+    <Item english="Show Console" text="コンソールを表示"/>
+    <Item english="Validate shortcuts" text="ショートカットを検証"/>
+    <Item english="Open Plugins Folder…" text="プラグインフォルダーを開く…"/>
+    <Item english="Format" text="整形"/>
+    <Item english="Compact" text="圧縮"/>
+    <Item english="Sort Keys" text="キーをソート"/>
+    <Item english="Validate" text="検証"/>
+    <Item english="Show JSON Tree" text="JSON ツリーを表示"/>
+    <Item english="Set as First to Compare" text="比較の1番目に設定"/>
+    <Item english="Compare" text="比較"/>
+    <Item english="Compare with File…" text="ファイルと比較…"/>
+    <Item english="Next Difference" text="次の差分"/>
+    <Item english="Previous Difference" text="前の差分"/>
+    <Item english="First Difference" text="最初の差分"/>
+    <Item english="Last Difference" text="最後の差分"/>
+    <Item english="Compare Summary" text="比較の概要"/>
+    <Item english="Ignore Case" text="大/小文字を無視"/>
+    <Item english="Ignore Spaces" text="空白を無視"/>
+    <Item english="Ignore Empty Lines" text="空行を無視"/>
+    <Item english="Clear Active Compare" text="現在の比較を解除"/>
+    <Item english="Clear All Compares" text="すべての比較を解除"/>
+    <Item english="Pretty Print" text="整形"/>
+    <Item english="Pretty Print — Indent Attributes" text="整形 — 属性をインデント"/>
+    <Item english="Linearize" text="1行にまとめる"/>
+    <Item english="Check XML Syntax Now" text="XML 構文を今すぐチェック"/>
+    <Item english="Validate Against Schema…" text="スキーマで検証…"/>
+    <Item english="Validate Against DTD" text="DTD で検証"/>
+    <Item english="Evaluate XPath Expression…" text="XPath 式を評価…"/>
+    <Item english="Current XML Path" text="現在の XML パス"/>
+    <Item english="Current XML Path with Predicates" text="現在の XML パス (述語付き)"/>
+    <Item english="Apply XSL Transformation…" text="XSL 変換を適用…"/>
+    <Item english="Escape Characters in Selection" text="選択範囲の文字をエスケープ"/>
+    <Item english="Unescape Characters in Selection" text="選択範囲の文字をアンエスケープ"/>
+    <Item english="Connections…" text="接続設定…"/>
+    <Item english="Connect…" text="接続…"/>
+    <Item english="Disconnect" text="切断"/>
+    <Item english="Show Remote Files" text="リモートファイルを表示"/>
+    <Item english="Upload Current File" text="現在のファイルをアップロード"/>
+    <Item english="Execute NppExec Script…" text="NppExec スクリプトを実行…"/>
+    <Item english="Execute Previous NppExec Script" text="前回の NppExec スクリプトを実行"/>
+    <Item english="Stop Running NppExec Script" text="実行中の NppExec スクリプトを停止"/>
+    <Item english="Show NppExec Console" text="NppExec コンソールを表示"/>
+    <Item english="Execute NppExec Script" text="NppExec スクリプトを実行"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;一時スクリプト&gt;"/>
+    <Item english="Script name" text="スクリプト名"/>
+    <Item english="Dock Left" text="左にドック"/>
+    <Item english="Dock Right" text="右にドック"/>
+    <Item english="Dock Top" text="上にドック"/>
+    <Item english="Dock Bottom" text="下にドック"/>
+    <Item english="Float" text="フローティング"/>
+    <Item english="Remember which panels were open" text="開いていたパネルを記憶"/>
+    <Item english="Show the toolbar" text="ツールバーを表示"/>
+    <Item english="Toolbar buttons" text="ツールバーのボタン"/>
+    <Item english="Icons only" text="アイコンのみ"/>
+    <Item english="Icons and labels" text="アイコンとラベル"/>
+    <Item english="Labels only" text="ラベルのみ"/>
+    <Item english="Toolbar size" text="ツールバーのサイズ"/>
+    <Item english="Regular" text="標準"/>
+    <Item english="Small" text="小"/>
+    <Item english="Icons" text="アイコン"/>
+    <Item english="Hidden" text="非表示"/>
+    <Item english="1 pixel" text="1 ピクセル"/>
+    <Item english="2 pixels" text="2 ピクセル"/>
+    <Item english="3 pixels" text="3 ピクセル"/>
+    <Item english="Selected text can be dragged" text="選択した文字列をドラッグ可能にする"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="一括編集を有効 (Cmd+クリック/選択)"/>
+    <Item english="Follow the system" text="システム設定に従う"/>
+    <Item english="Light theme" text="ライトテーマ"/>
+    <Item english="Dark theme" text="ダークテーマ"/>
+    <Item english="Show the fold margin" text="折り畳みマージンを表示"/>
+    <Item english="A line" text="線"/>
+    <Item english="Columns (space separated)" text="桁位置 (スペース区切り)"/>
+    <Item english="3 parts" text="3 分割"/>
+    <Item english="4 parts" text="4 分割"/>
+    <Item english="5 parts" text="5 分割"/>
+    <Item english="6 parts" text="6 分割"/>
+    <Item english="7 parts" text="7 分割"/>
+    <Item english="8 parts" text="8 分割"/>
+    <Item english="9 parts" text="9 分割"/>
+    <Item english="Work the language out from the contents when the name does not say" text="名前で判別できない場合は内容から言語を判定"/>
+    <Item english="Highlight matching braces" text="対応する括弧を強調表示"/>
+    <Item english="Header font (blank for the editor's)" text="ヘッダーのフォント (空欄ならエディターと同じ)"/>
+    <Item english="Header font size" text="ヘッダーのフォントサイズ"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="余白: 左、上、右、下 (ポイント)"/>
+    <Item english="Characters before it opens" text="候補を表示するまでの文字数"/>
+    <Item english="Add characters to the word list" text="単語を構成する文字に追加"/>
+    <Item english="A fixed folder" text="固定フォルダー"/>
+    <Item english="Fixed folder" text="固定フォルダー"/>
+    <Item english="Confirm Replace All" text="「すべて置換」の前に確認"/>
+    <Item english="Compare: ignore case" text="比較: 大/小文字を無視"/>
+    <Item english="Compare: ignore spaces" text="比較: 空白を無視"/>
+    <Item english="Compare: ignore empty lines" text="比較: 空行を無視"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="検索欄に自動入力する最大文字数"/>
+    <Item english="Releases repository" text="リリースのリポジトリ"/>
+    <Item english="Notepad++ update" text="Notepad++ のアップデート"/>
+    <Item english="No update is available." text="利用できるアップデートはありません。"/>
+    <Item english="An update package is available, do you want to download it?" text="アップデートパッケージがあります。ダウンロードしますか?"/>
+    <Item english="Open the Releases Page" text="リリースページを開く"/>
+    <Item english="Copy debug info to clipboard" text="デバッグ情報をクリップボードにコピー"/>
+    <Item english="Fonts…" text="フォント…"/>
+    <Item english="This document is not valid JSON." text="この文書は有効な JSON ではありません。"/>
+    <Item english="Valid JSON." text="有効な JSON です。"/>
+    <Item english="Invalid JSON." text="無効な JSON です。"/>
+    <Item english="Set as the first file to compare." text="比較の1番目のファイルに設定しました。"/>
+    <Item english="Nothing to compare with." text="比較する相手がありません。"/>
+    <Item english="The document is valid XML." text="この文書は有効な XML です。"/>
+    <Item english="FTP connections" text="FTP 接続"/>
+    <Item english="Cannot connect." text="接続できません。"/>
+    <Item english="That file is open in another tab." text="そのファイルは別のタブで開かれています。"/>
+    <Item english="Close it first, or choose another name." text="先にそれを閉じるか、別の名前を選んでください。"/>
+    <Item english="Which language is this?" text="これはどの言語ですか?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="このエンコードでは表現できない文字があります。"/>
+    <Item english="Converting will replace them." text="変換するとそれらは置き換えられます。"/>
+    <Item english="Press the keys." text="キーを押してください。"/>
+    <Item english="Nothing is marked" text="マークされたものはありません"/>
+    <Item english="Marked text copied" text="マークした文字列をコピーしました"/>
+    <Item english="Choose a folder first" text="先にフォルダーを選択してください"/>
+    <Item english="This document has no folder" text="この文書にはフォルダーがありません"/>
+    <Item english="The ticked project panels have no files" text="チェックしたプロジェクトパネルにファイルがありません"/>
+    <Item english="Searching..." text="検索中..."/>
+    <Item english="Stopping..." text="停止中..."/>
+    <Item english="Marks cleared" text="マークを解除しました"/>
+    <Item english="Transparent" text="透明"/>
+    <Item english="View 1" text="ビュー 1"/>
+    <Item english="View 2" text="ビュー 2"/>
+</NativeLangExtra>

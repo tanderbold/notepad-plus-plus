@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/kabyle.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Taqbaylit">
+    <Item english="About NotepadMac" text="Ɣef NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Ffer NotepadMac"/>
+    <Item english="Hide Others" text="Ffer wiyaḍ"/>
+    <Item english="Show All" text="Beqqeḍ kulec"/>
+    <Item english="Quit NotepadMac" text="Ffeɣ seg NotepadMac"/>
+    <Item english="Show All Hidden Lines" text="Beqqeḍ akk ijerriḍen yeffren"/>
+    <Item english="Open Plugins Folder…" text="Lli akaram n Plugins…"/>
+    <Item english="Connections…" text="Tuqqniwin…"/>
+    <Item english="Connect…" text="Qqen…"/>
+    <Item english="Show the toolbar" text="Beqqeḍ afeggag n ifecka"/>
+    <Item english="Toolbar buttons" text="Tiqeffalin n ufeggag n ifecka"/>
+    <Item english="Icons only" text="Tignitin kan"/>
+    <Item english="Toolbar size" text="Tiddi n ufeggag n ifecka"/>
+    <Item english="Icons" text="Tignitin"/>
+    <Item english="Hidden" text="Yeffer"/>
+    <Item english="Notepad++ update" text="Aleqqem n Notepad++"/>
+    <Item english="Fonts…" text="Tisefsiyin…"/>
+    <Item english="FTP connections" text="Tuqqniwin FTP"/>
+    <Item english="Searching..." text="Anadi..."/>
+</NativeLangExtra>

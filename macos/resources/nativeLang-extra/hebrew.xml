@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/hebrew.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Hebrew">
+    <Item english="About NotepadMac" text="אודות NotepadMac"/>
+    <Item english="Hide NotepadMac" text="הסתר את NotepadMac"/>
+    <Item english="Hide Others" text="הסתר אחרים"/>
+    <Item english="Show All" text="הצג הכול"/>
+    <Item english="Quit NotepadMac" text="צא מ-NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="פתח את התיקיה המכילה ב-Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="פתח את התיקיה המכילה במסוף"/>
+    <Item english="Toggle Insert/Overtype" text="החלף מצב הוספה/דריסה"/>
+    <Item english="Toggle Fold" text="קפל/פרוש"/>
+    <Item english="Show All Hidden Lines" text="הצג את כל השורות המוסתרות"/>
+    <Item english="Recent Window" text="חלון אחרון"/>
+    <Item english="Move to Trash" text="העבר לפח"/>
+    <Item english="Save Current Command…" text="שמור פקודה נוכחית…"/>
+    <Item english="Manage Saved Commands…" text="נהל פקודות שמורות…"/>
+    <Item english="Show Console" text="הצג קונסולה"/>
+    <Item english="Validate shortcuts" text="בדוק קיצורי מקשים"/>
+    <Item english="Open Plugins Folder…" text="פתח תיקיית תוספים…"/>
+    <Item english="Format" text="עצב"/>
+    <Item english="Compact" text="צמצם"/>
+    <Item english="Sort Keys" text="מיין מפתחות"/>
+    <Item english="Validate" text="אמת"/>
+    <Item english="Show JSON Tree" text="הצג עץ JSON"/>
+    <Item english="Set as First to Compare" text="קבע כראשון להשוואה"/>
+    <Item english="Compare" text="השווה"/>
+    <Item english="Compare with File…" text="השווה לקובץ…"/>
+    <Item english="Next Difference" text="ההבדל הבא"/>
+    <Item english="Previous Difference" text="ההבדל הקודם"/>
+    <Item english="First Difference" text="ההבדל הראשון"/>
+    <Item english="Last Difference" text="ההבדל האחרון"/>
+    <Item english="Compare Summary" text="סיכום השוואה"/>
+    <Item english="Ignore Case" text="התעלם מרישיות"/>
+    <Item english="Ignore Spaces" text="התעלם מרווחים"/>
+    <Item english="Ignore Empty Lines" text="התעלם משורות ריקות"/>
+    <Item english="Clear Active Compare" text="נקה השוואה פעילה"/>
+    <Item english="Clear All Compares" text="נקה את כל ההשוואות"/>
+    <Item english="Pretty Print" text="עצב בצורה קריאה"/>
+    <Item english="Pretty Print — Indent Attributes" text="עצב בצורה קריאה — הזח תכונות"/>
+    <Item english="Linearize" text="הפוך לשורה אחת"/>
+    <Item english="Check XML Syntax Now" text="בדוק תחביר XML כעת"/>
+    <Item english="Validate Against Schema…" text="אמת מול סכימה…"/>
+    <Item english="Validate Against DTD" text="אמת מול DTD"/>
+    <Item english="Evaluate XPath Expression…" text="חשב ביטוי XPath…"/>
+    <Item english="Current XML Path" text="נתיב XML נוכחי"/>
+    <Item english="Current XML Path with Predicates" text="נתיב XML נוכחי עם פרדיקטים"/>
+    <Item english="Apply XSL Transformation…" text="החל טרנספורמציית XSL…"/>
+    <Item english="Escape Characters in Selection" text="מלט תווים בבחירה"/>
+    <Item english="Unescape Characters in Selection" text="בטל מילוט תווים בבחירה"/>
+    <Item english="Connections…" text="חיבורים…"/>
+    <Item english="Connect…" text="התחבר…"/>
+    <Item english="Disconnect" text="התנתק"/>
+    <Item english="Show Remote Files" text="הצג קבצים מרוחקים"/>
+    <Item english="Upload Current File" text="העלה קובץ נוכחי"/>
+    <Item english="Execute NppExec Script…" text="הרץ סקריפט NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="הרץ סקריפט NppExec קודם"/>
+    <Item english="Stop Running NppExec Script" text="עצור סקריפט NppExec פועל"/>
+    <Item english="Show NppExec Console" text="הצג קונסולת NppExec"/>
+    <Item english="Execute NppExec Script" text="הרץ סקריפט NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;סקריפט זמני&gt;"/>
+    <Item english="Script name" text="שם הסקריפט"/>
+    <Item english="Dock Left" text="עגן משמאל"/>
+    <Item english="Dock Right" text="עגן מימין"/>
+    <Item english="Dock Top" text="עגן למעלה"/>
+    <Item english="Dock Bottom" text="עגן למטה"/>
+    <Item english="Float" text="הצף"/>
+    <Item english="Remember which panels were open" text="זכור אילו חלוניות היו פתוחות"/>
+    <Item english="Show the toolbar" text="הצג את סרגל הכלים"/>
+    <Item english="Toolbar buttons" text="לחצני סרגל הכלים"/>
+    <Item english="Icons only" text="סמלים בלבד"/>
+    <Item english="Icons and labels" text="סמלים ותוויות"/>
+    <Item english="Labels only" text="תוויות בלבד"/>
+    <Item english="Toolbar size" text="גודל סרגל הכלים"/>
+    <Item english="Regular" text="רגיל"/>
+    <Item english="Small" text="קטן"/>
+    <Item english="Icons" text="סמלים"/>
+    <Item english="Hidden" text="מוסתר"/>
+    <Item english="1 pixel" text="פיקסל אחד"/>
+    <Item english="2 pixels" text="2 פיקסלים"/>
+    <Item english="3 pixels" text="3 פיקסלים"/>
+    <Item english="Selected text can be dragged" text="ניתן לגרור טקסט נבחר"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="אפשר עריכה מרובה (Cmd+לחיצה/בחירה)"/>
+    <Item english="Follow the system" text="לפי המערכת"/>
+    <Item english="Light theme" text="ערכת נושא בהירה"/>
+    <Item english="Dark theme" text="ערכת נושא כהה"/>
+    <Item english="Show the fold margin" text="הצג את שולי הקיפול"/>
+    <Item english="A line" text="קו"/>
+    <Item english="Columns (space separated)" text="עמודות (מופרדות ברווחים)"/>
+    <Item english="3 parts" text="3 חלקים"/>
+    <Item english="4 parts" text="4 חלקים"/>
+    <Item english="5 parts" text="5 חלקים"/>
+    <Item english="6 parts" text="6 חלקים"/>
+    <Item english="7 parts" text="7 חלקים"/>
+    <Item english="8 parts" text="8 חלקים"/>
+    <Item english="9 parts" text="9 חלקים"/>
+    <Item english="Work the language out from the contents when the name does not say" text="זהה את השפה לפי התוכן כשהשם אינו מעיד עליה"/>
+    <Item english="Highlight matching braces" text="הדגש סוגריים תואמים"/>
+    <Item english="Header font (blank for the editor's)" text="פונט כותרת (ריק — הפונט של העורך)"/>
+    <Item english="Header font size" text="גודל פונט כותרת"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="שוליים: שמאל, עליון, ימין, תחתון (נקודות)"/>
+    <Item english="Characters before it opens" text="מספר תווים לפני הפתיחה"/>
+    <Item english="Add characters to the word list" text="הוסף תווים לרשימת תווי המילה"/>
+    <Item english="A fixed folder" text="תיקיה קבועה"/>
+    <Item english="Fixed folder" text="תיקיה קבועה"/>
+    <Item english="Confirm Replace All" text="בקש אישור ל&quot;החלף הכל&quot;"/>
+    <Item english="Compare: ignore case" text="השוואה: התעלם מרישיות"/>
+    <Item english="Compare: ignore spaces" text="השוואה: התעלם מרווחים"/>
+    <Item english="Compare: ignore empty lines" text="השוואה: התעלם משורות ריקות"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="מספר תווים מרבי למילוי אוטומטי של שדה החיפוש"/>
+    <Item english="Releases repository" text="מאגר הגרסאות"/>
+    <Item english="Notepad++ update" text="עדכון Notepad++"/>
+    <Item english="No update is available." text="אין עדכון זמין."/>
+    <Item english="An update package is available, do you want to download it?" text="חבילת עדכון זמינה, האם ברצונך להוריד אותה?"/>
+    <Item english="Open the Releases Page" text="פתח את דף הגרסאות"/>
+    <Item english="Copy debug info to clipboard" text="העתק מידע ניפוי שגיאות לזיכרון"/>
+    <Item english="Fonts…" text="פונטים…"/>
+    <Item english="This document is not valid JSON." text="מסמך זה אינו JSON תקין."/>
+    <Item english="Valid JSON." text="JSON תקין."/>
+    <Item english="Invalid JSON." text="JSON לא תקין."/>
+    <Item english="Set as the first file to compare." text="נקבע כקובץ הראשון להשוואה."/>
+    <Item english="Nothing to compare with." text="אין למה להשוות."/>
+    <Item english="The document is valid XML." text="המסמך הוא XML תקין."/>
+    <Item english="FTP connections" text="חיבורי FTP"/>
+    <Item english="Cannot connect." text="לא ניתן להתחבר."/>
+    <Item english="That file is open in another tab." text="קובץ זה פתוח בלשונית אחרת."/>
+    <Item english="Close it first, or choose another name." text="סגור אותו תחילה, או בחר שם אחר."/>
+    <Item english="Which language is this?" text="איזו שפה זו?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="לא ניתן לייצג חלק מהתווים בקידוד זה."/>
+    <Item english="Converting will replace them." text="ההמרה תחליף אותם."/>
+    <Item english="Press the keys." text="לחץ על המקשים."/>
+    <Item english="Nothing is marked" text="דבר אינו מסומן"/>
+    <Item english="Marked text copied" text="הטקסט המסומן הועתק"/>
+    <Item english="Choose a folder first" text="בחר תיקיה תחילה"/>
+    <Item english="This document has no folder" text="למסמך זה אין תיקיה"/>
+    <Item english="The ticked project panels have no files" text="בחלוניות הפרויקט המסומנות אין קבצים"/>
+    <Item english="Searching..." text="מחפש..."/>
+    <Item english="Stopping..." text="עוצר..."/>
+    <Item english="Marks cleared" text="הסימונים נוקו"/>
+    <Item english="Transparent" text="שקוף"/>
+    <Item english="View 1" text="תצוגה 1"/>
+    <Item english="View 2" text="תצוגה 2"/>
+</NativeLangExtra>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not. This file is the list of those texts: every other file here
+     translates them for the nativeLang file of the same name (russian.xml beside PowerEditor/installer/nativeLang/russian.xml).
+     english is the text as the port has it and must not be changed; text is what is shown. An Item left out stays English.
+     Checked by macos/check_nativelang_extra.py. -->
+<NativeLangExtra name="English">
+    <Item english="About NotepadMac" text="About NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Hide NotepadMac"/>
+    <Item english="Hide Others" text="Hide Others"/>
+    <Item english="Show All" text="Show All"/>
+    <Item english="Quit NotepadMac" text="Quit NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Open Containing Folder in Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Open Containing Folder in Terminal"/>
+    <Item english="Toggle Insert/Overtype" text="Toggle Insert/Overtype"/>
+    <Item english="Toggle Fold" text="Toggle Fold"/>
+    <Item english="Show All Hidden Lines" text="Show All Hidden Lines"/>
+    <Item english="Recent Window" text="Recent Window"/>
+    <Item english="Move to Trash" text="Move to Trash"/>
+    <Item english="Save Current Command…" text="Save Current Command…"/>
+    <Item english="Manage Saved Commands…" text="Manage Saved Commands…"/>
+    <Item english="Show Console" text="Show Console"/>
+    <Item english="Validate shortcuts" text="Validate shortcuts"/>
+    <Item english="Open Plugins Folder…" text="Open Plugins Folder…"/>
+    <Item english="Format" text="Format"/>
+    <Item english="Compact" text="Compact"/>
+    <Item english="Sort Keys" text="Sort Keys"/>
+    <Item english="Validate" text="Validate"/>
+    <Item english="Show JSON Tree" text="Show JSON Tree"/>
+    <Item english="Set as First to Compare" text="Set as First to Compare"/>
+    <Item english="Compare" text="Compare"/>
+    <Item english="Compare with File…" text="Compare with File…"/>
+    <Item english="Next Difference" text="Next Difference"/>
+    <Item english="Previous Difference" text="Previous Difference"/>
+    <Item english="First Difference" text="First Difference"/>
+    <Item english="Last Difference" text="Last Difference"/>
+    <Item english="Compare Summary" text="Compare Summary"/>
+    <Item english="Ignore Case" text="Ignore Case"/>
+    <Item english="Ignore Spaces" text="Ignore Spaces"/>
+    <Item english="Ignore Empty Lines" text="Ignore Empty Lines"/>
+    <Item english="Clear Active Compare" text="Clear Active Compare"/>
+    <Item english="Clear All Compares" text="Clear All Compares"/>
+    <Item english="Pretty Print" text="Pretty Print"/>
+    <Item english="Pretty Print — Indent Attributes" text="Pretty Print — Indent Attributes"/>
+    <Item english="Linearize" text="Linearize"/>
+    <Item english="Check XML Syntax Now" text="Check XML Syntax Now"/>
+    <Item english="Validate Against Schema…" text="Validate Against Schema…"/>
+    <Item english="Validate Against DTD" text="Validate Against DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Evaluate XPath Expression…"/>
+    <Item english="Current XML Path" text="Current XML Path"/>
+    <Item english="Current XML Path with Predicates" text="Current XML Path with Predicates"/>
+    <Item english="Apply XSL Transformation…" text="Apply XSL Transformation…"/>
+    <Item english="Escape Characters in Selection" text="Escape Characters in Selection"/>
+    <Item english="Unescape Characters in Selection" text="Unescape Characters in Selection"/>
+    <Item english="Connections…" text="Connections…"/>
+    <Item english="Connect…" text="Connect…"/>
+    <Item english="Disconnect" text="Disconnect"/>
+    <Item english="Show Remote Files" text="Show Remote Files"/>
+    <Item english="Upload Current File" text="Upload Current File"/>
+    <Item english="Execute NppExec Script…" text="Execute NppExec Script…"/>
+    <Item english="Execute Previous NppExec Script" text="Execute Previous NppExec Script"/>
+    <Item english="Stop Running NppExec Script" text="Stop Running NppExec Script"/>
+    <Item english="Show NppExec Console" text="Show NppExec Console"/>
+    <Item english="Execute NppExec Script" text="Execute NppExec Script"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;temporary script&gt;"/>
+    <Item english="Script name" text="Script name"/>
+    <Item english="Dock Left" text="Dock Left"/>
+    <Item english="Dock Right" text="Dock Right"/>
+    <Item english="Dock Top" text="Dock Top"/>
+    <Item english="Dock Bottom" text="Dock Bottom"/>
+    <Item english="Float" text="Float"/>
+    <Item english="Remember which panels were open" text="Remember which panels were open"/>
+    <Item english="Show the toolbar" text="Show the toolbar"/>
+    <Item english="Toolbar buttons" text="Toolbar buttons"/>
+    <Item english="Icons only" text="Icons only"/>
+    <Item english="Icons and labels" text="Icons and labels"/>
+    <Item english="Labels only" text="Labels only"/>
+    <Item english="Toolbar size" text="Toolbar size"/>
+    <Item english="Regular" text="Regular"/>
+    <Item english="Small" text="Small"/>
+    <Item english="Icons" text="Icons"/>
+    <Item english="Hidden" text="Hidden"/>
+    <Item english="1 pixel" text="1 pixel"/>
+    <Item english="2 pixels" text="2 pixels"/>
+    <Item english="3 pixels" text="3 pixels"/>
+    <Item english="Selected text can be dragged" text="Selected text can be dragged"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Enable Multi-Editing (Cmd+click/selection)"/>
+    <Item english="Follow the system" text="Follow the system"/>
+    <Item english="Light theme" text="Light theme"/>
+    <Item english="Dark theme" text="Dark theme"/>
+    <Item english="Show the fold margin" text="Show the fold margin"/>
+    <Item english="A line" text="A line"/>
+    <Item english="Columns (space separated)" text="Columns (space separated)"/>
+    <Item english="3 parts" text="3 parts"/>
+    <Item english="4 parts" text="4 parts"/>
+    <Item english="5 parts" text="5 parts"/>
+    <Item english="6 parts" text="6 parts"/>
+    <Item english="7 parts" text="7 parts"/>
+    <Item english="8 parts" text="8 parts"/>
+    <Item english="9 parts" text="9 parts"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Work the language out from the contents when the name does not say"/>
+    <Item english="Highlight matching braces" text="Highlight matching braces"/>
+    <Item english="Header font (blank for the editor's)" text="Header font (blank for the editor's)"/>
+    <Item english="Header font size" text="Header font size"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Margins: left, top, right, bottom (points)"/>
+    <Item english="Characters before it opens" text="Characters before it opens"/>
+    <Item english="Add characters to the word list" text="Add characters to the word list"/>
+    <Item english="A fixed folder" text="A fixed folder"/>
+    <Item english="Fixed folder" text="Fixed folder"/>
+    <Item english="Confirm Replace All" text="Confirm Replace All"/>
+    <Item english="Compare: ignore case" text="Compare: ignore case"/>
+    <Item english="Compare: ignore spaces" text="Compare: ignore spaces"/>
+    <Item english="Compare: ignore empty lines" text="Compare: ignore empty lines"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Max Characters to Auto-Fill Find Field"/>
+    <Item english="Releases repository" text="Releases repository"/>
+    <Item english="Notepad++ update" text="Notepad++ update"/>
+    <Item english="No update is available." text="No update is available."/>
+    <Item english="An update package is available, do you want to download it?" text="An update package is available, do you want to download it?"/>
+    <Item english="Open the Releases Page" text="Open the Releases Page"/>
+    <Item english="Copy debug info to clipboard" text="Copy debug info to clipboard"/>
+    <Item english="Fonts…" text="Fonts…"/>
+    <Item english="This document is not valid JSON." text="This document is not valid JSON."/>
+    <Item english="Valid JSON." text="Valid JSON."/>
+    <Item english="Invalid JSON." text="Invalid JSON."/>
+    <Item english="Set as the first file to compare." text="Set as the first file to compare."/>
+    <Item english="Nothing to compare with." text="Nothing to compare with."/>
+    <Item english="The document is valid XML." text="The document is valid XML."/>
+    <Item english="FTP connections" text="FTP connections"/>
+    <Item english="Cannot connect." text="Cannot connect."/>
+    <Item english="That file is open in another tab." text="That file is open in another tab."/>
+    <Item english="Close it first, or choose another name." text="Close it first, or choose another name."/>
+    <Item english="Which language is this?" text="Which language is this?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Some characters cannot be represented in this encoding."/>
+    <Item english="Converting will replace them." text="Converting will replace them."/>
+    <Item english="Press the keys." text="Press the keys."/>
+    <Item english="Nothing is marked" text="Nothing is marked"/>
+    <Item english="Marked text copied" text="Marked text copied"/>
+    <Item english="Choose a folder first" text="Choose a folder first"/>
+    <Item english="This document has no folder" text="This document has no folder"/>
+    <Item english="The ticked project panels have no files" text="The ticked project panels have no files"/>
+    <Item english="Searching..." text="Searching..."/>
+    <Item english="Stopping..." text="Stopping..."/>
+    <Item english="Marks cleared" text="Marks cleared"/>
+    <Item english="Transparent" text="Transparent"/>
+    <Item english="View 1" text="View 1"/>
+    <Item english="View 2" text="View 2"/>
+</NativeLangExtra>

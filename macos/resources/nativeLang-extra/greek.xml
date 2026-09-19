@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/greek.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Greek">
+    <Item english="About NotepadMac" text="Σχετικά με το NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Απόκρυψη του NotepadMac"/>
+    <Item english="Hide Others" text="Απόκρυψη των άλλων"/>
+    <Item english="Show All" text="Εμφάνιση όλων"/>
+    <Item english="Quit NotepadMac" text="Τερματισμός του NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Άνοιγμα φακέλου που περιέχει στο Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Άνοιγμα φακέλου που περιέχει στο Τερματικό"/>
+    <Item english="Toggle Insert/Overtype" text="Εναλλαγή εισαγωγής/αντικατάστασης"/>
+    <Item english="Toggle Fold" text="Εναλλαγή σύμπτυξης"/>
+    <Item english="Show All Hidden Lines" text="Εμφάνιση όλων των κρυφών γραμμών"/>
+    <Item english="Recent Window" text="Προηγούμενο παράθυρο"/>
+    <Item english="Move to Trash" text="Μετακίνηση στον Κάδο"/>
+    <Item english="Save Current Command…" text="Αποθήκευση τρέχουσας εντολής…"/>
+    <Item english="Manage Saved Commands…" text="Διαχείριση αποθηκευμένων εντολών…"/>
+    <Item english="Show Console" text="Εμφάνιση κονσόλας"/>
+    <Item english="Validate shortcuts" text="Έλεγχος συντομεύσεων"/>
+    <Item english="Open Plugins Folder…" text="Άνοιγμα φακέλου πρόσθετων…"/>
+    <Item english="Format" text="Μορφοποίηση"/>
+    <Item english="Compact" text="Συμπίεση"/>
+    <Item english="Sort Keys" text="Ταξινόμηση κλειδιών"/>
+    <Item english="Validate" text="Επικύρωση"/>
+    <Item english="Show JSON Tree" text="Εμφάνιση δέντρου JSON"/>
+    <Item english="Set as First to Compare" text="Ορισμός ως πρώτου για σύγκριση"/>
+    <Item english="Compare" text="Σύγκριση"/>
+    <Item english="Compare with File…" text="Σύγκριση με αρχείο…"/>
+    <Item english="Next Difference" text="Επόμενη διαφορά"/>
+    <Item english="Previous Difference" text="Προηγούμενη διαφορά"/>
+    <Item english="First Difference" text="Πρώτη διαφορά"/>
+    <Item english="Last Difference" text="Τελευταία διαφορά"/>
+    <Item english="Compare Summary" text="Σύνοψη σύγκρισης"/>
+    <Item english="Ignore Case" text="Παράβλεψη πεζών-κεφαλαίων"/>
+    <Item english="Ignore Spaces" text="Παράβλεψη κενών διαστημάτων"/>
+    <Item english="Ignore Empty Lines" text="Παράβλεψη κενών γραμμών"/>
+    <Item english="Clear Active Compare" text="Απαλοιφή ενεργής σύγκρισης"/>
+    <Item english="Clear All Compares" text="Απαλοιφή όλων των συγκρίσεων"/>
+    <Item english="Pretty Print" text="Ευανάγνωστη μορφοποίηση"/>
+    <Item english="Pretty Print — Indent Attributes" text="Ευανάγνωστη μορφοποίηση — με εσοχή ιδιοτήτων"/>
+    <Item english="Linearize" text="Σε μία γραμμή"/>
+    <Item english="Check XML Syntax Now" text="Έλεγχος σύνταξης XML τώρα"/>
+    <Item english="Validate Against Schema…" text="Επικύρωση βάσει σχήματος…"/>
+    <Item english="Validate Against DTD" text="Επικύρωση βάσει DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Υπολογισμός έκφρασης XPath…"/>
+    <Item english="Current XML Path" text="Τρέχουσα διαδρομή XML"/>
+    <Item english="Current XML Path with Predicates" text="Τρέχουσα διαδρομή XML με κατηγορήματα"/>
+    <Item english="Apply XSL Transformation…" text="Εφαρμογή μετασχηματισμού XSL…"/>
+    <Item english="Connections…" text="Συνδέσεις…"/>
+    <Item english="Connect…" text="Σύνδεση…"/>
+    <Item english="Disconnect" text="Αποσύνδεση"/>
+    <Item english="Show Remote Files" text="Εμφάνιση απομακρυσμένων αρχείων"/>
+    <Item english="Upload Current File" text="Αποστολή τρέχοντος αρχείου"/>
+    <Item english="Execute NppExec Script…" text="Εκτέλεση σεναρίου NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Εκτέλεση προηγούμενου σεναρίου NppExec"/>
+    <Item english="Stop Running NppExec Script" text="Διακοπή εκτελούμενου σεναρίου NppExec"/>
+    <Item english="Show NppExec Console" text="Εμφάνιση κονσόλας NppExec"/>
+    <Item english="Execute NppExec Script" text="Εκτέλεση σεναρίου NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;προσωρινό σενάριο&gt;"/>
+    <Item english="Script name" text="Όνομα σεναρίου"/>
+    <Item english="Dock Left" text="Προσάρτηση αριστερά"/>
+    <Item english="Dock Right" text="Προσάρτηση δεξιά"/>
+    <Item english="Dock Top" text="Προσάρτηση επάνω"/>
+    <Item english="Dock Bottom" text="Προσάρτηση κάτω"/>
+    <Item english="Float" text="Αποδέσμευση"/>
+    <Item english="Remember which panels were open" text="Απομνημόνευση των πινάκων που ήταν ανοιχτοί"/>
+    <Item english="Show the toolbar" text="Εμφάνιση γραμμής εργαλείων"/>
+    <Item english="Toolbar buttons" text="Κουμπιά γραμμής εργαλείων"/>
+    <Item english="Icons only" text="Μόνο εικονίδια"/>
+    <Item english="Icons and labels" text="Εικονίδια και ετικέτες"/>
+    <Item english="Labels only" text="Μόνο ετικέτες"/>
+    <Item english="Toolbar size" text="Μέγεθος γραμμής εργαλείων"/>
+    <Item english="Regular" text="Κανονικό"/>
+    <Item english="Small" text="Μικρό"/>
+    <Item english="Icons" text="Εικονίδια"/>
+    <Item english="Hidden" text="Κρυφή"/>
+    <Item english="1 pixel" text="1 pixel"/>
+    <Item english="2 pixels" text="2 pixel"/>
+    <Item english="3 pixels" text="3 pixel"/>
+    <Item english="Selected text can be dragged" text="Το επιλεγμένο κείμενο μπορεί να συρθεί"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Ενεργοποίηση πολλαπλής επεξεργασίας (Cmd+κλικ/επιλογή)"/>
+    <Item english="Follow the system" text="Όπως το σύστημα"/>
+    <Item english="Light theme" text="Φωτεινό θέμα"/>
+    <Item english="Dark theme" text="Σκοτεινό θέμα"/>
+    <Item english="Show the fold margin" text="Εμφάνιση περιθωρίου σύμπτυξης"/>
+    <Item english="A line" text="Γραμμή"/>
+    <Item english="Columns (space separated)" text="Στήλες (χωρισμένες με κενό)"/>
+    <Item english="3 parts" text="3 μέρη"/>
+    <Item english="4 parts" text="4 μέρη"/>
+    <Item english="5 parts" text="5 μέρη"/>
+    <Item english="6 parts" text="6 μέρη"/>
+    <Item english="7 parts" text="7 μέρη"/>
+    <Item english="8 parts" text="8 μέρη"/>
+    <Item english="9 parts" text="9 μέρη"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Αναγνώριση της γλώσσας από το περιεχόμενο όταν δεν προκύπτει από το όνομα"/>
+    <Item english="Highlight matching braces" text="Επισήμανση αγκυλών που ταιριάζουν"/>
+    <Item english="Header font (blank for the editor's)" text="Γραμματοσειρά επικεφαλίδας (κενό: του επεξεργαστή)"/>
+    <Item english="Header font size" text="Μέγεθος γραμματοσειράς επικεφαλίδας"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Περιθώρια: αριστερά, επάνω, δεξιά, κάτω (στιγμές)"/>
+    <Item english="Characters before it opens" text="Χαρακτήρες πριν ανοίξει"/>
+    <Item english="Add characters to the word list" text="Προσθήκη χαρακτήρων στη λίστα χαρακτήρων λέξεων"/>
+    <Item english="A fixed folder" text="Σταθερός φάκελος"/>
+    <Item english="Fixed folder" text="Σταθερός φάκελος"/>
+    <Item english="Confirm Replace All" text="Επιβεβαίωση αντικατάστασης όλων"/>
+    <Item english="Compare: ignore case" text="Σύγκριση: παράβλεψη πεζών-κεφαλαίων"/>
+    <Item english="Compare: ignore spaces" text="Σύγκριση: παράβλεψη κενών διαστημάτων"/>
+    <Item english="Compare: ignore empty lines" text="Σύγκριση: παράβλεψη κενών γραμμών"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Μέγ. χαρακτήρες για αυτόματη συμπλήρωση του πεδίου εύρεσης"/>
+    <Item english="Releases repository" text="Αποθετήριο εκδόσεων"/>
+    <Item english="Notepad++ update" text="Ενημέρωση Notepad++"/>
+    <Item english="No update is available." text="Δεν υπάρχει διαθέσιμη ενημέρωση."/>
+    <Item english="An update package is available, do you want to download it?" text="Υπάρχει διαθέσιμο πακέτο ενημέρωσης, θέλετε να το κατεβάσετε;"/>
+    <Item english="Open the Releases Page" text="Άνοιγμα σελίδας εκδόσεων"/>
+    <Item english="Copy debug info to clipboard" text="Αντιγραφή πληροφοριών εντοπισμού σφαλμάτων στο πρόχειρο"/>
+    <Item english="Fonts…" text="Γραμματοσειρές…"/>
+    <Item english="This document is not valid JSON." text="Αυτό το έγγραφο δεν είναι έγκυρο JSON."/>
+    <Item english="Valid JSON." text="Έγκυρο JSON."/>
+    <Item english="Invalid JSON." text="Μη έγκυρο JSON."/>
+    <Item english="Set as the first file to compare." text="Ορίστηκε ως το πρώτο αρχείο για σύγκριση."/>
+    <Item english="Nothing to compare with." text="Δεν υπάρχει τίποτα για σύγκριση."/>
+    <Item english="The document is valid XML." text="Το έγγραφο είναι έγκυρο XML."/>
+    <Item english="FTP connections" text="Συνδέσεις FTP"/>
+    <Item english="Cannot connect." text="Αδυναμία σύνδεσης."/>
+    <Item english="That file is open in another tab." text="Αυτό το αρχείο είναι ανοιχτό σε άλλη καρτέλα."/>
+    <Item english="Close it first, or choose another name." text="Κλείστε το πρώτα ή επιλέξτε άλλο όνομα."/>
+    <Item english="Which language is this?" text="Ποια γλώσσα είναι αυτή;"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Ορισμένοι χαρακτήρες δεν μπορούν να αναπαρασταθούν σε αυτή την κωδικοποίηση."/>
+    <Item english="Converting will replace them." text="Η μετατροπή θα τους αντικαταστήσει."/>
+    <Item english="Press the keys." text="Πατήστε τα πλήκτρα."/>
+    <Item english="Nothing is marked" text="Δεν έχει μαρκαριστεί τίποτα"/>
+    <Item english="Marked text copied" text="Το μαρκαρισμένο κείμενο αντιγράφηκε"/>
+    <Item english="Choose a folder first" text="Επιλέξτε πρώτα φάκελο"/>
+    <Item english="This document has no folder" text="Αυτό το έγγραφο δεν έχει φάκελο"/>
+    <Item english="The ticked project panels have no files" text="Οι επιλεγμένοι πίνακες έργου δεν έχουν αρχεία"/>
+    <Item english="Searching..." text="Αναζήτηση..."/>
+    <Item english="Stopping..." text="Διακοπή..."/>
+    <Item english="Marks cleared" text="Τα μαρκαρίσματα απαλείφθηκαν"/>
+    <Item english="Transparent" text="Διαφανές"/>
+    <Item english="View 1" text="Προβολή 1"/>
+    <Item english="View 2" text="Προβολή 2"/>
+</NativeLangExtra>

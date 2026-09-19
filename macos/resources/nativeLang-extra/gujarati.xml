@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/gujarati.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="ગુજરાતી">
+    <Item english="About NotepadMac" text="NotepadMac વિષે"/>
+    <Item english="Hide NotepadMac" text="NotepadMac છુપાવો"/>
+    <Item english="Hide Others" text="બીજા છુપાવો"/>
+    <Item english="Show All" text="બધા બતાવો"/>
+    <Item english="Quit NotepadMac" text="NotepadMac માંથી બહાર નીકળો"/>
+    <Item english="Open Containing Folder in Finder" text="સમાસિત ફોલ્ડર Finder માં ખોલો"/>
+    <Item english="Open Containing Folder in Terminal" text="સમાસિત ફોલ્ડર ટર્મિનલ માં ખોલો"/>
+    <Item english="Toggle Insert/Overtype" text="ઇન્સર્ટ/ઓવરટાઇપ ટોગલ કરો"/>
+    <Item english="Toggle Fold" text="ફોલ્ડ ટોગલ કરો"/>
+    <Item english="Show All Hidden Lines" text="બધી છુપાયેલી લાઈન્સ બતાવો"/>
+    <Item english="Recent Window" text="તાજેતરની વિન્ડો"/>
+    <Item english="Move to Trash" text="ટ્રેશ માં ખસેડો"/>
+    <Item english="Save Current Command…" text="હાલનો કમાન્ડ સેવ કરો…"/>
+    <Item english="Manage Saved Commands…" text="સેવ કરેલા કમાન્ડ્સ મેનેજ કરો…"/>
+    <Item english="Show Console" text="કન્સોલ બતાવો"/>
+    <Item english="Validate shortcuts" text="શોર્ટકટ ચકાસો"/>
+    <Item english="Open Plugins Folder…" text="પ્લગઇન્સ ફોલ્ડર ખોલો…"/>
+    <Item english="Format" text="ફોર્મેટ કરો"/>
+    <Item english="Compact" text="કોમ્પેક્ટ કરો"/>
+    <Item english="Sort Keys" text="કી ક્રમમાં ગોઠવો"/>
+    <Item english="Validate" text="માન્યતા ચકાસો"/>
+    <Item english="Show JSON Tree" text="JSON ટ્રી બતાવો"/>
+    <Item english="Set as First to Compare" text="સરખામણી માટે પ્રથમ તરીકે સેટ કરો"/>
+    <Item english="Compare" text="સરખામણી કરો"/>
+    <Item english="Compare with File…" text="ફાઈલ સાથે સરખામણી કરો…"/>
+    <Item english="Next Difference" text="પછીનો તફાવત"/>
+    <Item english="Previous Difference" text="અગાઉનો તફાવત"/>
+    <Item english="First Difference" text="પ્રથમ તફાવત"/>
+    <Item english="Last Difference" text="છેલ્લો તફાવત"/>
+    <Item english="Compare Summary" text="સરખામણીનો સારાંશ"/>
+    <Item english="Ignore Case" text="કેસ ને અવગણો"/>
+    <Item english="Ignore Spaces" text="સ્પેસ ને અવગણો"/>
+    <Item english="Ignore Empty Lines" text="ખાલી લાઈન્સ ને અવગણો"/>
+    <Item english="Clear Active Compare" text="સક્રિય સરખામણી દૂર કરો"/>
+    <Item english="Clear All Compares" text="બધી સરખામણીઓ દૂર કરો"/>
+    <Item english="Pretty Print" text="પ્રીટી પ્રિન્ટ"/>
+    <Item english="Pretty Print — Indent Attributes" text="પ્રીટી પ્રિન્ટ — એટ્રિબ્યુટ્સ ઇન્ડેન્ટ કરો"/>
+    <Item english="Linearize" text="એક લાઈન માં કરો"/>
+    <Item english="Check XML Syntax Now" text="XML સિન્ટેક્સ હમણાં ચકાસો"/>
+    <Item english="Validate Against Schema…" text="સ્કીમા સામે માન્યતા ચકાસો…"/>
+    <Item english="Validate Against DTD" text="DTD સામે માન્યતા ચકાસો"/>
+    <Item english="Evaluate XPath Expression…" text="XPath એક્સપ્રેશન નું મૂલ્ય કાઢો…"/>
+    <Item english="Current XML Path" text="હાલનો XML પાથ"/>
+    <Item english="Current XML Path with Predicates" text="પ્રેડિકેટ્સ સાથે હાલનો XML પાથ"/>
+    <Item english="Apply XSL Transformation…" text="XSL ટ્રાન્સફોર્મેશન લાગુ કરો…"/>
+    <Item english="Escape Characters in Selection" text="પસંદગી માં કેરેક્ટર એસ્કેપ કરો"/>
+    <Item english="Unescape Characters in Selection" text="પસંદગી માં કેરેક્ટર અનએસ્કેપ કરો"/>
+    <Item english="Connections…" text="કનેક્શન્સ…"/>
+    <Item english="Connect…" text="કનેક્ટ કરો…"/>
+    <Item english="Disconnect" text="ડિસ્કનેક્ટ કરો"/>
+    <Item english="Show Remote Files" text="રિમોટ ફાઈલ્સ બતાવો"/>
+    <Item english="Upload Current File" text="હાલની ફાઈલ અપલોડ કરો"/>
+    <Item english="Execute NppExec Script…" text="NppExec સ્ક્રિપ્ટ ચલાવો…"/>
+    <Item english="Execute Previous NppExec Script" text="અગાઉની NppExec સ્ક્રિપ્ટ ચલાવો"/>
+    <Item english="Stop Running NppExec Script" text="ચાલુ NppExec સ્ક્રિપ્ટ રોકો"/>
+    <Item english="Show NppExec Console" text="NppExec કન્સોલ બતાવો"/>
+    <Item english="Execute NppExec Script" text="NppExec સ્ક્રિપ્ટ ચલાવો"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;કામચલાઉ સ્ક્રિપ્ટ&gt;"/>
+    <Item english="Script name" text="સ્ક્રિપ્ટ નું નામ"/>
+    <Item english="Dock Left" text="ડાબે ડોક કરો"/>
+    <Item english="Dock Right" text="જમણે ડોક કરો"/>
+    <Item english="Dock Top" text="ઉપર ડોક કરો"/>
+    <Item english="Dock Bottom" text="નીચે ડોક કરો"/>
+    <Item english="Float" text="ફ્લોટ કરો"/>
+    <Item english="Remember which panels were open" text="કઈ પેનલ્સ ખુલ્લી હતી તે યાદ રાખો"/>
+    <Item english="Show the toolbar" text="ટૂલબાર બતાવો"/>
+    <Item english="Toolbar buttons" text="ટૂલબાર બટન્સ"/>
+    <Item english="Icons only" text="ફક્ત આઇકન્સ"/>
+    <Item english="Icons and labels" text="આઇકન્સ અને લેબલ્સ"/>
+    <Item english="Labels only" text="ફક્ત લેબલ્સ"/>
+    <Item english="Toolbar size" text="ટૂલબાર ની સાઈઝ"/>
+    <Item english="Regular" text="સામાન્ય"/>
+    <Item english="Small" text="નાની"/>
+    <Item english="Icons" text="આઇકન્સ"/>
+    <Item english="Hidden" text="છુપાયેલ"/>
+    <Item english="1 pixel" text="1 પિક્સેલ"/>
+    <Item english="2 pixels" text="2 પિક્સેલ"/>
+    <Item english="3 pixels" text="3 પિક્સેલ"/>
+    <Item english="Selected text can be dragged" text="પસંદ કરેલ ટેક્સ્ટ ડ્રેગ કરી શકાય છે"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="મલ્ટી-એડિટિંગ સક્રિય કરો (Cmd+ક્લિક/પસંદગી)"/>
+    <Item english="Follow the system" text="સિસ્ટમ પ્રમાણે"/>
+    <Item english="Light theme" text="લાઇટ થીમ"/>
+    <Item english="Dark theme" text="ડાર્ક થીમ"/>
+    <Item english="Show the fold margin" text="ફોલ્ડ માર્જિન બતાવો"/>
+    <Item english="A line" text="એક રેખા"/>
+    <Item english="Columns (space separated)" text="કોલમ્સ (સ્પેસ થી અલગ કરેલ)"/>
+    <Item english="3 parts" text="3 ભાગ"/>
+    <Item english="4 parts" text="4 ભાગ"/>
+    <Item english="5 parts" text="5 ભાગ"/>
+    <Item english="6 parts" text="6 ભાગ"/>
+    <Item english="7 parts" text="7 ભાગ"/>
+    <Item english="8 parts" text="8 ભાગ"/>
+    <Item english="9 parts" text="9 ભાગ"/>
+    <Item english="Work the language out from the contents when the name does not say" text="નામ પરથી ખબર ન પડે ત્યારે સામગ્રી પરથી ભાષા ઓળખો"/>
+    <Item english="Highlight matching braces" text="મેળ ખાતા કૌંસ હાઇલાઇટ કરો"/>
+    <Item english="Header font (blank for the editor's)" text="હેડર ફોન્ટ (એડિટર ના ફોન્ટ માટે ખાલી રાખો)"/>
+    <Item english="Header font size" text="હેડર ફોન્ટ સાઈઝ"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="માર્જિન: ડાબે, ઉપર, જમણે, નીચે (પોઈન્ટ)"/>
+    <Item english="Characters before it opens" text="ખુલતા પહેલાં કેરેક્ટર ની સંખ્યા"/>
+    <Item english="Add characters to the word list" text="શબ્દ યાદી માં કેરેક્ટર ઉમેરો"/>
+    <Item english="A fixed folder" text="એક નિશ્ચિત ફોલ્ડર"/>
+    <Item english="Fixed folder" text="નિશ્ચિત ફોલ્ડર"/>
+    <Item english="Confirm Replace All" text="&quot;બધા બદલો&quot; ની પુષ્ટિ કરો"/>
+    <Item english="Compare: ignore case" text="સરખામણી: કેસ ને અવગણો"/>
+    <Item english="Compare: ignore spaces" text="સરખામણી: સ્પેસ ને અવગણો"/>
+    <Item english="Compare: ignore empty lines" text="સરખામણી: ખાલી લાઈન્સ ને અવગણો"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="શોધ ફીલ્ડ આપોઆપ ભરવા માટે મહત્તમ કેરેક્ટર"/>
+    <Item english="Releases repository" text="રિલીઝ રિપોઝીટરી"/>
+    <Item english="Notepad++ update" text="Notepad++ અપડેટ"/>
+    <Item english="No update is available." text="કોઈ અપડેટ ઉપલબ્ધ નથી."/>
+    <Item english="An update package is available, do you want to download it?" text="અપડેટ પેકેજ ઉપલબ્ધ છે, શું તમે તેને ડાઉનલોડ કરવા માંગો છો?"/>
+    <Item english="Open the Releases Page" text="રિલીઝ પેજ ખોલો"/>
+    <Item english="Copy debug info to clipboard" text="ડીબગ માહિતી ક્લિપબોર્ડ પર કૉપિ કરો"/>
+    <Item english="Fonts…" text="ફોન્ટ્સ…"/>
+    <Item english="This document is not valid JSON." text="આ ડોક્યુમેન્ટ માન્ય JSON નથી."/>
+    <Item english="Valid JSON." text="માન્ય JSON."/>
+    <Item english="Invalid JSON." text="અમાન્ય JSON."/>
+    <Item english="Set as the first file to compare." text="સરખામણી માટે પ્રથમ ફાઈલ તરીકે સેટ કરી."/>
+    <Item english="Nothing to compare with." text="સરખામણી કરવા માટે કંઈ નથી."/>
+    <Item english="The document is valid XML." text="ડોક્યુમેન્ટ માન્ય XML છે."/>
+    <Item english="FTP connections" text="FTP કનેક્શન્સ"/>
+    <Item english="Cannot connect." text="કનેક્ટ થઈ શકતું નથી."/>
+    <Item english="That file is open in another tab." text="તે ફાઈલ બીજા ટેબ માં ખુલ્લી છે."/>
+    <Item english="Close it first, or choose another name." text="પહેલા તેને બંધ કરો, અથવા બીજું નામ પસંદ કરો."/>
+    <Item english="Which language is this?" text="આ કઈ ભાષા છે?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="કેટલાક કેરેક્ટર આ એનકોડીંગ માં દર્શાવી શકાતા નથી."/>
+    <Item english="Converting will replace them." text="કન્વર્ટ કરવાથી તે બદલાઈ જશે."/>
+    <Item english="Press the keys." text="કી દબાવો."/>
+    <Item english="Nothing is marked" text="કંઈ માર્ક કરેલું નથી"/>
+    <Item english="Marked text copied" text="માર્ક કરેલ ટેક્સ્ટ કૉપિ થઈ"/>
+    <Item english="Choose a folder first" text="પહેલા ફોલ્ડર પસંદ કરો"/>
+    <Item english="This document has no folder" text="આ ડોક્યુમેન્ટ ને કોઈ ફોલ્ડર નથી"/>
+    <Item english="The ticked project panels have no files" text="ટિક કરેલી પ્રોજેક્ટ પેનલ્સ માં કોઈ ફાઈલ નથી"/>
+    <Item english="Searching..." text="શોધી રહ્યું છે..."/>
+    <Item english="Stopping..." text="રોકી રહ્યું છે..."/>
+    <Item english="Marks cleared" text="માર્ક્સ દૂર કર્યા"/>
+    <Item english="Transparent" text="પારદર્શક"/>
+    <Item english="View 1" text="દેખાવ 1"/>
+    <Item english="View 2" text="દેખાવ 2"/>
+</NativeLangExtra>

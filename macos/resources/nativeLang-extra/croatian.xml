@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/croatian.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Hrvatski">
+    <Item english="About NotepadMac" text="O programu NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Sakrij NotepadMac"/>
+    <Item english="Hide Others" text="Sakrij ostale"/>
+    <Item english="Show All" text="Prikaži sve"/>
+    <Item english="Quit NotepadMac" text="Zatvori NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Otvori mapu s trenutnom datotekom u Finderu"/>
+    <Item english="Open Containing Folder in Terminal" text="Otvori mapu s trenutnom datotekom u Terminalu"/>
+    <Item english="Toggle Insert/Overtype" text="Prebaci umetanje/prepisivanje"/>
+    <Item english="Toggle Fold" text="Smotaj/razmotaj"/>
+    <Item english="Show All Hidden Lines" text="Prikaži sve skrivene retke"/>
+    <Item english="Recent Window" text="Prethodni prozor"/>
+    <Item english="Move to Trash" text="Premjesti u koš za smeće"/>
+    <Item english="Save Current Command…" text="Spremi trenutnu naredbu…"/>
+    <Item english="Manage Saved Commands…" text="Upravljaj spremljenim naredbama…"/>
+    <Item english="Show Console" text="Prikaži konzolu"/>
+    <Item english="Validate shortcuts" text="Provjeri prečace"/>
+    <Item english="Open Plugins Folder…" text="Otvori mapu dodataka…"/>
+    <Item english="Format" text="Formatiraj"/>
+    <Item english="Compact" text="Sažmi"/>
+    <Item english="Sort Keys" text="Sortiraj ključeve"/>
+    <Item english="Validate" text="Provjeri"/>
+    <Item english="Show JSON Tree" text="Prikaži JSON stablo"/>
+    <Item english="Set as First to Compare" text="Postavi kao prvu za usporedbu"/>
+    <Item english="Compare" text="Usporedi"/>
+    <Item english="Compare with File…" text="Usporedi s datotekom…"/>
+    <Item english="Next Difference" text="Sljedeća razlika"/>
+    <Item english="Previous Difference" text="Prethodna razlika"/>
+    <Item english="First Difference" text="Prva razlika"/>
+    <Item english="Last Difference" text="Zadnja razlika"/>
+    <Item english="Compare Summary" text="Sažetak usporedbe"/>
+    <Item english="Ignore Case" text="Zanemari velika i mala slova"/>
+    <Item english="Ignore Spaces" text="Zanemari razmake"/>
+    <Item english="Ignore Empty Lines" text="Zanemari prazne retke"/>
+    <Item english="Clear Active Compare" text="Očisti aktivnu usporedbu"/>
+    <Item english="Clear All Compares" text="Očisti sve usporedbe"/>
+    <Item english="Pretty Print" text="Lijepo formatiraj"/>
+    <Item english="Pretty Print — Indent Attributes" text="Lijepo formatiraj — uvuci atribute"/>
+    <Item english="Linearize" text="U jedan redak"/>
+    <Item english="Check XML Syntax Now" text="Provjeri XML sintaksu"/>
+    <Item english="Validate Against Schema…" text="Provjeri prema shemi…"/>
+    <Item english="Validate Against DTD" text="Provjeri prema DTD-u"/>
+    <Item english="Evaluate XPath Expression…" text="Izračunaj XPath izraz…"/>
+    <Item english="Current XML Path" text="Trenutna XML putanja"/>
+    <Item english="Current XML Path with Predicates" text="Trenutna XML putanja s predikatima"/>
+    <Item english="Apply XSL Transformation…" text="Primijeni XSL transformaciju…"/>
+    <Item english="Escape Characters in Selection" text="Zamijeni posebne znakove u odabiru"/>
+    <Item english="Unescape Characters in Selection" text="Vrati posebne znakove u odabiru"/>
+    <Item english="Connections…" text="Veze…"/>
+    <Item english="Connect…" text="Poveži se…"/>
+    <Item english="Disconnect" text="Prekini vezu"/>
+    <Item english="Show Remote Files" text="Prikaži udaljene datoteke"/>
+    <Item english="Upload Current File" text="Prenesi trenutnu datoteku"/>
+    <Item english="Execute NppExec Script…" text="Izvrši NppExec skriptu…"/>
+    <Item english="Execute Previous NppExec Script" text="Izvrši prethodnu NppExec skriptu"/>
+    <Item english="Stop Running NppExec Script" text="Zaustavi pokrenutu NppExec skriptu"/>
+    <Item english="Show NppExec Console" text="Prikaži NppExec konzolu"/>
+    <Item english="Execute NppExec Script" text="Izvrši NppExec skriptu"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;privremena skripta&gt;"/>
+    <Item english="Script name" text="Naziv skripte"/>
+    <Item english="Dock Left" text="Usidri lijevo"/>
+    <Item english="Dock Right" text="Usidri desno"/>
+    <Item english="Dock Top" text="Usidri gore"/>
+    <Item english="Dock Bottom" text="Usidri dolje"/>
+    <Item english="Float" text="Odsidri"/>
+    <Item english="Remember which panels were open" text="Zapamti koji su paneli bili otvoreni"/>
+    <Item english="Show the toolbar" text="Prikaži alatnu vrpcu"/>
+    <Item english="Toolbar buttons" text="Gumbi alatne vrpce"/>
+    <Item english="Icons only" text="Samo ikone"/>
+    <Item english="Icons and labels" text="Ikone i natpisi"/>
+    <Item english="Labels only" text="Samo natpisi"/>
+    <Item english="Toolbar size" text="Veličina alatne vrpce"/>
+    <Item english="Regular" text="Obična"/>
+    <Item english="Small" text="Mala"/>
+    <Item english="Icons" text="Ikone"/>
+    <Item english="Hidden" text="Skrivena"/>
+    <Item english="1 pixel" text="1 piksel"/>
+    <Item english="2 pixels" text="2 piksela"/>
+    <Item english="3 pixels" text="3 piksela"/>
+    <Item english="Selected text can be dragged" text="Odabrani tekst može se povlačiti"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Omogući Višestruko uređivanje (Cmd+klik/izbor)"/>
+    <Item english="Follow the system" text="Prema postavkama sustava"/>
+    <Item english="Light theme" text="Svijetla tema"/>
+    <Item english="Dark theme" text="Tamna tema"/>
+    <Item english="Show the fold margin" text="Prikaži marginu za motanje"/>
+    <Item english="A line" text="Linija"/>
+    <Item english="Columns (space separated)" text="Stupci (odvojeni razmakom)"/>
+    <Item english="3 parts" text="3 dijela"/>
+    <Item english="4 parts" text="4 dijela"/>
+    <Item english="5 parts" text="5 dijelova"/>
+    <Item english="6 parts" text="6 dijelova"/>
+    <Item english="7 parts" text="7 dijelova"/>
+    <Item english="8 parts" text="8 dijelova"/>
+    <Item english="9 parts" text="9 dijelova"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Odredi sintaksu prema sadržaju kada je naziv ne otkriva"/>
+    <Item english="Highlight matching braces" text="Označi pripadajuće zagrade"/>
+    <Item english="Header font (blank for the editor's)" text="Font zaglavlja (prazno — kao u uređivaču)"/>
+    <Item english="Header font size" text="Veličina fonta zaglavlja"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Margine: lijevo, gore, desno, dolje (točke)"/>
+    <Item english="Characters before it opens" text="Broj znakova prije otvaranja"/>
+    <Item english="Add characters to the word list" text="Dodaj znakove na popis znakova za riječi"/>
+    <Item english="A fixed folder" text="Zadana mapa"/>
+    <Item english="Fixed folder" text="Zadana mapa"/>
+    <Item english="Confirm Replace All" text="Traži potvrdu za Zamijeni sve"/>
+    <Item english="Compare: ignore case" text="Usporedba: zanemari velika i mala slova"/>
+    <Item english="Compare: ignore spaces" text="Usporedba: zanemari razmake"/>
+    <Item english="Compare: ignore empty lines" text="Usporedba: zanemari prazne retke"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Maks. broj znakova za automatsko popunjavanje polja za pretraživanje"/>
+    <Item english="Releases repository" text="Spremište izdanja"/>
+    <Item english="Notepad++ update" text="Ažuriranje Notepad++"/>
+    <Item english="No update is available." text="Nema dostupnog ažuriranja."/>
+    <Item english="An update package is available, do you want to download it?" text="Dostupno je ažuriranje, želite li ga preuzeti?"/>
+    <Item english="Open the Releases Page" text="Otvori stranicu izdanja"/>
+    <Item english="Copy debug info to clipboard" text="Kopiraj debug informacije u međuspremnik"/>
+    <Item english="Fonts…" text="Fontovi…"/>
+    <Item english="This document is not valid JSON." text="Ovaj dokument nije ispravan JSON."/>
+    <Item english="Valid JSON." text="Ispravan JSON."/>
+    <Item english="Invalid JSON." text="Neispravan JSON."/>
+    <Item english="Set as the first file to compare." text="Postavljeno kao prva datoteka za usporedbu."/>
+    <Item english="Nothing to compare with." text="Nema se s čime usporediti."/>
+    <Item english="The document is valid XML." text="Dokument je ispravan XML."/>
+    <Item english="FTP connections" text="FTP veze"/>
+    <Item english="Cannot connect." text="Povezivanje nije uspjelo."/>
+    <Item english="That file is open in another tab." text="Ta je datoteka otvorena u drugoj kartici."/>
+    <Item english="Close it first, or choose another name." text="Najprije je zatvorite ili odaberite drugi naziv."/>
+    <Item english="Which language is this?" text="Koja je ovo sintaksa?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Neki se znakovi ne mogu prikazati u ovom kodiranju."/>
+    <Item english="Converting will replace them." text="Konverzija će ih zamijeniti."/>
+    <Item english="Press the keys." text="Pritisnite tipke."/>
+    <Item english="Nothing is marked" text="Ništa nije označeno"/>
+    <Item english="Marked text copied" text="Označeni tekst je kopiran"/>
+    <Item english="Choose a folder first" text="Najprije odaberite mapu"/>
+    <Item english="This document has no folder" text="Ovaj dokument nema mapu"/>
+    <Item english="The ticked project panels have no files" text="Označeni projektni paneli nemaju datoteka"/>
+    <Item english="Searching..." text="Pretraživanje..."/>
+    <Item english="Stopping..." text="Zaustavljanje..."/>
+    <Item english="Marks cleared" text="Oznake su očišćene"/>
+    <Item english="Transparent" text="Prozirno"/>
+    <Item english="View 1" text="Prikaz 1"/>
+    <Item english="View 2" text="Prikaz 2"/>
+</NativeLangExtra>

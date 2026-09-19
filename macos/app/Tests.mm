@@ -7768,6 +7768,21 @@ int NppMacRunTests(AppDelegate *app) {
         if (cutElsewhere.count) printf("    cut texts (ru):\n        %s\n", [cutElsewhere componentsJoinedByString:@"\n        "].UTF8String);
         names = names && !cutElsewhere.count;
 
+        // The port's own texts in every language that has them: each file beside
+        // a nativeLang file loads with it, and what it does not translate stays English.
+        NSString *extraDir = [[[NppLocalization directory] stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"nativeLang-extra"];
+        NSUInteger extraFiles = 0, extraBroken = 0;
+        for (NSString *file in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:extraDir error:NULL]) {
+            if (![file.pathExtension isEqualToString:@"xml"] || [file isEqualToString:@"english.xml"]) continue;
+            extraFiles++;
+            NSXMLDocument *parsed = [[NSXMLDocument alloc] initWithData:[NSData dataWithContentsOfFile:[extraDir stringByAppendingPathComponent:file]] options:0 error:NULL];
+            BOOL hasNative = [[NSFileManager defaultManager] fileExistsAtPath:[[NppLocalization directory] stringByAppendingPathComponent:file]];
+            // (A file may translate nothing yet: a language nobody was sure of stays English.)
+            if (!parsed || !hasNative || ![parsed.rootElement.name isEqualToString:@"NativeLangExtra"]) { extraBroken++; printf("    extra: %s is broken\n", file.UTF8String); }
+        }
+        printf("    l10n extras: %lu files, %lu broken\n", (unsigned long)extraFiles, (unsigned long)extraBroken);
+        names = names && extraFiles >= 1 && !extraBroken && [NppL(@"A text the port does not have") isEqualToString:@"A text the port does not have"];
+
         // Context menus: the tab's in its own wording, the editor's still found
         // by the English titles the setting keeps.
         NSMenu *tabMenu = [app buildTabContextMenu];

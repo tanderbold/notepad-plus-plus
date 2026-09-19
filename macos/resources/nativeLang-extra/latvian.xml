@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/latvian.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Latviešu">
+    <Item english="About NotepadMac" text="Par NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Paslēpt NotepadMac"/>
+    <Item english="Hide Others" text="Paslēpt pārējās"/>
+    <Item english="Show All" text="Rādīt visas"/>
+    <Item english="Quit NotepadMac" text="Iziet no NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Atvērt faila mapi ar Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Atvērt faila mapi terminālī"/>
+    <Item english="Toggle Insert/Overtype" text="Pārslēgt ievietošanu/pārrakstīšanu"/>
+    <Item english="Toggle Fold" text="Sakļaut/izvērst"/>
+    <Item english="Show All Hidden Lines" text="Rādīt visas paslēptās rindas"/>
+    <Item english="Recent Window" text="Iepriekšējais logs"/>
+    <Item english="Move to Trash" text="Pārvietot uz atkritni"/>
+    <Item english="Save Current Command…" text="Saglabāt pašreizējo komandu…"/>
+    <Item english="Manage Saved Commands…" text="Pārvaldīt saglabātās komandas…"/>
+    <Item english="Show Console" text="Rādīt konsoli"/>
+    <Item english="Validate shortcuts" text="Pārbaudīt īsceļus"/>
+    <Item english="Open Plugins Folder…" text="Atvērt spraudņu mapi…"/>
+    <Item english="Format" text="Formatēt"/>
+    <Item english="Compact" text="Saspiest"/>
+    <Item english="Sort Keys" text="Kārtot atslēgas"/>
+    <Item english="Validate" text="Pārbaudīt"/>
+    <Item english="Show JSON Tree" text="Rādīt JSON koku"/>
+    <Item english="Set as First to Compare" text="Iestatīt kā pirmo salīdzināšanai"/>
+    <Item english="Compare" text="Salīdzināt"/>
+    <Item english="Compare with File…" text="Salīdzināt ar failu…"/>
+    <Item english="Next Difference" text="Nākošā atšķirība"/>
+    <Item english="Previous Difference" text="Iepriekšējā atšķirība"/>
+    <Item english="First Difference" text="Pirmā atšķirība"/>
+    <Item english="Last Difference" text="Pēdējā atšķirība"/>
+    <Item english="Compare Summary" text="Salīdzināšanas kopsavilkums"/>
+    <Item english="Ignore Case" text="Ignorēt reģistru"/>
+    <Item english="Ignore Spaces" text="Ignorēt atstarpes"/>
+    <Item english="Ignore Empty Lines" text="Ignorēt tukšās rindas"/>
+    <Item english="Clear Active Compare" text="Notīrīt pašreizējo salīdzināšanu"/>
+    <Item english="Clear All Compares" text="Notīrīt visas salīdzināšanas"/>
+    <Item english="Pretty Print" text="Glīti noformēt"/>
+    <Item english="Pretty Print — Indent Attributes" text="Glīti noformēt — ar atribūtu atkāpēm"/>
+    <Item english="Linearize" text="Apvienot vienā rindā"/>
+    <Item english="Check XML Syntax Now" text="Pārbaudīt XML sintaksi tagad"/>
+    <Item english="Validate Against Schema…" text="Pārbaudīt pēc shēmas…"/>
+    <Item english="Validate Against DTD" text="Pārbaudīt pēc DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Izrēķināt XPath izteiksmi…"/>
+    <Item english="Current XML Path" text="Pašreizējais XML ceļš"/>
+    <Item english="Current XML Path with Predicates" text="Pašreizējais XML ceļš ar predikātiem"/>
+    <Item english="Apply XSL Transformation…" text="Lietot XSL transformāciju…"/>
+    <Item english="Connections…" text="Savienojumi…"/>
+    <Item english="Connect…" text="Savienoties…"/>
+    <Item english="Disconnect" text="Atvienoties"/>
+    <Item english="Show Remote Files" text="Rādīt attālos failus"/>
+    <Item english="Upload Current File" text="Augšupielādēt pašreizējo failu"/>
+    <Item english="Execute NppExec Script…" text="Izpildīt NppExec skriptu…"/>
+    <Item english="Execute Previous NppExec Script" text="Izpildīt iepriekšējo NppExec skriptu"/>
+    <Item english="Stop Running NppExec Script" text="Apturēt izpildāmo NppExec skriptu"/>
+    <Item english="Show NppExec Console" text="Rādīt NppExec konsoli"/>
+    <Item english="Execute NppExec Script" text="Izpildīt NppExec skriptu"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;pagaidu skripts&gt;"/>
+    <Item english="Script name" text="Skripta nosaukums"/>
+    <Item english="Dock Left" text="Piestiprināt pa kreisi"/>
+    <Item english="Dock Right" text="Piestiprināt pa labi"/>
+    <Item english="Dock Top" text="Piestiprināt augšā"/>
+    <Item english="Dock Bottom" text="Piestiprināt apakšā"/>
+    <Item english="Float" text="Atsevišķā logā"/>
+    <Item english="Remember which panels were open" text="Atcerēties, kuri paneļi bija atvērti"/>
+    <Item english="Show the toolbar" text="Rādīt rīkjoslu"/>
+    <Item english="Toolbar buttons" text="Rīkjoslas pogas"/>
+    <Item english="Icons only" text="Tikai ikonas"/>
+    <Item english="Icons and labels" text="Ikonas un paraksti"/>
+    <Item english="Labels only" text="Tikai paraksti"/>
+    <Item english="Toolbar size" text="Rīkjoslas izmērs"/>
+    <Item english="Regular" text="Parasts"/>
+    <Item english="Small" text="Mazs"/>
+    <Item english="Icons" text="Ikonas"/>
+    <Item english="Hidden" text="Paslēpta"/>
+    <Item english="1 pixel" text="1 pikselis"/>
+    <Item english="2 pixels" text="2 pikseļi"/>
+    <Item english="3 pixels" text="3 pikseļi"/>
+    <Item english="Selected text can be dragged" text="Iezīmēto tekstu var vilkt"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Ieslēgt rediģēšanu vairākās vietās (Cmd+klikšķis/iezīmēšana)"/>
+    <Item english="Follow the system" text="Kā sistēmā"/>
+    <Item english="Light theme" text="Gaišais motīvs"/>
+    <Item english="Dark theme" text="Tumšais motīvs"/>
+    <Item english="Show the fold margin" text="Rādīt sakļaušanas malu"/>
+    <Item english="A line" text="Līnija"/>
+    <Item english="Columns (space separated)" text="Slejas (atdalītas ar atstarpēm)"/>
+    <Item english="3 parts" text="3 daļas"/>
+    <Item english="4 parts" text="4 daļas"/>
+    <Item english="5 parts" text="5 daļas"/>
+    <Item english="6 parts" text="6 daļas"/>
+    <Item english="7 parts" text="7 daļas"/>
+    <Item english="8 parts" text="8 daļas"/>
+    <Item english="9 parts" text="9 daļas"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Noteikt valodu pēc satura, ja nosaukums to neatklāj"/>
+    <Item english="Highlight matching braces" text="Izcelt sakrītošās iekavas"/>
+    <Item english="Header font (blank for the editor's)" text="Galvenes fonts (tukšs — kā redaktorā)"/>
+    <Item english="Header font size" text="Galvenes fonta lielums"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Malas: kreisā, augšējā, labā, apakšējā (punktos)"/>
+    <Item english="Characters before it opens" text="Rakstzīmju skaits, līdz tas atveras"/>
+    <Item english="Add characters to the word list" text="Pievienot rakstzīmes vārda rakstzīmju sarakstam"/>
+    <Item english="A fixed folder" text="Noteikta mape"/>
+    <Item english="Fixed folder" text="Noteikta mape"/>
+    <Item english="Confirm Replace All" text="Apstiprināt „Aizstāt visus”"/>
+    <Item english="Compare: ignore case" text="Salīdzināšana: ignorēt reģistru"/>
+    <Item english="Compare: ignore spaces" text="Salīdzināšana: ignorēt atstarpes"/>
+    <Item english="Compare: ignore empty lines" text="Salīdzināšana: ignorēt tukšās rindas"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Maks. rakstzīmju skaits meklēšanas lauka automātiskai aizpildīšanai"/>
+    <Item english="Releases repository" text="Laidienu krātuve"/>
+    <Item english="Notepad++ update" text="Notepad++ atjauninājums"/>
+    <Item english="No update is available." text="Atjauninājumu nav."/>
+    <Item english="An update package is available, do you want to download it?" text="Ir pieejama atjauninājuma pakotne. Vai vēlaties to lejupielādēt?"/>
+    <Item english="Open the Releases Page" text="Atvērt laidienu lapu"/>
+    <Item english="Copy debug info to clipboard" text="Kopēt atkļūdošanas informāciju starpliktuvē"/>
+    <Item english="Fonts…" text="Fonti…"/>
+    <Item english="This document is not valid JSON." text="Šis dokuments nav derīgs JSON."/>
+    <Item english="Valid JSON." text="Derīgs JSON."/>
+    <Item english="Invalid JSON." text="Nederīgs JSON."/>
+    <Item english="Set as the first file to compare." text="Iestatīts kā pirmais fails salīdzināšanai."/>
+    <Item english="Nothing to compare with." text="Nav ar ko salīdzināt."/>
+    <Item english="The document is valid XML." text="Dokuments ir derīgs XML."/>
+    <Item english="FTP connections" text="FTP savienojumi"/>
+    <Item english="Cannot connect." text="Neizdevās savienoties."/>
+    <Item english="That file is open in another tab." text="Šis fails ir atvērts citā cilnē."/>
+    <Item english="Close it first, or choose another name." text="Vispirms aizveriet to vai izvēlieties citu nosaukumu."/>
+    <Item english="Which language is this?" text="Kāda valoda šī ir?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Dažas rakstzīmes šajā kodējumā nevar attēlot."/>
+    <Item english="Converting will replace them." text="Pārveidojot tās tiks aizstātas."/>
+    <Item english="Press the keys." text="Nospiediet taustiņus."/>
+    <Item english="Nothing is marked" text="Nekas nav atzīmēts"/>
+    <Item english="Marked text copied" text="Atzīmētais teksts nokopēts"/>
+    <Item english="Choose a folder first" text="Vispirms izvēlieties mapi"/>
+    <Item english="This document has no folder" text="Šim dokumentam nav mapes"/>
+    <Item english="The ticked project panels have no files" text="Atzīmētajos projektu paneļos nav failu"/>
+    <Item english="Searching..." text="Meklē..."/>
+    <Item english="Stopping..." text="Aptur..."/>
+    <Item english="Marks cleared" text="Atzīmes noņemtas"/>
+    <Item english="Transparent" text="Caurspīdīgs"/>
+    <Item english="View 1" text="1. skats"/>
+    <Item english="View 2" text="2. skats"/>
+</NativeLangExtra>

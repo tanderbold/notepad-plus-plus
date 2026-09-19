@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/lithuanian.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Lithuanian">
+    <Item english="About NotepadMac" text="Apie NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Slėpti NotepadMac"/>
+    <Item english="Hide Others" text="Slėpti kitas"/>
+    <Item english="Show All" text="Rodyti visas"/>
+    <Item english="Quit NotepadMac" text="Baigti NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Atidaryti katalogą programoje Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Atidaryti katalogą terminale"/>
+    <Item english="Toggle Insert/Overtype" text="Perjungti įterpimą/perrašymą"/>
+    <Item english="Toggle Fold" text="Suskleisti/išskleisti"/>
+    <Item english="Show All Hidden Lines" text="Rodyti visas paslėptas eilutes"/>
+    <Item english="Recent Window" text="Ankstesnis langas"/>
+    <Item english="Move to Trash" text="Perkelti į šiukšlinę"/>
+    <Item english="Save Current Command…" text="Išsaugoti dabartinę komandą…"/>
+    <Item english="Manage Saved Commands…" text="Tvarkyti išsaugotas komandas…"/>
+    <Item english="Show Console" text="Rodyti konsolę"/>
+    <Item english="Validate shortcuts" text="Tikrinti sparčiuosius klavišus"/>
+    <Item english="Open Plugins Folder…" text="Atidaryti papildinių katalogą…"/>
+    <Item english="Format" text="Formatuoti"/>
+    <Item english="Compact" text="Suglaudinti"/>
+    <Item english="Sort Keys" text="Rikiuoti raktus"/>
+    <Item english="Validate" text="Tikrinti"/>
+    <Item english="Show JSON Tree" text="Rodyti JSON medį"/>
+    <Item english="Set as First to Compare" text="Nustatyti pirmuoju palyginimui"/>
+    <Item english="Compare" text="Palyginti"/>
+    <Item english="Compare with File…" text="Palyginti su failu…"/>
+    <Item english="Next Difference" text="Kitas skirtumas"/>
+    <Item english="Previous Difference" text="Ankstesnis skirtumas"/>
+    <Item english="First Difference" text="Pirmas skirtumas"/>
+    <Item english="Last Difference" text="Paskutinis skirtumas"/>
+    <Item english="Compare Summary" text="Palyginimo santrauka"/>
+    <Item english="Ignore Case" text="Ignoruoti registrą"/>
+    <Item english="Ignore Spaces" text="Ignoruoti tarpus"/>
+    <Item english="Ignore Empty Lines" text="Ignoruoti tuščias eilutes"/>
+    <Item english="Clear Active Compare" text="Išvalyti dabartinį palyginimą"/>
+    <Item english="Clear All Compares" text="Išvalyti visus palyginimus"/>
+    <Item english="Pretty Print" text="Gražiai suformatuoti"/>
+    <Item english="Pretty Print — Indent Attributes" text="Gražiai suformatuoti — su atributų įtraukomis"/>
+    <Item english="Linearize" text="Sujungti į vieną eilutę"/>
+    <Item english="Check XML Syntax Now" text="Tikrinti XML sintaksę dabar"/>
+    <Item english="Validate Against Schema…" text="Tikrinti pagal schemą…"/>
+    <Item english="Validate Against DTD" text="Tikrinti pagal DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Įvertinti XPath išraišką…"/>
+    <Item english="Current XML Path" text="Dabartinis XML kelias"/>
+    <Item english="Current XML Path with Predicates" text="Dabartinis XML kelias su predikatais"/>
+    <Item english="Apply XSL Transformation…" text="Taikyti XSL transformaciją…"/>
+    <Item english="Connections…" text="Ryšiai…"/>
+    <Item english="Connect…" text="Prisijungti…"/>
+    <Item english="Disconnect" text="Atsijungti"/>
+    <Item english="Show Remote Files" text="Rodyti nuotolinius failus"/>
+    <Item english="Upload Current File" text="Išsiųsti dabartinį failą"/>
+    <Item english="Execute NppExec Script…" text="Vykdyti NppExec scenarijų…"/>
+    <Item english="Execute Previous NppExec Script" text="Vykdyti ankstesnį NppExec scenarijų"/>
+    <Item english="Stop Running NppExec Script" text="Stabdyti vykdomą NppExec scenarijų"/>
+    <Item english="Show NppExec Console" text="Rodyti NppExec konsolę"/>
+    <Item english="Execute NppExec Script" text="Vykdyti NppExec scenarijų"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;laikinas scenarijus&gt;"/>
+    <Item english="Script name" text="Scenarijaus pavadinimas"/>
+    <Item english="Dock Left" text="Įstatyti kairėje"/>
+    <Item english="Dock Right" text="Įstatyti dešinėje"/>
+    <Item english="Dock Top" text="Įstatyti viršuje"/>
+    <Item english="Dock Bottom" text="Įstatyti apačioje"/>
+    <Item english="Float" text="Atskiras langas"/>
+    <Item english="Remember which panels were open" text="Įsiminti, kurie skydeliai buvo atidaryti"/>
+    <Item english="Show the toolbar" text="Rodyti įrankių juostą"/>
+    <Item english="Toolbar buttons" text="Įrankių juostos mygtukai"/>
+    <Item english="Icons only" text="Tik piktogramos"/>
+    <Item english="Icons and labels" text="Piktogramos ir užrašai"/>
+    <Item english="Labels only" text="Tik užrašai"/>
+    <Item english="Toolbar size" text="Įrankių juostos dydis"/>
+    <Item english="Regular" text="Įprastas"/>
+    <Item english="Small" text="Mažas"/>
+    <Item english="Icons" text="Piktogramos"/>
+    <Item english="Hidden" text="Paslėpta"/>
+    <Item english="1 pixel" text="1 pikselis"/>
+    <Item english="2 pixels" text="2 pikseliai"/>
+    <Item english="3 pixels" text="3 pikseliai"/>
+    <Item english="Selected text can be dragged" text="Pažymėtą tekstą galima vilkti"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Įjungti kelių vietų redagavimą (Cmd+spustelėjimas/žymėjimas)"/>
+    <Item english="Follow the system" text="Kaip sistemoje"/>
+    <Item english="Light theme" text="Šviesi tema"/>
+    <Item english="Dark theme" text="Tamsi tema"/>
+    <Item english="Show the fold margin" text="Rodyti suskleidimo paraštę"/>
+    <Item english="A line" text="Linija"/>
+    <Item english="Columns (space separated)" text="Stulpeliai (atskirti tarpais)"/>
+    <Item english="3 parts" text="3 dalys"/>
+    <Item english="4 parts" text="4 dalys"/>
+    <Item english="5 parts" text="5 dalys"/>
+    <Item english="6 parts" text="6 dalys"/>
+    <Item english="7 parts" text="7 dalys"/>
+    <Item english="8 parts" text="8 dalys"/>
+    <Item english="9 parts" text="9 dalys"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Nustatyti kalbą pagal turinį, kai jos neišduoda pavadinimas"/>
+    <Item english="Highlight matching braces" text="Paryškinti atitinkančius skliaustus"/>
+    <Item english="Header font (blank for the editor's)" text="Antraštės šriftas (tuščia – kaip redaktoriaus)"/>
+    <Item english="Header font size" text="Antraštės šrifto dydis"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Paraštės: kairė, viršus, dešinė, apačia (taškais)"/>
+    <Item english="Characters before it opens" text="Ženklų skaičius iki atsidarymo"/>
+    <Item english="Add characters to the word list" text="Pridėti ženklus prie žodžių ženklų sąrašo"/>
+    <Item english="A fixed folder" text="Nurodytas katalogas"/>
+    <Item english="Fixed folder" text="Nurodytas katalogas"/>
+    <Item english="Confirm Replace All" text="Patvirtinti „Keisti viską“"/>
+    <Item english="Compare: ignore case" text="Palyginimas: ignoruoti registrą"/>
+    <Item english="Compare: ignore spaces" text="Palyginimas: ignoruoti tarpus"/>
+    <Item english="Compare: ignore empty lines" text="Palyginimas: ignoruoti tuščias eilutes"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Didž. ženklų skaičius automatiniam paieškos lauko užpildymui"/>
+    <Item english="Releases repository" text="Laidų saugykla"/>
+    <Item english="Notepad++ update" text="Notepad++ atnaujinimas"/>
+    <Item english="No update is available." text="Atnaujinimų nėra."/>
+    <Item english="An update package is available, do you want to download it?" text="Yra atnaujinimo paketas. Ar norite jį atsisiųsti?"/>
+    <Item english="Open the Releases Page" text="Atidaryti laidų puslapį"/>
+    <Item english="Copy debug info to clipboard" text="Kopijuoti derinimo informaciją į mainų sritį"/>
+    <Item english="Fonts…" text="Šriftai…"/>
+    <Item english="This document is not valid JSON." text="Šis dokumentas nėra teisingas JSON."/>
+    <Item english="Valid JSON." text="Teisingas JSON."/>
+    <Item english="Invalid JSON." text="Neteisingas JSON."/>
+    <Item english="Set as the first file to compare." text="Nustatytas pirmuoju failu palyginimui."/>
+    <Item english="Nothing to compare with." text="Nėra su kuo palyginti."/>
+    <Item english="The document is valid XML." text="Dokumentas yra teisingas XML."/>
+    <Item english="FTP connections" text="FTP ryšiai"/>
+    <Item english="Cannot connect." text="Nepavyko prisijungti."/>
+    <Item english="That file is open in another tab." text="Šis failas atidarytas kitoje kortelėje."/>
+    <Item english="Close it first, or choose another name." text="Pirmiausia jį uždarykite arba pasirinkite kitą pavadinimą."/>
+    <Item english="Which language is this?" text="Kokia tai kalba?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Kai kurių ženklų negalima pavaizduoti šia koduote."/>
+    <Item english="Converting will replace them." text="Konvertuojant jie bus pakeisti."/>
+    <Item english="Press the keys." text="Paspauskite klavišus."/>
+    <Item english="Nothing is marked" text="Niekas nepažymėta"/>
+    <Item english="Marked text copied" text="Pažymėtas tekstas nukopijuotas"/>
+    <Item english="Choose a folder first" text="Pirmiausia pasirinkite katalogą"/>
+    <Item english="This document has no folder" text="Šis dokumentas neturi katalogo"/>
+    <Item english="The ticked project panels have no files" text="Pažymėtose projektų kortelėse nėra failų"/>
+    <Item english="Searching..." text="Ieškoma..."/>
+    <Item english="Stopping..." text="Stabdoma..."/>
+    <Item english="Marks cleared" text="Žymės išvalytos"/>
+    <Item english="Transparent" text="Permatomas"/>
+    <Item english="View 1" text="1 vaizdas"/>
+    <Item english="View 2" text="2 vaizdas"/>
+</NativeLangExtra>

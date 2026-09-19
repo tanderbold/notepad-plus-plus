@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/vietnamese.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Tiếng Việt">
+    <Item english="About NotepadMac" text="Giới thiệu về NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Ẩn NotepadMac"/>
+    <Item english="Hide Others" text="Ẩn các ứng dụng khác"/>
+    <Item english="Show All" text="Hiện tất cả"/>
+    <Item english="Quit NotepadMac" text="Thoát NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Mở thư mục chứa trong Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Mở thư mục chứa trong Terminal"/>
+    <Item english="Toggle Insert/Overtype" text="Bật/tắt chế độ chèn/ghi đè"/>
+    <Item english="Toggle Fold" text="Gập/mở khối"/>
+    <Item english="Show All Hidden Lines" text="Hiện tất cả các dòng bị ẩn"/>
+    <Item english="Recent Window" text="Cửa sổ gần đây"/>
+    <Item english="Move to Trash" text="Chuyển vào thùng rác"/>
+    <Item english="Save Current Command…" text="Lưu lệnh hiện tại…"/>
+    <Item english="Manage Saved Commands…" text="Quản lí các lệnh đã lưu…"/>
+    <Item english="Show Console" text="Hiện bảng điều khiển"/>
+    <Item english="Validate shortcuts" text="Kiểm tra phím tắt"/>
+    <Item english="Open Plugins Folder…" text="Mở thư mục trình cắm…"/>
+    <Item english="Format" text="Định dạng"/>
+    <Item english="Compact" text="Thu gọn"/>
+    <Item english="Sort Keys" text="Sắp xếp khoá"/>
+    <Item english="Validate" text="Kiểm tra hợp lệ"/>
+    <Item english="Show JSON Tree" text="Hiện cây JSON"/>
+    <Item english="Set as First to Compare" text="Đặt làm tệp thứ nhất để so sánh"/>
+    <Item english="Compare" text="So sánh"/>
+    <Item english="Compare with File…" text="So sánh với tệp…"/>
+    <Item english="Next Difference" text="Khác biệt kế tiếp"/>
+    <Item english="Previous Difference" text="Khác biệt trước đó"/>
+    <Item english="First Difference" text="Khác biệt đầu tiên"/>
+    <Item english="Last Difference" text="Khác biệt cuối cùng"/>
+    <Item english="Compare Summary" text="Tóm tắt so sánh"/>
+    <Item english="Ignore Case" text="Bỏ qua hoa thường"/>
+    <Item english="Ignore Spaces" text="Bỏ qua khoảng trắng"/>
+    <Item english="Ignore Empty Lines" text="Bỏ qua dòng trống"/>
+    <Item english="Clear Active Compare" text="Xoá phép so sánh hiện tại"/>
+    <Item english="Clear All Compares" text="Xoá tất cả phép so sánh"/>
+    <Item english="Pretty Print" text="Trình bày đẹp"/>
+    <Item english="Pretty Print — Indent Attributes" text="Trình bày đẹp — thụt lề thuộc tính"/>
+    <Item english="Linearize" text="Dồn thành một dòng"/>
+    <Item english="Check XML Syntax Now" text="Kiểm tra cú pháp XML ngay"/>
+    <Item english="Validate Against Schema…" text="Kiểm tra hợp lệ theo lược đồ…"/>
+    <Item english="Validate Against DTD" text="Kiểm tra hợp lệ theo DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Tính biểu thức XPath…"/>
+    <Item english="Current XML Path" text="Đường dẫn XML hiện tại"/>
+    <Item english="Current XML Path with Predicates" text="Đường dẫn XML hiện tại kèm vị từ"/>
+    <Item english="Apply XSL Transformation…" text="Áp dụng phép biến đổi XSL…"/>
+    <Item english="Escape Characters in Selection" text="Thoát kí tự trong phần được chọn"/>
+    <Item english="Unescape Characters in Selection" text="Bỏ thoát kí tự trong phần được chọn"/>
+    <Item english="Connections…" text="Các kết nối…"/>
+    <Item english="Connect…" text="Kết nối…"/>
+    <Item english="Disconnect" text="Ngắt kết nối"/>
+    <Item english="Show Remote Files" text="Hiện các tệp từ xa"/>
+    <Item english="Upload Current File" text="Tải tệp hiện tại lên"/>
+    <Item english="Execute NppExec Script…" text="Chạy tập lệnh NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Chạy tập lệnh NppExec trước đó"/>
+    <Item english="Stop Running NppExec Script" text="Dừng tập lệnh NppExec đang chạy"/>
+    <Item english="Show NppExec Console" text="Hiện bảng điều khiển NppExec"/>
+    <Item english="Execute NppExec Script" text="Chạy tập lệnh NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;tập lệnh tạm thời&gt;"/>
+    <Item english="Script name" text="Tên tập lệnh"/>
+    <Item english="Dock Left" text="Gắn bên trái"/>
+    <Item english="Dock Right" text="Gắn bên phải"/>
+    <Item english="Dock Top" text="Gắn phía trên"/>
+    <Item english="Dock Bottom" text="Gắn phía dưới"/>
+    <Item english="Float" text="Thả nổi"/>
+    <Item english="Remember which panels were open" text="Nhớ những bảng đã mở"/>
+    <Item english="Show the toolbar" text="Hiện thanh công cụ"/>
+    <Item english="Toolbar buttons" text="Nút trên thanh công cụ"/>
+    <Item english="Icons only" text="Chỉ biểu tượng"/>
+    <Item english="Icons and labels" text="Biểu tượng và nhãn"/>
+    <Item english="Labels only" text="Chỉ nhãn"/>
+    <Item english="Toolbar size" text="Cỡ thanh công cụ"/>
+    <Item english="Regular" text="Thường"/>
+    <Item english="Small" text="Nhỏ"/>
+    <Item english="Icons" text="Biểu tượng"/>
+    <Item english="Hidden" text="Ẩn"/>
+    <Item english="1 pixel" text="1 điểm ảnh"/>
+    <Item english="2 pixels" text="2 điểm ảnh"/>
+    <Item english="3 pixels" text="3 điểm ảnh"/>
+    <Item english="Selected text can be dragged" text="Có thể kéo văn bản được chọn"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Kích hoạt Chỉnh sửa nhiều chỗ (Cmd+Nháy chuột để chọn)"/>
+    <Item english="Follow the system" text="Theo hệ thống"/>
+    <Item english="Light theme" text="Chủ đề sáng"/>
+    <Item english="Dark theme" text="Chủ đề tối"/>
+    <Item english="Show the fold margin" text="Hiện lề gập"/>
+    <Item english="A line" text="Một đường kẻ"/>
+    <Item english="Columns (space separated)" text="Các cột (cách nhau bằng dấu cách)"/>
+    <Item english="3 parts" text="3 phần"/>
+    <Item english="4 parts" text="4 phần"/>
+    <Item english="5 parts" text="5 phần"/>
+    <Item english="6 parts" text="6 phần"/>
+    <Item english="7 parts" text="7 phần"/>
+    <Item english="8 parts" text="8 phần"/>
+    <Item english="9 parts" text="9 phần"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Đoán ngôn ngữ từ nội dung khi tên tệp không cho biết"/>
+    <Item english="Highlight matching braces" text="Tô sáng các dấu ngoặc tương ứng"/>
+    <Item english="Header font (blank for the editor's)" text="Phông đầu trang (để trống để dùng phông của trình soạn thảo)"/>
+    <Item english="Header font size" text="Cỡ phông đầu trang"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Lề: trái, trên, phải, dưới (điểm)"/>
+    <Item english="Characters before it opens" text="Số kí tự trước khi danh sách mở ra"/>
+    <Item english="Add characters to the word list" text="Thêm kí tự vào danh sách kí tự từ"/>
+    <Item english="A fixed folder" text="Một thư mục cố định"/>
+    <Item english="Fixed folder" text="Thư mục cố định"/>
+    <Item english="Confirm Replace All" text="Xác nhận khi Thay thế tất cả"/>
+    <Item english="Compare: ignore case" text="So sánh: bỏ qua hoa thường"/>
+    <Item english="Compare: ignore spaces" text="So sánh: bỏ qua khoảng trắng"/>
+    <Item english="Compare: ignore empty lines" text="So sánh: bỏ qua dòng trống"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Số kí tự tối đa để tự điền vào ô Tìm"/>
+    <Item english="Releases repository" text="Kho chứa các bản phát hành"/>
+    <Item english="Notepad++ update" text="Cập nhật Notepad++"/>
+    <Item english="No update is available." text="Không có bản cập nhật nào."/>
+    <Item english="An update package is available, do you want to download it?" text="Đã có gói cập nhật, bạn có muốn tải về không?"/>
+    <Item english="Open the Releases Page" text="Mở trang các bản phát hành"/>
+    <Item english="Copy debug info to clipboard" text="Chép thông tin gỡ lỗi vào bảng tạm"/>
+    <Item english="Fonts…" text="Phông chữ…"/>
+    <Item english="This document is not valid JSON." text="Tài liệu này không phải là JSON hợp lệ."/>
+    <Item english="Valid JSON." text="JSON hợp lệ."/>
+    <Item english="Invalid JSON." text="JSON không hợp lệ."/>
+    <Item english="Set as the first file to compare." text="Đã đặt làm tệp thứ nhất để so sánh."/>
+    <Item english="Nothing to compare with." text="Không có gì để so sánh."/>
+    <Item english="The document is valid XML." text="Tài liệu là XML hợp lệ."/>
+    <Item english="FTP connections" text="Các kết nối FTP"/>
+    <Item english="Cannot connect." text="Không thể kết nối."/>
+    <Item english="That file is open in another tab." text="Tệp đó đang mở trong một thẻ khác."/>
+    <Item english="Close it first, or choose another name." text="Hãy đóng nó trước, hoặc chọn tên khác."/>
+    <Item english="Which language is this?" text="Đây là ngôn ngữ nào?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Một số kí tự không thể biểu diễn được trong biên mã này."/>
+    <Item english="Converting will replace them." text="Việc chuyển đổi sẽ thay thế chúng."/>
+    <Item english="Press the keys." text="Hãy nhấn các phím."/>
+    <Item english="Nothing is marked" text="Không có gì được đánh dấu"/>
+    <Item english="Marked text copied" text="Đã sao chép văn bản được đánh dấu"/>
+    <Item english="Choose a folder first" text="Hãy chọn một thư mục trước"/>
+    <Item english="This document has no folder" text="Tài liệu này không có thư mục"/>
+    <Item english="The ticked project panels have no files" text="Các bảng dự án được chọn không có tệp nào"/>
+    <Item english="Searching..." text="Đang tìm..."/>
+    <Item english="Stopping..." text="Đang dừng..."/>
+    <Item english="Marks cleared" text="Đã xoá các đánh dấu"/>
+    <Item english="Transparent" text="Trong suốt"/>
+    <Item english="View 1" text="Khung nhìn 1"/>
+    <Item english="View 2" text="Khung nhìn 2"/>
+</NativeLangExtra>

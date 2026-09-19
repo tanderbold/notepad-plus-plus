@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/luxembourgish.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Lëtzebuergesch">
+    <Item english="About NotepadMac" text="Iwwer NotepadMac"/>
+    <Item english="Hide NotepadMac" text="NotepadMac ausblenden"/>
+    <Item english="Hide Others" text="Anerer ausblenden"/>
+    <Item english="Show All" text="Alles uweisen"/>
+    <Item english="Quit NotepadMac" text="NotepadMac zoumaachen"/>
+    <Item english="Open Containing Folder in Finder" text="Repertoire am Finder opmaachen"/>
+    <Item english="Open Containing Folder in Terminal" text="Repertoire am Terminal opmaachen"/>
+    <Item english="Toggle Insert/Overtype" text="Afügen/Iwwerschreiwen ëmschalten"/>
+    <Item english="Toggle Fold" text="Textblock op-/zoumaachen"/>
+    <Item english="Show All Hidden Lines" text="Déi ausgeblent Zeilen alleguer uweisen"/>
+    <Item english="Recent Window" text="Lescht Fënster"/>
+    <Item english="Move to Trash" text="An de Pabeierkuerf réckelen"/>
+    <Item english="Save Current Command…" text="Aktuelle Befeel späicheren …"/>
+    <Item english="Manage Saved Commands…" text="Gespäichert Befeeler verwalten …"/>
+    <Item english="Show Console" text="Konsol uweisen"/>
+    <Item english="Validate shortcuts" text="Tastekombinatiounen iwwerpréiwen"/>
+    <Item english="Open Plugins Folder…" text="Repertoire vun den Erweiderungen opmaachen …"/>
+    <Item english="Format" text="Formatéieren"/>
+    <Item english="Compact" text="Kompriméieren"/>
+    <Item english="Sort Keys" text="Schlëssele sortéieren"/>
+    <Item english="Validate" text="Validéieren"/>
+    <Item english="Show JSON Tree" text="JSON-Bam uweisen"/>
+    <Item english="Set as First to Compare" text="Als éischt Datei fir de Verglach festleeën"/>
+    <Item english="Compare" text="Vergläichen"/>
+    <Item english="Compare with File…" text="Mat Datei vergläichen …"/>
+    <Item english="Next Difference" text="Nächsten Ënnerscheed"/>
+    <Item english="Previous Difference" text="Viregten Ënnerscheed"/>
+    <Item english="First Difference" text="Éischten Ënnerscheed"/>
+    <Item english="Last Difference" text="Leschten Ënnerscheed"/>
+    <Item english="Compare Summary" text="Iwwersiicht vum Verglach"/>
+    <Item english="Ignore Case" text="Grouss/kleng ignoréieren"/>
+    <Item english="Ignore Spaces" text="Ofstänn ignoréieren"/>
+    <Item english="Ignore Empty Lines" text="Eidel Zeilen ignoréieren"/>
+    <Item english="Clear Active Compare" text="Aktive Verglach ophiewen"/>
+    <Item english="Clear All Compares" text="All Vergläicher ophiewen"/>
+    <Item english="Check XML Syntax Now" text="XML-Syntax elo iwwerpréiwen"/>
+    <Item english="Validate Against Schema…" text="Géint Schema validéieren …"/>
+    <Item english="Validate Against DTD" text="Géint DTD validéieren"/>
+    <Item english="Evaluate XPath Expression…" text="XPath-Ausdrock auswäerten …"/>
+    <Item english="Current XML Path" text="Aktuellen XML-Pad"/>
+    <Item english="Current XML Path with Predicates" text="Aktuellen XML-Pad mat Prädikater"/>
+    <Item english="Apply XSL Transformation…" text="XSL-Transformatioun uwenden …"/>
+    <Item english="Connections…" text="Verbindungen …"/>
+    <Item english="Connect…" text="Verbannen …"/>
+    <Item english="Disconnect" text="Trennen"/>
+    <Item english="Show Remote Files" text="Dateien um Server uweisen"/>
+    <Item english="Upload Current File" text="Aktuell Datei eroplueden"/>
+    <Item english="Execute NppExec Script…" text="NppExec-Skript ausféieren …"/>
+    <Item english="Execute Previous NppExec Script" text="Viregt NppExec-Skript ausféieren"/>
+    <Item english="Stop Running NppExec Script" text="Lafend NppExec-Skript stoppen"/>
+    <Item english="Show NppExec Console" text="NppExec-Konsol uweisen"/>
+    <Item english="Execute NppExec Script" text="NppExec-Skript ausféieren"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;temporäert Skript&gt;"/>
+    <Item english="Script name" text="Skriptnumm"/>
+    <Item english="Show the toolbar" text="Symbolleescht uweisen"/>
+    <Item english="Toolbar buttons" text="Knäppercher vun der Symbolleescht"/>
+    <Item english="Icons only" text="Nëmme Symboler"/>
+    <Item english="Icons and labels" text="Symboler a Beschrëftungen"/>
+    <Item english="Labels only" text="Nëmme Beschrëftungen"/>
+    <Item english="Toolbar size" text="Gréisst vun der Symbolleescht"/>
+    <Item english="Regular" text="Normal"/>
+    <Item english="Small" text="Kleng"/>
+    <Item english="Icons" text="Symboler"/>
+    <Item english="Hidden" text="Ausgeblent"/>
+    <Item english="1 pixel" text="1 Pixel"/>
+    <Item english="2 pixels" text="2 Pixel"/>
+    <Item english="3 pixels" text="3 Pixel"/>
+    <Item english="Selected text can be dragged" text="Markéierten Text kann gezu ginn"/>
+    <Item english="Follow the system" text="Wéi de System"/>
+    <Item english="A line" text="Eng Linn"/>
+    <Item english="Columns (space separated)" text="Spalten (mat Ofstänn getrennt)"/>
+    <Item english="3 parts" text="3 Deeler"/>
+    <Item english="4 parts" text="4 Deeler"/>
+    <Item english="5 parts" text="5 Deeler"/>
+    <Item english="6 parts" text="6 Deeler"/>
+    <Item english="7 parts" text="7 Deeler"/>
+    <Item english="8 parts" text="8 Deeler"/>
+    <Item english="9 parts" text="9 Deeler"/>
+    <Item english="Work the language out from the contents when the name does not say" text="D'Sprooch aus dem Inhalt erkennen, wann den Numm se net verréit"/>
+    <Item english="Highlight matching braces" text="Zesummegehéiereg Klammeren hervirhiewen"/>
+    <Item english="Header font (blank for the editor's)" text="Schrëftart vum Kappdeel (eidel: wéi am Editor)"/>
+    <Item english="Header font size" text="Schrëftgréisst vum Kappdeel"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Säitenränner: lénks, uewen, riets, ënnen (Punkten)"/>
+    <Item english="Characters before it opens" text="Zeechen, ier d'Lëscht opgeet"/>
+    <Item english="A fixed folder" text="E fixe Repertoire"/>
+    <Item english="Fixed folder" text="Fixe Repertoire"/>
+    <Item english="Confirm Replace All" text="&quot;Alles remplacéieren&quot; bestätegen"/>
+    <Item english="Compare: ignore case" text="Verglach: Grouss/kleng ignoréieren"/>
+    <Item english="Compare: ignore spaces" text="Verglach: Ofstänn ignoréieren"/>
+    <Item english="Compare: ignore empty lines" text="Verglach: eidel Zeilen ignoréieren"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Max. Zeechen fir d'automatescht Ausfëllen vum Sichfeld"/>
+    <Item english="Notepad++ update" text="Aktualiséierung vun Notepad++"/>
+    <Item english="No update is available." text="Et ass keng Aktualiséierung disponibel."/>
+    <Item english="An update package is available, do you want to download it?" text="Eng Aktualiséierung ass disponibel. Wëllt Dir se eroflueden?"/>
+    <Item english="Copy debug info to clipboard" text="Debug-Info an d'Tëschentablag kopéieren"/>
+    <Item english="Fonts…" text="Schrëften …"/>
+    <Item english="This document is not valid JSON." text="Dëst Dokument ass kee gültegen JSON."/>
+    <Item english="Valid JSON." text="Gültegen JSON."/>
+    <Item english="Invalid JSON." text="Ongültegen JSON."/>
+    <Item english="Set as the first file to compare." text="Als éischt Datei fir de Verglach festgeluecht."/>
+    <Item english="Nothing to compare with." text="Näischt fir ze vergläichen."/>
+    <Item english="The document is valid XML." text="D'Dokument ass gültegen XML."/>
+    <Item english="FTP connections" text="FTP-Verbindungen"/>
+    <Item english="Cannot connect." text="Verbindung net méiglech."/>
+    <Item english="That file is open in another tab." text="Dës Datei ass an engem aneren Tab op."/>
+    <Item english="Close it first, or choose another name." text="Maacht se fir d'éischt zou oder wielt en aneren Numm."/>
+    <Item english="Which language is this?" text="Wéi eng Sprooch ass dat?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Verschidden Zeechen kënnen an dëser Kodierung net duergestallt ginn."/>
+    <Item english="Converting will replace them." text="Beim Konvertéiere gi se ersat."/>
+    <Item english="Press the keys." text="Dréckt d'Tasten."/>
+    <Item english="Nothing is marked" text="Näischt ass markéiert"/>
+    <Item english="Marked text copied" text="Markéierten Text kopéiert"/>
+    <Item english="Choose a folder first" text="Fir d'éischt e Repertoire wielen"/>
+    <Item english="This document has no folder" text="Dëst Dokument huet kee Repertoire"/>
+    <Item english="Searching..." text="Sichen ..."/>
+    <Item english="Stopping..." text="Stoppen ..."/>
+    <Item english="Marks cleared" text="Markéierunge geläscht"/>
+    <Item english="Transparent" text="Transparent"/>
+    <Item english="View 1" text="Usiicht 1"/>
+    <Item english="View 2" text="Usiicht 2"/>
+</NativeLangExtra>

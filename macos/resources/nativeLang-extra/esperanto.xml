@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/esperanto.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Esperanto">
+    <Item english="About NotepadMac" text="Pri NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Kaŝu NotepadMac"/>
+    <Item english="Hide Others" text="Kaŝu la aliajn"/>
+    <Item english="Show All" text="Montru ĉiujn"/>
+    <Item english="Quit NotepadMac" text="Eliro el NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Malfermu la dosierujon de la dosiero en Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Malfermu la dosierujon de la dosiero en Terminalo"/>
+    <Item english="Toggle Insert/Overtype" text="Baskuligu enmeton/superskribon"/>
+    <Item english="Toggle Fold" text="Faldu/malfaldu la blokon"/>
+    <Item english="Show All Hidden Lines" text="Montru ĉiujn kaŝitajn liniojn"/>
+    <Item english="Recent Window" text="Ĵus uzita fenestro"/>
+    <Item english="Move to Trash" text="Deloku en la rubujon"/>
+    <Item english="Save Current Command…" text="Konservu la aktualan komandon…"/>
+    <Item english="Manage Saved Commands…" text="Administru la konservitajn komandojn…"/>
+    <Item english="Show Console" text="Montru la konzolon"/>
+    <Item english="Validate shortcuts" text="Kontrolu la klavkombinojn"/>
+    <Item english="Open Plugins Folder…" text="Malfermu la dosierujon de kromaĵoj…"/>
+    <Item english="Format" text="Formatu"/>
+    <Item english="Compact" text="Kompaktigu"/>
+    <Item english="Sort Keys" text="Ordigu la ŝlosilojn"/>
+    <Item english="Validate" text="Kontrolu validecon"/>
+    <Item english="Show JSON Tree" text="Montru la JSON-arbon"/>
+    <Item english="Set as First to Compare" text="Difinu kiel unuan por komparo"/>
+    <Item english="Compare" text="Komparu"/>
+    <Item english="Compare with File…" text="Komparu kun dosiero…"/>
+    <Item english="Next Difference" text="Al la sekvanta diferenco"/>
+    <Item english="Previous Difference" text="Al la antaŭa diferenco"/>
+    <Item english="First Difference" text="Al la unua diferenco"/>
+    <Item english="Last Difference" text="Al la lasta diferenco"/>
+    <Item english="Compare Summary" text="Resumo de la komparo"/>
+    <Item english="Ignore Case" text="Ne zorgu usklecon"/>
+    <Item english="Ignore Spaces" text="Ne zorgu spacetojn"/>
+    <Item english="Ignore Empty Lines" text="Ne zorgu malplenajn liniojn"/>
+    <Item english="Clear Active Compare" text="Forigu la aktivan komparon"/>
+    <Item english="Clear All Compares" text="Forigu ĉiujn komparojn"/>
+    <Item english="Pretty Print" text="Bele formatu"/>
+    <Item english="Pretty Print — Indent Attributes" text="Bele formatu — kun krommarĝeno de atributoj"/>
+    <Item english="Linearize" text="Unuliniigu"/>
+    <Item english="Check XML Syntax Now" text="Kontrolu la XML-sintakson nun"/>
+    <Item english="Validate Against Schema…" text="Kontrolu validecon laŭ skemo…"/>
+    <Item english="Validate Against DTD" text="Kontrolu validecon laŭ DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Kalkulu XPath-esprimon…"/>
+    <Item english="Current XML Path" text="Aktuala XML-vojo"/>
+    <Item english="Current XML Path with Predicates" text="Aktuala XML-vojo kun predikatoj"/>
+    <Item english="Apply XSL Transformation…" text="Apliku XSL-transformon…"/>
+    <Item english="Connections…" text="Konektoj…"/>
+    <Item english="Connect…" text="Konektu…"/>
+    <Item english="Disconnect" text="Malkonektu"/>
+    <Item english="Show Remote Files" text="Montru la forajn dosierojn"/>
+    <Item english="Upload Current File" text="Alŝutu la aktualan dosieron"/>
+    <Item english="Execute NppExec Script…" text="Lanĉu NppExec-skripton…"/>
+    <Item english="Execute Previous NppExec Script" text="Lanĉu la antaŭan NppExec-skripton"/>
+    <Item english="Stop Running NppExec Script" text="Haltigu la rulatan NppExec-skripton"/>
+    <Item english="Show NppExec Console" text="Montru la NppExec-konzolon"/>
+    <Item english="Execute NppExec Script" text="Lanĉu NppExec-skripton"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;provizora skripto&gt;"/>
+    <Item english="Script name" text="Nomo de la skripto"/>
+    <Item english="Dock Left" text="Alfiksu maldekstre"/>
+    <Item english="Dock Right" text="Alfiksu dekstre"/>
+    <Item english="Dock Top" text="Alfiksu supre"/>
+    <Item english="Dock Bottom" text="Alfiksu malsupre"/>
+    <Item english="Float" text="Ŝvebigu"/>
+    <Item english="Remember which panels were open" text="Memoru, kiuj paneloj estis malfermitaj"/>
+    <Item english="Show the toolbar" text="Montru la ilobreton"/>
+    <Item english="Toolbar buttons" text="Butonoj de la ilobreto"/>
+    <Item english="Icons only" text="Nur bildsimboloj"/>
+    <Item english="Icons and labels" text="Bildsimboloj kaj etikedoj"/>
+    <Item english="Labels only" text="Nur etikedoj"/>
+    <Item english="Toolbar size" text="Grando de la ilobreto"/>
+    <Item english="Regular" text="Normala"/>
+    <Item english="Small" text="Malgranda"/>
+    <Item english="Icons" text="Bildsimboloj"/>
+    <Item english="Hidden" text="Kaŝita"/>
+    <Item english="1 pixel" text="1 bildero"/>
+    <Item english="2 pixels" text="2 bilderoj"/>
+    <Item english="3 pixels" text="3 bilderoj"/>
+    <Item english="Selected text can be dragged" text="Elektita teksto estas trenebla"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Ŝaltu plurredaktadon (Cmd+klako/elektado)"/>
+    <Item english="Follow the system" text="Sekvu la sistemon"/>
+    <Item english="Light theme" text="Hela etoso"/>
+    <Item english="Dark theme" text="Malhela etoso"/>
+    <Item english="Show the fold margin" text="Montru la faldomarĝenon"/>
+    <Item english="A line" text="Linio"/>
+    <Item english="Columns (space separated)" text="Kolumnoj (disigitaj per spacetoj)"/>
+    <Item english="3 parts" text="3 partoj"/>
+    <Item english="4 parts" text="4 partoj"/>
+    <Item english="5 parts" text="5 partoj"/>
+    <Item english="6 parts" text="6 partoj"/>
+    <Item english="7 parts" text="7 partoj"/>
+    <Item english="8 parts" text="8 partoj"/>
+    <Item english="9 parts" text="9 partoj"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Divenu la lingvaĵon laŭ la enhavo, kiam la nomo ne indikas ĝin"/>
+    <Item english="Highlight matching braces" text="Evidentigu kongruajn krampojn"/>
+    <Item english="Header font (blank for the editor's)" text="Tiparo de la paĝokapo (malplena: tiu de la redaktilo)"/>
+    <Item english="Header font size" text="Tipargrando de la paĝokapo"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Marĝenoj: maldekstra, supra, dekstra, malsupra (punktoj)"/>
+    <Item english="Characters before it opens" text="Signoj antaŭ ol ĝi malfermiĝas"/>
+    <Item english="Add characters to the word list" text="Aldonu signojn al la vortlisto"/>
+    <Item english="A fixed folder" text="Fiksa dosierujo"/>
+    <Item english="Fixed folder" text="Fiksa dosierujo"/>
+    <Item english="Confirm Replace All" text="Konfirmu anstataŭigon de ĉiuj"/>
+    <Item english="Compare: ignore case" text="Komparo: ne zorgu usklecon"/>
+    <Item english="Compare: ignore spaces" text="Komparo: ne zorgu spacetojn"/>
+    <Item english="Compare: ignore empty lines" text="Komparo: ne zorgu malplenajn liniojn"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Maksimuma nombro de signoj por aŭtomate plenigi la serĉkampon"/>
+    <Item english="Releases repository" text="Deponejo de eldonoj"/>
+    <Item english="Notepad++ update" text="Ĝisdatigo de Notepad++"/>
+    <Item english="No update is available." text="Neniu ĝisdatigo disponeblas."/>
+    <Item english="An update package is available, do you want to download it?" text="Ĝisdatiga pakaĵo disponeblas, ĉu vi volas elŝuti ĝin?"/>
+    <Item english="Open the Releases Page" text="Malfermu la paĝon de eldonoj"/>
+    <Item english="Copy debug info to clipboard" text="Kopiu sencimigajn informojn en la tondejon"/>
+    <Item english="Fonts…" text="Tiparoj…"/>
+    <Item english="This document is not valid JSON." text="Tiu ĉi dokumento ne estas valida JSON."/>
+    <Item english="Valid JSON." text="Valida JSON."/>
+    <Item english="Invalid JSON." text="Nevalida JSON."/>
+    <Item english="Set as the first file to compare." text="Difinita kiel la unua dosiero por komparo."/>
+    <Item english="Nothing to compare with." text="Estas nenio por kompari."/>
+    <Item english="The document is valid XML." text="La dokumento estas valida XML."/>
+    <Item english="FTP connections" text="FTP-konektoj"/>
+    <Item english="Cannot connect." text="Ne eblas konekti."/>
+    <Item english="That file is open in another tab." text="Tiu dosiero estas malfermita en alia langeto."/>
+    <Item english="Close it first, or choose another name." text="Unue fermu ĝin, aŭ elektu alian nomon."/>
+    <Item english="Which language is this?" text="Kiu lingvaĵo estas tio ĉi?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Kelkaj signoj ne estas prezenteblaj en tiu ĉi signarkodo."/>
+    <Item english="Converting will replace them." text="La konverto anstataŭigos ilin."/>
+    <Item english="Press the keys." text="Premu la klavojn."/>
+    <Item english="Nothing is marked" text="Nenio estas markita"/>
+    <Item english="Marked text copied" text="Markita teksto kopiita"/>
+    <Item english="Choose a folder first" text="Unue elektu dosierujon"/>
+    <Item english="This document has no folder" text="Tiu ĉi dokumento ne havas dosierujon"/>
+    <Item english="The ticked project panels have no files" text="La elektitaj projektpaneloj ne enhavas dosierojn"/>
+    <Item english="Searching..." text="Serĉado..."/>
+    <Item english="Stopping..." text="Haltigado..."/>
+    <Item english="Marks cleared" text="Markoj forigitaj"/>
+    <Item english="Transparent" text="Travidebla"/>
+    <Item english="View 1" text="Vido 1"/>
+    <Item english="View 2" text="Vido 2"/>
+</NativeLangExtra>

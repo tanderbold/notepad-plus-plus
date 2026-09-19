@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/catalan.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Català">
+    <Item english="About NotepadMac" text="Quant a NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Amaga NotepadMac"/>
+    <Item english="Hide Others" text="Amaga els altres"/>
+    <Item english="Show All" text="Mostra-ho tot"/>
+    <Item english="Quit NotepadMac" text="Surt de NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Obre la carpeta del fitxer al Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Obre la carpeta del fitxer al Terminal"/>
+    <Item english="Toggle Insert/Overtype" text="Commuta Inserció/Sobreescriptura"/>
+    <Item english="Toggle Fold" text="Plega/desplega el bloc"/>
+    <Item english="Show All Hidden Lines" text="Mostra totes les línies amagades"/>
+    <Item english="Recent Window" text="Finestra recent"/>
+    <Item english="Move to Trash" text="Mou a la paperera"/>
+    <Item english="Save Current Command…" text="Desa l'ordre actual…"/>
+    <Item english="Manage Saved Commands…" text="Gestiona les ordres desades…"/>
+    <Item english="Show Console" text="Mostra la consola"/>
+    <Item english="Validate shortcuts" text="Valida les dreceres"/>
+    <Item english="Open Plugins Folder…" text="Obre la carpeta dels complements…"/>
+    <Item english="Format" text="Formata"/>
+    <Item english="Compact" text="Compacta"/>
+    <Item english="Sort Keys" text="Ordena les claus"/>
+    <Item english="Validate" text="Valida"/>
+    <Item english="Show JSON Tree" text="Mostra l'arbre JSON"/>
+    <Item english="Set as First to Compare" text="Estableix com a primer per comparar"/>
+    <Item english="Compare" text="Compara"/>
+    <Item english="Compare with File…" text="Compara amb un fitxer…"/>
+    <Item english="Next Difference" text="Diferència següent"/>
+    <Item english="Previous Difference" text="Diferència anterior"/>
+    <Item english="First Difference" text="Primera diferència"/>
+    <Item english="Last Difference" text="Última diferència"/>
+    <Item english="Compare Summary" text="Resum de la comparació"/>
+    <Item english="Ignore Case" text="Ignora majúscules"/>
+    <Item english="Ignore Spaces" text="Ignora els espais"/>
+    <Item english="Ignore Empty Lines" text="Ignora les línies buides"/>
+    <Item english="Clear Active Compare" text="Neteja la comparació activa"/>
+    <Item english="Clear All Compares" text="Neteja totes les comparacions"/>
+    <Item english="Pretty Print" text="Formata amb sagnat"/>
+    <Item english="Pretty Print — Indent Attributes" text="Formata amb sagnat — sagna els atributs"/>
+    <Item english="Linearize" text="Linealitza"/>
+    <Item english="Check XML Syntax Now" text="Comprova la sintaxi XML ara"/>
+    <Item english="Validate Against Schema…" text="Valida amb un esquema…"/>
+    <Item english="Validate Against DTD" text="Valida amb la DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Avalua una expressió XPath…"/>
+    <Item english="Current XML Path" text="Camí XML actual"/>
+    <Item english="Current XML Path with Predicates" text="Camí XML actual amb predicats"/>
+    <Item english="Apply XSL Transformation…" text="Aplica una transformació XSL…"/>
+    <Item english="Escape Characters in Selection" text="Escapa els caràcters de la selecció"/>
+    <Item english="Unescape Characters in Selection" text="Treu l'escapament dels caràcters de la selecció"/>
+    <Item english="Connections…" text="Connexions…"/>
+    <Item english="Connect…" text="Connecta…"/>
+    <Item english="Disconnect" text="Desconnecta"/>
+    <Item english="Show Remote Files" text="Mostra els fitxers remots"/>
+    <Item english="Upload Current File" text="Puja el fitxer actual"/>
+    <Item english="Execute NppExec Script…" text="Executa un script NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Executa el script NppExec anterior"/>
+    <Item english="Stop Running NppExec Script" text="Atura el script NppExec en execució"/>
+    <Item english="Show NppExec Console" text="Mostra la consola NppExec"/>
+    <Item english="Execute NppExec Script" text="Executa un script NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;script temporal&gt;"/>
+    <Item english="Script name" text="Nom del script"/>
+    <Item english="Dock Left" text="Acobla a l'esquerra"/>
+    <Item english="Dock Right" text="Acobla a la dreta"/>
+    <Item english="Dock Top" text="Acobla a dalt"/>
+    <Item english="Dock Bottom" text="Acobla a baix"/>
+    <Item english="Float" text="Desacobla"/>
+    <Item english="Remember which panels were open" text="Recorda quins panells eren oberts"/>
+    <Item english="Show the toolbar" text="Mostra la barra d'eines"/>
+    <Item english="Toolbar buttons" text="Botons de la barra d'eines"/>
+    <Item english="Icons only" text="Només icones"/>
+    <Item english="Icons and labels" text="Icones i text"/>
+    <Item english="Labels only" text="Només text"/>
+    <Item english="Toolbar size" text="Mida de la barra d'eines"/>
+    <Item english="Regular" text="Normal"/>
+    <Item english="Small" text="Petita"/>
+    <Item english="Icons" text="Icones"/>
+    <Item english="Hidden" text="Amagat"/>
+    <Item english="1 pixel" text="1 píxel"/>
+    <Item english="2 pixels" text="2 píxels"/>
+    <Item english="3 pixels" text="3 píxels"/>
+    <Item english="Selected text can be dragged" text="El text seleccionat es pot arrossegar"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Activa l'edició múltiple (Cmd+clic/selecció)"/>
+    <Item english="Follow the system" text="Segueix el sistema"/>
+    <Item english="Light theme" text="Tema clar"/>
+    <Item english="Dark theme" text="Tema fosc"/>
+    <Item english="Show the fold margin" text="Mostra el marge de plegat"/>
+    <Item english="A line" text="Una línia"/>
+    <Item english="Columns (space separated)" text="Columnes (separades per espais)"/>
+    <Item english="3 parts" text="3 parts"/>
+    <Item english="4 parts" text="4 parts"/>
+    <Item english="5 parts" text="5 parts"/>
+    <Item english="6 parts" text="6 parts"/>
+    <Item english="7 parts" text="7 parts"/>
+    <Item english="8 parts" text="8 parts"/>
+    <Item english="9 parts" text="9 parts"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Dedueix el llenguatge a partir del contingut quan el nom no l'indica"/>
+    <Item english="Highlight matching braces" text="Ressalta les claus aparellades"/>
+    <Item english="Header font (blank for the editor's)" text="Tipus de lletra de la capçalera (en blanc: el de l'editor)"/>
+    <Item english="Header font size" text="Mida del tipus de lletra de la capçalera"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Marges: esquerre, superior, dret, inferior (punts)"/>
+    <Item english="Characters before it opens" text="Caràcters abans que s'obri"/>
+    <Item english="Add characters to the word list" text="Afegeix caràcters a la llista de caràcters de paraula"/>
+    <Item english="A fixed folder" text="Una carpeta fixa"/>
+    <Item english="Fixed folder" text="Carpeta fixa"/>
+    <Item english="Confirm Replace All" text="Confirma «Reemplaça-ho tot»"/>
+    <Item english="Compare: ignore case" text="Comparació: ignora majúscules"/>
+    <Item english="Compare: ignore spaces" text="Comparació: ignora els espais"/>
+    <Item english="Compare: ignore empty lines" text="Comparació: ignora les línies buides"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Nombre màxim de caràcters per omplir automàticament el camp de cerca"/>
+    <Item english="Releases repository" text="Repositori de versions"/>
+    <Item english="Notepad++ update" text="Actualització de Notepad++"/>
+    <Item english="No update is available." text="No hi ha cap actualització disponible."/>
+    <Item english="An update package is available, do you want to download it?" text="Hi ha un paquet d'actualització disponible, voleu baixar-lo?"/>
+    <Item english="Open the Releases Page" text="Obre la pàgina de versions"/>
+    <Item english="Copy debug info to clipboard" text="Copia la informació de depuració al porta-retalls"/>
+    <Item english="Fonts…" text="Tipus de lletra…"/>
+    <Item english="This document is not valid JSON." text="Aquest document no és JSON vàlid."/>
+    <Item english="Valid JSON." text="JSON vàlid."/>
+    <Item english="Invalid JSON." text="JSON no vàlid."/>
+    <Item english="Set as the first file to compare." text="Establert com a primer fitxer per comparar."/>
+    <Item english="Nothing to compare with." text="No hi ha res amb què comparar."/>
+    <Item english="The document is valid XML." text="El document és XML vàlid."/>
+    <Item english="FTP connections" text="Connexions FTP"/>
+    <Item english="Cannot connect." text="No es pot connectar."/>
+    <Item english="That file is open in another tab." text="Aquest fitxer és obert en una altra pestanya."/>
+    <Item english="Close it first, or choose another name." text="Tanqueu-lo primer o trieu un altre nom."/>
+    <Item english="Which language is this?" text="Quin llenguatge és aquest?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Alguns caràcters no es poden representar en aquesta codificació."/>
+    <Item english="Converting will replace them." text="La conversió els reemplaçarà."/>
+    <Item english="Press the keys." text="Premeu les tecles."/>
+    <Item english="Nothing is marked" text="No hi ha res marcat"/>
+    <Item english="Marked text copied" text="Text marcat copiat"/>
+    <Item english="Choose a folder first" text="Trieu primer una carpeta"/>
+    <Item english="This document has no folder" text="Aquest document no té carpeta"/>
+    <Item english="The ticked project panels have no files" text="Els panells de projecte marcats no tenen fitxers"/>
+    <Item english="Searching..." text="S'està cercant..."/>
+    <Item english="Stopping..." text="S'està aturant..."/>
+    <Item english="Marks cleared" text="Marques netejades"/>
+    <Item english="Transparent" text="Transparent"/>
+    <Item english="View 1" text="Vista 1"/>
+    <Item english="View 2" text="Vista 2"/>
+</NativeLangExtra>

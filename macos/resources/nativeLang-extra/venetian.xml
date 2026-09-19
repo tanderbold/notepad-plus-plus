@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/venetian.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Vèneto">
+    <Item english="About NotepadMac" text="Informasion so NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Scondi NotepadMac"/>
+    <Item english="Hide Others" text="Scondi i altri"/>
+    <Item english="Show All" text="Mostra tuti cuanti"/>
+    <Item english="Quit NotepadMac" text="Va fora da NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Vèrxi carteƚa en Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Vèrxi carteƚa en Terminal"/>
+    <Item english="Toggle Fold" text="Contrai/Espandi el ƚiveƚo corente"/>
+    <Item english="Show All Hidden Lines" text="Mostra tute cuante ƚe righe sconte"/>
+    <Item english="Move to Trash" text="Spòsta inte ƚe scoase"/>
+    <Item english="Save Current Command…" text="Salva el comando corente…"/>
+    <Item english="Show Console" text="Mostra ƚa console"/>
+    <Item english="Open Plugins Folder…" text="Vèrxi ƚa carteƚa dei plugin…"/>
+    <Item english="Compact" text="Conpata"/>
+    <Item english="Sort Keys" text="Ordena ƚe ciave"/>
+    <Item english="Validate" text="Vaƚida"/>
+    <Item english="Set as First to Compare" text="Inposta cofà primo da confrontare"/>
+    <Item english="Compare" text="Confronta"/>
+    <Item english="Compare with File…" text="Confronta co on file…"/>
+    <Item english="Ignore Case" text="Ignora Maiùs./minùs."/>
+    <Item english="Ignore Spaces" text="Ignora i spasi"/>
+    <Item english="Ignore Empty Lines" text="Ignora ƚe righe vode"/>
+    <Item english="Clear Active Compare" text="Rimovi el confronto ativo"/>
+    <Item english="Clear All Compares" text="Rimovi tuti i confronti"/>
+    <Item english="Validate Against DTD" text="Vaƚida co DTD"/>
+    <Item english="Current XML Path" text="Percorso XML corente"/>
+    <Item english="Apply XSL Transformation…" text="Aplica trasformasion XSL…"/>
+    <Item english="Connections…" text="Conesion…"/>
+    <Item english="Show Remote Files" text="Mostra i file remoti"/>
+    <Item english="Execute NppExec Script…" text="Exegui script NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Exegui el script NppExec presedente"/>
+    <Item english="Show NppExec Console" text="Mostra ƚa console NppExec"/>
+    <Item english="Execute NppExec Script" text="Exegui script NppExec"/>
+    <Item english="Script name" text="Nòme de'l script"/>
+    <Item english="Icons only" text="Soƚo icone"/>
+    <Item english="Icons" text="Icone"/>
+    <Item english="1 pixel" text="1 pixel"/>
+    <Item english="2 pixels" text="2 pixel"/>
+    <Item english="3 pixels" text="3 pixel"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Abìƚita Multi-Modifega (Cmd+clic/seƚesion)"/>
+    <Item english="Follow the system" text="Segui el sistema"/>
+    <Item english="Light theme" text="Modaƚità ciara"/>
+    <Item english="Dark theme" text="Modaƚità scura"/>
+    <Item english="A line" text="Na riga"/>
+    <Item english="Columns (space separated)" text="Coƚone (separà da spasi)"/>
+    <Item english="3 parts" text="3 parti"/>
+    <Item english="4 parts" text="4 parti"/>
+    <Item english="5 parts" text="5 parti"/>
+    <Item english="6 parts" text="6 parti"/>
+    <Item english="7 parts" text="7 parti"/>
+    <Item english="8 parts" text="8 parti"/>
+    <Item english="9 parts" text="9 parti"/>
+    <Item english="Highlight matching braces" text="Evidensia ƚe parentesi corispondenti"/>
+    <Item english="Header font size" text="Dimension caràtare intestasion"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Marxini: sanca, sora, drita, soto (punti)"/>
+    <Item english="A fixed folder" text="Na carteƚa fisa"/>
+    <Item english="Fixed folder" text="Carteƚa fisa"/>
+    <Item english="Confirm Replace All" text="Conferma Sostituisi tuto cuanto"/>
+    <Item english="Compare: ignore case" text="Confronto: ignora maiùs./minùs."/>
+    <Item english="Compare: ignore spaces" text="Confronto: ignora i spasi"/>
+    <Item english="Compare: ignore empty lines" text="Confronto: ignora ƚe righe vode"/>
+    <Item english="Notepad++ update" text="Axornamento de Notepad++"/>
+    <Item english="No update is available." text="Nisun axornamento disponibiƚe."/>
+    <Item english="Copy debug info to clipboard" text="Còpia ƚe informasion de debug inte i Scarabòci"/>
+    <Item english="Fonts…" text="Caràtari…"/>
+    <Item english="This document is not valid JSON." text="Sto documento no'l xe mìa JSON vaƚido."/>
+    <Item english="Valid JSON." text="JSON vaƚido."/>
+    <Item english="The document is valid XML." text="El documento el xe XML vaƚido."/>
+    <Item english="FTP connections" text="Conesion FTP"/>
+    <Item english="Press the keys." text="Struca i tasti."/>
+    <Item english="Searching..." text="Riserca..."/>
+    <Item english="Transparent" text="Trasparente"/>
+    <Item english="View 1" text="Vista 1"/>
+    <Item english="View 2" text="Vista 2"/>
+</NativeLangExtra>

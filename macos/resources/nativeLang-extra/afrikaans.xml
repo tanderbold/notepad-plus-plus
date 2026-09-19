@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/afrikaans.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Afrikaans">
+    <Item english="About NotepadMac" text="Oor NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Steek NotepadMac weg"/>
+    <Item english="Hide Others" text="Steek ander weg"/>
+    <Item english="Show All" text="Wys almal"/>
+    <Item english="Quit NotepadMac" text="Sluit NotepadMac af"/>
+    <Item english="Open Containing Folder in Finder" text="Maak die leêr se vouer in Finder oop"/>
+    <Item english="Open Containing Folder in Terminal" text="Maak die leêr se vouer in Terminal oop"/>
+    <Item english="Toggle Insert/Overtype" text="Wissel invoeg/oorskryf"/>
+    <Item english="Toggle Fold" text="Vou in/uit"/>
+    <Item english="Show All Hidden Lines" text="Wys alle weggesteekte lyne"/>
+    <Item english="Recent Window" text="Onlangse venster"/>
+    <Item english="Move to Trash" text="Skuif na die asblik"/>
+    <Item english="Save Current Command…" text="Berg huidige opdrag…"/>
+    <Item english="Manage Saved Commands…" text="Bestuur gebergde opdragte…"/>
+    <Item english="Show Console" text="Wys konsole"/>
+    <Item english="Validate shortcuts" text="Kontroleer kortpad sleutels"/>
+    <Item english="Open Plugins Folder…" text="Maak inkoppelingsvouer oop…"/>
+    <Item english="Format" text="Formateer"/>
+    <Item english="Compact" text="Maak kompak"/>
+    <Item english="Sort Keys" text="Sorteer sleutels"/>
+    <Item english="Validate" text="Valideer"/>
+    <Item english="Show JSON Tree" text="Wys JSON-boom"/>
+    <Item english="Set as First to Compare" text="Stel as eerste om te vergelyk"/>
+    <Item english="Compare" text="Vergelyk"/>
+    <Item english="Compare with File…" text="Vergelyk met leêr…"/>
+    <Item english="Next Difference" text="Volgende verskil"/>
+    <Item english="Previous Difference" text="Vorige verskil"/>
+    <Item english="First Difference" text="Eerste verskil"/>
+    <Item english="Last Difference" text="Laaste verskil"/>
+    <Item english="Compare Summary" text="Opsomming van vergelyking"/>
+    <Item english="Ignore Case" text="Ignoreer register"/>
+    <Item english="Ignore Spaces" text="Ignoreer spasies"/>
+    <Item english="Ignore Empty Lines" text="Ignoreer leë lyne"/>
+    <Item english="Clear Active Compare" text="Wis aktiewe vergelyking"/>
+    <Item english="Clear All Compares" text="Wis alle vergelykings"/>
+    <Item english="Check XML Syntax Now" text="Gaan XML-sintaks nou na"/>
+    <Item english="Validate Against Schema…" text="Valideer teen skema…"/>
+    <Item english="Validate Against DTD" text="Valideer teen DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Evalueer XPath-uitdrukking…"/>
+    <Item english="Current XML Path" text="Huidige XML-pad"/>
+    <Item english="Apply XSL Transformation…" text="Pas XSL-transformasie toe…"/>
+    <Item english="Connections…" text="Verbindings…"/>
+    <Item english="Connect…" text="Verbind…"/>
+    <Item english="Disconnect" text="Ontkoppel"/>
+    <Item english="Show Remote Files" text="Wys afgeleë leêrs"/>
+    <Item english="Upload Current File" text="Laai huidige leêr op"/>
+    <Item english="Execute NppExec Script…" text="Loop NppExec-skrip…"/>
+    <Item english="Execute Previous NppExec Script" text="Loop vorige NppExec-skrip"/>
+    <Item english="Stop Running NppExec Script" text="Stop lopende NppExec-skrip"/>
+    <Item english="Show NppExec Console" text="Wys NppExec-konsole"/>
+    <Item english="Execute NppExec Script" text="Loop NppExec-skrip"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;tydelike skrip&gt;"/>
+    <Item english="Script name" text="Skripnaam"/>
+    <Item english="Remember which panels were open" text="Onthou watter panele oop was"/>
+    <Item english="Show the toolbar" text="Wys die nutsbalk"/>
+    <Item english="Toolbar buttons" text="Nutsbalkknoppies"/>
+    <Item english="Icons only" text="Slegs ikone"/>
+    <Item english="Icons and labels" text="Ikone en etikette"/>
+    <Item english="Labels only" text="Slegs etikette"/>
+    <Item english="Toolbar size" text="Grootte van nutsbalk"/>
+    <Item english="Regular" text="Gewoon"/>
+    <Item english="Small" text="Klein"/>
+    <Item english="Icons" text="Ikone"/>
+    <Item english="Hidden" text="Weggesteek"/>
+    <Item english="1 pixel" text="1 piksel"/>
+    <Item english="2 pixels" text="2 piksels"/>
+    <Item english="3 pixels" text="3 piksels"/>
+    <Item english="Selected text can be dragged" text="Geselekteerde teks kan gesleep word"/>
+    <Item english="Follow the system" text="Volg die stelsel"/>
+    <Item english="Light theme" text="Ligte tema"/>
+    <Item english="Dark theme" text="Donker tema"/>
+    <Item english="A line" text="'n Lyn"/>
+    <Item english="Columns (space separated)" text="Kolomme (geskei deur spasies)"/>
+    <Item english="3 parts" text="3 dele"/>
+    <Item english="4 parts" text="4 dele"/>
+    <Item english="5 parts" text="5 dele"/>
+    <Item english="6 parts" text="6 dele"/>
+    <Item english="7 parts" text="7 dele"/>
+    <Item english="8 parts" text="8 dele"/>
+    <Item english="9 parts" text="9 dele"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Bepaal die taal uit die inhoud wanneer die naam dit nie aandui nie"/>
+    <Item english="Highlight matching braces" text="Hooglig ooreenstemmende hakies"/>
+    <Item english="Header font size" text="Lettergrootte van kopper"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Marges: links, bo, regs, onder (punte)"/>
+    <Item english="Characters before it opens" text="Karakters voordat dit oopmaak"/>
+    <Item english="A fixed folder" text="'n Vaste vouer"/>
+    <Item english="Fixed folder" text="Vaste vouer"/>
+    <Item english="Confirm Replace All" text="Bevestig Vervang Als"/>
+    <Item english="Compare: ignore case" text="Vergelyk: ignoreer register"/>
+    <Item english="Compare: ignore spaces" text="Vergelyk: ignoreer spasies"/>
+    <Item english="Compare: ignore empty lines" text="Vergelyk: ignoreer leë lyne"/>
+    <Item english="Notepad++ update" text="Notepad++-opdatering"/>
+    <Item english="No update is available." text="Geen opdatering is beskikbaar nie."/>
+    <Item english="An update package is available, do you want to download it?" text="'n Opdateringspakket is beskikbaar. Wil jy dit aflaai?"/>
+    <Item english="Copy debug info to clipboard" text="Kopieer ontfoutingsinligting na klipbord"/>
+    <Item english="Fonts…" text="Lettertipes…"/>
+    <Item english="This document is not valid JSON." text="Hierdie dokument is nie geldige JSON nie."/>
+    <Item english="Valid JSON." text="Geldige JSON."/>
+    <Item english="Invalid JSON." text="Ongeldige JSON."/>
+    <Item english="Set as the first file to compare." text="Gestel as die eerste leêr om te vergelyk."/>
+    <Item english="Nothing to compare with." text="Niks om mee te vergelyk nie."/>
+    <Item english="The document is valid XML." text="Die dokument is geldige XML."/>
+    <Item english="FTP connections" text="FTP-verbindings"/>
+    <Item english="Cannot connect." text="Kan nie verbind nie."/>
+    <Item english="That file is open in another tab." text="Daardie leêr is oop in 'n ander tab."/>
+    <Item english="Close it first, or choose another name." text="Maak dit eers toe, of kies 'n ander naam."/>
+    <Item english="Which language is this?" text="Watter taal is dit?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Sommige karakters kan nie in hierdie enkodering voorgestel word nie."/>
+    <Item english="Converting will replace them." text="Omskakeling sal hulle vervang."/>
+    <Item english="Press the keys." text="Druk die sleutels."/>
+    <Item english="Nothing is marked" text="Niks is gemerk nie"/>
+    <Item english="Marked text copied" text="Gemerkte teks gekopieer"/>
+    <Item english="Choose a folder first" text="Kies eers 'n vouer"/>
+    <Item english="This document has no folder" text="Hierdie dokument het geen vouer nie"/>
+    <Item english="Searching..." text="Soek..."/>
+    <Item english="Stopping..." text="Stop..."/>
+    <Item english="Marks cleared" text="Merke verwyder"/>
+    <Item english="Transparent" text="Deursigtig"/>
+    <Item english="View 1" text="Sig 1"/>
+    <Item english="View 2" text="Sig 2"/>
+</NativeLangExtra>

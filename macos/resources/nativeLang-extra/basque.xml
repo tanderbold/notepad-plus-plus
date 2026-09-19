@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/basque.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Basque">
+    <Item english="About NotepadMac" text="NotepadMac-i Buruz"/>
+    <Item english="Hide NotepadMac" text="Ezkutatu NotepadMac"/>
+    <Item english="Hide Others" text="Ezkutatu Besteak"/>
+    <Item english="Show All" text="Erakutsi Guztiak"/>
+    <Item english="Quit NotepadMac" text="Irten NotepadMac-etik"/>
+    <Item english="Open Containing Folder in Finder" text="Ireki Dagoen Karpeta Finder-en"/>
+    <Item english="Open Containing Folder in Terminal" text="Ireki Dagoen Karpeta Terminalean"/>
+    <Item english="Toggle Fold" text="Tolestu/Zabaldu"/>
+    <Item english="Show All Hidden Lines" text="Erakutsi Ezkutuko Lerro Guztiak"/>
+    <Item english="Recent Window" text="Aurreko Leihoa"/>
+    <Item english="Move to Trash" text="Eraman Zakarrontzira"/>
+    <Item english="Save Current Command…" text="Gorde Uneko Komandoa…"/>
+    <Item english="Manage Saved Commands…" text="Kudeatu Gordetako Komandoak…"/>
+    <Item english="Show Console" text="Erakutsi Kontsola"/>
+    <Item english="Validate shortcuts" text="Balidatu lasterbideak"/>
+    <Item english="Open Plugins Folder…" text="Ireki Pluginen Karpeta…"/>
+    <Item english="Format" text="Formateatu"/>
+    <Item english="Compact" text="Trinkotu"/>
+    <Item english="Sort Keys" text="Ordenatu Gakoak"/>
+    <Item english="Validate" text="Balidatu"/>
+    <Item english="Show JSON Tree" text="Erakutsi JSON Zuhaitza"/>
+    <Item english="Set as First to Compare" text="Ezarri Konparatzeko Lehenengo Gisa"/>
+    <Item english="Compare" text="Konparatu"/>
+    <Item english="Compare with File…" text="Konparatu Fitxategiarekin…"/>
+    <Item english="Next Difference" text="Hurrengo Desberdintasuna"/>
+    <Item english="Previous Difference" text="Aurreko Desberdintasuna"/>
+    <Item english="First Difference" text="Lehen Desberdintasuna"/>
+    <Item english="Last Difference" text="Azken Desberdintasuna"/>
+    <Item english="Compare Summary" text="Konparazioaren Laburpena"/>
+    <Item english="Ignore Case" text="Ezikusi Maiuskula eta Minuskulak"/>
+    <Item english="Ignore Spaces" text="Ezikusi Zuriuneak"/>
+    <Item english="Ignore Empty Lines" text="Ezikusi Lerro Hutsak"/>
+    <Item english="Clear Active Compare" text="Garbitu Konparazio Aktiboa"/>
+    <Item english="Clear All Compares" text="Garbitu Konparazio Guztiak"/>
+    <Item english="Check XML Syntax Now" text="Egiaztatu XML Sintaxia Orain"/>
+    <Item english="Validate Against Schema…" text="Balidatu Eskemaren Arabera…"/>
+    <Item english="Validate Against DTD" text="Balidatu DTDaren Arabera"/>
+    <Item english="Evaluate XPath Expression…" text="Ebaluatu XPath Adierazpena…"/>
+    <Item english="Current XML Path" text="Uneko XML Bidea"/>
+    <Item english="Current XML Path with Predicates" text="Uneko XML Bidea Predikatuekin"/>
+    <Item english="Apply XSL Transformation…" text="Aplikatu XSL Transformazioa…"/>
+    <Item english="Connections…" text="Konexioak…"/>
+    <Item english="Connect…" text="Konektatu…"/>
+    <Item english="Disconnect" text="Deskonektatu"/>
+    <Item english="Show Remote Files" text="Erakutsi Urruneko Fitxategiak"/>
+    <Item english="Upload Current File" text="Igo Uneko Fitxategia"/>
+    <Item english="Execute NppExec Script…" text="Exekutatu NppExec Scripta…"/>
+    <Item english="Execute Previous NppExec Script" text="Exekutatu Aurreko NppExec Scripta"/>
+    <Item english="Stop Running NppExec Script" text="Gelditu Exekutatzen ari den NppExec Scripta"/>
+    <Item english="Show NppExec Console" text="Erakutsi NppExec Kontsola"/>
+    <Item english="Execute NppExec Script" text="Exekutatu NppExec Scripta"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;aldi baterako scripta&gt;"/>
+    <Item english="Script name" text="Scriptaren izena"/>
+    <Item english="Dock Left" text="Atrakatu Ezkerrean"/>
+    <Item english="Dock Right" text="Atrakatu Eskuinean"/>
+    <Item english="Dock Top" text="Atrakatu Goian"/>
+    <Item english="Dock Bottom" text="Atrakatu Behean"/>
+    <Item english="Remember which panels were open" text="Gogoratu zein panel zeuden irekita"/>
+    <Item english="Show the toolbar" text="Erakutsi tresna-barra"/>
+    <Item english="Toolbar buttons" text="Tresna-barrako botoiak"/>
+    <Item english="Icons only" text="Ikonoak soilik"/>
+    <Item english="Icons and labels" text="Ikonoak eta etiketak"/>
+    <Item english="Labels only" text="Etiketak soilik"/>
+    <Item english="Toolbar size" text="Tresna-barraren neurria"/>
+    <Item english="Regular" text="Arrunta"/>
+    <Item english="Small" text="Txikia"/>
+    <Item english="Icons" text="Ikonoak"/>
+    <Item english="Hidden" text="Ezkutatuta"/>
+    <Item english="1 pixel" text="Pixel 1"/>
+    <Item english="2 pixels" text="2 pixel"/>
+    <Item english="3 pixels" text="3 pixel"/>
+    <Item english="Selected text can be dragged" text="Hautatutako testua arrastatu daiteke"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Gaitu Edizio Anitza (Cmd+klik/hautapena)"/>
+    <Item english="Follow the system" text="Jarraitu sistema"/>
+    <Item english="Light theme" text="Azal argia"/>
+    <Item english="Dark theme" text="Azal iluna"/>
+    <Item english="Show the fold margin" text="Erakutsi tolestze-bazterra"/>
+    <Item english="A line" text="Marra"/>
+    <Item english="Columns (space separated)" text="Zutabeak (zuriunez bereizita)"/>
+    <Item english="3 parts" text="3 zati"/>
+    <Item english="4 parts" text="4 zati"/>
+    <Item english="5 parts" text="5 zati"/>
+    <Item english="6 parts" text="6 zati"/>
+    <Item english="7 parts" text="7 zati"/>
+    <Item english="8 parts" text="8 zati"/>
+    <Item english="9 parts" text="9 zati"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Antzeman hizkuntza edukitik, izenak esaten ez duenean"/>
+    <Item english="Header font (blank for the editor's)" text="Goiburuaren letra-mota (hutsik, editorearena)"/>
+    <Item english="Header font size" text="Goiburuaren letra-neurria"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Bazterrak: ezkerra, goia, eskuina, behea (puntuak)"/>
+    <Item english="A fixed folder" text="Karpeta finkoa"/>
+    <Item english="Fixed folder" text="Karpeta finkoa"/>
+    <Item english="Confirm Replace All" text="Baieztatu Ordeztu Guztiak"/>
+    <Item english="Compare: ignore case" text="Konparatu: ezikusi maiuskula eta minuskulak"/>
+    <Item english="Compare: ignore spaces" text="Konparatu: ezikusi zuriuneak"/>
+    <Item english="Compare: ignore empty lines" text="Konparatu: ezikusi lerro hutsak"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Bilaketa-eremua automatikoki betetzeko gehienezko karaktere kopurua"/>
+    <Item english="Releases repository" text="Bertsioen biltegia"/>
+    <Item english="Notepad++ update" text="Notepad++ eguneraketa"/>
+    <Item english="No update is available." text="Ez dago eguneraketarik eskuragarri."/>
+    <Item english="An update package is available, do you want to download it?" text="Eguneraketa pakete bat eskuragarri dago, deskargatu nahi duzu?"/>
+    <Item english="Open the Releases Page" text="Ireki Bertsioen Orria"/>
+    <Item english="Copy debug info to clipboard" text="Kopiatu arazte-informazioa arbelera"/>
+    <Item english="Fonts…" text="Letra-motak…"/>
+    <Item english="This document is not valid JSON." text="Dokumentu hau ez da baliozko JSON."/>
+    <Item english="Valid JSON." text="Baliozko JSON."/>
+    <Item english="Invalid JSON." text="JSON baliogabea."/>
+    <Item english="Set as the first file to compare." text="Konparatzeko lehen fitxategi gisa ezarrita."/>
+    <Item english="Nothing to compare with." text="Ez dago zerekin konparatu."/>
+    <Item english="The document is valid XML." text="Dokumentua baliozko XML da."/>
+    <Item english="FTP connections" text="FTP konexioak"/>
+    <Item english="Cannot connect." text="Ezin da konektatu."/>
+    <Item english="That file is open in another tab." text="Fitxategi hori beste fitxa batean irekita dago."/>
+    <Item english="Close it first, or choose another name." text="Itxi ezazu lehenik, edo aukeratu beste izen bat."/>
+    <Item english="Which language is this?" text="Zein hizkuntza da hau?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Karaktere batzuk ezin dira kodifikazio honetan adierazi."/>
+    <Item english="Converting will replace them." text="Bihurtzeak ordeztu egingo ditu."/>
+    <Item english="Press the keys." text="Sakatu teklak."/>
+    <Item english="Nothing is marked" text="Ez dago ezer markatuta"/>
+    <Item english="Marked text copied" text="Markatutako testua kopiatuta"/>
+    <Item english="Choose a folder first" text="Aukeratu karpeta bat lehenik"/>
+    <Item english="This document has no folder" text="Dokumentu honek ez du karpetarik"/>
+    <Item english="The ticked project panels have no files" text="Markatutako proiektu-panelek ez dute fitxategirik"/>
+    <Item english="Searching..." text="Bilatzen..."/>
+    <Item english="Stopping..." text="Gelditzen..."/>
+    <Item english="Marks cleared" text="Markak garbituta"/>
+    <Item english="Transparent" text="Gardena"/>
+    <Item english="View 1" text="1. Ikuspegia"/>
+    <Item english="View 2" text="2. Ikuspegia"/>
+</NativeLangExtra>

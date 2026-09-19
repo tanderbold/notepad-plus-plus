@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/corsican.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Corsu">
+    <Item english="About NotepadMac" text="Apprupositu di NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Piattà NotepadMac"/>
+    <Item english="Hide Others" text="Piattà l’altri"/>
+    <Item english="Show All" text="Tuttu affissà"/>
+    <Item english="Quit NotepadMac" text="Esce di NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Apre cù Finder u cartulare cuntenendu u schedariu"/>
+    <Item english="Open Containing Folder in Terminal" text="Apre cù Terminal u cartulare cuntenendu u schedariu"/>
+    <Item english="Toggle Fold" text="Ripiegà o spiegà u livellu attuale"/>
+    <Item english="Show All Hidden Lines" text="Affissà tutte e linee piattate"/>
+    <Item english="Recent Window" text="Finestra recente"/>
+    <Item english="Move to Trash" text="Dispiazzà in a curbella"/>
+    <Item english="Save Current Command…" text="Arregistrà a cumanda attuale…"/>
+    <Item english="Manage Saved Commands…" text="Ghjestione di e cumande arregistrate…"/>
+    <Item english="Validate shortcuts" text="Cunvalidà l’accurtatoghji"/>
+    <Item english="Open Plugins Folder…" text="Apre u cartulare di i moduli d’estensione…"/>
+    <Item english="Sort Keys" text="Ordinà e chjave"/>
+    <Item english="Validate" text="Cunvalidà"/>
+    <Item english="Show JSON Tree" text="Affissà l’arburu JSON"/>
+    <Item english="Set as First to Compare" text="Definisce cum’è primu à paragunà"/>
+    <Item english="Compare" text="Paragunà"/>
+    <Item english="Compare with File…" text="Paragunà cù un schedariu…"/>
+    <Item english="Next Difference" text="Sfarenza seguente"/>
+    <Item english="Previous Difference" text="Sfarenza precedente"/>
+    <Item english="First Difference" text="Prima sfarenza"/>
+    <Item english="Last Difference" text="Ultima sfarenza"/>
+    <Item english="Compare Summary" text="Riassuntu di u paragone"/>
+    <Item english="Ignore Case" text="Ignurà a cassa"/>
+    <Item english="Ignore Spaces" text="Ignurà i spazii"/>
+    <Item english="Ignore Empty Lines" text="Ignurà e linee viote"/>
+    <Item english="Clear Active Compare" text="Spurgulà u paragone attivu"/>
+    <Item english="Clear All Compares" text="Spurgulà tutti i paragoni"/>
+    <Item english="Check XML Syntax Now" text="Verificà a sintassa XML subitu"/>
+    <Item english="Validate Against Schema…" text="Cunvalidà cù un schema…"/>
+    <Item english="Validate Against DTD" text="Cunvalidà cù a DTD"/>
+    <Item english="Current XML Path" text="Chjassu XML attuale"/>
+    <Item english="Current XML Path with Predicates" text="Chjassu XML attuale cù i predicati"/>
+    <Item english="Apply XSL Transformation…" text="Appiecà una trasfurmazione XSL…"/>
+    <Item english="Connections…" text="Cunnessioni…"/>
+    <Item english="Show Remote Files" text="Affissà i schedarii distanti"/>
+    <Item english="Upload Current File" text="Mandà u schedariu attuale"/>
+    <Item english="Execute NppExec Script…" text="Lancià un script NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Lancià u script NppExec precedente"/>
+    <Item english="Stop Running NppExec Script" text="Piantà u script NppExec in corsu"/>
+    <Item english="Execute NppExec Script" text="Lancià un script NppExec"/>
+    <Item english="Script name" text="Nome di u script"/>
+    <Item english="Dock Left" text="Ancurà à manca"/>
+    <Item english="Dock Right" text="Ancurà à diritta"/>
+    <Item english="Dock Top" text="Ancurà insù"/>
+    <Item english="Dock Bottom" text="Ancurà inghjò"/>
+    <Item english="Float" text="Staccà"/>
+    <Item english="Remember which panels were open" text="Arricurdassi di i pannelli chì eranu aperti"/>
+    <Item english="Show the toolbar" text="Affissà a barra d’attrezzi"/>
+    <Item english="Toolbar buttons" text="Buttoni di a barra d’attrezzi"/>
+    <Item english="Icons only" text="Solu l’icone"/>
+    <Item english="Icons and labels" text="Icone è testu"/>
+    <Item english="Labels only" text="Solu u testu"/>
+    <Item english="Toolbar size" text="Dimensione di a barra d’attrezzi"/>
+    <Item english="Regular" text="Nurmale"/>
+    <Item english="Small" text="Chjuca"/>
+    <Item english="Icons" text="Icone"/>
+    <Item english="Hidden" text="Piattata"/>
+    <Item english="1 pixel" text="1 pixel"/>
+    <Item english="2 pixels" text="2 pixel"/>
+    <Item english="3 pixels" text="3 pixel"/>
+    <Item english="Selected text can be dragged" text="U testu selezziunatu si pò sguillà"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Attivà a mudificazione multiple (Cmd+cliccu/selezzione)"/>
+    <Item english="Follow the system" text="Seguità u sistema"/>
+    <Item english="Light theme" text="Tema chjaru"/>
+    <Item english="Dark theme" text="Tema scuru"/>
+    <Item english="Show the fold margin" text="Affissà a margine per piegatura"/>
+    <Item english="A line" text="Una linea"/>
+    <Item english="Columns (space separated)" text="Culonne (separate da spazii)"/>
+    <Item english="3 parts" text="3 parti"/>
+    <Item english="4 parts" text="4 parti"/>
+    <Item english="5 parts" text="5 parti"/>
+    <Item english="6 parts" text="6 parti"/>
+    <Item english="7 parts" text="7 parti"/>
+    <Item english="8 parts" text="8 parti"/>
+    <Item english="9 parts" text="9 parti"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Detezione di u linguaghju da u cuntenutu quandu u nome ùn l’indica micca"/>
+    <Item english="Highlight matching braces" text="Sopralineà e parentesi chì currispondenu"/>
+    <Item english="Header font (blank for the editor's)" text="Grafia di l’intestatura (viotu per quella di l’editore)"/>
+    <Item english="Header font size" text="Dimensione di grafia di l’intestatura"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Margine : manca, insù, diritta, inghjò (punti)"/>
+    <Item english="A fixed folder" text="Un cartulare fissu"/>
+    <Item english="Fixed folder" text="Cartulare fissu"/>
+    <Item english="Confirm Replace All" text="Cunfirmà « Rimpiazzalle tutte »"/>
+    <Item english="Compare: ignore case" text="Paragone : ignurà a cassa"/>
+    <Item english="Compare: ignore spaces" text="Paragone : ignurà i spazii"/>
+    <Item english="Compare: ignore empty lines" text="Paragone : ignurà e linee viote"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Numeru massimu di caratteri per riempie autumaticamente u campu di ricerca"/>
+    <Item english="Releases repository" text="Dipositu di e versioni"/>
+    <Item english="Notepad++ update" text="Rinnovu di Notepad++"/>
+    <Item english="No update is available." text="Ùn ci hè nisunu rinnovu dispunibule."/>
+    <Item english="Open the Releases Page" text="Apre a pagina di e versioni"/>
+    <Item english="Copy debug info to clipboard" text="Cupià l’infurmazioni di spannatura in u preme’papei"/>
+    <Item english="Fonts…" text="Grafie…"/>
+    <Item english="This document is not valid JSON." text="Stu ducumentu ùn hè micca un JSON accettevule."/>
+    <Item english="Valid JSON." text="JSON accettevule."/>
+    <Item english="Invalid JSON." text="JSON inaccettevule."/>
+    <Item english="Set as the first file to compare." text="Definitu cum’è primu schedariu à paragunà."/>
+    <Item english="Nothing to compare with." text="Nunda à paragunà."/>
+    <Item english="The document is valid XML." text="U ducumentu hè un XML accettevule."/>
+    <Item english="FTP connections" text="Cunnessioni FTP"/>
+    <Item english="Cannot connect." text="Cunnessione impussibule."/>
+    <Item english="That file is open in another tab." text="Stu schedariu hè dighjà apertu in un’altra unghjetta."/>
+    <Item english="Which language is this?" text="Chì linguaghju hè ?"/>
+    <Item english="Nothing is marked" text="Nunda hè marcatu"/>
+    <Item english="Marked text copied" text="Testu marcatu cupiatu"/>
+    <Item english="This document has no folder" text="Stu ducumentu ùn hà micca cartulare"/>
+    <Item english="Searching..." text="Ricerca in corsu..."/>
+    <Item english="Marks cleared" text="Marche squassate"/>
+    <Item english="Transparent" text="Trasparente"/>
+    <Item english="View 1" text="Vista 1"/>
+    <Item english="View 2" text="Vista 2"/>
+</NativeLangExtra>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/azerbaijani.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Azərbaycan">
+    <Item english="About NotepadMac" text="NotepadMac Haqqında"/>
+    <Item english="Hide NotepadMac" text="NotepadMac-ı Gizlət"/>
+    <Item english="Hide Others" text="Digərlərini Gizlət"/>
+    <Item english="Show All" text="Hamısını Göstər"/>
+    <Item english="Quit NotepadMac" text="NotepadMac-dan Çıx"/>
+    <Item english="Open Containing Folder in Finder" text="Finder-də İçərdiyi Qovluğu Aç"/>
+    <Item english="Open Containing Folder in Terminal" text="Terminalda İçərdiyi Qovluğu Aç"/>
+    <Item english="Toggle Insert/Overtype" text="Daxiletmə/Əvəzetmə Rejimini Dəyiş"/>
+    <Item english="Toggle Fold" text="Qatla/Aç"/>
+    <Item english="Show All Hidden Lines" text="Bütün Gizli Sətirləri Göstər"/>
+    <Item english="Recent Window" text="Son Pəncərə"/>
+    <Item english="Move to Trash" text="Zibil Qutusuna Köçür"/>
+    <Item english="Save Current Command…" text="Cari Əmri Yadda Saxla…"/>
+    <Item english="Manage Saved Commands…" text="Yadda Saxlanmış Əmrləri İdarə Et…"/>
+    <Item english="Show Console" text="Konsolu Göstər"/>
+    <Item english="Validate shortcuts" text="Qısa yolları yoxla"/>
+    <Item english="Open Plugins Folder…" text="Plaginlər Qovluğunu Aç…"/>
+    <Item english="Format" text="Formatla"/>
+    <Item english="Compact" text="Sıxlaşdır"/>
+    <Item english="Sort Keys" text="Açarları Çeşidlə"/>
+    <Item english="Validate" text="Yoxla"/>
+    <Item english="Show JSON Tree" text="JSON Ağacını Göstər"/>
+    <Item english="Set as First to Compare" text="Müqayisə Üçün Birinci Kimi Təyin Et"/>
+    <Item english="Compare" text="Müqayisə Et"/>
+    <Item english="Compare with File…" text="Faylla Müqayisə Et…"/>
+    <Item english="Next Difference" text="Növbəti Fərq"/>
+    <Item english="Previous Difference" text="Əvvəlki Fərq"/>
+    <Item english="First Difference" text="İlk Fərq"/>
+    <Item english="Last Difference" text="Son Fərq"/>
+    <Item english="Compare Summary" text="Müqayisə Xülasəsi"/>
+    <Item english="Ignore Case" text="Böyük-kiçik Hərfi Nəzərə Alma"/>
+    <Item english="Ignore Spaces" text="Boşluqları Nəzərə Alma"/>
+    <Item english="Ignore Empty Lines" text="Boş Sətirləri Nəzərə Alma"/>
+    <Item english="Clear Active Compare" text="Aktiv Müqayisəni Təmizlə"/>
+    <Item english="Clear All Compares" text="Bütün Müqayisələri Təmizlə"/>
+    <Item english="Pretty Print" text="Səliqəli Formatla"/>
+    <Item english="Pretty Print — Indent Attributes" text="Səliqəli Formatla — Atributlara Girinti Ver"/>
+    <Item english="Linearize" text="Bir Sətirə Yığ"/>
+    <Item english="Check XML Syntax Now" text="XML Sintaksisini İndi Yoxla"/>
+    <Item english="Validate Against Schema…" text="Sxemə Görə Yoxla…"/>
+    <Item english="Validate Against DTD" text="DTD-yə Görə Yoxla"/>
+    <Item english="Evaluate XPath Expression…" text="XPath İfadəsini Hesabla…"/>
+    <Item english="Current XML Path" text="Cari XML Yolu"/>
+    <Item english="Current XML Path with Predicates" text="Predikatlarla Cari XML Yolu"/>
+    <Item english="Apply XSL Transformation…" text="XSL Çevirməsini Tətbiq Et…"/>
+    <Item english="Escape Characters in Selection" text="Seçimdəki Simvolları Ekranlaşdır"/>
+    <Item english="Unescape Characters in Selection" text="Seçimdəki Simvolların Ekranlaşdırılmasını Ləğv Et"/>
+    <Item english="Connections…" text="Bağlantılar…"/>
+    <Item english="Connect…" text="Qoşul…"/>
+    <Item english="Disconnect" text="Bağlantını Kəs"/>
+    <Item english="Show Remote Files" text="Uzaq Faylları Göstər"/>
+    <Item english="Upload Current File" text="Cari Faylı Serverə Yüklə"/>
+    <Item english="Execute NppExec Script…" text="NppExec Skriptini İcra Et…"/>
+    <Item english="Execute Previous NppExec Script" text="Əvvəlki NppExec Skriptini İcra Et"/>
+    <Item english="Stop Running NppExec Script" text="İşləyən NppExec Skriptini Dayandır"/>
+    <Item english="Show NppExec Console" text="NppExec Konsolunu Göstər"/>
+    <Item english="Execute NppExec Script" text="NppExec Skriptini İcra Et"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;müvəqqəti skript&gt;"/>
+    <Item english="Script name" text="Skript adı"/>
+    <Item english="Dock Left" text="Sola Bərkit"/>
+    <Item english="Dock Right" text="Sağa Bərkit"/>
+    <Item english="Dock Top" text="Yuxarıya Bərkit"/>
+    <Item english="Dock Bottom" text="Aşağıya Bərkit"/>
+    <Item english="Float" text="Ayır"/>
+    <Item english="Remember which panels were open" text="Hansı panellərin açıq olduğunu xatırla"/>
+    <Item english="Show the toolbar" text="Alət panelini göstər"/>
+    <Item english="Toolbar buttons" text="Alət paneli düymələri"/>
+    <Item english="Icons only" text="Yalnız nişanlar"/>
+    <Item english="Icons and labels" text="Nişanlar və yazılar"/>
+    <Item english="Labels only" text="Yalnız yazılar"/>
+    <Item english="Toolbar size" text="Alət panelinin ölçüsü"/>
+    <Item english="Regular" text="Adi"/>
+    <Item english="Small" text="Kiçik"/>
+    <Item english="Icons" text="Nişanlar"/>
+    <Item english="Hidden" text="Gizli"/>
+    <Item english="1 pixel" text="1 piksel"/>
+    <Item english="2 pixels" text="2 piksel"/>
+    <Item english="3 pixels" text="3 piksel"/>
+    <Item english="Selected text can be dragged" text="Seçilmiş mətni sürükləmək olar"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Çoxlu Redaktəni aktivləşdir (Cmd+klik/seçim)"/>
+    <Item english="Follow the system" text="Sistemə uyğun"/>
+    <Item english="Light theme" text="İşıqlı tema"/>
+    <Item english="Dark theme" text="Qaranlıq tema"/>
+    <Item english="Show the fold margin" text="Qatlanma kənarını göstər"/>
+    <Item english="A line" text="Xətt"/>
+    <Item english="Columns (space separated)" text="Sütunlar (boşluqla ayrılmış)"/>
+    <Item english="3 parts" text="3 hissə"/>
+    <Item english="4 parts" text="4 hissə"/>
+    <Item english="5 parts" text="5 hissə"/>
+    <Item english="6 parts" text="6 hissə"/>
+    <Item english="7 parts" text="7 hissə"/>
+    <Item english="8 parts" text="8 hissə"/>
+    <Item english="9 parts" text="9 hissə"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Ad göstərmədikdə dili məzmuna görə müəyyən et"/>
+    <Item english="Highlight matching braces" text="Uyğun mötərizələri vurğula"/>
+    <Item english="Header font (blank for the editor's)" text="Başlıq şrifti (boş — redaktorun şrifti)"/>
+    <Item english="Header font size" text="Başlıq şriftinin ölçüsü"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Kənarlar: sol, üst, sağ, alt (punkt)"/>
+    <Item english="Characters before it opens" text="Açılmazdan əvvəl simvol sayı"/>
+    <Item english="Add characters to the word list" text="Söz simvolları siyahısına simvol əlavə et"/>
+    <Item english="A fixed folder" text="Sabit qovluq"/>
+    <Item english="Fixed folder" text="Sabit qovluq"/>
+    <Item english="Confirm Replace All" text="«Hamısını əvəz et» əmrini təsdiqlə"/>
+    <Item english="Compare: ignore case" text="Müqayisə: böyük-kiçik hərfi nəzərə alma"/>
+    <Item english="Compare: ignore spaces" text="Müqayisə: boşluqları nəzərə alma"/>
+    <Item english="Compare: ignore empty lines" text="Müqayisə: boş sətirləri nəzərə alma"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Axtarış sahəsini avtomatik doldurmaq üçün maks. simvol sayı"/>
+    <Item english="Releases repository" text="Buraxılışlar repozitoriyası"/>
+    <Item english="Notepad++ update" text="Notepad++ yeniləməsi"/>
+    <Item english="No update is available." text="Yeniləmə yoxdur."/>
+    <Item english="An update package is available, do you want to download it?" text="Yeniləmə paketi mövcuddur, onu endirmək istəyirsiniz?"/>
+    <Item english="Open the Releases Page" text="Buraxılışlar Səhifəsini Aç"/>
+    <Item english="Copy debug info to clipboard" text="Debug məlumatını mübadilə buferinə köçür"/>
+    <Item english="Fonts…" text="Şriftlər…"/>
+    <Item english="This document is not valid JSON." text="Bu sənəd düzgün JSON deyil."/>
+    <Item english="Valid JSON." text="Düzgün JSON."/>
+    <Item english="Invalid JSON." text="Yanlış JSON."/>
+    <Item english="Set as the first file to compare." text="Müqayisə üçün birinci fayl kimi təyin edildi."/>
+    <Item english="Nothing to compare with." text="Müqayisə ediləcək heç nə yoxdur."/>
+    <Item english="The document is valid XML." text="Sənəd düzgün XML-dir."/>
+    <Item english="FTP connections" text="FTP bağlantıları"/>
+    <Item english="Cannot connect." text="Qoşulmaq mümkün olmadı."/>
+    <Item english="That file is open in another tab." text="Bu fayl başqa tabda açıqdır."/>
+    <Item english="Close it first, or choose another name." text="Əvvəlcə onu bağlayın və ya başqa ad seçin."/>
+    <Item english="Which language is this?" text="Bu hansı dildir?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Bəzi simvollar bu kodlaşdırmada göstərilə bilmir."/>
+    <Item english="Converting will replace them." text="Çevirmə zamanı onlar əvəz ediləcək."/>
+    <Item english="Press the keys." text="Düymələri basın."/>
+    <Item english="Nothing is marked" text="Heç nə işarələnməyib"/>
+    <Item english="Marked text copied" text="İşarələnmiş mətn kopyalandı"/>
+    <Item english="Choose a folder first" text="Əvvəlcə qovluq seçin"/>
+    <Item english="This document has no folder" text="Bu sənədin qovluğu yoxdur"/>
+    <Item english="The ticked project panels have no files" text="İşarələnmiş layihə panellərində fayl yoxdur"/>
+    <Item english="Searching..." text="Axtarılır..."/>
+    <Item english="Stopping..." text="Dayandırılır..."/>
+    <Item english="Marks cleared" text="İşarələr təmizləndi"/>
+    <Item english="Transparent" text="Şəffaf"/>
+    <Item english="View 1" text="Görünüş 1"/>
+    <Item english="View 2" text="Görünüş 2"/>
+</NativeLangExtra>

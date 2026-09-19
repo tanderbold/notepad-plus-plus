@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/turkish.xml.
+     english is the text as the port has it; text is what is shown. An Item left out stays English. -->
+<NativeLangExtra name="Turkish">
+    <Item english="About NotepadMac" text="NotepadMac Hakkında"/>
+    <Item english="Hide NotepadMac" text="NotepadMac'i Gizle"/>
+    <Item english="Hide Others" text="Diğerlerini Gizle"/>
+    <Item english="Show All" text="Tümünü Göster"/>
+    <Item english="Quit NotepadMac" text="NotepadMac'ten Çık"/>
+    <Item english="Open Containing Folder in Finder" text="Bulunduğu Klasörü Finder'da Aç"/>
+    <Item english="Open Containing Folder in Terminal" text="Bulunduğu Klasörü Terminal'de Aç"/>
+    <Item english="Toggle Insert/Overtype" text="Araya Ekleme/Üzerine Yazma Arasında Geçiş Yap"/>
+    <Item english="Toggle Fold" text="Bloku Katla/Aç"/>
+    <Item english="Show All Hidden Lines" text="Tüm Gizli Satırları Göster"/>
+    <Item english="Recent Window" text="Önceki Pencere"/>
+    <Item english="Move to Trash" text="Çöp Sepetine Taşı"/>
+    <Item english="Save Current Command…" text="Geçerli Komutu Kaydet…"/>
+    <Item english="Manage Saved Commands…" text="Kayıtlı Komutları Yönet…"/>
+    <Item english="Show Console" text="Konsolu Göster"/>
+    <Item english="Validate shortcuts" text="Kısayolları Doğrula"/>
+    <Item english="Open Plugins Folder…" text="Eklentiler Klasörünü Aç…"/>
+    <Item english="Format" text="Biçimlendir"/>
+    <Item english="Compact" text="Sıkıştır"/>
+    <Item english="Sort Keys" text="Anahtarları Sırala"/>
+    <Item english="Validate" text="Doğrula"/>
+    <Item english="Show JSON Tree" text="JSON Ağacını Göster"/>
+    <Item english="Set as First to Compare" text="Karşılaştırılacak İlk Dosya Olarak Ayarla"/>
+    <Item english="Compare" text="Karşılaştır"/>
+    <Item english="Compare with File…" text="Dosya ile Karşılaştır…"/>
+    <Item english="Next Difference" text="Sonraki Fark"/>
+    <Item english="Previous Difference" text="Önceki Fark"/>
+    <Item english="First Difference" text="İlk Fark"/>
+    <Item english="Last Difference" text="Son Fark"/>
+    <Item english="Compare Summary" text="Karşılaştırma Özeti"/>
+    <Item english="Ignore Case" text="Büyük/Küçük Harfi Yoksay"/>
+    <Item english="Ignore Spaces" text="Boşlukları Yoksay"/>
+    <Item english="Ignore Empty Lines" text="Boş Satırları Yoksay"/>
+    <Item english="Clear Active Compare" text="Etkin Karşılaştırmayı Temizle"/>
+    <Item english="Clear All Compares" text="Tüm Karşılaştırmaları Temizle"/>
+    <Item english="Pretty Print" text="Güzel Biçimlendir"/>
+    <Item english="Pretty Print — Indent Attributes" text="Güzel Biçimlendir — Öznitelikleri Girintile"/>
+    <Item english="Linearize" text="Tek Satıra İndir"/>
+    <Item english="Check XML Syntax Now" text="XML Sözdizimini Şimdi Denetle"/>
+    <Item english="Validate Against Schema…" text="Şemaya Göre Doğrula…"/>
+    <Item english="Validate Against DTD" text="DTD'ye Göre Doğrula"/>
+    <Item english="Evaluate XPath Expression…" text="XPath İfadesini Değerlendir…"/>
+    <Item english="Current XML Path" text="Geçerli XML Yolu"/>
+    <Item english="Current XML Path with Predicates" text="Koşullarıyla Birlikte Geçerli XML Yolu"/>
+    <Item english="Apply XSL Transformation…" text="XSL Dönüşümü Uygula…"/>
+    <Item english="Escape Characters in Selection" text="Seçimdeki Karakterleri Kaçışla"/>
+    <Item english="Unescape Characters in Selection" text="Seçimdeki Kaçışları Geri Al"/>
+    <Item english="Connections…" text="Bağlantılar…"/>
+    <Item english="Connect…" text="Bağlan…"/>
+    <Item english="Disconnect" text="Bağlantıyı Kes"/>
+    <Item english="Show Remote Files" text="Uzak Dosyaları Göster"/>
+    <Item english="Upload Current File" text="Geçerli Dosyayı Karşıya Yükle"/>
+    <Item english="Execute NppExec Script…" text="NppExec Betiği Çalıştır…"/>
+    <Item english="Execute Previous NppExec Script" text="Önceki NppExec Betiğini Çalıştır"/>
+    <Item english="Stop Running NppExec Script" text="Çalışan NppExec Betiğini Durdur"/>
+    <Item english="Show NppExec Console" text="NppExec Konsolunu Göster"/>
+    <Item english="Execute NppExec Script" text="NppExec Betiği Çalıştır"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;geçici betik&gt;"/>
+    <Item english="Script name" text="Betik adı"/>
+    <Item english="Dock Left" text="Sola Yerleştir"/>
+    <Item english="Dock Right" text="Sağa Yerleştir"/>
+    <Item english="Dock Top" text="Üste Yerleştir"/>
+    <Item english="Dock Bottom" text="Alta Yerleştir"/>
+    <Item english="Float" text="Serbest Bırak"/>
+    <Item english="Remember which panels were open" text="Hangi panellerin açık olduğunu hatırla"/>
+    <Item english="Show the toolbar" text="Araç çubuğunu göster"/>
+    <Item english="Toolbar buttons" text="Araç çubuğu düğmeleri"/>
+    <Item english="Icons only" text="Yalnızca simgeler"/>
+    <Item english="Icons and labels" text="Simgeler ve etiketler"/>
+    <Item english="Labels only" text="Yalnızca etiketler"/>
+    <Item english="Toolbar size" text="Araç çubuğu boyutu"/>
+    <Item english="Regular" text="Normal"/>
+    <Item english="Small" text="Küçük"/>
+    <Item english="Icons" text="Simgeler"/>
+    <Item english="Hidden" text="Gizli"/>
+    <Item english="1 pixel" text="1 piksel"/>
+    <Item english="2 pixels" text="2 piksel"/>
+    <Item english="3 pixels" text="3 piksel"/>
+    <Item english="Selected text can be dragged" text="Seçili yazı sürüklenebilir"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Çoklu-Düzenlemeyi Etkinleştir (Cmd+tıklama/seçim)"/>
+    <Item english="Follow the system" text="Sistemi Takip Et"/>
+    <Item english="Light theme" text="Açık tema"/>
+    <Item english="Dark theme" text="Koyu tema"/>
+    <Item english="Show the fold margin" text="Katlama kenar boşluğunu göster"/>
+    <Item english="A line" text="Çizgi"/>
+    <Item english="Columns (space separated)" text="Sütunlar (boşlukla ayrılmış)"/>
+    <Item english="3 parts" text="3 parça"/>
+    <Item english="4 parts" text="4 parça"/>
+    <Item english="5 parts" text="5 parça"/>
+    <Item english="6 parts" text="6 parça"/>
+    <Item english="7 parts" text="7 parça"/>
+    <Item english="8 parts" text="8 parça"/>
+    <Item english="9 parts" text="9 parça"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Ad belli etmediğinde dili içerikten belirle"/>
+    <Item english="Highlight matching braces" text="Eşleşen ayraçları vurgula"/>
+    <Item english="Header font (blank for the editor's)" text="Üst bilgi yazı tipi (düzenleyicininki için boş bırakın)"/>
+    <Item english="Header font size" text="Üst bilgi yazı boyutu"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Kenar boşlukları: sol, üst, sağ, alt (punto)"/>
+    <Item english="Characters before it opens" text="Açılmadan önceki karakter sayısı"/>
+    <Item english="Add characters to the word list" text="Sözcük karakter listesine karakter ekle"/>
+    <Item english="A fixed folder" text="Sabit bir klasör"/>
+    <Item english="Fixed folder" text="Sabit klasör"/>
+    <Item english="Confirm Replace All" text="Tümünü Değiştirmeyi Onayla"/>
+    <Item english="Compare: ignore case" text="Karşılaştırma: büyük/küçük harfi yoksay"/>
+    <Item english="Compare: ignore spaces" text="Karşılaştırma: boşlukları yoksay"/>
+    <Item english="Compare: ignore empty lines" text="Karşılaştırma: boş satırları yoksay"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Bul Alanını Oto-Doldurma İçin En Fazla Karakter"/>
+    <Item english="Releases repository" text="Sürümler deposu"/>
+    <Item english="Notepad++ update" text="Notepad++ güncellemesi"/>
+    <Item english="No update is available." text="Kullanılabilir güncelleme yok."/>
+    <Item english="An update package is available, do you want to download it?" text="Bir güncelleme paketi mevcut, indirmek ister misiniz?"/>
+    <Item english="Open the Releases Page" text="Sürümler Sayfasını Aç"/>
+    <Item english="Copy debug info to clipboard" text="Hata ayıklama bilgisini panoya kopyala"/>
+    <Item english="Fonts…" text="Yazı Tipleri…"/>
+    <Item english="This document is not valid JSON." text="Bu belge geçerli bir JSON değil."/>
+    <Item english="Valid JSON." text="Geçerli JSON."/>
+    <Item english="Invalid JSON." text="Geçersiz JSON."/>
+    <Item english="Set as the first file to compare." text="Karşılaştırılacak ilk dosya olarak ayarlandı."/>
+    <Item english="Nothing to compare with." text="Karşılaştırılacak bir şey yok."/>
+    <Item english="The document is valid XML." text="Belge geçerli bir XML."/>
+    <Item english="FTP connections" text="FTP bağlantıları"/>
+    <Item english="Cannot connect." text="Bağlanılamıyor."/>
+    <Item english="That file is open in another tab." text="Bu dosya başka bir sekmede açık."/>
+    <Item english="Close it first, or choose another name." text="Önce onu kapatın veya başka bir ad seçin."/>
+    <Item english="Which language is this?" text="Bu hangi dil?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Bazı karakterler bu kodlamada gösterilemiyor."/>
+    <Item english="Converting will replace them." text="Dönüştürme bunları değiştirecek."/>
+    <Item english="Press the keys." text="Tuşlara basın."/>
+    <Item english="Nothing is marked" text="Hiçbir şey işaretli değil"/>
+    <Item english="Marked text copied" text="İşaretli yazı kopyalandı"/>
+    <Item english="Choose a folder first" text="Önce bir klasör seçin"/>
+    <Item english="This document has no folder" text="Bu belgenin klasörü yok"/>
+    <Item english="The ticked project panels have no files" text="İşaretli proje panellerinde dosya yok"/>
+    <Item english="Searching..." text="Aranıyor..."/>
+    <Item english="Stopping..." text="Durduruluyor..."/>
+    <Item english="Marks cleared" text="İşaretler temizlendi"/>
+    <Item english="Transparent" text="Saydam"/>
+    <Item english="View 1" text="Görünüm 1"/>
+    <Item english="View 2" text="Görünüm 2"/>
+</NativeLangExtra>
