@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/sardinian.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Sardu">
+    <Item english="About NotepadMac" text="Informatziones a pitzu de NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Cua NotepadMac"/>
+    <Item english="Hide Others" text="Cua is àteros"/>
+    <Item english="Show All" text="Ammustra totu"/>
+    <Item english="Quit NotepadMac" text="Essi dae NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Aberi sa cartella in Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Aberi sa cartella in Terminal"/>
+    <Item english="Toggle Fold" text="Cuntrae/Islarga"/>
+    <Item english="Show All Hidden Lines" text="Ammustra totus is rigas cuadas"/>
+    <Item english="Recent Window" text="Ventana reghente"/>
+    <Item english="Save Current Command…" text="Sarba su cumandu currente…"/>
+    <Item english="Open Plugins Folder…" text="Aberi sa cartella de is plugin…"/>
+    <Item english="Format" text="Formadu"/>
+    <Item english="Compare" text="Cunfronta"/>
+    <Item english="Compare with File…" text="Cunfronta cun unu file…"/>
+    <Item english="Next Difference" text="Diferèntzia chi sighit"/>
+    <Item english="Previous Difference" text="Diferèntzia de in antis"/>
+    <Item english="First Difference" text="Prima diferèntzia"/>
+    <Item english="Last Difference" text="Ùrtima diferèntzia"/>
+    <Item english="Ignore Case" text="Inniora majùs/minùs"/>
+    <Item english="Ignore Spaces" text="Inniora is ispàtzios"/>
+    <Item english="Ignore Empty Lines" text="Inniora is rigas bòidas"/>
+    <Item english="Clear Active Compare" text="Lìmpia custu cunfrontu"/>
+    <Item english="Clear All Compares" text="Lìmpia totus is cunfrontos"/>
+    <Item english="Current XML Path" text="Àndala XML currente"/>
+    <Item english="Apply XSL Transformation…" text="Àplica sa trasformatzione XSL…"/>
+    <Item english="Connections…" text="Connessiones…"/>
+    <Item english="Execute NppExec Script…" text="Esecuta unu script NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Esecuta su script NppExec de in antis"/>
+    <Item english="Stop Running NppExec Script" text="Firma su script NppExec"/>
+    <Item english="Execute NppExec Script" text="Esecuta su script NppExec"/>
+    <Item english="Script name" text="Nùmene de su script"/>
+    <Item english="Remember which panels were open" text="Ammenta is pannellos abertos"/>
+    <Item english="Show the toolbar" text="Ammustra sa barra de is ainas"/>
+    <Item english="Toolbar buttons" text="Tastos de sa barra de is ainas"/>
+    <Item english="Icons only" text="Iconas isceti"/>
+    <Item english="Toolbar size" text="Dimensione de sa barra de is ainas"/>
+    <Item english="Regular" text="Normale"/>
+    <Item english="Small" text="Pitica"/>
+    <Item english="Icons" text="Iconas"/>
+    <Item english="Hidden" text="Cuada"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Abìlita su sèberu mùltiplu (Cmd+click/sèberu)"/>
+    <Item english="Light theme" text="Tema craru"/>
+    <Item english="Dark theme" text="Tema iscuru"/>
+    <Item english="A line" text="Una lìnia"/>
+    <Item english="Columns (space separated)" text="Culunnas (separadas dae ispàtzios)"/>
+    <Item english="Highlight matching braces" text="Evidèntzia is parèntesis chi currispondent"/>
+    <Item english="Header font size" text="Dimensione de su caràtere de s'intestatzione"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Làcanas: manca, susu, dereta, giosso (puntos)"/>
+    <Item english="Add characters to the word list" text="Agiunghe caràteres a sa lista de is paràulas"/>
+    <Item english="A fixed folder" text="Una cartella fissa"/>
+    <Item english="Fixed folder" text="Cartella fissa"/>
+    <Item english="Confirm Replace All" text="Cunfirma Càmbia totus"/>
+    <Item english="Compare: ignore case" text="Cunfrontu: inniora majùs/minùs"/>
+    <Item english="Compare: ignore spaces" text="Cunfrontu: inniora is ispàtzios"/>
+    <Item english="Compare: ignore empty lines" text="Cunfrontu: inniora is rigas bòidas"/>
+    <Item english="Notepad++ update" text="Annoamentu de Notepad++"/>
+    <Item english="Open the Releases Page" text="Aberi sa pàgina de is versiones"/>
+    <Item english="Copy debug info to clipboard" text="Còpia is informatziones de debug in is notas"/>
+    <Item english="Fonts…" text="Caràteres…"/>
+    <Item english="Valid JSON." text="JSON vàlidu."/>
+    <Item english="Invalid JSON." text="JSON non vàlidu."/>
+    <Item english="FTP connections" text="Connessiones FTP"/>
+    <Item english="Transparent" text="Trasparente"/>
+    <Item english="View 1" text="Bista 1"/>
+    <Item english="View 2" text="Bista 2"/>
+</NativeLangExtra>

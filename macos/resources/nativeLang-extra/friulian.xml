@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/friulian.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Furlan">
+    <Item english="About NotepadMac" text="Informazions su NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Plate NotepadMac"/>
+    <Item english="Hide Others" text="Plate chei altris"/>
+    <Item english="Show All" text="Mostre dut"/>
+    <Item english="Quit NotepadMac" text="Va fûr di NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Vierç la cartele tal Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Vierç la cartele tal Terminal"/>
+    <Item english="Toggle Fold" text="Sclace/Espant"/>
+    <Item english="Show All Hidden Lines" text="Mostre dutis lis riis platadis"/>
+    <Item english="Move to Trash" text="Môf te scovacere"/>
+    <Item english="Save Current Command…" text="Salve il comant atuâl…"/>
+    <Item english="Show Console" text="Mostre la console"/>
+    <Item english="Validate shortcuts" text="Controle lis scurtis"/>
+    <Item english="Open Plugins Folder…" text="Vierç la cartele dai plugins…"/>
+    <Item english="Format" text="Formate"/>
+    <Item english="Sort Keys" text="Met in ordin lis clâfs"/>
+    <Item english="Validate" text="Controle"/>
+    <Item english="Show JSON Tree" text="Mostre l'arbul JSON"/>
+    <Item english="Set as First to Compare" text="Impueste come prin file di confrontâ"/>
+    <Item english="Compare" text="Confronte"/>
+    <Item english="Compare with File…" text="Confronte cun un file…"/>
+    <Item english="Next Difference" text="Diference sucessive"/>
+    <Item english="Previous Difference" text="Diference precedente"/>
+    <Item english="First Difference" text="Prime diference"/>
+    <Item english="Last Difference" text="Ultime diference"/>
+    <Item english="Compare Summary" text="Somari dal confront"/>
+    <Item english="Ignore Case" text="Ignore maiusc/minusc"/>
+    <Item english="Ignore Spaces" text="Ignore i spazis"/>
+    <Item english="Ignore Empty Lines" text="Ignore lis riis vueidis"/>
+    <Item english="Clear Active Compare" text="Nete chest confront"/>
+    <Item english="Clear All Compares" text="Nete ducj i confronts"/>
+    <Item english="Check XML Syntax Now" text="Controle cumò la sintassi XML"/>
+    <Item english="Current XML Path" text="Percors XML atuâl"/>
+    <Item english="Apply XSL Transformation…" text="Apliche la trasformazion XSL…"/>
+    <Item english="Connections…" text="Conessions…"/>
+    <Item english="Execute NppExec Script…" text="Invie un script NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Invie il script NppExec precedent"/>
+    <Item english="Stop Running NppExec Script" text="Ferme il script NppExec"/>
+    <Item english="Show NppExec Console" text="Mostre la console NppExec"/>
+    <Item english="Execute NppExec Script" text="Invie il script NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;script temporani&gt;"/>
+    <Item english="Script name" text="Non dal script"/>
+    <Item english="Show the toolbar" text="Mostre la sbare dai struments"/>
+    <Item english="Toolbar buttons" text="Botons de sbare dai struments"/>
+    <Item english="Icons only" text="Dome iconis"/>
+    <Item english="Icons and labels" text="Iconis e etichetis"/>
+    <Item english="Labels only" text="Dome etichetis"/>
+    <Item english="Toolbar size" text="Dimension de sbare dai struments"/>
+    <Item english="Regular" text="Normâl"/>
+    <Item english="Small" text="Piçule"/>
+    <Item english="Icons" text="Iconis"/>
+    <Item english="Hidden" text="Platade"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Ative il multi editing (Cmd+clic/selezion)"/>
+    <Item english="Light theme" text="Teme clâr"/>
+    <Item english="Dark theme" text="Teme scûr"/>
+    <Item english="A line" text="Une rie"/>
+    <Item english="Columns (space separated)" text="Colonis (separadis di spazis)"/>
+    <Item english="3 parts" text="3 tocs"/>
+    <Item english="4 parts" text="4 tocs"/>
+    <Item english="5 parts" text="5 tocs"/>
+    <Item english="6 parts" text="6 tocs"/>
+    <Item english="7 parts" text="7 tocs"/>
+    <Item english="8 parts" text="8 tocs"/>
+    <Item english="9 parts" text="9 tocs"/>
+    <Item english="Highlight matching braces" text="Evidenzie lis parentesis che a corispuindin"/>
+    <Item english="Header font (blank for the editor's)" text="Caratar de intestazion (vueit par chel dal editôr)"/>
+    <Item english="Header font size" text="Dimension caratar de intestazion"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Margjins: çampe, alt, diestre, bas (ponts)"/>
+    <Item english="Add characters to the word list" text="Zonte caratars ae liste des peraulis"/>
+    <Item english="A fixed folder" text="Une cartele fisse"/>
+    <Item english="Fixed folder" text="Cartele fisse"/>
+    <Item english="Confirm Replace All" text="Conferme Sostituìs dut"/>
+    <Item english="Compare: ignore case" text="Confront: ignore maiusc/minusc"/>
+    <Item english="Compare: ignore spaces" text="Confront: ignore i spazis"/>
+    <Item english="Compare: ignore empty lines" text="Confront: ignore lis riis vueidis"/>
+    <Item english="Notepad++ update" text="Inzornament di Notepad++"/>
+    <Item english="No update is available." text="Nol è disponibil nissun inzornament."/>
+    <Item english="Open the Releases Page" text="Vierç la pagjine des versions"/>
+    <Item english="Copy debug info to clipboard" text="Copie lis informazions di debug tai Aponts"/>
+    <Item english="Fonts…" text="Caratars…"/>
+    <Item english="This document is not valid JSON." text="Chest document nol è JSON valit."/>
+    <Item english="Valid JSON." text="JSON valit."/>
+    <Item english="Invalid JSON." text="JSON no valit."/>
+    <Item english="The document is valid XML." text="Il document al è XML valit."/>
+    <Item english="FTP connections" text="Conessions FTP"/>
+    <Item english="That file is open in another tab." text="Chel file al è viert intune altre lengute."/>
+    <Item english="Marked text copied" text="Test segnât copiât"/>
+    <Item english="Choose a folder first" text="Sielç prime une cartele"/>
+    <Item english="This document has no folder" text="Chest document nol à cartele"/>
+    <Item english="Searching..." text="Ricercje in cors..."/>
+    <Item english="Marks cleared" text="Segns netâts"/>
+    <Item english="Transparent" text="Trasparent"/>
+    <Item english="View 1" text="Viodude 1"/>
+    <Item english="View 2" text="Viodude 2"/>
+</NativeLangExtra>

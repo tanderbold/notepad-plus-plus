@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/abkhazian.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Аԥсуа">
+    <Item english="About NotepadMac" text="NotepadMac иазкны"/>
+    <Item english="Hide NotepadMac" text="Иҵәахтәуп NotepadMac"/>
+    <Item english="Hide Others" text="Иҵәахтәуп Егьырҭқәа"/>
+    <Item english="Show All" text="Иаарԥшлатәуп зегьы"/>
+    <Item english="Open Containing Folder in Finder" text="Иаарттәуп адокумент акаталог Finder аҟны"/>
+    <Item english="Open Containing Folder in Terminal" text="Иаарттәуп адокумент акаталог Атерминал аҟны"/>
+    <Item english="Show All Hidden Lines" text="Иаарԥшлатәуп иҵәаху ацәаҳәақәа зегьы"/>
+    <Item english="Move to Trash" text="Ианыхтәуп афаил (аҵәахырҭахь)"/>
+    <Item english="Ignore Case" text="Арегистр иазхьаԥштәӡам"/>
+    <Item english="Icons" text="Адыргаҷқәа"/>
+    <Item english="Hidden" text="Иҵәаху"/>
+    <Item english="Notepad++ update" text="Notepad++ арҿыцра"/>
+</NativeLangExtra>

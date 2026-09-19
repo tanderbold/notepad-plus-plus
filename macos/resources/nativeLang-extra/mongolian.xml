@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/mongolian.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Mongolian">
+    <Item english="About NotepadMac" text="NotepadMac-ийн тухай"/>
+    <Item english="Hide NotepadMac" text="NotepadMac-ийг нуух"/>
+    <Item english="Hide Others" text="Бусдыг нуух"/>
+    <Item english="Show All" text="Бүгдийг харуулах"/>
+    <Item english="Quit NotepadMac" text="NotepadMac-аас гарах"/>
+    <Item english="Open Containing Folder in Finder" text="Файлын хавтсыг Finder-д нээх"/>
+    <Item english="Open Containing Folder in Terminal" text="Файлын хавтсыг Терминалд нээх"/>
+    <Item english="Toggle Insert/Overtype" text="Оруулах/Дарж бичих горимыг сэлгэх"/>
+    <Item english="Toggle Fold" text="Хураах/дэлгэх"/>
+    <Item english="Show All Hidden Lines" text="Нуугдсан бүх мөрийг харуулах"/>
+    <Item english="Recent Window" text="Өмнөх цонх"/>
+    <Item english="Move to Trash" text="Хогийн сав руу зөөх"/>
+    <Item english="Save Current Command…" text="Энэ тушаалыг хадгалах…"/>
+    <Item english="Manage Saved Commands…" text="Хадгалсан тушаалуудыг удирдах…"/>
+    <Item english="Show Console" text="Консолыг харуулах"/>
+    <Item english="Validate shortcuts" text="Товчлолуудыг шалгах"/>
+    <Item english="Open Plugins Folder…" text="Нэмэлтүүдийн хавтсыг нээх…"/>
+    <Item english="Format" text="Хэлбэржүүлэх"/>
+    <Item english="Compact" text="Нягтруулах"/>
+    <Item english="Sort Keys" text="Түлхүүрүүдийг эрэмбэлэх"/>
+    <Item english="Validate" text="Шалгах"/>
+    <Item english="Show JSON Tree" text="JSON модыг харуулах"/>
+    <Item english="Set as First to Compare" text="Харьцуулах эхний файл болгох"/>
+    <Item english="Compare" text="Харьцуулах"/>
+    <Item english="Compare with File…" text="Файлтай харьцуулах…"/>
+    <Item english="Next Difference" text="Дараагийн ялгаа"/>
+    <Item english="Previous Difference" text="Өмнөх ялгаа"/>
+    <Item english="First Difference" text="Эхний ялгаа"/>
+    <Item english="Last Difference" text="Сүүлийн ялгаа"/>
+    <Item english="Compare Summary" text="Харьцуулалтын дүн"/>
+    <Item english="Ignore Case" text="Том/жижиг үсгийг үл харгалзах"/>
+    <Item english="Ignore Spaces" text="Хоосон зайг үл харгалзах"/>
+    <Item english="Ignore Empty Lines" text="Хоосон мөрийг үл харгалзах"/>
+    <Item english="Clear Active Compare" text="Идэвхтэй харьцуулалтыг цэвэрлэх"/>
+    <Item english="Clear All Compares" text="Бүх харьцуулалтыг цэвэрлэх"/>
+    <Item english="Check XML Syntax Now" text="XML синтаксыг одоо шалгах"/>
+    <Item english="Validate Against Schema…" text="Схемээр шалгах…"/>
+    <Item english="Validate Against DTD" text="DTD-ээр шалгах"/>
+    <Item english="Evaluate XPath Expression…" text="XPath илэрхийллийг тооцоолох…"/>
+    <Item english="Current XML Path" text="Одоогийн XML зам"/>
+    <Item english="Apply XSL Transformation…" text="XSL хувиргалтыг хэрэглэх…"/>
+    <Item english="Connections…" text="Холболтууд…"/>
+    <Item english="Connect…" text="Холбогдох…"/>
+    <Item english="Disconnect" text="Салгах"/>
+    <Item english="Show Remote Files" text="Алсын файлуудыг харуулах"/>
+    <Item english="Upload Current File" text="Энэ файлыг байршуулах"/>
+    <Item english="Execute NppExec Script…" text="NppExec скриптийг ажиллуулах…"/>
+    <Item english="Execute Previous NppExec Script" text="Өмнөх NppExec скриптийг ажиллуулах"/>
+    <Item english="Stop Running NppExec Script" text="NppExec скриптийг зогсоох"/>
+    <Item english="Show NppExec Console" text="NppExec консолыг харуулах"/>
+    <Item english="Execute NppExec Script" text="NppExec скриптийг ажиллуулах"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;түр зуурын скрипт&gt;"/>
+    <Item english="Script name" text="Скриптийн нэр"/>
+    <Item english="Dock Left" text="Зүүн талд тулгах"/>
+    <Item english="Dock Right" text="Баруун талд тулгах"/>
+    <Item english="Dock Top" text="Дээд талд тулгах"/>
+    <Item english="Dock Bottom" text="Доод талд тулгах"/>
+    <Item english="Float" text="Хөвөх"/>
+    <Item english="Remember which panels were open" text="Ямар хавтангууд нээлттэй байсныг санах"/>
+    <Item english="Show the toolbar" text="Хэрэгслийн самбарыг харуулах"/>
+    <Item english="Toolbar buttons" text="Хэрэгслийн самбарын товчнууд"/>
+    <Item english="Icons only" text="Зөвхөн дүрс"/>
+    <Item english="Icons and labels" text="Дүрс ба нэр"/>
+    <Item english="Labels only" text="Зөвхөн нэр"/>
+    <Item english="Toolbar size" text="Хэрэгслийн самбарын хэмжээ"/>
+    <Item english="Regular" text="Энгийн"/>
+    <Item english="Small" text="Жижиг"/>
+    <Item english="Icons" text="Дүрс"/>
+    <Item english="Hidden" text="Нуусан"/>
+    <Item english="1 pixel" text="1 пиксел"/>
+    <Item english="2 pixels" text="2 пиксел"/>
+    <Item english="3 pixels" text="3 пиксел"/>
+    <Item english="Selected text can be dragged" text="Сонгосон бичвэрийг чирч болно"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Олон засварлалтыг идэвхжүүлэх (Cmd+товших/сонголт)"/>
+    <Item english="Follow the system" text="Системийг дагах"/>
+    <Item english="Light theme" text="Цайвар загвар"/>
+    <Item english="Dark theme" text="Бараан загвар"/>
+    <Item english="Show the fold margin" text="Хураах талбарыг харуулах"/>
+    <Item english="A line" text="Мөр"/>
+    <Item english="Columns (space separated)" text="Багана (хоосон зайгаар тусгаарласан)"/>
+    <Item english="3 parts" text="3 хэсэг"/>
+    <Item english="4 parts" text="4 хэсэг"/>
+    <Item english="5 parts" text="5 хэсэг"/>
+    <Item english="6 parts" text="6 хэсэг"/>
+    <Item english="7 parts" text="7 хэсэг"/>
+    <Item english="8 parts" text="8 хэсэг"/>
+    <Item english="9 parts" text="9 хэсэг"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Нэрээс тодорхойгүй үед хэлийг агуулгаас нь тогтоох"/>
+    <Item english="Highlight matching braces" text="Тохирох хаалтыг тодруулах"/>
+    <Item english="Header font (blank for the editor's)" text="Толгойн фонт (хоосон бол засварлагчийнх)"/>
+    <Item english="Header font size" text="Толгойн фонтын хэмжээ"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Зах: зүүн, дээд, баруун, доод (цэг)"/>
+    <Item english="Characters before it opens" text="Нээгдэхээс өмнөх тэмдэгтийн тоо"/>
+    <Item english="Add characters to the word list" text="Үгийн жагсаалтад тэмдэгт нэмэх"/>
+    <Item english="A fixed folder" text="Тогтмол хавтас"/>
+    <Item english="Fixed folder" text="Тогтмол хавтас"/>
+    <Item english="Confirm Replace All" text="Бүгдийг солихыг баталгаажуулах"/>
+    <Item english="Compare: ignore case" text="Харьцуулалт: том/жижиг үсгийг үл харгалзах"/>
+    <Item english="Compare: ignore spaces" text="Харьцуулалт: хоосон зайг үл харгалзах"/>
+    <Item english="Compare: ignore empty lines" text="Харьцуулалт: хоосон мөрийг үл харгалзах"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Хайх талбарыг автоматаар дүүргэх тэмдэгтийн дээд тоо"/>
+    <Item english="Releases repository" text="Хувилбаруудын сан"/>
+    <Item english="Notepad++ update" text="Notepad++-ийн шинэчлэл"/>
+    <Item english="No update is available." text="Шинэчлэл байхгүй байна."/>
+    <Item english="An update package is available, do you want to download it?" text="Шинэчлэлийн багц байна, татаж авах уу?"/>
+    <Item english="Open the Releases Page" text="Хувилбаруудын хуудсыг нээх"/>
+    <Item english="Copy debug info to clipboard" text="Алдаа засварлах мэдээллийг түр санах ойд хуулах"/>
+    <Item english="Fonts…" text="Фонтууд…"/>
+    <Item english="This document is not valid JSON." text="Энэ баримт зөв JSON биш байна."/>
+    <Item english="Valid JSON." text="Зөв JSON."/>
+    <Item english="Invalid JSON." text="Буруу JSON."/>
+    <Item english="Set as the first file to compare." text="Харьцуулах эхний файл болголоо."/>
+    <Item english="Nothing to compare with." text="Харьцуулах зүйл алга."/>
+    <Item english="The document is valid XML." text="Баримт зөв XML байна."/>
+    <Item english="FTP connections" text="FTP холболтууд"/>
+    <Item english="Cannot connect." text="Холбогдож чадсангүй."/>
+    <Item english="That file is open in another tab." text="Тэр файл өөр табд нээлттэй байна."/>
+    <Item english="Close it first, or choose another name." text="Эхлээд хаагаад, эсвэл өөр нэр сонгоно уу."/>
+    <Item english="Which language is this?" text="Энэ ямар хэл вэ?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Зарим тэмдэгтийг энэ кодчилолд илэрхийлэх боломжгүй."/>
+    <Item english="Converting will replace them." text="Хөрвүүлбэл тэдгээр нь солигдоно."/>
+    <Item english="Press the keys." text="Товчлууруудыг дарна уу."/>
+    <Item english="Nothing is marked" text="Юу ч тэмдэглэгдээгүй"/>
+    <Item english="Marked text copied" text="Тэмдэглэсэн бичвэрийг хууллаа"/>
+    <Item english="Choose a folder first" text="Эхлээд хавтас сонгоно уу"/>
+    <Item english="This document has no folder" text="Энэ баримт хавтасгүй байна"/>
+    <Item english="The ticked project panels have no files" text="Сонгосон төслийн хавтангуудад файл алга"/>
+    <Item english="Searching..." text="Хайж байна..."/>
+    <Item english="Stopping..." text="Зогсож байна..."/>
+    <Item english="Marks cleared" text="Тэмдэглэгээг арилгалаа"/>
+    <Item english="Transparent" text="Тунгалаг"/>
+    <Item english="View 1" text="Харагдац 1"/>
+    <Item english="View 2" text="Харагдац 2"/>
+</NativeLangExtra>

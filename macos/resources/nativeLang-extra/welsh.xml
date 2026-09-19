@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/welsh.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Cymraeg">
+    <Item english="About NotepadMac" text="Ynghylch NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Cuddio NotepadMac"/>
+    <Item english="Hide Others" text="Cuddio'r Lleill"/>
+    <Item english="Show All" text="Dangos y Cyfan"/>
+    <Item english="Quit NotepadMac" text="Gadael NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Agor Ffolder Lleoliad yn Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Agor Ffolder Lleoliad yn y Derfynell"/>
+    <Item english="Toggle Insert/Overtype" text="Toglo Mewnosod/Trosysgrifo"/>
+    <Item english="Toggle Fold" text="Toglo Plygu"/>
+    <Item english="Show All Hidden Lines" text="Dangos Pob Llinell Gudd"/>
+    <Item english="Recent Window" text="Ffenestr Ddiweddar"/>
+    <Item english="Move to Trash" text="Symud i'r Sbwriel"/>
+    <Item english="Save Current Command…" text="Cadw'r Gorchymyn Presennol…"/>
+    <Item english="Manage Saved Commands…" text="Rheoli'r Gorchmynion a Gadwyd…"/>
+    <Item english="Show Console" text="Dangos y Consol"/>
+    <Item english="Validate shortcuts" text="Dilysu'r bysellau brys"/>
+    <Item english="Open Plugins Folder…" text="Agor Ffolder yr Ategolion…"/>
+    <Item english="Format" text="Fformatio"/>
+    <Item english="Compact" text="Cywasgu"/>
+    <Item english="Sort Keys" text="Trefnu'r Allweddi"/>
+    <Item english="Validate" text="Dilysu"/>
+    <Item english="Show JSON Tree" text="Dangos Coeden JSON"/>
+    <Item english="Set as First to Compare" text="Gosod fel y Cyntaf i'w Gymharu"/>
+    <Item english="Compare" text="Cymharu"/>
+    <Item english="Compare with File…" text="Cymharu â Ffeil…"/>
+    <Item english="Next Difference" text="Gwahaniaeth Nesaf"/>
+    <Item english="Previous Difference" text="Gwahaniaeth Blaenorol"/>
+    <Item english="First Difference" text="Gwahaniaeth Cyntaf"/>
+    <Item english="Last Difference" text="Gwahaniaeth Olaf"/>
+    <Item english="Compare Summary" text="Crynodeb y Cymharu"/>
+    <Item english="Ignore Case" text="Anwybyddu Prif/Is-lythrennau"/>
+    <Item english="Ignore Spaces" text="Anwybyddu Bylchau"/>
+    <Item english="Ignore Empty Lines" text="Anwybyddu Llinellau Gweigion"/>
+    <Item english="Clear Active Compare" text="Clirio'r Gymhariaeth Bresennol"/>
+    <Item english="Clear All Compares" text="Clirio Pob Cymhariaeth"/>
+    <Item english="Pretty Print" text="Fformatio Taclus"/>
+    <Item english="Pretty Print — Indent Attributes" text="Fformatio Taclus — Mewnoli Priodoleddau"/>
+    <Item english="Check XML Syntax Now" text="Gwirio Cystrawen XML Nawr"/>
+    <Item english="Validate Against Schema…" text="Dilysu yn Erbyn Sgema…"/>
+    <Item english="Validate Against DTD" text="Dilysu yn Erbyn DTD"/>
+    <Item english="Evaluate XPath Expression…" text="Gwerthuso Mynegiad XPath…"/>
+    <Item english="Current XML Path" text="Llwybr XML Presennol"/>
+    <Item english="Apply XSL Transformation…" text="Cymhwyso Trawsnewidiad XSL…"/>
+    <Item english="Connections…" text="Cysylltiadau…"/>
+    <Item english="Connect…" text="Cysylltu…"/>
+    <Item english="Disconnect" text="Datgysylltu"/>
+    <Item english="Show Remote Files" text="Dangos Ffeiliau Pell"/>
+    <Item english="Upload Current File" text="Llwytho'r Ffeil Bresennol i Fyny"/>
+    <Item english="Execute NppExec Script…" text="Rhedeg Sgript NppExec…"/>
+    <Item english="Execute Previous NppExec Script" text="Rhedeg Sgript NppExec Blaenorol"/>
+    <Item english="Stop Running NppExec Script" text="Atal Sgript NppExec"/>
+    <Item english="Show NppExec Console" text="Dangos Consol NppExec"/>
+    <Item english="Execute NppExec Script" text="Rhedeg Sgript NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;sgript dros dro&gt;"/>
+    <Item english="Script name" text="Enw'r sgript"/>
+    <Item english="Dock Left" text="Docio i'r Chwith"/>
+    <Item english="Dock Right" text="Docio i'r Dde"/>
+    <Item english="Dock Top" text="Docio i'r Brig"/>
+    <Item english="Dock Bottom" text="Docio i'r Gwaelod"/>
+    <Item english="Float" text="Arnofio"/>
+    <Item english="Remember which panels were open" text="Cofio pa baneli oedd ar agor"/>
+    <Item english="Show the toolbar" text="Dangos y bar offer"/>
+    <Item english="Toolbar buttons" text="Botymau'r bar offer"/>
+    <Item english="Icons only" text="Eiconau yn unig"/>
+    <Item english="Icons and labels" text="Eiconau a labeli"/>
+    <Item english="Labels only" text="Labeli yn unig"/>
+    <Item english="Toolbar size" text="Maint y bar offer"/>
+    <Item english="Regular" text="Arferol"/>
+    <Item english="Small" text="Bach"/>
+    <Item english="Icons" text="Eiconau"/>
+    <Item english="Hidden" text="Cuddiedig"/>
+    <Item english="1 pixel" text="1 picsel"/>
+    <Item english="2 pixels" text="2 bicsel"/>
+    <Item english="3 pixels" text="3 phicsel"/>
+    <Item english="Selected text can be dragged" text="Gellir llusgo'r testun a ddewiswyd"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Galluogi Aml-olygu (Cmd+clic/dewis)"/>
+    <Item english="Follow the system" text="Dilyn y system"/>
+    <Item english="Light theme" text="Thema olau"/>
+    <Item english="Dark theme" text="Thema dywyll"/>
+    <Item english="Show the fold margin" text="Dangos yr ymyl plygu"/>
+    <Item english="A line" text="Llinell"/>
+    <Item english="Columns (space separated)" text="Colofnau (wedi'u gwahanu gan fylchau)"/>
+    <Item english="3 parts" text="3 rhan"/>
+    <Item english="4 parts" text="4 rhan"/>
+    <Item english="5 parts" text="5 rhan"/>
+    <Item english="6 parts" text="6 rhan"/>
+    <Item english="7 parts" text="7 rhan"/>
+    <Item english="8 parts" text="8 rhan"/>
+    <Item english="9 parts" text="9 rhan"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Canfod yr iaith o'r cynnwys pan nad yw'r enw'n ei dweud"/>
+    <Item english="Highlight matching braces" text="Amlygu cyplyswyr sy'n cydweddu"/>
+    <Item english="Header font (blank for the editor's)" text="Ffont y pennawd (gwag ar gyfer un y golygydd)"/>
+    <Item english="Header font size" text="Maint ffont y pennawd"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Ymylon: chwith, brig, de, gwaelod (pwyntiau)"/>
+    <Item english="Characters before it opens" text="Nodau cyn iddo agor"/>
+    <Item english="Add characters to the word list" text="Ychwanegu nodau at y rhestr geiriau"/>
+    <Item english="A fixed folder" text="Ffolder sefydlog"/>
+    <Item english="Fixed folder" text="Ffolder sefydlog"/>
+    <Item english="Confirm Replace All" text="Cadarnhau Newid y Cwbl"/>
+    <Item english="Compare: ignore case" text="Cymharu: anwybyddu prif/is-lythrennau"/>
+    <Item english="Compare: ignore spaces" text="Cymharu: anwybyddu bylchau"/>
+    <Item english="Compare: ignore empty lines" text="Cymharu: anwybyddu llinellau gweigion"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Uchafswm Nodau i Awto-lenwi'r Maes Canfod"/>
+    <Item english="Releases repository" text="Storfa'r datganiadau"/>
+    <Item english="Notepad++ update" text="Diweddariad Notepad++"/>
+    <Item english="No update is available." text="Nid oes diweddariad ar gael."/>
+    <Item english="An update package is available, do you want to download it?" text="Mae pecyn diweddaru ar gael, ydych chi am ei lwytho i lawr?"/>
+    <Item english="Open the Releases Page" text="Agor y Dudalen Datganiadau"/>
+    <Item english="Copy debug info to clipboard" text="Copïo gwybodaeth dadfygio i'r clipfwrdd"/>
+    <Item english="Fonts…" text="Ffontiau…"/>
+    <Item english="This document is not valid JSON." text="Nid yw'r ddogfen hon yn JSON dilys."/>
+    <Item english="Valid JSON." text="JSON dilys."/>
+    <Item english="Invalid JSON." text="JSON annilys."/>
+    <Item english="Set as the first file to compare." text="Wedi'i gosod fel y ffeil gyntaf i'w chymharu."/>
+    <Item english="Nothing to compare with." text="Dim byd i'w gymharu ag ef."/>
+    <Item english="The document is valid XML." text="Mae'r ddogfen yn XML dilys."/>
+    <Item english="FTP connections" text="Cysylltiadau FTP"/>
+    <Item english="Cannot connect." text="Methu cysylltu."/>
+    <Item english="That file is open in another tab." text="Mae'r ffeil honno ar agor mewn tab arall."/>
+    <Item english="Close it first, or choose another name." text="Caewch hi yn gyntaf, neu dewiswch enw arall."/>
+    <Item english="Which language is this?" text="Pa iaith yw hon?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Ni ellir cynrychioli rhai nodau yn yr amgodiad hwn."/>
+    <Item english="Converting will replace them." text="Bydd trawsnewid yn eu disodli."/>
+    <Item english="Press the keys." text="Pwyswch y bysellau."/>
+    <Item english="Nothing is marked" text="Nid oes dim wedi'i nodi"/>
+    <Item english="Marked text copied" text="Copïwyd y testun a nodwyd"/>
+    <Item english="Choose a folder first" text="Dewiswch ffolder yn gyntaf"/>
+    <Item english="This document has no folder" text="Nid oes gan y ddogfen hon ffolder"/>
+    <Item english="The ticked project panels have no files" text="Nid oes ffeiliau yn y paneli prosiect a ticiwyd"/>
+    <Item english="Searching..." text="Chwilio..."/>
+    <Item english="Stopping..." text="Stopio..."/>
+    <Item english="Marks cleared" text="Cliriwyd y marciau"/>
+    <Item english="Transparent" text="Tryloyw"/>
+    <Item english="View 1" text="Golwg 1"/>
+    <Item english="View 2" text="Golwg 2"/>
+</NativeLangExtra>

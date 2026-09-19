@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/kurdish.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="كوردی">
+    <Item english="About NotepadMac" text="دەربارەی NotepadMac"/>
+    <Item english="Hide NotepadMac" text="شاردنەوەی NotepadMac"/>
+    <Item english="Hide Others" text="شاردنەوەی ئەوانی تر"/>
+    <Item english="Show All" text="پیشاندانی هەموو"/>
+    <Item english="Quit NotepadMac" text="دەرچوون لە NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="كردنەوەی بوخچەی پەیوەندیدار لە Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="كردنەوەی بوخچەی پەیوەندیدار لە تێرمیناڵ"/>
+    <Item english="Show All Hidden Lines" text="پیشاندانی هەموو هێلە شاراوەكان"/>
+    <Item english="Move to Trash" text="ناردن بۆ تەنەكەی خۆڵ"/>
+    <Item english="Save Current Command…" text="پاشەكەوتكردنی فەرمانی ئێستا…"/>
+    <Item english="Manage Saved Commands…" text="بەڕێوەبردنی فەرمانە پاشەكەوتكراوەكان…"/>
+    <Item english="Show Console" text="پیشاندانی كۆنسۆڵ"/>
+    <Item english="Open Plugins Folder…" text="كردنەوەی بوخچەی پێوەكراوەكان…"/>
+    <Item english="Sort Keys" text="ڕیزكردنی كلیلەكان"/>
+    <Item english="Compare" text="بەراوردكردن"/>
+    <Item english="Compare with File…" text="بەراوردكردن لەگەڵ پەڕگە…"/>
+    <Item english="Next Difference" text="جیاوازی داهاتوو"/>
+    <Item english="Previous Difference" text="جیاوازی پێشوو"/>
+    <Item english="First Difference" text="یەكەم جیاوازی"/>
+    <Item english="Last Difference" text="دوایین جیاوازی"/>
+    <Item english="Ignore Case" text="پشتگوێخستنی حاڵەت"/>
+    <Item english="Ignore Spaces" text="پشتگوێخستنی بۆشاییەكان"/>
+    <Item english="Ignore Empty Lines" text="پشتگوێخستنی هێلە بەتاڵەكان"/>
+    <Item english="Connections…" text="پەیوەندییەكان…"/>
+    <Item english="Connect…" text="پەیوەندیكردن…"/>
+    <Item english="Disconnect" text="پچڕاندنی پەیوەندی"/>
+    <Item english="Show Remote Files" text="پیشاندانی پەڕگە دوورەكان"/>
+    <Item english="Execute NppExec Script…" text="بەڕێوەبردنی سكریپتی NppExec…"/>
+    <Item english="Stop Running NppExec Script" text="ڕاگرتنی سكریپتی NppExec"/>
+    <Item english="Show NppExec Console" text="پیشاندانی كۆنسۆڵی NppExec"/>
+    <Item english="Execute NppExec Script" text="بەڕێوەبردنی سكریپتی NppExec"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;سكریپتی كاتی&gt;"/>
+    <Item english="Script name" text="ناوی سكریپت"/>
+    <Item english="Icons only" text="تەنها ئایكۆن"/>
+    <Item english="Small" text="بچووك"/>
+    <Item english="Icons" text="ئایكۆنەكان"/>
+    <Item english="Hidden" text="شاراوە"/>
+    <Item english="Light theme" text="قالبی ڕووناك"/>
+    <Item english="Dark theme" text="قالبی تاریك"/>
+    <Item english="A line" text="هێلێك"/>
+    <Item english="3 parts" text="3 بەش"/>
+    <Item english="4 parts" text="4 بەش"/>
+    <Item english="5 parts" text="5 بەش"/>
+    <Item english="6 parts" text="6 بەش"/>
+    <Item english="7 parts" text="7 بەش"/>
+    <Item english="8 parts" text="8 بەش"/>
+    <Item english="9 parts" text="9 بەش"/>
+    <Item english="Compare: ignore case" text="بەراوردكردن: پشتگوێخستنی حاڵەت"/>
+    <Item english="Compare: ignore spaces" text="بەراوردكردن: پشتگوێخستنی بۆشاییەكان"/>
+    <Item english="Compare: ignore empty lines" text="بەراوردكردن: پشتگوێخستنی هێلە بەتاڵەكان"/>
+    <Item english="Notepad++ update" text="نوێكردنەوەی Notepad++"/>
+    <Item english="No update is available." text="هیچ نوێكردنەوەیەك بەردەست نییە."/>
+    <Item english="An update package is available, do you want to download it?" text="پاكێجێكی نوێكردنەوە بەردەستە، دەتەوێت دایبەزێنیت؟"/>
+    <Item english="Fonts…" text="فۆنتەكان…"/>
+    <Item english="FTP connections" text="پەیوەندییەكانی FTP"/>
+    <Item english="Cannot connect." text="ناتوانرێت پەیوەندی بكرێت."/>
+    <Item english="Which language is this?" text="ئەمە چ زمانێكە؟"/>
+    <Item english="Searching..." text="گەڕان..."/>
+    <Item english="Transparent" text="ڕوون"/>
+</NativeLangExtra>

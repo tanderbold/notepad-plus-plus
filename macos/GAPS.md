@@ -84,8 +84,12 @@ exists for Russian.
 
 What is left of that list, none of it a defect in what exists:
 
-1. `nativeLang-extra` has Russian only; in other languages the port's own
-   commands stay English until someone writes that file.
+1. `nativeLang-extra` has a file for each of the 92 translated languages,
+   written by a model from each language's own nativeLang vocabulary and
+   read by no native speaker. 54 are complete; in the small languages an
+   item nobody could vouch for was left out and stays English (Samogitian
+   has none, Abkhazian 12, Kabyle 19, Aranese 28). `README.md` there says
+   how to add to them, `check_nativelang_extra.py` checks them.
 2. The plan's wording was wrong in two places and nothing is missing:
    `${name}` and two-digit `\\10` are not Boost's syntax (`$+{name}` and
    `$10` are, and work); Notepad++ has no "line context" in its results.

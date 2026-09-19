@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/tatar.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Татарча">
+    <Item english="About NotepadMac" text="NotepadMac турында"/>
+    <Item english="Hide NotepadMac" text="NotepadMac-ны яшерергә"/>
+    <Item english="Hide Others" text="Башкаларны яшерергә"/>
+    <Item english="Show All" text="Бөтенесен күрсәтергә"/>
+    <Item english="Quit NotepadMac" text="NotepadMac-тан чыгарга"/>
+    <Item english="Open Containing Folder in Finder" text="Документ папкасын Finder-да ачарга"/>
+    <Item english="Open Containing Folder in Terminal" text="Документ папкасын Терминалда ачарга"/>
+    <Item english="Toggle Insert/Overtype" text="Кую/өстеннән язу режимын алыштырырга"/>
+    <Item english="Toggle Fold" text="Блокны җыярга/җәергә"/>
+    <Item english="Show All Hidden Lines" text="Бөтен яшерен юлларны күрсәтергә"/>
+    <Item english="Recent Window" text="Элекке тәрәзә"/>
+    <Item english="Move to Trash" text="Кәрзингә күчерергә"/>
+    <Item english="Save Current Command…" text="Хәзерге команданы сакларга…"/>
+    <Item english="Manage Saved Commands…" text="Сакланган командалар белән идарә…"/>
+    <Item english="Show Console" text="Консольне күрсәтергә"/>
+    <Item english="Validate shortcuts" text="Кайнар төймәләрне тикшерергә"/>
+    <Item english="Open Plugins Folder…" text="Плагиннар папкасын ачарга…"/>
+    <Item english="Format" text="Форматларга"/>
+    <Item english="Compact" text="Компакт итәргә"/>
+    <Item english="Sort Keys" text="Ачкычларны тәртипләргә"/>
+    <Item english="Validate" text="Тикшерергә"/>
+    <Item english="Show JSON Tree" text="JSON агачын күрсәтергә"/>
+    <Item english="Set as First to Compare" text="Чагыштыру өчен беренче итеп билгеләргә"/>
+    <Item english="Compare" text="Чагыштырырга"/>
+    <Item english="Compare with File…" text="Файл белән чагыштырырга…"/>
+    <Item english="Next Difference" text="Киләсе аерма"/>
+    <Item english="Previous Difference" text="Элекке аерма"/>
+    <Item english="First Difference" text="Беренче аерма"/>
+    <Item english="Last Difference" text="Соңгы аерма"/>
+    <Item english="Compare Summary" text="Чагыштыру нәтиҗәсе"/>
+    <Item english="Ignore Case" text="Регистрны исәпкә алмаска"/>
+    <Item english="Ignore Spaces" text="Араларны исәпкә алмаска"/>
+    <Item english="Ignore Empty Lines" text="Буш юлларны исәпкә алмаска"/>
+    <Item english="Clear Active Compare" text="Актив чагыштыруны бетерергә"/>
+    <Item english="Clear All Compares" text="Бөтен чагыштыруларны бетерергә"/>
+    <Item english="Linearize" text="Бер юлга җыярга"/>
+    <Item english="Check XML Syntax Now" text="XML синтаксисын хәзер тикшерергә"/>
+    <Item english="Validate Against Schema…" text="Схема буенча тикшерергә…"/>
+    <Item english="Validate Against DTD" text="DTD буенча тикшерергә"/>
+    <Item english="Evaluate XPath Expression…" text="XPath аңлатмасын исәпләргә…"/>
+    <Item english="Current XML Path" text="Хәзерге XML юлы"/>
+    <Item english="Current XML Path with Predicates" text="Хәзерге XML юлы (предикатлар белән)"/>
+    <Item english="Apply XSL Transformation…" text="XSL трансформациясен кулланырга…"/>
+    <Item english="Connections…" text="Тоташулар…"/>
+    <Item english="Connect…" text="Тоташырга…"/>
+    <Item english="Disconnect" text="Тоташуны өзәргә"/>
+    <Item english="Show Remote Files" text="Ерактагы файлларны күрсәтергә"/>
+    <Item english="Upload Current File" text="Хәзерге файлны серверга җибәрергә"/>
+    <Item english="Execute NppExec Script…" text="NppExec скриптын җибәрергә…"/>
+    <Item english="Execute Previous NppExec Script" text="Элекке NppExec скриптын җибәрергә"/>
+    <Item english="Stop Running NppExec Script" text="NppExec скриптын туктатырга"/>
+    <Item english="Show NppExec Console" text="NppExec консолен күрсәтергә"/>
+    <Item english="Execute NppExec Script" text="NppExec скриптын җибәрергә"/>
+    <Item english="&lt;temporary script&gt;" text="&lt;вакытлы скрипт&gt;"/>
+    <Item english="Script name" text="Скрипт исеме"/>
+    <Item english="Dock Left" text="Сулга ялгарга"/>
+    <Item english="Dock Right" text="Уңга ялгарга"/>
+    <Item english="Dock Top" text="Өскә ялгарга"/>
+    <Item english="Dock Bottom" text="Аска ялгарга"/>
+    <Item english="Float" text="Аерым тәрәзәдә"/>
+    <Item english="Remember which panels were open" text="Кайсы панельләр ачык булганын хәтерләргә"/>
+    <Item english="Show the toolbar" text="Кораллар панелен күрсәтергә"/>
+    <Item english="Toolbar buttons" text="Кораллар панеле төймәләре"/>
+    <Item english="Icons only" text="Значоклар гына"/>
+    <Item english="Icons and labels" text="Значоклар һәм язулар"/>
+    <Item english="Labels only" text="Язулар гына"/>
+    <Item english="Toolbar size" text="Кораллар панеленең зурлыгы"/>
+    <Item english="Regular" text="Гадәти"/>
+    <Item english="Small" text="Кечкенә"/>
+    <Item english="Icons" text="Значоклар"/>
+    <Item english="Hidden" text="Яшерен"/>
+    <Item english="1 pixel" text="1 пиксель"/>
+    <Item english="2 pixels" text="2 пиксель"/>
+    <Item english="3 pixels" text="3 пиксель"/>
+    <Item english="Selected text can be dragged" text="Сайланган текстны сөйрәп күчерергә мөмкин"/>
+    <Item english="Enable Multi-Editing (Cmd+click/selection)" text="Күпләп төзәтүне кабызырга (Cmd+чиртү/сайлау)"/>
+    <Item english="Follow the system" text="Системага ияреп"/>
+    <Item english="Light theme" text="Якты тема"/>
+    <Item english="Dark theme" text="Караңгы тема"/>
+    <Item english="Show the fold margin" text="Җыю кырын күрсәтергә"/>
+    <Item english="A line" text="Сызык"/>
+    <Item english="Columns (space separated)" text="Баганалар (ара белән аерып)"/>
+    <Item english="3 parts" text="3 өлеш"/>
+    <Item english="4 parts" text="4 өлеш"/>
+    <Item english="5 parts" text="5 өлеш"/>
+    <Item english="6 parts" text="6 өлеш"/>
+    <Item english="7 parts" text="7 өлеш"/>
+    <Item english="8 parts" text="8 өлеш"/>
+    <Item english="9 parts" text="9 өлеш"/>
+    <Item english="Work the language out from the contents when the name does not say" text="Исем буенча билгеле булмаганда синтаксисны эчтәлектән ачыкларга"/>
+    <Item english="Highlight matching braces" text="Парлы җәяләрне яктыртырга"/>
+    <Item english="Header font (blank for the editor's)" text="Өске колонтитул шрифты (буш булса — редакторныкы)"/>
+    <Item english="Header font size" text="Өске колонтитул шрифтының зурлыгы"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Аралар: сулдан, өстән, уңнан, астан (пункт)"/>
+    <Item english="Characters before it opens" text="Ачылыр алдыннан символлар саны"/>
+    <Item english="Add characters to the word list" text="Сүзләр исемлегенә символлар өстәргә"/>
+    <Item english="A fixed folder" text="Даими папка"/>
+    <Item english="Fixed folder" text="Даими папка"/>
+    <Item english="Confirm Replace All" text="Бөтенесен алыштыруны расларга"/>
+    <Item english="Compare: ignore case" text="Чагыштыру: регистрны исәпкә алмаска"/>
+    <Item english="Compare: ignore spaces" text="Чагыштыру: араларны исәпкә алмаска"/>
+    <Item english="Compare: ignore empty lines" text="Чагыштыру: буш юлларны исәпкә алмаска"/>
+    <Item english="Max Characters to Auto-Fill Find Field" text="Эзләү кырын автоматик тутыру өчен символларның максималь саны"/>
+    <Item english="Releases repository" text="Чыгарылышлар репозиторие"/>
+    <Item english="Notepad++ update" text="Notepad++ яңартуы"/>
+    <Item english="No update is available." text="Яңарту юк."/>
+    <Item english="An update package is available, do you want to download it?" text="Яңарту пакеты бар, аны йөкләп алырга телисезме?"/>
+    <Item english="Open the Releases Page" text="Чыгарылышлар битен ачарга"/>
+    <Item english="Copy debug info to clipboard" text="Хаталар мәгълүматын буферга күчерергә"/>
+    <Item english="Fonts…" text="Шрифтлар…"/>
+    <Item english="This document is not valid JSON." text="Бу документ дөрес JSON түгел."/>
+    <Item english="Valid JSON." text="JSON дөрес."/>
+    <Item english="Invalid JSON." text="JSON хаталы."/>
+    <Item english="Set as the first file to compare." text="Чагыштыру өчен беренче файл итеп билгеләнде."/>
+    <Item english="Nothing to compare with." text="Чагыштыру өчен бернәрсә юк."/>
+    <Item english="The document is valid XML." text="Документ дөрес XML."/>
+    <Item english="FTP connections" text="FTP тоташулары"/>
+    <Item english="Cannot connect." text="Тоташып булмады."/>
+    <Item english="That file is open in another tab." text="Бу файл башка биттә ачык."/>
+    <Item english="Close it first, or choose another name." text="Башта аны ябыгыз яки башка исем сайлагыз."/>
+    <Item english="Which language is this?" text="Бу нинди тел?"/>
+    <Item english="Some characters cannot be represented in this encoding." text="Кайбер символларны бу кодлауда күрсәтеп булмый."/>
+    <Item english="Converting will replace them." text="Үзгәртү аларны алыштырачак."/>
+    <Item english="Press the keys." text="Төймәләргә басыгыз."/>
+    <Item english="Nothing is marked" text="Бернәрсә тамгаланмаган"/>
+    <Item english="Marked text copied" text="Тамгаланган текст күчерелде"/>
+    <Item english="Choose a folder first" text="Башта папканы сайлагыз"/>
+    <Item english="This document has no folder" text="Бу документның папкасы юк"/>
+    <Item english="The ticked project panels have no files" text="Билгеләнгән проект панельләрендә файллар юк"/>
+    <Item english="Searching..." text="Эзләү..."/>
+    <Item english="Stopping..." text="Туктату..."/>
+    <Item english="Marks cleared" text="Тамгалар бетерелде"/>
+    <Item english="Transparent" text="Үтә-күренмәле"/>
+    <Item english="View 1" text="1-нче өлкә"/>
+    <Item english="View 2" text="2-нче өлкә"/>
+</NativeLangExtra>

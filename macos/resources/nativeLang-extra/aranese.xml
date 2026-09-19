@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- What the macOS port says and Windows does not: read beside PowerEditor/installer/nativeLang/aranese.xml.
+     english is the text as the port has it; text is what is shown. -->
+<NativeLangExtra name="Aranese">
+    <Item english="About NotepadMac" text="Sus NotepadMac"/>
+    <Item english="Hide NotepadMac" text="Amagar NotepadMac"/>
+    <Item english="Hide Others" text="Amagar es auti"/>
+    <Item english="Show All" text="Ensenhar tot"/>
+    <Item english="Quit NotepadMac" text="Gesser de NotepadMac"/>
+    <Item english="Open Containing Folder in Finder" text="Daurir eth directòri en Finder"/>
+    <Item english="Open Containing Folder in Terminal" text="Daurir eth directòri en Terminal"/>
+    <Item english="Show All Hidden Lines" text="Ensenhar totes es linhes amagades"/>
+    <Item english="Validate shortcuts" text="Comprovar es dresseres"/>
+    <Item english="Format" text="Format"/>
+    <Item english="Sort Keys" text="Ordenar es claus"/>
+    <Item english="Validate" text="Comprovar"/>
+    <Item english="Show JSON Tree" text="Ensenhar er arbe JSON"/>
+    <Item english="Compare" text="Comparar"/>
+    <Item english="Compare with File…" text="Comparar damb un archiu…"/>
+    <Item english="Ignore Case" text="Ignorar majúscules"/>
+    <Item english="Ignore Spaces" text="Ignorar es espais"/>
+    <Item english="Current XML Path" text="Direccion XML actuau"/>
+    <Item english="Icons only" text="Sonque es icònes"/>
+    <Item english="Small" text="Petita"/>
+    <Item english="Icons" text="Icònes"/>
+    <Item english="Hidden" text="Amagada"/>
+    <Item english="Margins: left, top, right, bottom (points)" text="Marges : quèrra, naut, dreta, baish (punts)"/>
+    <Item english="Confirm Replace All" text="Confirmar Escambia'c tot"/>
+    <Item english="Notepad++ update" text="Actualitzacion de Notepad++"/>
+    <Item english="Fonts…" text="Honts…"/>
+    <Item english="View 1" text="Vista 1"/>
+    <Item english="View 2" text="Vista 2"/>
+</NativeLangExtra>
