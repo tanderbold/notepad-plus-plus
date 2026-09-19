@@ -42,7 +42,13 @@ FOUNDATION_EXPORT NSNotificationName const NppDockPanelVisibilityDidChangeNotifi
 - (nullable NSString *)frontPanelIn:(NppDockPlace)place;
 /// After the panels of the last launch are shown again: the tab that was in
 /// front of each container is put in front.
+/// Floating together: `identifier` becomes a tab of the window `other` floats in.
+- (void)floatPanel:(NSString *)identifier withPanel:(NSString *)other;
+/// The panels sharing a floating window with this one (itself included), in tab order.
+- (NSArray<NSString *> *)panelsFloatingWith:(NSString *)identifier;
 - (void)restoreFronts;
+/// A tab let go at a point of the screen: docked at an edge, joined to the floating window there, or floated.
+- (void)dragOfPanel:(NSString *)identifier endedAtScreenPoint:(NSPoint)point;
 /// Where a panel let go at a point of the screen would go, in screen
 /// coordinates: what the drag shows before the button is released.
 - (NSRect)previewRectForPanel:(NSString *)identifier atScreenPoint:(NSPoint)point;

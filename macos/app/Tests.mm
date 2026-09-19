@@ -7440,6 +7440,32 @@ int NppMacRunTests(AppDelegate *app) {
                      [dock placeForDropAtScreenPoint:NSMakePoint(NSMidX(w), NSMaxY(w) - 10)] == NppDockTop &&
                      [dock placeForDropAtScreenPoint:NSMakePoint(NSMidX(w), NSMinY(w) + 10)] == NppDockBottom &&
                      [dock placeForDropAtScreenPoint:NSMakePoint(NSMaxX(w) + 500, NSMidY(w))] == NppDockFloating;
+        // Floating windows hold several panels as tabs: one dropped on another's
+        // window joins it, the tab clicked comes to the front, and dragging it
+        // out again gives it a window of its own.
+        [dock movePanel:@"functionList" to:NppDockFloating];
+        [dock movePanel:@"documentMap" to:NppDockFloating];
+        NSView *mapHost = [ed valueForKey:@"docMapHost"];
+        BOOL apart = listView.window != mapHost.window && [dock panelsFloatingWith:@"documentMap"].count == 1;
+        NSRect listWindow = listView.window.frame;
+        // The drop itself: over the other window's frame the preview is that frame, and the drop joins it.
+        NSPoint over = NSMakePoint(NSMidX(listWindow), NSMidY(listWindow));
+        BOOL previewIsWindow = NSEqualRects([dock previewRectForPanel:@"documentMap" atScreenPoint:over], listWindow);
+        [dock dragOfPanel:@"documentMap" endedAtScreenPoint:over];
+        BOOL together = previewIsWindow && [[dock panelsFloatingWith:@"functionList"] isEqualToArray:(@[@"documentMap", @"functionList"])] ||
+                   [[dock panelsFloatingWith:@"functionList"] isEqualToArray:(@[@"functionList", @"documentMap"])];
+        BOOL oneWindow = mapHost.window != nil && listView.window == nil;          // the map is the tab in front
+        [dock performSelector:@selector(containerClickedPanel:) withObject:@"functionList"];
+        BOOL switched = listView.window != nil && mapHost.window == nil;
+        BOOL groupKept = [[NppPreferences shared].dockLayout[@"groups"][@"documentMap"] isEqualToString:
+                          [NppPreferences shared].dockLayout[@"groups"][@"functionList"]];
+        [dock movePanel:@"documentMap" to:(NppDockPlace)-1];
+        [dock movePanel:@"functionList" to:(NppDockPlace)-1];
+        BOOL docksAgain = [dock placeOfPanel:@"documentMap"] == NppDockRight && [dock placeOfPanel:@"functionList"] == NppDockRight &&
+                          listView.window == app.window;
+        printf("    dock floats: apart=%d together=%d one=%d switched=%d kept=%d back=%d\n", apart, together, oneWindow, switched, groupKept, docksAgain);
+        floating = floating && apart && together && oneWindow && switched && groupKept && docksAgain;
+
         // The drag shows where the panel would land: a strip at that edge of
         // the window, or a floating frame under the pointer.
         NSRect leftStrip = [dock previewRectForPanel:@"functionList" atScreenPoint:NSMakePoint(NSMinX(w) + 10, NSMidY(w))];

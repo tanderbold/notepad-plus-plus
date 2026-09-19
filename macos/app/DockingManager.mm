@@ -13,6 +13,9 @@ static const CGFloat kHeader = 22;
 @property (nonatomic) NppDockPlace lastDockedPlace;
 @property (nonatomic) BOOL visible;
 @property (nonatomic) NSRect floatFrame;
+/// Floating panels with the same group share one window, as tabs of it; a
+/// panel floating alone is its own group.
+@property (nonatomic, copy) NSString *floatGroup;
 @end
 @implementation NppDockPanelRecord
 @end
@@ -28,6 +31,7 @@ static const CGFloat kHeader = 22;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NppDockContainerView *> *containers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSPanel *> *floats;
 @property (nonatomic, strong, nullable) NSWindow *dragPreview;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *floatFronts;   // group -> the tab in front
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSString *> *fronts;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSNumber *> *sizes;
 @property (nonatomic) BOOL arranging;
@@ -176,6 +180,7 @@ static const CGFloat kHeader = 22;
     _order = [NSMutableArray array];
     _containers = [NSMutableDictionary dictionary];
     _floats = [NSMutableDictionary dictionary];
+    _floatFronts = [NSMutableDictionary dictionary];
     _fronts = [NSMutableDictionary dictionary];
     _sizes = [@{@(NppDockLeft): @240, @(NppDockRight): @240, @(NppDockTop): @160, @(NppDockBottom): @200} mutableCopy];
     NSDictionary *stored = [NppPreferences shared].dockLayout[@"sizes"];
@@ -218,6 +223,8 @@ static const CGFloat kHeader = 22;
         r.lastDockedPlace = docked ? (NppDockPlace)docked.integerValue : (place == NppDockFloating ? NppDockRight : place);
         NSString *frame = layout[@"floating"][identifier];
         r.floatFrame = frame ? NSRectFromString(frame) : NSMakeRect(200, 200, 300, 400);
+        NSString *group = layout[@"groups"][identifier];
+        r.floatGroup = [group isKindOfClass:[NSString class]] && group.length ? group : identifier;
         self.records[identifier] = r;
         [self.order addObject:identifier];
     }
@@ -274,9 +281,10 @@ static const CGFloat kHeader = 22;
     // -1: back where it was last docked.
     if ((NSInteger)place < 0) place = r.lastDockedPlace;
     if (r.place == NppDockFloating) {
-        NSPanel *window = self.floats[identifier];
+        NSPanel *window = self.floats[r.floatGroup];
         if (window) r.floatFrame = window.frame;
     }
+    if (place == NppDockFloating && r.place != NppDockFloating) r.floatGroup = identifier;   // on its own, until dropped on another
     r.place = place;
     if (place != NppDockFloating) r.lastDockedPlace = place;
     r.visible = YES;
@@ -287,10 +295,45 @@ static const CGFloat kHeader = 22;
 
 - (void)containerClickedPanel:(NSString *)identifier {
     NppDockPanelRecord *r = self.records[identifier];
-    if (!r || r.place == NppDockFloating) return;
-    self.fronts[@(r.place)] = identifier;
+    if (!r) return;
+    if (r.place == NppDockFloating) self.floatFronts[r.floatGroup] = identifier;
+    else self.fronts[@(r.place)] = identifier;
     [self arrange];
     [self saveLayout];
+}
+
+- (NSArray<NSString *> *)panelsFloatingWith:(NSString *)identifier {
+    NppDockPanelRecord *r = self.records[identifier];
+    NSMutableArray *out = [NSMutableArray array];
+    if (!r || r.place != NppDockFloating) return out;
+    for (NSString *ident in self.order) {
+        NppDockPanelRecord *o = self.records[ident];
+        if (o.visible && o.place == NppDockFloating && [o.floatGroup isEqualToString:r.floatGroup]) [out addObject:ident];
+    }
+    return out;
+}
+
+- (void)floatPanel:(NSString *)identifier withPanel:(NSString *)other {
+    NppDockPanelRecord *r = self.records[identifier], *o = self.records[other];
+    if (!r || !o || r == o || o.place != NppDockFloating) return;
+    r.place = NppDockFloating;
+    r.floatGroup = o.floatGroup;
+    r.visible = YES;
+    self.floatFronts[o.floatGroup] = identifier;
+    [self arrange];
+    [self saveLayout];
+}
+
+/// The floating group whose window is under a point of the screen, if any.
+- (nullable NSString *)floatGroupAtScreenPoint:(NSPoint)point excluding:(NSString *)identifier {
+    for (NSString *group in self.floats) {
+        NSPanel *window = self.floats[group];
+        if (!window.isVisible || !NSPointInRect(point, window.frame)) continue;
+        // The window it is already in is not somewhere else to go.
+        if (self.records[identifier].place == NppDockFloating && [group isEqualToString:self.records[identifier].floatGroup]) continue;
+        return group;
+    }
+    return nil;
 }
 
 - (void)restoreFronts {
@@ -320,6 +363,8 @@ static const CGFloat kHeader = 22;
 /// The rectangle, in screen coordinates, a panel dropped at `point` would
 /// take: the container's share of the window, or the floating frame.
 - (NSRect)previewRectForPanel:(NSString *)identifier atScreenPoint:(NSPoint)point {
+    NSString *over = [self floatGroupAtScreenPoint:point excluding:identifier];
+    if (over) return self.floats[over].frame;
     NppDockPlace place = [self placeForDropAtScreenPoint:point];
     NSWindow *window = self.split.window;
     NppDockPanelRecord *r = self.records[identifier];
@@ -359,13 +404,29 @@ static const CGFloat kHeader = 22;
 }
 
 - (void)dragOfPanel:(NSString *)identifier endedAtScreenPoint:(NSPoint)point {
+    // Let go over another floating window: a tab of that window.
+    NSString *group = [self floatGroupAtScreenPoint:point excluding:identifier];
+    if (group) {
+        NSString *member = nil;
+        for (NSString *ident in self.order) {
+            NppDockPanelRecord *o = self.records[ident];
+            if (o.visible && o.place == NppDockFloating && [o.floatGroup isEqualToString:group]) { member = ident; break; }
+        }
+        if (member) { [self floatPanel:identifier withPanel:member]; return; }
+    }
     NppDockPlace place = [self placeForDropAtScreenPoint:point];
     if (place == NppDockFloating) {
         NppDockPanelRecord *r = self.records[identifier];
         NSRect frame = r.floatFrame;
         frame.origin = NSMakePoint(point.x - 40, point.y - NSHeight(frame) + 10);
         r.floatFrame = frame;
-        if (r.place == NppDockFloating) { [self.floats[identifier] setFrame:frame display:YES]; [self saveLayout]; return; }
+        if (r.place == NppDockFloating && [self panelsFloatingWith:identifier].count == 1) {
+            [self.floats[r.floatGroup] setFrame:frame display:YES];
+            [self saveLayout];
+            return;
+        }
+        // Dragged out of a window it shared: a window of its own.
+        if (r.place == NppDockFloating) { r.floatGroup = identifier; [self arrange]; [self saveLayout]; return; }
     }
     [self movePanel:identifier to:place];
 }
@@ -428,42 +489,59 @@ static const CGFloat kHeader = 22;
         }
         [c setNeedsDisplay:YES];
     }
-    // Floating windows.
+    // Floating windows: one for each group of floating panels, its members as tabs.
+    NSMutableDictionary<NSString *, NSMutableArray<NSString *> *> *groups = [NSMutableDictionary dictionary];
+    NSMutableArray<NSString *> *groupOrder = [NSMutableArray array];
     for (NSString *ident in self.order) {
         NppDockPanelRecord *r = self.records[ident];
-        NSPanel *window = self.floats[ident];
-        if (r.visible && r.place == NppDockFloating) {
-            if (!window) {
-                window = [[NSPanel alloc] initWithContentRect:r.floatFrame
-                                                    styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-                                                              NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow
-                                                      backing:NSBackingStoreBuffered defer:YES];
-                window.releasedWhenClosed = NO;
-                window.floatingPanel = YES;
-                window.delegate = self;
-                window.title = r.title;
-                self.floats[ident] = window;
-                [window setFrame:r.floatFrame display:NO];
-            }
-            NppDockContainerView *holder = [[NppDockContainerView alloc] initWithFrame:[window contentRectForFrameRect:window.frame]];
-            holder.place = NppDockFloating;
-            holder.manager = self;
-            holder.panels = @[ident];
-            holder.front = ident;
-            [r.view removeFromSuperview];
-            r.view.frame = NSMakeRect(0, kHeader, NSWidth(holder.bounds), MAX(0, NSHeight(holder.bounds) - kHeader));
-            r.view.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-            [holder addSubview:r.view];
-            holder.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-            window.contentView = holder;
-            [window orderFront:nil];
-        } else if (window) {
-            r.floatFrame = window.frame;
-            window.delegate = nil;
-            [window orderOut:nil];
-            [self.floats removeObjectForKey:ident];
+        if (!r.visible) { [r.view removeFromSuperview]; continue; }
+        if (r.place != NppDockFloating) continue;
+        NSString *group = r.floatGroup ?: ident;
+        if (!groups[group]) { groups[group] = [NSMutableArray array]; [groupOrder addObject:group]; }
+        [groups[group] addObject:ident];
+    }
+    for (NSString *group in [self.floats.allKeys copy]) {
+        if (groups[group]) continue;
+        NSPanel *window = self.floats[group];
+        for (NSString *ident in self.order) {
+            NppDockPanelRecord *r = self.records[ident];
+            if ([r.floatGroup isEqualToString:group] && r.place == NppDockFloating) r.floatFrame = window.frame;
         }
-        if (!r.visible) [r.view removeFromSuperview];
+        window.delegate = nil;
+        [window orderOut:nil];
+        [self.floats removeObjectForKey:group];
+    }
+    for (NSString *group in groupOrder) {
+        NSArray<NSString *> *members = groups[group];
+        NSString *front = [members containsObject:self.floatFronts[group] ?: @""] ? self.floatFronts[group] : members.lastObject;
+        NppDockPanelRecord *shown = self.records[front];
+        NSPanel *window = self.floats[group];
+        if (!window) {
+            NSRect frame = self.records[members.firstObject].floatFrame;
+            window = [[NSPanel alloc] initWithContentRect:frame
+                                                styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                                                          NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow
+                                                  backing:NSBackingStoreBuffered defer:YES];
+            window.releasedWhenClosed = NO;
+            window.floatingPanel = YES;
+            window.delegate = self;
+            self.floats[group] = window;
+            [window setFrame:frame display:NO];
+        }
+        window.title = shown.title ?: @"";
+        NppDockContainerView *holder = [[NppDockContainerView alloc] initWithFrame:[window contentRectForFrameRect:window.frame]];
+        holder.place = NppDockFloating;
+        holder.manager = self;
+        holder.panels = members;
+        holder.front = front;
+        for (NSString *ident in members) if (![ident isEqualToString:front]) [self.records[ident].view removeFromSuperview];
+        [shown.view removeFromSuperview];
+        shown.view.frame = NSMakeRect(0, kHeader, NSWidth(holder.bounds), MAX(0, NSHeight(holder.bounds) - kHeader));
+        shown.view.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        [holder addSubview:shown.view];
+        holder.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        window.contentView = holder;
+        [window orderFront:nil];
     }
     // The containers that have something, around the editor.
     NSMutableArray *row = [NSMutableArray array];
@@ -502,12 +580,14 @@ static const CGFloat kHeader = 22;
 - (void)saveLayout {
     NSMutableDictionary *places = [NSMutableDictionary dictionary], *docked = [NSMutableDictionary dictionary];
     NSMutableDictionary *floating = [NSMutableDictionary dictionary], *sizes = [NSMutableDictionary dictionary];
+    NSMutableDictionary *groupsOut = [NSMutableDictionary dictionary];
     for (NSString *ident in self.order) {
         NppDockPanelRecord *r = self.records[ident];
         places[ident] = @(r.place);
         docked[ident] = @(r.lastDockedPlace);
-        NSPanel *window = self.floats[ident];
+        NSPanel *window = r.place == NppDockFloating ? self.floats[r.floatGroup ?: ident] : nil;
         floating[ident] = NSStringFromRect(window ? window.frame : r.floatFrame);
+        groupsOut[ident] = r.floatGroup ?: ident;
     }
     for (NSNumber *place in self.sizes) sizes[place.stringValue] = self.sizes[place];
     // Which tab of each container is in front.
@@ -517,7 +597,7 @@ static const CGFloat kHeader = 22;
         if (front) fronts[place.stringValue] = front;
     }
     [NppPreferences shared].dockLayout = @{@"places": places, @"docked": docked, @"floating": floating, @"sizes": sizes,
-                                           @"fronts": fronts};
+                                           @"fronts": fronts, @"groups": groupsOut};
 }
 
 /// A divider dragged: the container's new size is kept.
@@ -536,8 +616,14 @@ static const CGFloat kHeader = 22;
 - (BOOL)splitView:(NSSplitView *)splitView canCollapseSubview:(NSView *)subview { return NO; }
 
 - (BOOL)windowShouldClose:(NSWindow *)window {
-    for (NSString *ident in self.floats) {
-        if (self.floats[ident] == window) { [self hidePanel:ident]; break; }
+    for (NSString *group in [self.floats.allKeys copy]) {
+        if (self.floats[group] != window) continue;
+        // Its close box closes the window, and with it every panel it holds.
+        for (NSString *ident in [self.order copy]) {
+            NppDockPanelRecord *r = self.records[ident];
+            if (r.visible && r.place == NppDockFloating && [r.floatGroup isEqualToString:group]) [self hidePanel:ident];
+        }
+        break;
     }
     return NO;
 }
