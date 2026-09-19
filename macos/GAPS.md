@@ -166,15 +166,17 @@ theme the first time it is saved.
 **User Defined Language.** Done since the audit: `userDefineLang.xml` and
 `userDefineLangs/*.xml` are read, listed, claim their extensions and drive
 the user lexer with the same properties, keyword lists and styles Windows
-sends, and `-udl=` works. Still no editor: `defineUserLanguage:` is four
-text prompts writing a minimal file. No import, export, rename or remove.
+sends, and `-udl=` works. Plan 1.1: the editor - upstream's four tabs, the
+styler for each group with its nesting and transparent colours, Create,
+Rename, Remove, Save As, Import and Export, a change shown in the document
+while it is typed - writing `userDefineLang.xml` in upstream's format.
 
-**Shortcut Mapper and context menu.** A single list of menu items that
-already have a key; items without one cannot be assigned; a text prompt for
-the key; no Scintilla commands, macro or Run command shortcuts, filter or
-conflict check; nothing in `shortcuts.xml`. The context menu is a
-comma-separated list of titles in a prompt; no `contextMenu.xml`, submenus
-or tab-bar menu.
+**Shortcut Mapper and context menu.** Plan 1.2: five tabs (menu, macros,
+Run commands, plugin commands - empty - and Scintilla commands), a filter,
+any command assignable, conflicts shown before saving, `shortcuts.xml` in
+upstream's format read and written, macros from Windows with every kind of
+step. Still different: the editor's context menu is a comma-separated list
+of command titles in a prompt; there is no `contextMenu.xml` with submenus.
 
 **Docking.** Done since the audit (plan 2.7): four containers with tabs,
 drag between docked and floating, the layout saved. Still different: see the
