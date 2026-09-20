@@ -187,6 +187,20 @@ separators), upstream's default the first time, read at every right click;
 `tabContextMenu.xml` does the same for the tabs when there is one. Commands
 of Windows plugins named there (MIME Tools, NppExport) are left out.
 
+**What each lexer is told.** Found from "an HTML page cannot be folded": the
+port set `fold` and sent each language's word lists to the lexer under
+Notepad++'s own numbers, where `ScintillaEditView.cpp` has a function per
+family. Now as upstream: `fold.html` and `fold.hypertext.comment` for HTML,
+PHP, ASP, JSP and XML (without them the hypertext lexer works out no fold
+levels at all); `fold.comment`, `fold.preprocessor`, no guessing at `#if`
+for the C family; backquoted strings for Go, TypeScript and JavaScript;
+escape sequences for JSON and comments for JSON5. Word lists go where each
+lexer reads them - in the C family types are list 1 and were never coloured;
+Objective-C, Tcl, TypeScript and XML have their own order - and a page is
+given HTML's, JavaScript's, PHP's and ASP's words and styles together. A
+`.php` file is lexed as the page it is (`hypertext`), not as bare
+`phpscript`.
+
 **Tools.** Beyond upstream: Hashes (six more digests, HMAC, bcrypt, scrypt,
 Argon2, PBKDF2 with their settings and a verifier), Base (Base64, Base58,
 Base32 both ways, text or bytes in hexadecimal), a password generator, and

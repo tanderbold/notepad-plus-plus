@@ -5472,6 +5472,7 @@ int NppMacRunTests(AppDelegate *app) {
             @"xml":  @"<root attr=\"1\">text</root>\n",
             @"asp":  @"<% Response.Write \"hi\" %>\n",
             @"jsp":  @"<% out.print(\"hi\"); %>\n",
+            @"php":  @"<?php\necho \"hi\";\n?>\n",          // a page, as Notepad++ lexes a .php file: PHP is what is inside <?php ?>
             @"kix":  @"; comment\n$a = 1\n",
             @"inno": @"[Setup]\nAppName=Test\n",
             @"yaml": @"key: value\n# comment\n",
@@ -6167,6 +6168,115 @@ int NppMacRunTests(AppDelegate *app) {
         else [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"NppPasswordGenerator"];
         tp.localizationFile = languageBefore ?: @"";
         [app applyLocalization];
+    }
+
+    printf("\n== Folding: what each lexer is told ==\n");
+    {
+        // Lines that head a fold, after the whole text has been styled in the language named.
+        NSArray<NSNumber *> *(^headers)(NSString *, NSString *) = ^NSArray<NSNumber *> *(NSString *language, NSString *text) {
+            [ed newDocument];
+            [ed setLanguageNamed:language];
+            SetDoc(ed, text);
+            ScintillaView *view = ed.sci;
+            [view message:SCI_COLOURISE wParam:0 lParam:-1];
+            NSMutableArray<NSNumber *> *lines = [NSMutableArray array];
+            long count = [view message:SCI_GETLINECOUNT];
+            for (long line = 0; line < count; ++line)
+                if ([view message:SCI_GETFOLDLEVEL wParam:(uptr_t)line] & SC_FOLDLEVELHEADERFLAG) [lines addObject:@(line)];
+            return lines;
+        };
+        void (^done)(void) = ^{ [ed.sci message:SCI_SETSAVEPOINT]; [ed closeCurrentDocument]; };
+
+        NSString *page = @"<html>\n<body>\n<div class=\"a\">\n  <p>one</p>\n  <p>two</p>\n</div>\n<!-- a comment\n     of two lines -->\n<script>\nfunction f() {\n  return 1;\n}\n</script>\n</body>\n</html>\n";
+        NSArray *pageHeaders = headers(@"html", page);
+        ScintillaView *pageView = ed.sci;
+        [pageView message:SCI_TOGGLEFOLD wParam:2];
+        BOOL folded = ![pageView message:SCI_GETLINEVISIBLE wParam:3] && ![pageView message:SCI_GETLINEVISIBLE wParam:4] &&
+                      [pageView message:SCI_GETLINEVISIBLE wParam:2] && [pageView message:SCI_GETLINEVISIBLE wParam:6] &&
+                      ![pageView message:SCI_GETFOLDEXPANDED wParam:2];
+        [pageView message:SCI_TOGGLEFOLD wParam:2];
+        BOOL unfolded = [pageView message:SCI_GETLINEVISIBLE wParam:3] && [pageView message:SCI_GETFOLDEXPANDED wParam:2];
+        done();
+        Check(@"IDM_VIEW_FOLD_CURRENT (an HTML page)", @"a page folds at its elements, at a comment of several lines and at the script inside it (fold.html, "
+              @"fold.hypertext.comment, as ScintillaEditView.cpp sets them): a <div> folds away its lines and unfolds again",
+              [pageHeaders containsObject:@0] && [pageHeaders containsObject:@1] && [pageHeaders containsObject:@2] && [pageHeaders containsObject:@6] &&
+              [pageHeaders containsObject:@9] && folded && unfolded);
+
+        NSArray *xmlHeaders = headers(@"xml", @"<?xml version=\"1.0\"?>\n<root>\n  <item>\n    <name>a</name>\n  </item>\n</root>\n");
+        done();
+        NSArray *phpHeaders = headers(@"php", @"<html>\n<body>\n<?php\nfunction f() {\n  return 1;\n}\n?>\n</body>\n</html>\n");
+        done();
+        NSString *mixedPage = @"<html>\n<script>\nvar x = function () { return 1; };\n</script>\n<?php\nforeach ($a as $b) { echo $b; }\n?>\n</html>\n";
+        headers(@"php", mixedPage);
+        long tagStyle = [ed.sci message:SCI_GETSTYLEAT wParam:1];
+        long jsWord = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[mixedPage rangeOfString:@"function"].location];
+        long phpWord = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[mixedPage rangeOfString:@"foreach"].location];
+        // Coloured, too: each of the three has the colour its own language's style gives it, not the default's.
+        long plain = [ed.sci message:SCI_STYLEGETFORE wParam:STYLE_DEFAULT];
+        StyleCatalog *pageStyles = [StyleCatalog sharedCatalog];
+        BOOL (^coloured)(NSString *, int) = ^BOOL(NSString *language, int styleID) {
+            for (NppStyle *style in [pageStyles stylesForLexerName:language]) {
+                if (style.styleID != styleID || !style.foreground) continue;
+                NSColor *c = [style.foreground colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
+                long want = (long)lround(c.redComponent * 255) | ((long)lround(c.greenComponent * 255) << 8) | ((long)lround(c.blueComponent * 255) << 16);
+                return [ed.sci message:SCI_STYLEGETFORE wParam:(uptr_t)styleID] == want;
+            }
+            return NO;
+        };
+        BOOL pageColoured = coloured(@"html", SCE_H_TAG) && coloured(@"javascript", SCE_HJ_KEYWORD) && coloured(@"php", SCE_HPHP_WORD) &&
+                            [ed.sci message:SCI_STYLEGETFORE wParam:SCE_HPHP_WORD] != plain &&
+                            [ed.sci message:SCI_STYLEGETEOLFILLED wParam:SCE_HPHP_DEFAULT];
+        done();
+        Check(@"Language (a page and what is written inside it)", @"in a .php file a known tag is a tag, a JavaScript word inside <script> a JavaScript keyword, and a PHP word "
+              @"inside <?php ?> a PHP keyword: the hypertext lexer is given HTML's, JavaScript's and PHP's words in the lists it reads each from",
+              tagStyle == SCE_H_TAG && jsWord == SCE_HJ_KEYWORD && phpWord == SCE_HPHP_WORD);
+        Check(@"Language (a page's colours)", @"and each is coloured by its own language's styles - HTML's, JavaScript's and PHP's all applied to the one page, "
+              @"as setXmlLexer applies them", pageColoured);
+        Check(@"IDM_VIEW_FOLD_CURRENT (XML and PHP)", @"XML folds at its elements, and a PHP page at its tags and at the function inside <?php ?>",
+              [xmlHeaders containsObject:@1] && [xmlHeaders containsObject:@2] && [phpHeaders containsObject:@0] && [phpHeaders containsObject:@3]);
+
+        NSString *source = @"/** a comment\n *  @param x of three\n *  lines */\n#if DEBUG\nint f(void) {\n    return 1;\n}\n#endif\n#if 0\nint g(void) { return 2; }\n#endif\n";
+        NSArray *cHeaders = headers(@"c", source);
+        // "int" on the line inside #if 0: a keyword still, not greyed out as code that will never be compiled.
+        long inactive = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[source rangeOfString:@"int g"].location];
+        long liveInt = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[source rangeOfString:@"int f"].location];
+        long liveReturn = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[source rangeOfString:@"return 1"].location];
+        long docWord = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[source rangeOfString:@"@param"].location + 1];
+        done();
+        Check(@"IDM_VIEW_FOLD_CURRENT (C)", @"a block comment and an #if fold as well as the braces (fold.comment, fold.preprocessor), and code under #if 0 is "
+              @"styled as code: the lexer is told not to guess which symbols are defined",
+              [cHeaders containsObject:@0] && [cHeaders containsObject:@3] && [cHeaders containsObject:@4] && inactive == SCE_C_WORD2);
+        Check(@"Language (the C family's word lists)", @"instructions, types and documentation words each go to the list the lexer reads them from, as setCppLexer "
+              @"sends them: \"return\" is a keyword, \"int\" a type, \"@param\" a documentation keyword",
+              liveReturn == SCE_C_WORD && liveInt == SCE_C_WORD2 && docWord == SCE_C_COMMENTDOCKEYWORD);
+
+        NSString *goSource = @"package main\n\nvar s = `raw\nstring`\n";
+        headers(@"go", goSource);
+        long goStyle = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[goSource rangeOfString:@"raw"].location];
+        done();
+        NSString *jsSource = @"const s = `a ${b}\nc`;\n";
+        headers(@"javascript", jsSource);
+        long jsStyle = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[jsSource rangeOfString:@"a $"].location];
+        long jsNext = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[jsSource rangeOfString:@"c`"].location];
+        done();
+        NSString *tsSource = @"const s: string = `raw\ntext`;\n";
+        headers(@"typescript", tsSource);
+        long tsStyle = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[tsSource rangeOfString:@"text"].location];
+        done();
+        Check(@"Language (backquoted strings)", @"Go's and TypeScript's `raw strings` and JavaScript's `template literals` are strings over their line breaks "
+              @"(lexer.cpp.backquoted.strings: 1, 1 and 2)",
+              goStyle == SCE_C_STRINGRAW && jsStyle == SCE_C_STRINGRAW && jsNext == SCE_C_STRINGRAW && tsStyle == SCE_C_STRINGRAW);
+
+        NSString *jsonSource = @"{\"a\": \"x\\ny\"}\n";
+        headers(@"json", jsonSource);
+        long escapeStyle = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[jsonSource rangeOfString:@"\\n"].location];
+        done();
+        NSString *json5Source = @"{\n  // a comment\n  a: 1\n}\n";
+        headers(@"json5", json5Source);
+        long commentStyle = [ed.sci message:SCI_GETSTYLEAT wParam:(uptr_t)[json5Source rangeOfString:@"// a"].location + 3];
+        done();
+        Check(@"Language (JSON)", @"an escape sequence in a JSON string is styled as one, and JSON5 may have comments (lexer.json.escape.sequence, lexer.json.allow.comments)",
+              escapeStyle == SCE_JSON_ESCAPESEQUENCE && commentStyle == SCE_JSON_LINECOMMENT);
     }
 
     printf("\n== Tools: HTTP Request ==\n");

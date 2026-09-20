@@ -12,6 +12,7 @@
 #import "TagMatch.h"
 #import "AdvancedEditCommands.h"
 #import "ScintillaView.h"
+#include "SciLexer.h"
 #import "WorkspacePanel.h"
 #import "EncodingCommands.h"
 #import "ToolsCommands.h"
@@ -1879,6 +1880,19 @@ static NSString *InternalLanguageName(NSString *sessionName) {
     [self refreshChrome];
 }
 
+/// A language's word lists by Notepad++'s own numbering (instre1 0, instre2 1, type1 2 ...), with the
+/// words the user added in the Style Configurator joined to them, list by list, as Notepad++ appends them.
+- (NSDictionary<NSNumber *, NSString *> *)keywordSetsOfLanguage:(NppLanguage *)lang {
+    NSMutableDictionary<NSNumber *, NSString *> *sets = [lang.keywordSets mutableCopy] ?: [NSMutableDictionary dictionary];
+    if (!lang) return sets;
+    for (NppStyle *s in [[StyleCatalog sharedCatalog] stylesForLexerName:lang.name]) {
+        NSNumber *idx = s.keywordClass ? NppKeywordSetIndex(s.keywordClass) : nil;
+        if (!idx || !s.userKeywords.length) continue;
+        sets[idx] = sets[idx].length ? [NSString stringWithFormat:@"%@ %@", sets[idx], s.userKeywords] : s.userKeywords;
+    }
+    return sets;
+}
+
 - (void)applyLanguage {
     NppDocument *doc = self.currentDocument;
     if (!doc) return;
@@ -1888,10 +1902,33 @@ static NSString *InternalLanguageName(NSString *sessionName) {
     // what was folded is folded again afterwards.
     NSArray *folds = [self currentFoldedLines];
 
-    void *lexer = CreateLexer(lang.lexerID.UTF8String);
+    // Notepad++'s table names "phpscript" for PHP, but setXmlLexer gives a .php file the lexer of the page
+    // it is - HTML with <?php ?> in it - as it does ASP and JSP; phpscript is for PHP with no page around it.
+    NSString *lexerID = [lang.name isEqualToString:@"php"] ? @"hypertext" : (lang.lexerID ?: @"");
+    void *lexer = CreateLexer(lexerID.UTF8String);
     [sci message:SCI_SETILEXER wParam:0 lParam:(sptr_t)lexer];
     [sci setLexerProperty:@"fold" value:@"1"];
     [sci setLexerProperty:@"fold.compact" value:@"0"];
+    [sci setLexerProperty:@"fold.comment" value:@"1"];
+    // What else ScintillaEditView.cpp gives each family of lexers. Without fold.html the hypertext
+    // lexer works out no fold levels at all, and a page cannot be folded anywhere.
+    if ([lexerID isEqualToString:@"hypertext"] || [lexerID isEqualToString:@"xml"]) {        // setXmlLexer
+        [sci setLexerProperty:@"fold.html" value:@"1"];
+        [sci setLexerProperty:@"fold.hypertext.comment" value:@"1"];
+        if ([lang.name isEqualToString:@"xml"]) [sci setLexerProperty:@"lexer.xml.allow.scripts" value:@"0"];
+        else [sci setLexerProperty:@"asp.default.language" value:@"2"];                       // setEmbeddedAspLexer: VBScript
+    } else if ([lexerID isEqualToString:@"cpp"] || [lexerID isEqualToString:@"objc"]) {       // setCppLexer, setJsLexer, setTypeScriptLexer, setObjCLexer
+        [sci setLexerProperty:@"fold.cpp.comment.explicit" value:@"0"];
+        [sci setLexerProperty:@"fold.preprocessor" value:@"1"];
+        // The symbols an #if asks about are mostly defined outside the file; guessing greys out live code.
+        if (![lexerID isEqualToString:@"objc"]) [sci setLexerProperty:@"lexer.cpp.track.preprocessor" value:@"0"];
+        // `raw strings` in Go and TypeScript, `template ${literals}` in JavaScript.
+        if ([lang.name isEqualToString:@"go"] || [lang.name isEqualToString:@"typescript"]) [sci setLexerProperty:@"lexer.cpp.backquoted.strings" value:@"1"];
+        if ([lang.name hasPrefix:@"javascript"]) [sci setLexerProperty:@"lexer.cpp.backquoted.strings" value:@"2"];
+    } else if ([lexerID isEqualToString:@"json"]) {                                           // setJsonLexer
+        [sci setLexerProperty:@"lexer.json.escape.sequence" value:@"1"];
+        if ([lang.name isEqualToString:@"json5"]) [sci setLexerProperty:@"lexer.json.allow.comments" value:@"1"];
+    }
     if ([lang.name isEqualToString:@"sql"]) {
         [sci setLexerProperty:@"sql.backslash.escapes" value:[NppPreferences shared].sqlBackslashEscape ? @"1" : @"0"];
     }
@@ -1900,16 +1937,40 @@ static NSString *InternalLanguageName(NSString *sessionName) {
     if (udl) {
         [self configureUserLexerFor:udl];
     } else {
-        // The words the user added in the Style Configurator join the
-        // language's own, set by set, as Notepad++ appends them.
-        NSMutableDictionary<NSNumber *, NSString *> *sets = [lang.keywordSets mutableCopy] ?: [NSMutableDictionary dictionary];
-        for (NppStyle *s in [[StyleCatalog sharedCatalog] stylesForLexerName:lang.name]) {
-            NSNumber *idx = s.keywordClass ? NppKeywordSetIndex(s.keywordClass) : nil;
-            if (!idx || !s.userKeywords.length) continue;
-            sets[idx] = sets[idx].length ? [NSString stringWithFormat:@"%@ %@", sets[idx], s.userKeywords] : s.userKeywords;
+        // Which of the lexer's word lists each of Notepad++'s lists goes to. For most lexers they
+        // are the same number; the ones ScintillaEditView.cpp has a function of their own for are not.
+        NSDictionary<NSNumber *, NSString *> *sets = [self keywordSetsOfLanguage:lang];
+        NSString *name = lang.name;
+        NSMutableDictionary<NSNumber *, NSString *> *lists = [NSMutableDictionary dictionary];
+        // The documentation-comment words every C-like lexer is given: C++'s "type2".
+        NSString *doxygen = [self keywordSetsOfLanguage:[[LanguageCatalog sharedCatalog] languageNamed:@"cpp"]][@3];
+        if ([@[@"c", @"cpp", @"java", @"rc", @"cs", @"actionscript", @"swift", @"go"] containsObject:name] ||
+            ([name hasPrefix:@"javascript"] && [lexerID isEqualToString:@"cpp"])) {            // setCppLexer, setJsLexer
+            lists[@0] = sets[@0]; lists[@1] = sets[@2]; lists[@3] = sets[@1];
+            if (![name isEqualToString:@"rc"]) lists[@2] = doxygen;
+        } else if ([name isEqualToString:@"typescript"]) {                                     // setTypeScriptLexer
+            lists[@0] = sets[@0]; lists[@1] = sets[@2]; lists[@2] = doxygen;
+        } else if ([name isEqualToString:@"objc"]) {                                           // setObjCLexer
+            lists[@0] = sets[@0]; lists[@1] = sets[@2]; lists[@2] = doxygen; lists[@3] = sets[@1]; lists[@4] = sets[@3];
+        } else if ([name isEqualToString:@"tcl"]) {                                            // setTclLexer
+            lists[@0] = sets[@0]; lists[@1] = sets[@2]; lists[@2] = sets[@1];
+            for (NSInteger k = 3; k <= 8; ++k) lists[@(k)] = sets[@(k)];
+        } else if ([name isEqualToString:@"xml"]) {                                            // setXmlLexer: the DOCTYPE words
+            lists[@5] = sets[@0];
+        } else if ([lexerID isEqualToString:@"hypertext"]) {
+            // setHTMLLexer and the three embedded ones: a page is HTML's tags, and the words of the
+            // languages that may be written inside it, whichever of them the file is called after.
+            LanguageCatalog *catalog = [LanguageCatalog sharedCatalog];
+            NSDictionary<NSNumber *, NSString *> *html = [self keywordSetsOfLanguage:[catalog languageNamed:@"html"]];
+            lists[@0] = html[@0]; lists[@5] = html[@1];
+            lists[@1] = [self keywordSetsOfLanguage:[catalog languageNamed:@"javascript"]][@0];
+            lists[@4] = [self keywordSetsOfLanguage:[catalog languageNamed:@"php"]][@0];
+            lists[@2] = [self keywordSetsOfLanguage:[catalog languageNamed:@"asp"]][@0];
+        } else {
+            [lists addEntriesFromDictionary:sets];
         }
-        for (NSNumber *idx in sets) {
-            [sci setStringProperty:SCI_SETKEYWORDS parameter:idx.integerValue value:sets[idx]];
+        for (NSNumber *idx in lists) {
+            [sci setStringProperty:SCI_SETKEYWORDS parameter:idx.integerValue value:lists[idx]];
         }
     }
 
@@ -1975,16 +2036,26 @@ static NSString *InternalLanguageName(NSString *sessionName) {
         if (s.fontSize > 0) [sci message:SCI_STYLESETSIZE wParam:(uptr_t)styleID lParam:s.fontSize];
     };
 
-    for (NppStyle *s in [styles stylesForLexerName:langName]) applyStyle(s, s.styleID);
+    // A page is lexed as HTML with JavaScript, PHP and ASP inside it, and is coloured with the styles of
+    // all four - setXmlLexer's makeStyle for L_HTML, L_JS_EMBEDDED, L_PHP and L_ASP - whichever it is called after.
+    NSArray<NSString *> *styleLanguages = @[langName ?: @""];
+    if ([@[@"html", @"php", @"asp", @"jsp"] containsObject:langName ?: @""]) {
+        styleLanguages = @[@"html", @"javascript", @"php", @"asp"];
+        for (NSNumber *filled in @[@(SCE_HJ_DEFAULT), @(SCE_HJ_COMMENT), @(SCE_HJ_COMMENTDOC), @(SCE_HJ_TEMPLATELITERAL),
+                                   @(SCE_HJA_TEMPLATELITERAL), @(SCE_HPHP_DEFAULT), @(SCE_HPHP_COMMENT), @(SCE_HBA_DEFAULT)])
+            [sci message:SCI_STYLESETEOLFILLED wParam:(uptr_t)filled.intValue lParam:1];
+    }
+    for (NSString *styled in styleLanguages)
+        for (NppStyle *s in [styles stylesForLexerName:styled]) applyStyle(s, s.styleID);
 
     // Anything chosen in the Style Configurator wins over the shipped theme.
     // Every attribute the upstream Style struct carries is honoured here.
     NSDictionary *overrides = [NppPreferences shared].styleOverrides;
     for (NSString *key in overrides) {
         NSArray *parts = [key componentsSeparatedByString:@"/"];
-        if (parts.count != 2 || ![parts[0] isEqualToString:langName]) continue;
+        if (parts.count != 2 || ![styleLanguages containsObject:parts[0]]) continue;
         int styleID = [parts[1] intValue];
-        NSDictionary *attrs = [[NppPreferences shared] styleOverrideForLanguage:langName
+        NSDictionary *attrs = [[NppPreferences shared] styleOverrideForLanguage:parts[0]
                                                                         styleID:styleID];
         if (!attrs.count) continue;
 
@@ -2013,7 +2084,8 @@ static NSString *InternalLanguageName(NSString *sessionName) {
         }
     }
 
-    for (NppStyle *s in [styles stylesForLexerName:langName]) applyOverride(s.styleID);
+    for (NSString *styled in styleLanguages)
+        for (NppStyle *s in [styles stylesForLexerName:styled]) applyOverride(s.styleID);
 
     NppStyle *lineNo = styles.globalStyles[@"Line number margin"];
     if (lineNo) applyStyle(lineNo, STYLE_LINENUMBER);
