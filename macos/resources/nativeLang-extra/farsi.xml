@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="نمایش خود کلید به صورت هگزادسیمال"/>
     <Item english="Empty: a random salt each time" text="خالی: هر بار یک نمک تصادفی"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt فقط 72 بایت اول را می خواند."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="درخواست HTTP"/>
+    <Item english="Send" text="ارسال"/>
+    <Item english="Parameters" text="پارامترها"/>
+    <Item english="Headers" text="هدرها"/>
+    <Item english="Body" text="بدنه"/>
+    <Item english="Options" text="گزینه ها"/>
+    <Item english="Content type:" text="نوع محتوا:"/>
+    <Item english="User name:" text="نام کاربری:"/>
+    <Item english="Password:" text="رمز عبور:"/>
+    <Item english="Timeout (seconds):" text="مهلت زمانی (ثانیه):"/>
+    <Item english="Follow redirects" text="دنبال کردن تغییر مسیرها"/>
+    <Item english="Allow invalid certificates" text="پذیرش گواهی های نامعتبر"/>
+    <Item english="Format JSON" text="قالب بندی JSON"/>
+    <Item english="Paste curl Command" text="چسباندن فرمان curl"/>
+    <Item english="Copy as curl" text="کپی به صورت curl"/>
+    <Item english="Open in New Document" text="بازکردن در سند جدید"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="هر خط یکی: نام=مقدار. به صورت کدگذاری شده به آدرس افزوده می شوند."/>
+    <Item english="One to a line: Name: value" text="هر خط یکی: نام: مقدار"/>
+    <Item english="Sent as it is written, in UTF-8." text="همان طور که نوشته شده، با UTF-8 ارسال می شود."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="پاسخ متن نیست: $INT_REPLACE$ بایت."/>
+    <Item english="The address is not an http or https address." text="این آدرس یک آدرس http یا https نیست."/>
+    <Item english="This is not a curl command." text="این یک فرمان curl نیست."/>
+    <Item english="The command has no address." text="فرمان آدرسی ندارد."/>
+    <Item english="The command reads its data from a file, which is not done here." text="فرمان داده هایش را از یک فایل می خواند که اینجا انجام نمی شود."/>
+    <Item english="Forms and uploads of files are not read from a command." text="فرم ها و آپلود فایل ها از فرمان خوانده نمی شوند."/>
+    <Item english="The command's address is not an http or https address." text="آدرس فرمان یک آدرس http یا https نیست."/>
 </NativeLangExtra>

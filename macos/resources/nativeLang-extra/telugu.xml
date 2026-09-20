@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="కీని మాత్రమే హెక్సాడెసిమల్‌లో చూపించు"/>
     <Item english="Empty: a random salt each time" text="ఖాళీ: ప్రతిసారీ ర్యాండమ్ సాల్ట్"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt మొదటి 72 బైట్‌లను మాత్రమే చదువుతుంది."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP అభ్యర్థన"/>
+    <Item english="Send" text="పంపు"/>
+    <Item english="Parameters" text="ప్యారమీటర్‌లు"/>
+    <Item english="Headers" text="హెడర్‌లు"/>
+    <Item english="Body" text="బాడీ"/>
+    <Item english="Options" text="ఎంపికలు"/>
+    <Item english="Content type:" text="కంటెంట్ రకం:"/>
+    <Item english="User name:" text="వినియోగదారు పేరు:"/>
+    <Item english="Password:" text="పాస్‌వర్డ్:"/>
+    <Item english="Timeout (seconds):" text="టైమ్‌అవుట్ (సెకన్లు):"/>
+    <Item english="Follow redirects" text="రీడైరెక్ట్‌లను అనుసరించు"/>
+    <Item english="Allow invalid certificates" text="చెల్లని సర్టిఫికెట్‌లను అనుమతించు"/>
+    <Item english="Format JSON" text="JSON ఫార్మాట్ చేయి"/>
+    <Item english="Paste curl Command" text="curl కమాండ్‌ను పేస్ట్ చేయి"/>
+    <Item english="Copy as curl" text="curl గా కాపీ చేయి"/>
+    <Item english="Open in New Document" text="కొత్త డాక్యుమెంట్‌లో తెరువు"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="లైన్‌కు ఒకటి: పేరు=విలువ. ఇవి ఎన్‌కోడ్ చేసి చిరునామాకు జోడించబడతాయి."/>
+    <Item english="One to a line: Name: value" text="లైన్‌కు ఒకటి: పేరు: విలువ"/>
+    <Item english="Sent as it is written, in UTF-8." text="రాసినది రాసినట్లే, UTF-8 లో పంపబడుతుంది."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="సమాధానం టెక్స్ట్ కాదు: $INT_REPLACE$ బైట్‌లు."/>
+    <Item english="The address is not an http or https address." text="ఈ చిరునామా http లేదా https చిరునామా కాదు."/>
+    <Item english="This is not a curl command." text="ఇది curl కమాండ్ కాదు."/>
+    <Item english="The command has no address." text="కమాండ్‌లో చిరునామా లేదు."/>
+    <Item english="The command reads its data from a file, which is not done here." text="కమాండ్ తన డేటాను ఫైల్ నుండి చదువుతుంది; అది ఇక్కడ చేయబడదు."/>
+    <Item english="Forms and uploads of files are not read from a command." text="ఫారమ్‌లు, ఫైల్ అప్‌లోడ్‌లు కమాండ్ నుండి చదవబడవు."/>
+    <Item english="The command's address is not an http or https address." text="కమాండ్‌లోని చిరునామా http లేదా https చిరునామా కాదు."/>
 </NativeLangExtra>

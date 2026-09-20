@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Hiện khoá thô ở dạng thập lục phân"/>
     <Item english="Empty: a random salt each time" text="Trống: salt ngẫu nhiên mỗi lần"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt chỉ đọc 72 byte đầu tiên."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Yêu cầu HTTP"/>
+    <Item english="Send" text="Gửi"/>
+    <Item english="Parameters" text="Tham số"/>
+    <Item english="Headers" text="Tiêu đề"/>
+    <Item english="Body" text="Phần thân"/>
+    <Item english="Options" text="Tuỳ chọn"/>
+    <Item english="Content type:" text="Loại nội dung:"/>
+    <Item english="User name:" text="Tên người dùng:"/>
+    <Item english="Password:" text="Mật khẩu:"/>
+    <Item english="Timeout (seconds):" text="Thời gian chờ (giây):"/>
+    <Item english="Follow redirects" text="Đi theo chuyển hướng"/>
+    <Item english="Allow invalid certificates" text="Cho phép chứng chỉ không hợp lệ"/>
+    <Item english="Format JSON" text="Định dạng JSON"/>
+    <Item english="Paste curl Command" text="Dán lệnh curl"/>
+    <Item english="Copy as curl" text="Sao chép dưới dạng curl"/>
+    <Item english="Open in New Document" text="Mở trong tài liệu mới"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Mỗi dòng một mục: tên=giá trị. Chúng được mã hoá rồi thêm vào địa chỉ."/>
+    <Item english="One to a line: Name: value" text="Mỗi dòng một mục: Tên: giá trị"/>
+    <Item english="Sent as it is written, in UTF-8." text="Được gửi đúng như đã viết, ở dạng UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Phản hồi không phải là văn bản: $INT_REPLACE$ byte."/>
+    <Item english="The address is not an http or https address." text="Địa chỉ không phải là địa chỉ http hay https."/>
+    <Item english="This is not a curl command." text="Đây không phải là lệnh curl."/>
+    <Item english="The command has no address." text="Lệnh không có địa chỉ."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Lệnh đọc dữ liệu từ một tệp, điều này không được hỗ trợ ở đây."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Biểu mẫu và việc tải tệp lên không được đọc từ lệnh."/>
+    <Item english="The command's address is not an http or https address." text="Địa chỉ của lệnh không phải là địa chỉ http hay https."/>
 </NativeLangExtra>

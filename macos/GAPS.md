@@ -189,7 +189,9 @@ of Windows plugins named there (MIME Tools, NppExport) are left out.
 
 **Tools.** Beyond upstream: Hashes (six more digests, HMAC, bcrypt, scrypt,
 Argon2, PBKDF2 with their settings and a verifier), Base (Base64, Base58,
-Base32 both ways, text or bytes in hexadecimal) and a password generator; see
+Base32 both ways, text or bytes in hexadecimal), a password generator, and
+HTTP Request (a request as curl would send it, the answer shown, curl
+commands pasted in and copied out); see
 PORTING.md. Upstream's digest dialogs are reproduced, and its twelve command
 ids kept. The 75 texts of these windows are in `nativeLang-extra` for every
 language, model-made like the rest of that folder and as much in want of a

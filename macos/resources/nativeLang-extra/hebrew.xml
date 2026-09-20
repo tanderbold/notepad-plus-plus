@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="הצג את המפתח עצמו בהקסדצימלי"/>
     <Item english="Empty: a random salt each time" text="ריק: מלח אקראי בכל פעם"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt קורא רק את 72 הבתים הראשונים."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="בקשת HTTP"/>
+    <Item english="Send" text="שלח"/>
+    <Item english="Parameters" text="פרמטרים"/>
+    <Item english="Headers" text="כותרות"/>
+    <Item english="Body" text="גוף"/>
+    <Item english="Options" text="אפשרויות"/>
+    <Item english="Content type:" text="סוג תוכן:"/>
+    <Item english="User name:" text="שם משתמש:"/>
+    <Item english="Password:" text="סיסמה:"/>
+    <Item english="Timeout (seconds):" text="זמן קצוב (שניות):"/>
+    <Item english="Follow redirects" text="עקוב אחר הפניות"/>
+    <Item english="Allow invalid certificates" text="אפשר תעודות לא תקינות"/>
+    <Item english="Format JSON" text="עצב JSON"/>
+    <Item english="Paste curl Command" text="הדבק פקודת curl"/>
+    <Item english="Copy as curl" text="העתק כ-curl"/>
+    <Item english="Open in New Document" text="פתח במסמך חדש"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="אחד בכל שורה: שם=ערך. הם מתווספים לכתובת, מקודדים."/>
+    <Item english="One to a line: Name: value" text="אחד בכל שורה: שם: ערך"/>
+    <Item english="Sent as it is written, in UTF-8." text="נשלח כפי שנכתב, ב-UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="התשובה אינה טקסט: $INT_REPLACE$ בתים."/>
+    <Item english="The address is not an http or https address." text="הכתובת אינה כתובת http או https."/>
+    <Item english="This is not a curl command." text="זו אינה פקודת curl."/>
+    <Item english="The command has no address." text="בפקודה אין כתובת."/>
+    <Item english="The command reads its data from a file, which is not done here." text="הפקודה קוראת את הנתונים שלה מקובץ, וזה לא נעשה כאן."/>
+    <Item english="Forms and uploads of files are not read from a command." text="טפסים והעלאות קבצים אינם נקראים מפקודה."/>
+    <Item english="The command's address is not an http or https address." text="הכתובת שבפקודה אינה כתובת http או https."/>
 </NativeLangExtra>

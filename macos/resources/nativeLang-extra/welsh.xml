@@ -203,4 +203,31 @@
     <Item english="Show the bare key in hexadecimal" text="Dangos yr allwedd noeth mewn hecsadegol"/>
     <Item english="Empty: a random salt each time" text="Gwag: halen ar hap bob tro"/>
     <Item english="bcrypt reads only the first 72 bytes." text="Dim ond y 72 beit cyntaf y mae bcrypt yn eu darllen."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Cais HTTP"/>
+    <Item english="Send" text="Anfon"/>
+    <Item english="Parameters" text="Paramedrau"/>
+    <Item english="Headers" text="Penynnau"/>
+    <Item english="Body" text="Corff"/>
+    <Item english="Options" text="Opsiynau"/>
+    <Item english="Content type:" text="Math o gynnwys:"/>
+    <Item english="User name:" text="Enw defnyddiwr:"/>
+    <Item english="Password:" text="Cyfrinair:"/>
+    <Item english="Timeout (seconds):" text="Terfyn amser (eiliadau):"/>
+    <Item english="Follow redirects" text="Dilyn ailgyfeiriadau"/>
+    <Item english="Allow invalid certificates" text="Caniatáu tystysgrifau annilys"/>
+    <Item english="Format JSON" text="Fformatio JSON"/>
+    <Item english="Paste curl Command" text="Gludo Gorchymyn curl"/>
+    <Item english="Copy as curl" text="Copïo fel curl"/>
+    <Item english="Open in New Document" text="Agor mewn Dogfen Newydd"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Un i bob llinell: enw=gwerth. Cânt eu hychwanegu at y cyfeiriad, wedi'u hamgodio."/>
+    <Item english="One to a line: Name: value" text="Un i bob llinell: Enw: gwerth"/>
+    <Item english="Sent as it is written, in UTF-8." text="Anfonir fel y mae wedi'i ysgrifennu, mewn UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Nid testun yw'r ateb: $INT_REPLACE$ beit."/>
+    <Item english="The address is not an http or https address." text="Nid yw'r cyfeiriad yn gyfeiriad http na https."/>
+    <Item english="This is not a curl command." text="Nid gorchymyn curl yw hwn."/>
+    <Item english="The command has no address." text="Nid oes cyfeiriad yn y gorchymyn."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Mae'r gorchymyn yn darllen ei ddata o ffeil; ni wneir hynny yma."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Ni ddarllenir ffurflenni na llwytho ffeiliau i fyny o orchymyn."/>
+    <Item english="The command's address is not an http or https address." text="Nid yw cyfeiriad y gorchymyn yn gyfeiriad http na https."/>
 </NativeLangExtra>

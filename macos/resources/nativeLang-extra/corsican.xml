@@ -186,4 +186,29 @@
     <Item english="Show the bare key in hexadecimal" text="Affissà a chjave sola in esadecimale"/>
     <Item english="Empty: a random salt each time" text="Viotu : sale à l’azardu ogni volta"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt leghje solu i primi 72 ottetti."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Richiesta HTTP"/>
+    <Item english="Send" text="Mandà"/>
+    <Item english="Parameters" text="Parametri"/>
+    <Item english="Headers" text="Intestature"/>
+    <Item english="Body" text="Corpu"/>
+    <Item english="Options" text="Ozzioni"/>
+    <Item english="Content type:" text="Tipu di cuntenutu :"/>
+    <Item english="User name:" text="Nome d’utilizatore :"/>
+    <Item english="Password:" text="Parolla d’intesa :"/>
+    <Item english="Timeout (seconds):" text="Tempu d’attesa (seconde) :"/>
+    <Item english="Follow redirects" text="Seguità e ridirezzioni"/>
+    <Item english="Allow invalid certificates" text="Permette i certificati inaccettevuli"/>
+    <Item english="Paste curl Command" text="Incullà a cumanda curl"/>
+    <Item english="Copy as curl" text="Cupià cum’è curl"/>
+    <Item english="Open in New Document" text="Apre in un ducumentu novu"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Unu per linea : nome=valore. Sò aghjunti à l’indirizzu, cudificati."/>
+    <Item english="One to a line: Name: value" text="Unu per linea : Nome: valore"/>
+    <Item english="Sent as it is written, in UTF-8." text="Mandatu cum’ellu hè scrittu, in UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="A risposta ùn hè micca testu : $INT_REPLACE$ ottetti."/>
+    <Item english="The address is not an http or https address." text="L’indirizzu ùn hè micca un indirizzu http o https."/>
+    <Item english="This is not a curl command." text="Ùn hè micca una cumanda curl."/>
+    <Item english="The command has no address." text="A cumanda ùn hà micca indirizzu."/>
+    <Item english="The command reads its data from a file, which is not done here." text="A cumanda leghje i so dati da un schedariu, ciò chì ùn si face micca quì."/>
+    <Item english="The command's address is not an http or https address." text="L’indirizzu di a cumanda ùn hè micca un indirizzu http o https."/>
 </NativeLangExtra>

@@ -209,4 +209,31 @@
     <Item english="Show the bare key in hexadecimal" text="வெறும் திறவுகோலைப் பதினறுமத்தில் காட்டு"/>
     <Item english="Empty: a random salt each time" text="காலி: ஒவ்வொரு முறையும் சீரற்ற சால்ட்"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt முதல் 72 பைட்டுகளை மட்டுமே படிக்கிறது."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP கோரிக்கை"/>
+    <Item english="Send" text="அனுப்பு"/>
+    <Item english="Parameters" text="அளவுருக்கள்"/>
+    <Item english="Headers" text="தலைப்புகள்"/>
+    <Item english="Body" text="உடற்பகுதி"/>
+    <Item english="Options" text="விருப்பங்கள்"/>
+    <Item english="Content type:" text="உள்ளடக்க வகை:"/>
+    <Item english="User name:" text="பயனர் பெயர்:"/>
+    <Item english="Password:" text="கடவுச்சொல்:"/>
+    <Item english="Timeout (seconds):" text="காலாவதி நேரம் (நொடிகள்):"/>
+    <Item english="Follow redirects" text="திசைமாற்றங்களைப் பின்தொடர்"/>
+    <Item english="Allow invalid certificates" text="செல்லாத சான்றிதழ்களை அனுமதி"/>
+    <Item english="Format JSON" text="JSON-ஐ வடிவமை"/>
+    <Item english="Paste curl Command" text="curl கட்டளையை ஒட்டு"/>
+    <Item english="Copy as curl" text="curl ஆக நகலெடு"/>
+    <Item english="Open in New Document" text="புதிய ஆவணத்தில் திற"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="வரிக்கு ஒன்று: பெயர்=மதிப்பு. இவை குறியாக்கம் செய்யப்பட்டு முகவரியுடன் சேர்க்கப்படும்."/>
+    <Item english="One to a line: Name: value" text="வரிக்கு ஒன்று: பெயர்: மதிப்பு"/>
+    <Item english="Sent as it is written, in UTF-8." text="எழுதியபடியே UTF-8 இல் அனுப்பப்படும்."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="பதில் உரை அல்ல: $INT_REPLACE$ பைட்டுகள்."/>
+    <Item english="The address is not an http or https address." text="இந்த முகவரி http அல்லது https முகவரி அல்ல."/>
+    <Item english="This is not a curl command." text="இது curl கட்டளை அல்ல."/>
+    <Item english="The command has no address." text="கட்டளையில் முகவரி இல்லை."/>
+    <Item english="The command reads its data from a file, which is not done here." text="கட்டளை தன் தரவை ஒரு கோப்பிலிருந்து படிக்கிறது; அது இங்கு செய்யப்படுவதில்லை."/>
+    <Item english="Forms and uploads of files are not read from a command." text="படிவங்களும் கோப்புப் பதிவேற்றங்களும் கட்டளையிலிருந்து படிக்கப்படுவதில்லை."/>
+    <Item english="The command's address is not an http or https address." text="கட்டளையின் முகவரி http அல்லது https முகவரி அல்ல."/>
 </NativeLangExtra>

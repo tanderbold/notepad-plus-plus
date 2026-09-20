@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Owshay ethay arebay eykay inyay exadecimalhay"/>
     <Item english="Empty: a random salt each time" text="Emptyyay: ayay andomray altsay eachyay imetay"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt eadsray onlyyay ethay irstfay 72 ytesbay."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP Equestray"/>
+    <Item english="Send" text="Endsay"/>
+    <Item english="Parameters" text="Arameterspay"/>
+    <Item english="Headers" text="Eadershay"/>
+    <Item english="Body" text="Odybay"/>
+    <Item english="Options" text="Optionsyay"/>
+    <Item english="Content type:" text="Ontentcay ypetay:"/>
+    <Item english="User name:" text="Useryay amenay:"/>
+    <Item english="Password:" text="Asswordpay:"/>
+    <Item english="Timeout (seconds):" text="Imeouttay (econdssay):"/>
+    <Item english="Follow redirects" text="Ollowfay edirectsray"/>
+    <Item english="Allow invalid certificates" text="Allowyay invalidyay ertificatescay"/>
+    <Item english="Format JSON" text="Ormatfay JSON"/>
+    <Item english="Paste curl Command" text="Astepay curl Ommandcay"/>
+    <Item english="Copy as curl" text="Opycay asyay curl"/>
+    <Item english="Open in New Document" text="Openyay inyay Ewnay Ocumentday"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Oneyay otay ayay inelay: amenay=aluevay. Eythay areyay addedyay otay ethay addressyay, encodedyay."/>
+    <Item english="One to a line: Name: value" text="Oneyay otay ayay inelay: Amenay: aluevay"/>
+    <Item english="Sent as it is written, in UTF-8." text="Entsay asyay ityay isyay ittenwray, inyay UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Ethay answeryay isyay otnay exttay: $INT_REPLACE$ ytesbay."/>
+    <Item english="The address is not an http or https address." text="Ethay addressyay isyay otnay anyay http oryay https addressyay."/>
+    <Item english="This is not a curl command." text="Isthay isyay otnay ayay curl ommandcay."/>
+    <Item english="The command has no address." text="Ethay ommandcay ashay onay addressyay."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Ethay ommandcay eadsray itsyay ataday omfray ayay ilefay, ichwhay isyay otnay oneday erehay."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Ormsfay andyay uploadsyay ofyay ilesfay areyay otnay eadray omfray ayay ommandcay."/>
+    <Item english="The command's address is not an http or https address." text="Ethay ommand'scay addressyay isyay otnay anyay http oryay https addressyay."/>
 </NativeLangExtra>

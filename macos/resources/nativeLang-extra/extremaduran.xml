@@ -54,4 +54,6 @@
     <Item english="Lowercase letters (a-z)" text="Letras minúsculas (a-z)"/>
     <Item english="Symbols:" text="Símbolus :"/>
     <Item english="Insert into Document" text="Insertal nel documentu"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="Options" text="Ozionis"/>
 </NativeLangExtra>

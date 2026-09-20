@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Prikaži sam ključ šestnajstiško"/>
     <Item english="Empty: a random salt each time" text="Prazno: vsakič naključna sol"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt prebere samo prvih 72 bajtov."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Zahteva HTTP"/>
+    <Item english="Send" text="Pošlji"/>
+    <Item english="Parameters" text="Parametri"/>
+    <Item english="Headers" text="Glave"/>
+    <Item english="Body" text="Telo"/>
+    <Item english="Options" text="Možnosti"/>
+    <Item english="Content type:" text="Vrsta vsebine:"/>
+    <Item english="User name:" text="Uporabniško ime:"/>
+    <Item english="Password:" text="Geslo:"/>
+    <Item english="Timeout (seconds):" text="Časovna omejitev (sekunde):"/>
+    <Item english="Follow redirects" text="Sledi preusmeritvam"/>
+    <Item english="Allow invalid certificates" text="Dovoli neveljavna potrdila"/>
+    <Item english="Format JSON" text="Oblikuj JSON"/>
+    <Item english="Paste curl Command" text="Prilepi ukaz curl"/>
+    <Item english="Copy as curl" text="Kopiraj kot curl"/>
+    <Item english="Open in New Document" text="Odpri v novem dokumentu"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Eden na vrstico: ime=vrednost. Dodani so naslovu, kodirani."/>
+    <Item english="One to a line: Name: value" text="Eden na vrstico: Ime: vrednost"/>
+    <Item english="Sent as it is written, in UTF-8." text="Pošlje se tako, kot je napisano, v UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Odgovor ni besedilo (bajtov: $INT_REPLACE$)."/>
+    <Item english="The address is not an http or https address." text="Naslov ni naslov http ali https."/>
+    <Item english="This is not a curl command." text="To ni ukaz curl."/>
+    <Item english="The command has no address." text="Ukaz nima naslova."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Ukaz bere podatke iz datoteke, kar se tukaj ne izvaja."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Obrazci in nalaganje datotek se iz ukaza ne berejo."/>
+    <Item english="The command's address is not an http or https address." text="Naslov v ukazu ni naslov http ali https."/>
 </NativeLangExtra>

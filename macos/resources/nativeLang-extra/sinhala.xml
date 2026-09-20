@@ -204,4 +204,30 @@
     <Item english="Show the bare key in hexadecimal" text="යතුර පමණක් ෂඩ්දශමයෙන් පෙන්වන්න"/>
     <Item english="Empty: a random salt each time" text="හිස්: සෑම වරම අහඹු සෝල්ට් එකක්"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt කියවන්නේ පළමු බයිට 72 පමණි."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP ඉල්ලීම"/>
+    <Item english="Send" text="යවන්න"/>
+    <Item english="Parameters" text="පරාමිති"/>
+    <Item english="Headers" text="ශීර්ෂ"/>
+    <Item english="Options" text="විකල්ප"/>
+    <Item english="Content type:" text="අන්තර්ගත වර්ගය:"/>
+    <Item english="User name:" text="පරිශීලක නාමය:"/>
+    <Item english="Password:" text="මුරපදය:"/>
+    <Item english="Timeout (seconds):" text="කල් ඉකුත්වීම (තත්පර):"/>
+    <Item english="Follow redirects" text="යළි-යොමුකිරීම් අනුගමනය කරන්න"/>
+    <Item english="Allow invalid certificates" text="වලංගු නොවන සහතික වලට ඉඩ දෙන්න"/>
+    <Item english="Format JSON" text="JSON ආකෘතිගත කරන්න"/>
+    <Item english="Paste curl Command" text="curl විධානය අලවන්න"/>
+    <Item english="Copy as curl" text="curl ලෙස පිටපත් කරන්න"/>
+    <Item english="Open in New Document" text="නව ලේඛනයක විවෘත කරන්න"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="පේලියකට එකක්: නම=අගය. ඒවා කේතනය කර ලිපිනයට එක් කෙරේ."/>
+    <Item english="One to a line: Name: value" text="පේලියකට එකක්: නම: අගය"/>
+    <Item english="Sent as it is written, in UTF-8." text="ලියා ඇති ආකාරයටම, UTF-8 වලින් යවනු ලැබේ."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="ප්‍රතිචාරය පාඨයක් නොවේ: බයිට $INT_REPLACE$."/>
+    <Item english="The address is not an http or https address." text="ලිපිනය http හෝ https ලිපිනයක් නොවේ."/>
+    <Item english="This is not a curl command." text="මෙය curl විධානයක් නොවේ."/>
+    <Item english="The command has no address." text="විධානයේ ලිපිනයක් නැත."/>
+    <Item english="The command reads its data from a file, which is not done here." text="විධානය එහි දත්ත ගොනුවකින් කියවයි; එය මෙහි සිදු නොකෙරේ."/>
+    <Item english="Forms and uploads of files are not read from a command." text="ආකෘති පත්‍ර සහ ගොනු උඩුගත කිරීම් විධානයකින් කියවනු නොලැබේ."/>
+    <Item english="The command's address is not an http or https address." text="විධානයේ ලිපිනය http හෝ https ලිපිනයක් නොවේ."/>
 </NativeLangExtra>

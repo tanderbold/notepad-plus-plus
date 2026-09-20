@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Yalın anahtarı onaltılık olarak göster"/>
     <Item english="Empty: a random salt each time" text="Boş: her seferinde rastgele tuz"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt yalnızca ilk 72 baytı okur."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP İsteği"/>
+    <Item english="Send" text="Gönder"/>
+    <Item english="Parameters" text="Parametreler"/>
+    <Item english="Headers" text="Başlıklar"/>
+    <Item english="Body" text="Gövde"/>
+    <Item english="Options" text="Seçenekler"/>
+    <Item english="Content type:" text="İçerik türü:"/>
+    <Item english="User name:" text="Kullanıcı adı:"/>
+    <Item english="Password:" text="Parola:"/>
+    <Item english="Timeout (seconds):" text="Zaman aşımı (saniye):"/>
+    <Item english="Follow redirects" text="Yönlendirmeleri izle"/>
+    <Item english="Allow invalid certificates" text="Geçersiz sertifikalara izin ver"/>
+    <Item english="Format JSON" text="JSON'u biçimlendir"/>
+    <Item english="Paste curl Command" text="curl Komutunu Yapıştır"/>
+    <Item english="Copy as curl" text="curl Olarak Kopyala"/>
+    <Item english="Open in New Document" text="Yeni Belgede Aç"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Her satıra bir tane: ad=değer. Kodlanarak adrese eklenir."/>
+    <Item english="One to a line: Name: value" text="Her satıra bir tane: Ad: değer"/>
+    <Item english="Sent as it is written, in UTF-8." text="Yazıldığı gibi, UTF-8 olarak gönderilir."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Yanıt metin değil: $INT_REPLACE$ bayt."/>
+    <Item english="The address is not an http or https address." text="Adres bir http veya https adresi değil."/>
+    <Item english="This is not a curl command." text="Bu bir curl komutu değil."/>
+    <Item english="The command has no address." text="Komutta adres yok."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Komut verilerini bir dosyadan okuyor; bu burada desteklenmiyor."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formlar ve dosya yüklemeleri komuttan okunmaz."/>
+    <Item english="The command's address is not an http or https address." text="Komuttaki adres bir http veya https adresi değil."/>
 </NativeLangExtra>

@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Vis den rå nøgle i hexadecimal"/>
     <Item english="Empty: a random salt each time" text="Tomt: et tilfældigt salt hver gang"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt læser kun de første 72 bytes."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-forespørgsel"/>
+    <Item english="Send" text="Send"/>
+    <Item english="Parameters" text="Parametre"/>
+    <Item english="Headers" text="Headere"/>
+    <Item english="Body" text="Brødtekst"/>
+    <Item english="Options" text="Indstillinger"/>
+    <Item english="Content type:" text="Indholdstype:"/>
+    <Item english="User name:" text="Brugernavn:"/>
+    <Item english="Password:" text="Adgangskode:"/>
+    <Item english="Timeout (seconds):" text="Timeout (sekunder):"/>
+    <Item english="Follow redirects" text="Følg omdirigeringer"/>
+    <Item english="Allow invalid certificates" text="Tillad ugyldige certifikater"/>
+    <Item english="Format JSON" text="Formatér JSON"/>
+    <Item english="Paste curl Command" text="Indsæt curl-kommando"/>
+    <Item english="Copy as curl" text="Kopiér som curl"/>
+    <Item english="Open in New Document" text="Åbn i nyt dokument"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Én pr. linie: navn=værdi. De føjes til adressen i kodet form."/>
+    <Item english="One to a line: Name: value" text="Én pr. linie: Navn: værdi"/>
+    <Item english="Sent as it is written, in UTF-8." text="Sendes, som det er skrevet, i UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Svaret er ikke tekst: $INT_REPLACE$ bytes."/>
+    <Item english="The address is not an http or https address." text="Adressen er ikke en http- eller https-adresse."/>
+    <Item english="This is not a curl command." text="Dette er ikke en curl-kommando."/>
+    <Item english="The command has no address." text="Kommandoen har ingen adresse."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Kommandoen læser sine data fra en fil, hvilket ikke understøttes her."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formularer og upload af filer læses ikke fra en kommando."/>
+    <Item english="The command's address is not an http or https address." text="Kommandoens adresse er ikke en http- eller https-adresse."/>
 </NativeLangExtra>

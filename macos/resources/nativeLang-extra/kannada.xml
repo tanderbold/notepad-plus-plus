@@ -153,4 +153,21 @@
     <Item english="Symbols:" text="ಸಿಂಬಲ್ಸ್:"/>
     <Item english="Entropy: about $INT_REPLACE$ bits" text="ಎಂಟ್ರೊಪಿ: ಅಬೌಟ್ $INT_REPLACE$ ಬಿಟ್ಸ್"/>
     <Item english="Insert into Document" text="ಇನ್‌ಸರ್ಟ್ ಇನ್ಟು ಡಾಕ್ಯುಮೆಂಟ್"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP ರಿಕ್ವೆಸ್ಟ್"/>
+    <Item english="Send" text="ಸೆಂಡ್"/>
+    <Item english="Parameters" text="ಪ್ಯಾರಮೀಟರ್ಸ್"/>
+    <Item english="Headers" text="ಹೆಡರ್ಸ್"/>
+    <Item english="Body" text="ಬಾಡಿ"/>
+    <Item english="Options" text="ಆಪ್ಶನ್ಸ್"/>
+    <Item english="Content type:" text="ಕಾಂಟೆಂಟ್ ಟೈಪ್:"/>
+    <Item english="User name:" text="ಯೂಸರ್ ನೇಮ್:"/>
+    <Item english="Password:" text="ಪಾಸ್‌ವರ್ಡ್:"/>
+    <Item english="Timeout (seconds):" text="ಟೈಮ್‌ಔಟ್ (ಸೆಕೆಂಡ್ಸ್):"/>
+    <Item english="Follow redirects" text="ಫಾಲೋ ರೀಡೈರೆಕ್ಟ್ಸ್"/>
+    <Item english="Allow invalid certificates" text="ಅಲೋ ಇನ್‌ವ್ಯಾಲಿಡ್ ಸರ್ಟಿಫಿಕೇಟ್ಸ್"/>
+    <Item english="Format JSON" text="ಫಾರ್ಮ್ಯಾಟ್ JSON"/>
+    <Item english="Paste curl Command" text="ಪೇಸ್ಟ್ curl ಕಮ್ಯಾಂಡ್"/>
+    <Item english="Copy as curl" text="ಕಾಪಿ ಆಸ್ curl"/>
+    <Item english="Open in New Document" text="ಓಪನ್ ಇನ್ ನ್ಯೂ ಡಾಕ್ಯುಮೆಂಟ್"/>
 </NativeLangExtra>

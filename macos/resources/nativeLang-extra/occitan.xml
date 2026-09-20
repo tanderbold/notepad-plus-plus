@@ -179,4 +179,30 @@
     <Item english="Show the bare key in hexadecimal" text="Mostrar la clau nuda en exadecimal"/>
     <Item english="Empty: a random salt each time" text="Void : una sal aleatòria cada còp"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt legís sonque los 72 primièrs octets."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Requèsta HTTP"/>
+    <Item english="Send" text="Mandar"/>
+    <Item english="Parameters" text="Paramètres"/>
+    <Item english="Headers" text="Entèstas"/>
+    <Item english="Body" text="Còs"/>
+    <Item english="Options" text="Opcions"/>
+    <Item english="Content type:" text="Tipe de contengut :"/>
+    <Item english="User name:" text="Nom d'utilizaire :"/>
+    <Item english="Password:" text="Senhal :"/>
+    <Item english="Timeout (seconds):" text="Temps d'espèra (segondas) :"/>
+    <Item english="Follow redirects" text="Seguir las redireccions"/>
+    <Item english="Allow invalid certificates" text="Autorizar los certificats invalids"/>
+    <Item english="Format JSON" text="Formatar JSON"/>
+    <Item english="Paste curl Command" text="Pegar una comanda curl"/>
+    <Item english="Copy as curl" text="Copiar coma curl"/>
+    <Item english="Open in New Document" text="Dobrir dins un document novèl"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Un per linha : nom=valor. Son aponduts a l'adreça, codificats."/>
+    <Item english="One to a line: Name: value" text="Un per linha : Nom: valor"/>
+    <Item english="Sent as it is written, in UTF-8." text="Mandat tal coma es escrich, en UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="La responsa es pas de tèxt : $INT_REPLACE$ octets."/>
+    <Item english="The address is not an http or https address." text="L'adreça es pas una adreça http o https."/>
+    <Item english="This is not a curl command." text="Aquò es pas una comanda curl."/>
+    <Item english="The command has no address." text="La comanda a pas cap d'adreça."/>
+    <Item english="The command reads its data from a file, which is not done here." text="La comanda legís sas donadas dins un fichièr, çò que se fa pas aicí."/>
+    <Item english="The command's address is not an http or https address." text="L'adreça de la comanda es pas una adreça http o https."/>
 </NativeLangExtra>

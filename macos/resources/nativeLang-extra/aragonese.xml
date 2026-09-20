@@ -183,4 +183,29 @@
     <Item english="Show the bare key in hexadecimal" text="Amostrar a clau sola en hexadecimal"/>
     <Item english="Empty: a random salt each time" text="Vuedo: una sal aleatoria cada vegada"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt nomás leye os primers 72 bytes."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Petición HTTP"/>
+    <Item english="Send" text="Ninviar"/>
+    <Item english="Parameters" text="Parametros"/>
+    <Item english="Headers" text="Capiteros"/>
+    <Item english="Body" text="Cuerpo"/>
+    <Item english="Options" text="Opcions"/>
+    <Item english="Content type:" text="Tipo de conteniu:"/>
+    <Item english="User name:" text="Nombre d'usuario:"/>
+    <Item english="Password:" text="Contrasenya:"/>
+    <Item english="Timeout (seconds):" text="Tiempo d'aspera (segundos):"/>
+    <Item english="Follow redirects" text="Seguir as redireccions"/>
+    <Item english="Allow invalid certificates" text="Permitir certificaus no validos"/>
+    <Item english="Paste curl Command" text="Apegar a orden curl"/>
+    <Item english="Copy as curl" text="Copiar como curl"/>
+    <Item english="Open in New Document" text="Ubrir en un nuevo documento"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Un por linia: nombre=valor. S'adhiben a l'adreza, codificaus."/>
+    <Item english="One to a line: Name: value" text="Un por linia: Nombre: valor"/>
+    <Item english="Sent as it is written, in UTF-8." text="Se ninvia tal como ye escrito, en UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="A respuesta no ye texto: $INT_REPLACE$ bytes."/>
+    <Item english="The address is not an http or https address." text="L'adreza no ye una adreza http u https."/>
+    <Item english="This is not a curl command." text="Isto no ye una orden curl."/>
+    <Item english="The command has no address." text="A orden no tiene adreza."/>
+    <Item english="The command reads its data from a file, which is not done here." text="A orden leye os suyos datos d'un fichero, cosa que aquí no se fa."/>
+    <Item english="The command's address is not an http or https address." text="L'adreza d'a orden no ye una adreza http u https."/>
 </NativeLangExtra>

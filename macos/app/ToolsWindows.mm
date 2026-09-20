@@ -1,5 +1,6 @@
 #import "ToolsWindows.h"
 #import "Localization.h"
+#import "JsonCommands.h"
 
 #pragma mark - What the four windows are built from
 
@@ -921,6 +922,332 @@ static NSString *HashOfKind(NSString *password, NSInteger chosen) {
 - (void)insert:(id)sender {
     if (!self.result.string.length || !self.insertIntoDocument) { NSBeep(); return; }
     self.insertIntoDocument(self.result.string);
+}
+
+- (void)close:(id)sender { [self.panel orderOut:nil]; }
+
+@end
+
+#pragma mark - HTTP Request
+
+static NSString *const kHttpRequestKey = @"NppHttpRequest";
+
+@interface NppHttpWindow () <NSTextFieldDelegate>
+@property (nonatomic) NSPanel *panel;
+@property (nonatomic) NSPopUpButton *method, *contentType;
+@property (nonatomic) NSTextField *address, *username, *password, *timeout, *status, *hint;
+@property (nonatomic) NSSegmentedControl *section, *answerSection;
+@property (nonatomic) NSTextView *parameters, *headers, *body, *answer;
+@property (nonatomic) NSButton *followRedirects, *allowInvalidCertificates, *sendButton, *formatJSON;
+@property (nonatomic) NSArray<NSView *> *sectionViews;
+@property (nonatomic) NSProgressIndicator *spinner;
+@property (nonatomic) NppHttpResponse *response;
+@property (nonatomic) NSUInteger generation;
+@property (nonatomic) BOOL sending;
+@end
+
+@implementation NppHttpWindow
+
++ (instancetype)shared {
+    static NppHttpWindow *one;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ one = [[NppHttpWindow alloc] init]; });
+    return one;
+}
+
+/// JSON with a line to each member and two spaces to each level, the members in the order they came and
+/// every value spelt as it was - a server's 1.0 stays 1.0, its keys stay where it put them. Only the
+/// white space between tokens is changed. nil when the text is not JSON.
+static NSString *LaidOutJSON(NSString *json) {
+    NSData *data = [json dataUsingEncoding:NSUTF8StringEncoding];
+    if (!data || ![NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingFragmentsAllowed error:NULL]) return nil;
+    NSMutableString *out = [NSMutableString stringWithCapacity:json.length * 2];
+    NSUInteger n = json.length;
+    __block NSUInteger depth = 0;
+    void (^newline)(void) = ^{ [out appendString:@"\n"]; for (NSUInteger k = 0; k < depth; ++k) [out appendString:@"  "]; };
+    for (NSUInteger i = 0; i < n; ++i) {
+        unichar c = [json characterAtIndex:i];
+        if (c == '"') {
+            NSUInteger end = i + 1;
+            while (end < n && [json characterAtIndex:end] != '"') end += [json characterAtIndex:end] == '\\' ? 2 : 1;
+            [out appendString:[json substringWithRange:NSMakeRange(i, MIN(end + 1, n) - i)]];
+            i = end;
+        } else if (c == '{' || c == '[') {
+            // An empty object or array stays on its line.
+            NSUInteger next = i + 1;
+            while (next < n && [[NSCharacterSet whitespaceAndNewlineCharacterSet] characterIsMember:[json characterAtIndex:next]]) ++next;
+            if (next < n && [json characterAtIndex:next] == (c == '{' ? '}' : ']')) { [out appendFormat:@"%C%C", c, [json characterAtIndex:next]]; i = next; continue; }
+            [out appendFormat:@"%C", c]; ++depth; newline();
+        } else if (c == '}' || c == ']') {
+            if (depth) --depth;
+            newline(); [out appendFormat:@"%C", c];
+        } else if (c == ',') { [out appendString:@","]; newline(); }
+        else if (c == ':') [out appendString:@": "];
+        else if (c != ' ' && c != '\t' && c != '\n' && c != '\r') [out appendFormat:@"%C", c];
+    }
+    return out;
+}
+
+static NSSegmentedControl *Segments(NSArray<NSString *> *labels, id target, SEL action) {
+    NSSegmentedControl *segments = [NSSegmentedControl segmentedControlWithLabels:labels trackingMode:NSSegmentSwitchTrackingSelectOne
+                                                                           target:target action:action];
+    segments.translatesAutoresizingMaskIntoConstraints = NO;
+    segments.segmentDistribution = NSSegmentDistributionFit;
+    segments.selectedSegment = 0;
+    [segments setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
+    return segments;
+}
+
+- (NSPanel *)panel {
+    if (_panel) return _panel;
+    self.method = Popup(@[@"GET", @"POST", @"PUT", @"PATCH", @"DELETE", @"HEAD", @"OPTIONS"], nil, NULL);
+    self.address = Field(@"", 380, self);
+    self.address.placeholderString = @"https://example.com/path";
+    self.sendButton = Button(@"Send", self, @selector(send:));
+    self.sendButton.keyEquivalent = @"\r";
+    self.spinner = [[NSProgressIndicator alloc] init];
+    self.spinner.translatesAutoresizingMaskIntoConstraints = NO;
+    self.spinner.style = NSProgressIndicatorStyleSpinning;
+    self.spinner.controlSize = NSControlSizeSmall;
+    self.spinner.displayedWhenStopped = NO;
+
+    self.section = Segments(@[@"Parameters", @"Headers", @"Body", @"Options"], self, @selector(sectionChanged:));
+    self.hint = Note();
+    self.hint.textColor = [NSColor secondaryLabelColor];
+    NSTextView *parameters, *headers, *body, *answer;
+    NSScrollView *parametersArea = TextArea(YES, nil, 110, &parameters), *headersArea = TextArea(YES, nil, 110, &headers);
+    NSScrollView *bodyArea = TextArea(YES, nil, 80, &body);
+    self.parameters = parameters; self.headers = headers; self.body = body;
+
+    self.contentType = Popup(@[@"None", @"application/json", @"application/x-www-form-urlencoded", @"text/plain", @"application/xml"], nil, NULL);
+    NSStackView *bodySection = [NSStackView stackViewWithViews:@[bodyArea, Row(@[Label(@"Content type:"), self.contentType, Spring()])]];
+    bodySection.orientation = NSUserInterfaceLayoutOrientationVertical;
+    bodySection.alignment = NSLayoutAttributeLeading;
+    bodySection.translatesAutoresizingMaskIntoConstraints = NO;
+    [bodyArea.widthAnchor constraintEqualToAnchor:bodySection.widthAnchor].active = YES;
+
+    self.username = Field(@"", 200, nil);
+    self.password = [[NSSecureTextField alloc] init];
+    self.password.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.password.widthAnchor constraintGreaterThanOrEqualToConstant:200].active = YES;
+    self.timeout = Field(@"30", 0, nil);
+    [self.timeout.widthAnchor constraintEqualToConstant:60].active = YES;
+    self.followRedirects = Checkbox(@"Follow redirects", nil, NULL);
+    self.followRedirects.state = NSControlStateValueOn;
+    self.allowInvalidCertificates = Checkbox(@"Allow invalid certificates", nil, NULL);
+    NSGridView *options = [NSGridView gridViewWithViews:@[@[Label(@"User name:"), self.username],
+                                                          @[Label(@"Password:"), self.password],
+                                                          @[Label(@"Timeout (seconds):"), self.timeout],
+                                                          @[[[NSView alloc] init], self.followRedirects],
+                                                          @[[[NSView alloc] init], self.allowInvalidCertificates]]];
+    options.translatesAutoresizingMaskIntoConstraints = NO;
+    options.rowSpacing = 8; options.columnSpacing = 8;
+    options.rowAlignment = NSGridRowAlignmentFirstBaseline;
+    [options columnAtIndex:0].xPlacement = NSGridCellPlacementTrailing;
+    [options columnAtIndex:1].xPlacement = NSGridCellPlacementLeading;
+    NSStackView *optionsSection = Row(@[options, Spring()]);
+    optionsSection.alignment = NSLayoutAttributeTop;
+    self.sectionViews = @[parametersArea, headersArea, bodySection, optionsSection];
+
+    self.status = Note();
+    self.status.selectable = YES;
+    self.answerSection = Segments(@[@"Body", @"Headers"], self, @selector(answerSectionChanged:));
+    self.formatJSON = Checkbox(@"Format JSON", self, @selector(answerSectionChanged:));
+    self.formatJSON.state = NSControlStateValueOn;
+    NSScrollView *answerArea = TextArea(NO, nil, 160, &answer);
+    self.answer = answer;
+
+    NSButton *close = Button(@"Close", self, @selector(close:));
+    close.keyEquivalent = @"\033";
+    _panel = PanelHolding(@[Row(@[self.method, self.address, self.sendButton, self.spinner]),
+                            self.section, self.hint, parametersArea, headersArea, bodySection, optionsSection,
+                            self.status, Row(@[self.answerSection, self.formatJSON, Spring(), Button(@"Copy", self, @selector(copyAnswer:))]), answerArea,
+                            Row(@[Button(@"Paste curl Command", self, @selector(pasteCurlCommand:)), Button(@"Copy as curl", self, @selector(copyAsCurl:)),
+                                  Spring(), Button(@"Open in New Document", self, @selector(openAnswer:)), close])],
+                          @"HTTP Request", @"NppHttpWindow");
+    [self.address setContentHuggingPriority:1 forOrientation:NSLayoutConstraintOrientationHorizontal];
+
+    // The request as it was left the last time, the password excepted.
+    NSDictionary *saved = [[NSUserDefaults standardUserDefaults] dictionaryForKey:kHttpRequestKey];
+    if (saved) {
+        [self.method selectItemWithTitle:saved[@"method"] ?: @"GET"];
+        if (self.method.indexOfSelectedItem < 0) [self.method selectItemAtIndex:0];
+        self.address.stringValue = saved[@"address"] ?: @"";
+        self.parameters.string = saved[@"parameters"] ?: @""; self.headers.string = saved[@"headers"] ?: @""; self.body.string = saved[@"body"] ?: @"";
+        self.username.stringValue = saved[@"username"] ?: @"";
+        self.timeout.stringValue = saved[@"timeout"] ?: @"30";
+        self.followRedirects.state = saved[@"followRedirects"] ? [saved[@"followRedirects"] boolValue] : YES;
+        self.allowInvalidCertificates.state = [saved[@"allowInvalidCertificates"] boolValue];
+        NSInteger type = [saved[@"contentType"] integerValue];
+        [self.contentType selectItemAtIndex:type >= 0 && type < self.contentType.numberOfItems ? type : 0];
+    }
+    [self sectionChanged:nil];
+    return _panel;
+}
+
+- (void)show {
+    NSPanel *panel = self.panel;
+    Present(panel);
+    [self sectionChanged:nil];
+    [panel makeFirstResponder:self.address];
+}
+
+- (void)sectionChanged:(id)sender {
+    NSInteger chosen = self.section.selectedSegment;
+    for (NSUInteger i = 0; i < self.sectionViews.count; ++i) self.sectionViews[i].hidden = (NSInteger)i != chosen;
+    self.hint.stringValue = chosen == 0 ? NppL(@"One to a line: name=value. They are added to the address, encoded.")
+                          : chosen == 1 ? NppL(@"One to a line: Name: value")
+                          : chosen == 2 ? NppL(@"Sent as it is written, in UTF-8.") : @"";
+    self.hint.hidden = chosen == 3;
+}
+
+#pragma mark The request
+
+- (NppHttpRequest *)request {
+    NppHttpRequest *request = [[NppHttpRequest alloc] init];
+    // (By position: the pop-up's titles are not translated, but nothing here should depend on that.)
+    request.method = @[@"GET", @"POST", @"PUT", @"PATCH", @"DELETE", @"HEAD", @"OPTIONS"][(NSUInteger)MAX(self.method.indexOfSelectedItem, 0)];
+    request.address = self.address.stringValue;
+    request.parameters = [NppHttpPair pairsFromText:self.parameters.string separator:@"="];
+    NSMutableArray<NppHttpPair *> *headers = [[NppHttpPair pairsFromText:self.headers.string separator:@":"] mutableCopy];
+    NSString *body = self.body.string;
+    if (body.length) {
+        request.body = [body dataUsingEncoding:NSUTF8StringEncoding];
+        // The pop-up's content type, unless the headers name one themselves.
+        BOOL named = NO;
+        for (NppHttpPair *header in headers) if ([header.name caseInsensitiveCompare:@"Content-Type"] == NSOrderedSame) named = YES;
+        NSArray<NSString *> *types = @[@"", @"application/json", @"application/x-www-form-urlencoded", @"text/plain", @"application/xml"];
+        NSString *type = types[(NSUInteger)MAX(self.contentType.indexOfSelectedItem, 0)];
+        if (!named && type.length) [headers addObject:[NppHttpPair pairWithName:@"Content-Type" value:type]];
+    }
+    request.headers = headers;
+    request.username = self.username.stringValue; request.password = self.password.stringValue;
+    request.followRedirects = self.followRedirects.state == NSControlStateValueOn;
+    request.allowInvalidCertificates = self.allowInvalidCertificates.state == NSControlStateValueOn;
+    request.timeout = MAX(0, self.timeout.doubleValue);
+    return request;
+}
+
+- (void)showRequest:(NppHttpRequest *)request {
+    (void)self.panel;
+    [self.method selectItemWithTitle:request.method.uppercaseString];
+    if (self.method.indexOfSelectedItem < 0) { [self.method addItemWithTitle:request.method.uppercaseString]; [self.method selectItemWithTitle:request.method.uppercaseString]; }
+    self.address.stringValue = request.address ?: @"";
+    self.parameters.string = [NppHttpPair textFromPairs:request.parameters separator:@"="];
+    self.headers.string = [NppHttpPair textFromPairs:request.headers separator:@":"];
+    self.body.string = request.body ? ([[NSString alloc] initWithData:request.body encoding:NSUTF8StringEncoding] ?: @"") : @"";
+    [self.contentType selectItemAtIndex:0];
+    self.username.stringValue = request.username ?: @""; self.password.stringValue = request.password ?: @"";
+    self.followRedirects.state = request.followRedirects; self.allowInvalidCertificates.state = request.allowInvalidCertificates;
+    self.timeout.stringValue = [NSString stringWithFormat:@"%ld", (long)request.timeout];
+}
+
+- (void)remember {
+    [[NSUserDefaults standardUserDefaults] setObject:@{
+        @"method": [self request].method, @"address": self.address.stringValue ?: @"", @"parameters": self.parameters.string ?: @"",
+        @"headers": self.headers.string ?: @"", @"body": self.body.string ?: @"", @"username": self.username.stringValue ?: @"",
+        @"timeout": self.timeout.stringValue ?: @"30", @"followRedirects": @(self.followRedirects.state == NSControlStateValueOn),
+        @"allowInvalidCertificates": @(self.allowInvalidCertificates.state == NSControlStateValueOn),
+        @"contentType": @(self.contentType.indexOfSelectedItem)} forKey:kHttpRequestKey];
+}
+
+#pragma mark Sending
+
+- (void)showResponse:(NppHttpResponse *)response {
+    self.response = response;
+    NSMutableArray<NSString *> *parts = [NSMutableArray array];
+    if (response.statusLine.length) [parts addObject:response.statusLine];
+    if (response.error.length) [parts addObject:response.error];
+    if (response.status) {
+        [parts addObject:[NSString stringWithFormat:@"%.0f ms", response.elapsed * 1000]];
+        [parts addObject:[NSByteCountFormatter stringFromByteCount:(long long)response.body.length countStyle:NSByteCountFormatterCountStyleFile]];
+        if (response.redirects > 0 && response.finalAddress.length) [parts addObject:[@"→ " stringByAppendingString:response.finalAddress]];
+    }
+    self.status.stringValue = [parts componentsJoinedByString:@"  ·  "];
+    self.status.textColor = response.error.length || response.status >= 400 ? [NSColor systemRedColor]
+                          : response.status >= 300 ? [NSColor systemOrangeColor] : [NSColor systemGreenColor];
+    [self answerSectionChanged:nil];
+}
+
+- (void)answerSectionChanged:(id)sender {
+    NppHttpResponse *response = self.response;
+    if (!response) { self.answer.string = @""; return; }
+    if (self.answerSection.selectedSegment == 1) { self.answer.string = [response headerText]; return; }
+    NSString *text = [response text];
+    if (text && self.formatJSON.state == NSControlStateValueOn &&
+        [[response valueOfHeader:@"Content-Type"].lowercaseString containsString:@"json"]) {
+        // JSON mostly comes as one long line; laid out, it can be read. What is not JSON after all is shown as it came.
+        text = LaidOutJSON(text) ?: text;
+    }
+    if (text) { self.answer.string = text; return; }
+    // No text in any encoding it names: said so, and the beginning of it shown as bytes.
+    NSData *head = [response.body subdataWithRange:NSMakeRange(0, MIN(response.body.length, (NSUInteger)2048))];
+    self.answer.string = [NSString stringWithFormat:@"%@\n\n%@", NppLMessage(@"The answer is not text: $INT_REPLACE$ bytes.", nil, (NSInteger)response.body.length),
+                          [NppCrypto hexOfData:head]];
+}
+
+- (void)sendAndWait {
+    ++self.generation;
+    [self remember];
+    [self showResponse:[NppHttpClient send:[self request] cancelled:nil]];
+}
+
+- (void)setSending:(BOOL)sending {
+    _sending = sending;
+    self.sendButton.title = NppL(sending ? @"Cancel" : @"Send");
+    if (sending) [self.spinner startAnimation:nil]; else [self.spinner stopAnimation:nil];
+}
+
+- (void)send:(id)sender {
+    if (self.sending) { ++self.generation; self.sending = NO; return; }        // pressed again: given up
+    NppHttpRequest *request = [self request];
+    if (![request url]) {
+        NppHttpResponse *none = [[NppHttpResponse alloc] init];
+        none.error = NppL(@"The address is not an http or https address.");
+        [self showResponse:none];
+        NSBeep();
+        return;
+    }
+    [self remember];
+    NSUInteger mine = ++self.generation;
+    self.sending = YES;
+    self.status.stringValue = @"";
+    __weak __typeof__(self) weakSelf = self;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NppHttpResponse *response = [NppHttpClient send:request cancelled:^BOOL { return weakSelf.generation != mine; }];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (weakSelf.generation != mine) return;
+            weakSelf.sending = NO;
+            [weakSelf showResponse:response];
+        });
+    });
+}
+
+#pragma mark curl, the clipboard, the editor
+
+- (BOOL)pasteCurlCommand:(id)sender {
+    NSString *command = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
+    NSString *why = nil;
+    NppHttpRequest *request = [NppHttpRequest requestFromCurlCommand:command ?: @"" error:&why];
+    if (!request) {
+        self.status.textColor = [NSColor systemRedColor];
+        self.status.stringValue = NppL(why ?: @"This is not a curl command.");
+        NSBeep();
+        return NO;
+    }
+    [self showRequest:request];
+    self.status.stringValue = @"";
+    return YES;
+}
+
+- (void)copyAsCurl:(id)sender { CopyText([[self request] curlCommand]); }
+- (void)copyAnswer:(id)sender { CopyText(self.answer.string); }
+
+- (void)openAnswer:(id)sender {
+    // As it is shown: laid out when that is ticked.
+    NSString *text = [self.response text] ? (self.answerSection.selectedSegment == 0 ? self.answer.string : [self.response text]) : nil;
+    if (!text.length || !self.openInNewDocument) { NSBeep(); return; }
+    self.openInNewDocument(text, [self.response valueOfHeader:@"Content-Type"] ?: @"");
 }
 
 - (void)close:(id)sender { [self.panel orderOut:nil]; }

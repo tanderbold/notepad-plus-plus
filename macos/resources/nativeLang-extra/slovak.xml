@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Zobraziť samotný kľúč šestnástkovo"/>
     <Item english="Empty: a random salt each time" text="Prázdne: zakaždým náhodná soľ"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt číta iba prvých 72 bajtov."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Požiadavka HTTP"/>
+    <Item english="Send" text="Odoslať"/>
+    <Item english="Parameters" text="Parametre"/>
+    <Item english="Headers" text="Hlavičky"/>
+    <Item english="Body" text="Telo"/>
+    <Item english="Options" text="Možnosti"/>
+    <Item english="Content type:" text="Typ obsahu:"/>
+    <Item english="User name:" text="Meno používateľa:"/>
+    <Item english="Password:" text="Heslo:"/>
+    <Item english="Timeout (seconds):" text="Časový limit (sekundy):"/>
+    <Item english="Follow redirects" text="Nasledovať presmerovania"/>
+    <Item english="Allow invalid certificates" text="Povoliť neplatné certifikáty"/>
+    <Item english="Format JSON" text="Formátovať JSON"/>
+    <Item english="Paste curl Command" text="Prilepiť príkaz curl"/>
+    <Item english="Copy as curl" text="Kopírovať ako curl"/>
+    <Item english="Open in New Document" text="Otvoriť v novom dokumente"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Jeden na riadok: názov=hodnota. Pridajú sa k adrese, zakódované."/>
+    <Item english="One to a line: Name: value" text="Jeden na riadok: Názov: hodnota"/>
+    <Item english="Sent as it is written, in UTF-8." text="Odošle sa tak, ako je napísané, v UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Odpoveď nie je text (bajtov: $INT_REPLACE$)."/>
+    <Item english="The address is not an http or https address." text="Adresa nie je adresa http ani https."/>
+    <Item english="This is not a curl command." text="Toto nie je príkaz curl."/>
+    <Item english="The command has no address." text="Príkaz neobsahuje adresu."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Príkaz číta údaje zo súboru, čo sa tu nerobí."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formuláre a nahrávanie súborov sa z príkazu nečítajú."/>
+    <Item english="The command's address is not an http or https address." text="Adresa v príkaze nie je adresa http ani https."/>
 </NativeLangExtra>

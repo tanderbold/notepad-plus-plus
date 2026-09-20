@@ -86,4 +86,12 @@
     <Item english="Digits (0-9)" text="ژمارەكان (0-9)"/>
     <Item english="Symbols:" text="هێماكان:"/>
     <Item english="Insert into Document" text="خستنە ناو بەڵگەنامە"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="Send" text="ناردن"/>
+    <Item english="Options" text="بژاردەكان"/>
+    <Item english="User name:" text="ناوی بەكارهێنەر:"/>
+    <Item english="Password:" text="وشەی نهێنی:"/>
+    <Item english="Paste curl Command" text="لكاندنی فەرمانی curl"/>
+    <Item english="Copy as curl" text="لەبەرگرتنەوە وەك curl"/>
+    <Item english="Open in New Document" text="كردنەوە لە بەڵگەنامەی نوێ"/>
 </NativeLangExtra>

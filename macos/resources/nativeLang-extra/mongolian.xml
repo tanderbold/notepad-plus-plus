@@ -204,4 +204,31 @@
     <Item english="Show the bare key in hexadecimal" text="Түлхүүрийг дангаар нь 16-тын тооллоор харуулах"/>
     <Item english="Empty: a random salt each time" text="Хоосон: тухай бүрд санамсаргүй давс"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt зөвхөн эхний 72 байтыг уншина."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP хүсэлт"/>
+    <Item english="Send" text="Илгээх"/>
+    <Item english="Parameters" text="Параметрүүд"/>
+    <Item english="Headers" text="Толгой мэдээлэл"/>
+    <Item english="Body" text="Их бие"/>
+    <Item english="Options" text="Сонголтууд"/>
+    <Item english="Content type:" text="Агуулгын төрөл:"/>
+    <Item english="User name:" text="Хэрэглэгчийн нэр:"/>
+    <Item english="Password:" text="Нууц үг:"/>
+    <Item english="Timeout (seconds):" text="Хүлээх хугацаа (секунд):"/>
+    <Item english="Follow redirects" text="Дахин чиглүүлэлтийг дагах"/>
+    <Item english="Allow invalid certificates" text="Хүчингүй гэрчилгээг зөвшөөрөх"/>
+    <Item english="Format JSON" text="JSON хэлбэржүүлэх"/>
+    <Item english="Paste curl Command" text="curl тушаал наах"/>
+    <Item english="Copy as curl" text="curl хэлбэрээр хуулах"/>
+    <Item english="Open in New Document" text="Шинэ баримтад нээх"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Мөр бүрд нэг: нэр=утга. Тэдгээрийг кодлоод хаягт нэмнэ."/>
+    <Item english="One to a line: Name: value" text="Мөр бүрд нэг: Нэр: утга"/>
+    <Item english="Sent as it is written, in UTF-8." text="Бичсэн чигээр нь UTF-8-аар илгээнэ."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Хариу нь текст биш: $INT_REPLACE$ байт."/>
+    <Item english="The address is not an http or https address." text="Хаяг нь http эсвэл https хаяг биш байна."/>
+    <Item english="This is not a curl command." text="Энэ нь curl тушаал биш байна."/>
+    <Item english="The command has no address." text="Тушаалд хаяг алга."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Тушаал өгөгдлөө файлаас уншдаг бөгөөд үүнийг энд дэмжээгүй."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Маягт болон файл байршуулалтыг тушаалаас уншихгүй."/>
+    <Item english="The command's address is not an http or https address." text="Тушаалын хаяг нь http эсвэл https хаяг биш байна."/>
 </NativeLangExtra>

@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Калитнинг ўзини ўн олтилик кўринишда кўрсатиш"/>
     <Item english="Empty: a random salt each time" text="Бўш: ҳар сафар тасодифий туз"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt фақат дастлабки 72 байтни ўқийди."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP сўрови"/>
+    <Item english="Send" text="Юбориш"/>
+    <Item english="Parameters" text="Параметрлар"/>
+    <Item english="Headers" text="Сарлавҳалар"/>
+    <Item english="Body" text="Тана"/>
+    <Item english="Options" text="Созламалар"/>
+    <Item english="Content type:" text="Контент тури:"/>
+    <Item english="User name:" text="Фойдаланувчи номи:"/>
+    <Item english="Password:" text="Парол:"/>
+    <Item english="Timeout (seconds):" text="Кутиш вақти (сония):"/>
+    <Item english="Follow redirects" text="Қайта йўналтиришларга эргашиш"/>
+    <Item english="Allow invalid certificates" text="Яроқсиз сертификатларга рухсат бериш"/>
+    <Item english="Format JSON" text="JSONни форматлаш"/>
+    <Item english="Paste curl Command" text="curl буйруғини қўйиш"/>
+    <Item english="Copy as curl" text="curl сифатида нусха олиш"/>
+    <Item english="Open in New Document" text="Янги ҳужжатда очиш"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Ҳар қаторда биттадан: ном=қиймат. Улар кодланган ҳолда манзилга қўшилади."/>
+    <Item english="One to a line: Name: value" text="Ҳар қаторда биттадан: Ном: қиймат"/>
+    <Item english="Sent as it is written, in UTF-8." text="Ёзилганидек, UTF-8 да юборилади."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Жавоб матн эмас: $INT_REPLACE$ байт."/>
+    <Item english="The address is not an http or https address." text="Манзил http ёки https манзили эмас."/>
+    <Item english="This is not a curl command." text="Бу curl буйруғи эмас."/>
+    <Item english="The command has no address." text="Буйруқда манзил йўқ."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Буйруқ маълумотларини файлдан ўқийди, бу ерда бу қўллаб-қувватланмайди."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Формалар ва файл юклашлар буйруқдан ўқилмайди."/>
+    <Item english="The command's address is not an http or https address." text="Буйруқдаги манзил http ёки https манзили эмас."/>
 </NativeLangExtra>

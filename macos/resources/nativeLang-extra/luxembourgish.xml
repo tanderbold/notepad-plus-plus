@@ -185,4 +185,30 @@
     <Item english="Show the bare key in hexadecimal" text="De renge Schlëssel hexadezimal uweisen"/>
     <Item english="Empty: a random salt each time" text="Eidel: all Kéier en zoufällege Salt"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt liest nëmmen déi éischt 72 Bytes."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-Ufro"/>
+    <Item english="Send" text="Schécken"/>
+    <Item english="Parameters" text="Parameteren"/>
+    <Item english="Headers" text="Headeren"/>
+    <Item english="Options" text="Optiounen"/>
+    <Item english="Content type:" text="Inhaltstyp:"/>
+    <Item english="User name:" text="Benotzernumm:"/>
+    <Item english="Password:" text="Passwuert:"/>
+    <Item english="Timeout (seconds):" text="Timeout (Sekonnen):"/>
+    <Item english="Follow redirects" text="Weiderleedunge follegen"/>
+    <Item english="Allow invalid certificates" text="Ongülteg Zertifikater erlaben"/>
+    <Item english="Format JSON" text="JSON formatéieren"/>
+    <Item english="Paste curl Command" text="curl-Befeel afügen"/>
+    <Item english="Copy as curl" text="Als curl kopéieren"/>
+    <Item english="Open in New Document" text="An engem neien Dokument opmaachen"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Ee pro Zeil: Numm=Wäert. Si ginn un d'Adress ugehaangen, kodéiert."/>
+    <Item english="One to a line: Name: value" text="Ee pro Zeil: Numm: Wäert"/>
+    <Item english="Sent as it is written, in UTF-8." text="Gëtt esou geschéckt, wéi et geschriwwen ass, an UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="D'Äntwert ass keen Text: $INT_REPLACE$ Bytes."/>
+    <Item english="The address is not an http or https address." text="D'Adress ass keng http- oder https-Adress."/>
+    <Item english="This is not a curl command." text="Dëst ass kee curl-Befeel."/>
+    <Item english="The command has no address." text="De Befeel huet keng Adress."/>
+    <Item english="The command reads its data from a file, which is not done here." text="De Befeel liest seng Daten aus enger Datei, wat hei net gemaach gëtt."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formulairen an Datei-Uploads ginn net aus engem Befeel gelies."/>
+    <Item english="The command's address is not an http or https address." text="D'Adress vum Befeel ass keng http- oder https-Adress."/>
 </NativeLangExtra>

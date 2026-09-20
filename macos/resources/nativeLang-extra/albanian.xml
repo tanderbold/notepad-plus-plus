@@ -195,4 +195,31 @@
     <Item english="Show the bare key in hexadecimal" text="Shfaq vetë çelësin në heksadecimal"/>
     <Item english="Empty: a random salt each time" text="Bosh: kripë e rastësishme çdo herë"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt lexon vetëm 72 bajtët e parë."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Kërkesë HTTP"/>
+    <Item english="Send" text="Dërgo"/>
+    <Item english="Parameters" text="Parametrat"/>
+    <Item english="Headers" text="Kokat"/>
+    <Item english="Body" text="Trupi"/>
+    <Item english="Options" text="Opsionet"/>
+    <Item english="Content type:" text="Lloji i përmbajtjes:"/>
+    <Item english="User name:" text="Emri i përdoruesit:"/>
+    <Item english="Password:" text="Fjalëkalimi:"/>
+    <Item english="Timeout (seconds):" text="Koha e pritjes (sekonda):"/>
+    <Item english="Follow redirects" text="Ndiq ridrejtimet"/>
+    <Item english="Allow invalid certificates" text="Lejo certifikata të pavlefshme"/>
+    <Item english="Format JSON" text="Formato JSON"/>
+    <Item english="Paste curl Command" text="Ngjit komandën curl"/>
+    <Item english="Copy as curl" text="Kopjo si curl"/>
+    <Item english="Open in New Document" text="Hap në dokument të ri"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Një për rresht: emri=vlera. Shtohen te adresa, të koduara."/>
+    <Item english="One to a line: Name: value" text="Një për rresht: Emri: vlera"/>
+    <Item english="Sent as it is written, in UTF-8." text="Dërgohet siç është shkruar, në UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Përgjigjja nuk është tekst: $INT_REPLACE$ bajte."/>
+    <Item english="The address is not an http or https address." text="Adresa nuk është adresë http ose https."/>
+    <Item english="This is not a curl command." text="Kjo nuk është komandë curl."/>
+    <Item english="The command has no address." text="Komanda nuk ka adresë."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Komanda i lexon të dhënat nga një fil, gjë që nuk bëhet këtu."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formularët dhe ngarkimet e fileve nuk lexohen nga një komandë."/>
+    <Item english="The command's address is not an http or https address." text="Adresa e komandës nuk është adresë http ose https."/>
 </NativeLangExtra>

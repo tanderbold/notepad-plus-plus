@@ -101,4 +101,12 @@
     <Item english="Digits (0-9)" text="Numeri (0-9)"/>
     <Item english="Symbols:" text="Scinboli:"/>
     <Item english="Insert into Document" text="Introduxi into documento"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="Parameters" text="Parametri"/>
+    <Item english="Headers" text="Intestaçioin"/>
+    <Item english="User name:" text="Nomme utente:"/>
+    <Item english="Password:" text="Password:"/>
+    <Item english="Paste curl Command" text="Incòlla comando curl"/>
+    <Item english="Copy as curl" text="Còpia comme curl"/>
+    <Item english="Open in New Document" text="Arvi inte 'n neuvo documento"/>
 </NativeLangExtra>

@@ -35,4 +35,10 @@
     <Item english="Length:" text="Teɣzi:"/>
     <Item english="Digits (0-9)" text="Izwilen (0-9)"/>
     <Item english="Symbols:" text="Izamulen:"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="Send" text="Azen"/>
+    <Item english="Options" text="Tixṭiriyin"/>
+    <Item english="User name:" text="Isem n useqdac:"/>
+    <Item english="Password:" text="Awal uffir:"/>
+    <Item english="Copy as curl" text="Nɣel am curl"/>
 </NativeLangExtra>

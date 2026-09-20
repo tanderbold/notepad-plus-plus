@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="키 자체를 16진수로 표시"/>
     <Item english="Empty: a random salt each time" text="비어 있음: 매번 무작위 솔트"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt는 처음 72바이트만 읽습니다."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP 요청"/>
+    <Item english="Send" text="보내기"/>
+    <Item english="Parameters" text="매개변수"/>
+    <Item english="Headers" text="헤더"/>
+    <Item english="Body" text="본문"/>
+    <Item english="Options" text="옵션"/>
+    <Item english="Content type:" text="콘텐츠 유형:"/>
+    <Item english="User name:" text="사용자 이름:"/>
+    <Item english="Password:" text="비밀번호:"/>
+    <Item english="Timeout (seconds):" text="제한 시간 (초):"/>
+    <Item english="Follow redirects" text="리디렉션 따라가기"/>
+    <Item english="Allow invalid certificates" text="유효하지 않은 인증서 허용"/>
+    <Item english="Format JSON" text="JSON 서식 정리"/>
+    <Item english="Paste curl Command" text="curl 명령 붙여넣기"/>
+    <Item english="Copy as curl" text="curl로 복사"/>
+    <Item english="Open in New Document" text="새 문서에서 열기"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="한 줄에 하나씩: 이름=값. 인코딩되어 주소에 추가됩니다."/>
+    <Item english="One to a line: Name: value" text="한 줄에 하나씩: 이름: 값"/>
+    <Item english="Sent as it is written, in UTF-8." text="작성된 그대로 UTF-8로 전송됩니다."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="응답이 텍스트가 아닙니다: $INT_REPLACE$바이트."/>
+    <Item english="The address is not an http or https address." text="주소가 http 또는 https 주소가 아닙니다."/>
+    <Item english="This is not a curl command." text="curl 명령이 아닙니다."/>
+    <Item english="The command has no address." text="명령에 주소가 없습니다."/>
+    <Item english="The command reads its data from a file, which is not done here." text="명령이 파일에서 데이터를 읽는데, 여기서는 지원하지 않습니다."/>
+    <Item english="Forms and uploads of files are not read from a command." text="양식과 파일 업로드는 명령에서 읽어 오지 않습니다."/>
+    <Item english="The command's address is not an http or https address." text="명령의 주소가 http 또는 https 주소가 아닙니다."/>
 </NativeLangExtra>

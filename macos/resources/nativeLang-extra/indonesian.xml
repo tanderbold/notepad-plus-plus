@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Tampilkan kunci mentah dalam heksadesimal"/>
     <Item english="Empty: a random salt each time" text="Kosong: salt acak setiap kali"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt hanya membaca 72 bita pertama."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Permintaan HTTP"/>
+    <Item english="Send" text="Kirim"/>
+    <Item english="Parameters" text="Parameter"/>
+    <Item english="Headers" text="Header"/>
+    <Item english="Body" text="Isi"/>
+    <Item english="Options" text="Opsi"/>
+    <Item english="Content type:" text="Tipe konten:"/>
+    <Item english="User name:" text="Nama pengguna:"/>
+    <Item english="Password:" text="Kata sandi:"/>
+    <Item english="Timeout (seconds):" text="Batas waktu (detik):"/>
+    <Item english="Follow redirects" text="Ikuti pengalihan"/>
+    <Item english="Allow invalid certificates" text="Izinkan sertifikat tidak valid"/>
+    <Item english="Format JSON" text="Format JSON"/>
+    <Item english="Paste curl Command" text="Tempel Perintah curl"/>
+    <Item english="Copy as curl" text="Salin sebagai curl"/>
+    <Item english="Open in New Document" text="Buka di Dokumen Baru"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Satu per baris: nama=nilai. Ditambahkan ke alamat dalam bentuk terenkode."/>
+    <Item english="One to a line: Name: value" text="Satu per baris: Nama: nilai"/>
+    <Item english="Sent as it is written, in UTF-8." text="Dikirim sebagaimana tertulis, dalam UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Jawaban bukan teks: $INT_REPLACE$ bita."/>
+    <Item english="The address is not an http or https address." text="Alamat ini bukan alamat http atau https."/>
+    <Item english="This is not a curl command." text="Ini bukan perintah curl."/>
+    <Item english="The command has no address." text="Perintah tidak memiliki alamat."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Perintah membaca datanya dari berkas, yang tidak dilakukan di sini."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formulir dan unggahan berkas tidak dibaca dari perintah."/>
+    <Item english="The command's address is not an http or https address." text="Alamat pada perintah bukan alamat http atau https."/>
 </NativeLangExtra>

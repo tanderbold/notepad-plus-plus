@@ -140,4 +140,21 @@
     <Item english="Insert into Document" text="Inserisi inte'l documento"/>
     <Item english="Show the bare key in hexadecimal" text="Mostra ƚa ciave nuda en exadesimaƚe"/>
     <Item english="Empty: a random salt each time" text="Vodo: on saƚe casuaƚe ogni volta"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="Send" text="Manda"/>
+    <Item english="Parameters" text="Parametri"/>
+    <Item english="Headers" text="Intestasion"/>
+    <Item english="Body" text="Corpo"/>
+    <Item english="Options" text="Opsion"/>
+    <Item english="Content type:" text="Tipo de contenudo:"/>
+    <Item english="User name:" text="Nòme utente:"/>
+    <Item english="Password:" text="Password:"/>
+    <Item english="Timeout (seconds):" text="Timeout (secondi):"/>
+    <Item english="Paste curl Command" text="Incoƚa comando curl"/>
+    <Item english="Copy as curl" text="Còpia come curl"/>
+    <Item english="Open in New Document" text="Vèrxi en on novo documento"/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Ƚa risposta no ƚa xe mìa testo: $INT_REPLACE$ byte."/>
+    <Item english="The address is not an http or https address." text="L'indiriso no'l xe mìa on indiriso http o https."/>
+    <Item english="This is not a curl command." text="No'l xe mìa on comando curl."/>
+    <Item english="The command's address is not an http or https address." text="L'indiriso de'l comando no'l xe mìa on indiriso http o https."/>
 </NativeLangExtra>

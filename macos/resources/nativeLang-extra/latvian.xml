@@ -208,4 +208,31 @@
     <Item english="Show the bare key in hexadecimal" text="Rādīt pašu atslēgu heksadecimālā pierakstā"/>
     <Item english="Empty: a random salt each time" text="Tukšs: katrreiz nejauša sāls"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt nolasa tikai pirmos 72 baitus."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP pieprasījums"/>
+    <Item english="Send" text="Sūtīt"/>
+    <Item english="Parameters" text="Parametri"/>
+    <Item english="Headers" text="Galvenes"/>
+    <Item english="Body" text="Saturs"/>
+    <Item english="Options" text="Opcijas"/>
+    <Item english="Content type:" text="Satura tips:"/>
+    <Item english="User name:" text="Lietotājvārds:"/>
+    <Item english="Password:" text="Parole:"/>
+    <Item english="Timeout (seconds):" text="Noildze (sekundēs):"/>
+    <Item english="Follow redirects" text="Sekot pāradresācijām"/>
+    <Item english="Allow invalid certificates" text="Atļaut nederīgus sertifikātus"/>
+    <Item english="Format JSON" text="Formatēt JSON"/>
+    <Item english="Paste curl Command" text="Ielīmēt curl komandu"/>
+    <Item english="Copy as curl" text="Kopēt kā curl"/>
+    <Item english="Open in New Document" text="Atvērt jaunā dokumentā"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Pa vienam rindā: nosaukums=vērtība. Tos kodētus pievieno adresei."/>
+    <Item english="One to a line: Name: value" text="Pa vienam rindā: Nosaukums: vērtība"/>
+    <Item english="Sent as it is written, in UTF-8." text="Tiek nosūtīts tā, kā rakstīts, UTF-8 kodējumā."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Atbilde nav teksts: $INT_REPLACE$ baiti."/>
+    <Item english="The address is not an http or https address." text="Adrese nav http vai https adrese."/>
+    <Item english="This is not a curl command." text="Šī nav curl komanda."/>
+    <Item english="The command has no address." text="Komandā nav adreses."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Komanda nolasa datus no faila, kas šeit netiek darīts."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Veidlapas un failu augšupielādes no komandas netiek nolasītas."/>
+    <Item english="The command's address is not an http or https address." text="Komandas adrese nav http vai https adrese."/>
 </NativeLangExtra>

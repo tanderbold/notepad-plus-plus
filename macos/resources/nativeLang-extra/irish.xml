@@ -179,4 +179,31 @@
     <Item english="Show the bare key in hexadecimal" text="Taispeáin an eochair lom i bhfoirm heicsidheachúlach"/>
     <Item english="Empty: a random salt each time" text="Folamh: salann randamach gach uair"/>
     <Item english="bcrypt reads only the first 72 bytes." text="Ní léann bcrypt ach an chéad 72 bheart."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Iarratas HTTP"/>
+    <Item english="Send" text="Seol"/>
+    <Item english="Parameters" text="Paraiméadair"/>
+    <Item english="Headers" text="Ceanntásca"/>
+    <Item english="Body" text="Corp"/>
+    <Item english="Options" text="Roghanna"/>
+    <Item english="Content type:" text="Cineál ábhair:"/>
+    <Item english="User name:" text="Ainm úsáideora:"/>
+    <Item english="Password:" text="Pasfhocal:"/>
+    <Item english="Timeout (seconds):" text="Teorainn ama (soicindí):"/>
+    <Item english="Follow redirects" text="Lean atreoruithe"/>
+    <Item english="Allow invalid certificates" text="Ceadaigh teastais neamhbhailí"/>
+    <Item english="Format JSON" text="Formáidigh JSON"/>
+    <Item english="Paste curl Command" text="Greamaigh ordú curl"/>
+    <Item english="Copy as curl" text="Cóipeáil mar curl"/>
+    <Item english="Open in New Document" text="Oscail i gcáipéis nua"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Ceann amháin in aghaidh na líne: ainm=luach. Cuirtear leis an seoladh iad, ionchódaithe."/>
+    <Item english="One to a line: Name: value" text="Ceann amháin in aghaidh na líne: Ainm: luach"/>
+    <Item english="Sent as it is written, in UTF-8." text="Seoltar é mar atá sé scríofa, in UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Ní téacs é an freagra: $INT_REPLACE$ beart."/>
+    <Item english="The address is not an http or https address." text="Ní seoladh http ná https é an seoladh."/>
+    <Item english="This is not a curl command." text="Ní ordú curl é seo."/>
+    <Item english="The command has no address." text="Níl seoladh ar bith san ordú."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Léann an t-ordú a chuid sonraí ó chomhad, rud nach ndéantar anseo."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Ní léitear foirmeacha ná uaslódálacha comhad ó ordú."/>
+    <Item english="The command's address is not an http or https address." text="Ní seoladh http ná https é seoladh an ordaithe."/>
 </NativeLangExtra>

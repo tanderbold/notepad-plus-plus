@@ -208,4 +208,31 @@
     <Item english="Show the bare key in hexadecimal" text="Näytä pelkkä avain heksadesimaalina"/>
     <Item english="Empty: a random salt each time" text="Tyhjä: joka kerta satunnainen suola"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt lukee vain ensimmäiset 72 tavua."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-pyyntö"/>
+    <Item english="Send" text="Lähetä"/>
+    <Item english="Parameters" text="Parametrit"/>
+    <Item english="Headers" text="Otsakkeet"/>
+    <Item english="Body" text="Runko"/>
+    <Item english="Options" text="Asetukset"/>
+    <Item english="Content type:" text="Sisältötyyppi:"/>
+    <Item english="User name:" text="Käyttäjätunnus:"/>
+    <Item english="Password:" text="Salasana:"/>
+    <Item english="Timeout (seconds):" text="Aikakatkaisu (sekuntia):"/>
+    <Item english="Follow redirects" text="Seuraa uudelleenohjauksia"/>
+    <Item english="Allow invalid certificates" text="Salli virheelliset varmenteet"/>
+    <Item english="Format JSON" text="Muotoile JSON"/>
+    <Item english="Paste curl Command" text="Liitä curl-komento"/>
+    <Item english="Copy as curl" text="Kopioi curl-komentona"/>
+    <Item english="Open in New Document" text="Avaa uudessa asiakirjassa"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Yksi riville: nimi=arvo. Ne lisätään osoitteeseen koodattuina."/>
+    <Item english="One to a line: Name: value" text="Yksi riville: Nimi: arvo"/>
+    <Item english="Sent as it is written, in UTF-8." text="Lähetetään sellaisenaan, UTF-8-muodossa."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Vastaus ei ole tekstiä: $INT_REPLACE$ tavua."/>
+    <Item english="The address is not an http or https address." text="Osoite ei ole http- tai https-osoite."/>
+    <Item english="This is not a curl command." text="Tämä ei ole curl-komento."/>
+    <Item english="The command has no address." text="Komennossa ei ole osoitetta."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Komento lukee tietonsa tiedostosta, mitä ei tehdä tässä."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Lomakkeita ja tiedostojen lähetyksiä ei lueta komennosta."/>
+    <Item english="The command's address is not an http or https address." text="Komennon osoite ei ole http- tai https-osoite."/>
 </NativeLangExtra>

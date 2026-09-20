@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="कुञ्जी मात्र हेक्साडेसिमलमा देखाउनुहोस्"/>
     <Item english="Empty: a random salt each time" text="खाली: हरेक पटक अनियमित साल्ट"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt ले पहिलो 72 बाइट मात्र पढ्छ।"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP अनुरोध"/>
+    <Item english="Send" text="पठाउनुहोस्"/>
+    <Item english="Parameters" text="प्यारामिटरहरू"/>
+    <Item english="Headers" text="हेडरहरू"/>
+    <Item english="Body" text="बडी"/>
+    <Item english="Options" text="विकल्पहरू"/>
+    <Item english="Content type:" text="सामग्रीको प्रकार:"/>
+    <Item english="User name:" text="प्रयोगकर्ताको नाम:"/>
+    <Item english="Password:" text="पासवर्ड:"/>
+    <Item english="Timeout (seconds):" text="टाइमआउट (सेकेन्ड):"/>
+    <Item english="Follow redirects" text="रिडाइरेक्टहरू पछ्याउनुहोस्"/>
+    <Item english="Allow invalid certificates" text="अमान्य प्रमाणपत्रहरूलाई अनुमति दिनुहोस्"/>
+    <Item english="Format JSON" text="JSON ढाँचा मिलाउनुहोस्"/>
+    <Item english="Paste curl Command" text="curl आदेश टाँस्नुहोस्"/>
+    <Item english="Copy as curl" text="curl को रूपमा प्रतिलिपि गर्नुहोस्"/>
+    <Item english="Open in New Document" text="नयाँ कागजातमा खोल्नुहोस्"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="प्रत्येक लाइनमा एउटा: नाम=मान। तिनलाई इन्कोड गरेर ठेगानामा थपिन्छ।"/>
+    <Item english="One to a line: Name: value" text="प्रत्येक लाइनमा एउटा: नाम: मान"/>
+    <Item english="Sent as it is written, in UTF-8." text="जस्तो लेखिएको छ त्यस्तै, UTF-8 मा पठाइन्छ।"/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="जवाफ पाठ होइन: $INT_REPLACE$ बाइट।"/>
+    <Item english="The address is not an http or https address." text="ठेगाना http वा https ठेगाना होइन।"/>
+    <Item english="This is not a curl command." text="यो curl आदेश होइन।"/>
+    <Item english="The command has no address." text="आदेशमा ठेगाना छैन।"/>
+    <Item english="The command reads its data from a file, which is not done here." text="आदेशले आफ्नो डाटा फाईलबाट पढ्छ, जुन यहाँ गरिँदैन।"/>
+    <Item english="Forms and uploads of files are not read from a command." text="फारम र फाईल अपलोडहरू आदेशबाट पढिँदैनन्।"/>
+    <Item english="The command's address is not an http or https address." text="आदेशको ठेगाना http वा https ठेगाना होइन।"/>
 </NativeLangExtra>

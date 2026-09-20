@@ -5,6 +5,7 @@
 #import <Cocoa/Cocoa.h>
 #import "ToolsCommands.h"
 #import "CryptoTools.h"
+#import "HttpRequest.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -89,6 +90,37 @@ NS_ASSUME_NONNULL_BEGIN
 /// Puts the result where the caret is; set by the application.
 @property (nonatomic, copy, nullable) void (^insertIntoDocument)(NSString *text);
 - (void)insert:(nullable id)sender;
+@end
+
+/// Tools > HTTP Request: what one would give curl - a method, an address, parameters, headers, a body,
+/// a name and password - sent, and the answer shown: its status, its headers, its body.
+@interface NppHttpWindow : NSObject
++ (instancetype)shared;
+- (void)show;
+@property (nonatomic, readonly) NSPanel *panel;
+@property (nonatomic, readonly) NSPopUpButton *method, *contentType;
+@property (nonatomic, readonly) NSTextField *address, *username, *password, *timeout, *status, *hint;
+/// Parameters | Headers | Body | Options - one of them in view at a time - and Body | Headers of the answer.
+@property (nonatomic, readonly) NSSegmentedControl *section, *answerSection;
+@property (nonatomic, readonly) NSTextView *parameters, *headers, *body, *answer;
+@property (nonatomic, readonly) NSButton *followRedirects, *allowInvalidCertificates, *sendButton;
+/// Ticked (as it is to begin with), an answer that says it is JSON is shown laid out.
+@property (nonatomic, readonly) NSButton *formatJSON;
+/// The request the controls describe, and the controls set from a request.
+- (NppHttpRequest *)request;
+- (void)showRequest:(NppHttpRequest *)request;
+@property (nonatomic, readonly, nullable) NppHttpResponse *response;
+/// The button sends off the main thread (and, pressed again, cancels); this sends and waits.
+- (void)sendAndWait;
+- (void)send:(nullable id)sender;
+- (void)sectionChanged:(nullable id)sender;
+- (void)answerSectionChanged:(nullable id)sender;
+/// The clipboard's curl command into the controls; NO (and the reason in `status`) when it is none.
+- (BOOL)pasteCurlCommand:(nullable id)sender;
+- (void)copyAsCurl:(nullable id)sender;
+/// Opens the answer's body as a new document; `contentType` is the answer's. Set by the application.
+@property (nonatomic, copy, nullable) void (^openInNewDocument)(NSString *text, NSString *contentType);
+- (void)openAnswer:(nullable id)sender;
 @end
 
 NS_ASSUME_NONNULL_END

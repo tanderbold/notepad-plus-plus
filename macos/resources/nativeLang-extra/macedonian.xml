@@ -197,4 +197,31 @@
     <Item english="Show the bare key in hexadecimal" text="Покажи го самиот клуч хексадецимално"/>
     <Item english="Empty: a random salt each time" text="Празно: секој пат случајна сол"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt ги чита само првите 72 бајти."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-барање"/>
+    <Item english="Send" text="Испрати"/>
+    <Item english="Parameters" text="Параметри"/>
+    <Item english="Headers" text="Заглавија"/>
+    <Item english="Body" text="Тело"/>
+    <Item english="Options" text="Опции"/>
+    <Item english="Content type:" text="Тип на содржина:"/>
+    <Item english="User name:" text="Корисничко име:"/>
+    <Item english="Password:" text="Лозинка:"/>
+    <Item english="Timeout (seconds):" text="Истек на време (секунди):"/>
+    <Item english="Follow redirects" text="Следи пренасочувања"/>
+    <Item english="Allow invalid certificates" text="Дозволи невалидни сертификати"/>
+    <Item english="Format JSON" text="Форматирај JSON"/>
+    <Item english="Paste curl Command" text="Додади curl-команда"/>
+    <Item english="Copy as curl" text="Копирај како curl"/>
+    <Item english="Open in New Document" text="Отвори во нов документ"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="По еден во ред: име=вредност. Се додаваат на адресата, кодирани."/>
+    <Item english="One to a line: Name: value" text="По едно во ред: Име: вредност"/>
+    <Item english="Sent as it is written, in UTF-8." text="Се испраќа како што е напишано, во UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Одговорот не е текст: $INT_REPLACE$ бајти."/>
+    <Item english="The address is not an http or https address." text="Адресата не е http или https адреса."/>
+    <Item english="This is not a curl command." text="Ова не е curl-команда."/>
+    <Item english="The command has no address." text="Командата нема адреса."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Командата ги чита податоците од фајл, што овде не е поддржано."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Формулари и прикачувања на фајлови не се читаат од команда."/>
+    <Item english="The command's address is not an http or https address." text="Адресата во командата не е http или https адреса."/>
 </NativeLangExtra>

@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="以十六进制显示原始密钥"/>
     <Item english="Empty: a random salt each time" text="留空：每次使用随机盐"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt 只读取前 72 字节。"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP 请求"/>
+    <Item english="Send" text="发送"/>
+    <Item english="Parameters" text="参数"/>
+    <Item english="Headers" text="标头"/>
+    <Item english="Body" text="正文"/>
+    <Item english="Options" text="选项"/>
+    <Item english="Content type:" text="内容类型："/>
+    <Item english="User name:" text="用户名："/>
+    <Item english="Password:" text="密码："/>
+    <Item english="Timeout (seconds):" text="超时（秒）："/>
+    <Item english="Follow redirects" text="跟随重定向"/>
+    <Item english="Allow invalid certificates" text="允许无效证书"/>
+    <Item english="Format JSON" text="格式化 JSON"/>
+    <Item english="Paste curl Command" text="粘贴 curl 命令"/>
+    <Item english="Copy as curl" text="复制为 curl"/>
+    <Item english="Open in New Document" text="在新文档中打开"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="每行一个：名称=值。它们经编码后添加到地址中。"/>
+    <Item english="One to a line: Name: value" text="每行一个：名称: 值"/>
+    <Item english="Sent as it is written, in UTF-8." text="按原样以 UTF-8 发送。"/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="响应不是文本：$INT_REPLACE$ 字节。"/>
+    <Item english="The address is not an http or https address." text="该地址不是 http 或 https 地址。"/>
+    <Item english="This is not a curl command." text="这不是 curl 命令。"/>
+    <Item english="The command has no address." text="命令中没有地址。"/>
+    <Item english="The command reads its data from a file, which is not done here." text="该命令从文件读取数据，此处不支持。"/>
+    <Item english="Forms and uploads of files are not read from a command." text="不会从命令中读取表单和文件上传。"/>
+    <Item english="The command's address is not an http or https address." text="命令中的地址不是 http 或 https 地址。"/>
 </NativeLangExtra>

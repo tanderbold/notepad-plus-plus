@@ -208,4 +208,31 @@
     <Item english="Show the bare key in hexadecimal" text="Rodyti patį raktą šešioliktainiu formatu"/>
     <Item english="Empty: a random salt each time" text="Tuščia: kaskart atsitiktinė druska"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt nuskaito tik pirmuosius 72 baitus."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP užklausa"/>
+    <Item english="Send" text="Siųsti"/>
+    <Item english="Parameters" text="Parametrai"/>
+    <Item english="Headers" text="Antraštės"/>
+    <Item english="Body" text="Turinys"/>
+    <Item english="Options" text="Parinktys"/>
+    <Item english="Content type:" text="Turinio tipas:"/>
+    <Item english="User name:" text="Vartotojo vardas:"/>
+    <Item english="Password:" text="Slaptažodis:"/>
+    <Item english="Timeout (seconds):" text="Laukimo laikas (sekundėmis):"/>
+    <Item english="Follow redirects" text="Sekti peradresavimus"/>
+    <Item english="Allow invalid certificates" text="Leisti negaliojančius sertifikatus"/>
+    <Item english="Format JSON" text="Formatuoti JSON"/>
+    <Item english="Paste curl Command" text="Įklijuoti curl komandą"/>
+    <Item english="Copy as curl" text="Kopijuoti kaip curl"/>
+    <Item english="Open in New Document" text="Atidaryti naujame dokumente"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Po vieną eilutėje: pavadinimas=reikšmė. Jie užkoduoti pridedami prie adreso."/>
+    <Item english="One to a line: Name: value" text="Po vieną eilutėje: Pavadinimas: reikšmė"/>
+    <Item english="Sent as it is written, in UTF-8." text="Siunčiama taip, kaip parašyta, UTF-8 koduote."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Atsakymas nėra tekstas: $INT_REPLACE$ baitų."/>
+    <Item english="The address is not an http or https address." text="Adresas nėra http arba https adresas."/>
+    <Item english="This is not a curl command." text="Tai nėra curl komanda."/>
+    <Item english="The command has no address." text="Komandoje nėra adreso."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Komanda duomenis skaito iš failo, o čia tai nepalaikoma."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formos ir failų siuntimai iš komandos neskaitomi."/>
+    <Item english="The command's address is not an http or https address." text="Komandos adresas nėra http arba https adresas."/>
 </NativeLangExtra>

@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Кілттің өзін он алтылық түрде көрсету"/>
     <Item english="Empty: a random salt each time" text="Бос: әр жолы кездейсоқ тұз"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt тек алғашқы 72 байтты оқиды."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP сұранымы"/>
+    <Item english="Send" text="Жіберу"/>
+    <Item english="Parameters" text="Параметрлер"/>
+    <Item english="Headers" text="Тақырыптамалар"/>
+    <Item english="Body" text="Денесі"/>
+    <Item english="Options" text="Теңшелімдер"/>
+    <Item english="Content type:" text="Мазмұн түрі:"/>
+    <Item english="User name:" text="Пайдаланушы аты:"/>
+    <Item english="Password:" text="Құпия сөз:"/>
+    <Item english="Timeout (seconds):" text="Күту уақыты (секунд):"/>
+    <Item english="Follow redirects" text="Қайта бағыттауларға еру"/>
+    <Item english="Allow invalid certificates" text="Жарамсыз сертификаттарға рұқсат ету"/>
+    <Item english="Format JSON" text="JSON пішімдеу"/>
+    <Item english="Paste curl Command" text="curl командасын қою"/>
+    <Item english="Copy as curl" text="curl ретінде көшіру"/>
+    <Item english="Open in New Document" text="Жаңа құжатта ашу"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Әр жолға біреуден: аты=мәні. Олар кодталып, адреске қосылады."/>
+    <Item english="One to a line: Name: value" text="Әр жолға біреуден: Аты: мәні"/>
+    <Item english="Sent as it is written, in UTF-8." text="Қалай жазылса, солай UTF-8 түрінде жіберіледі."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Жауап мәтін емес: $INT_REPLACE$ байт."/>
+    <Item english="The address is not an http or https address." text="Адрес http немесе https адресі емес."/>
+    <Item english="This is not a curl command." text="Бұл curl командасы емес."/>
+    <Item english="The command has no address." text="Командада адрес жоқ."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Команда деректерін файлдан оқиды, мұнда бұған қолдау жоқ."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Пішіндер мен файлдарды жүктеп жіберу командадан оқылмайды."/>
+    <Item english="The command's address is not an http or https address." text="Командадағы адрес http немесе https адресі емес."/>
 </NativeLangExtra>

@@ -127,4 +127,24 @@
     <Item english="Insert into Document" text="Pone in su documentu"/>
     <Item english="Show the bare key in hexadecimal" text="Ammustra sa crae nuda in esadetzimale"/>
     <Item english="Empty: a random salt each time" text="Bòidu: unu sale casuale onni borta"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Rechesta HTTP"/>
+    <Item english="Send" text="Imbia"/>
+    <Item english="Parameters" text="Paràmetros"/>
+    <Item english="Headers" text="Intestatziones"/>
+    <Item english="Body" text="Corpus"/>
+    <Item english="Options" text="Optziones"/>
+    <Item english="Content type:" text="Tipu de cuntenutu:"/>
+    <Item english="User name:" text="Nùmene de utente:"/>
+    <Item english="Password:" text="Password:"/>
+    <Item english="Format JSON" text="Formata JSON"/>
+    <Item english="Paste curl Command" text="Apìtziga cumandu curl"/>
+    <Item english="Copy as curl" text="Còpia comente curl"/>
+    <Item english="Open in New Document" text="Aberi in unu documentu nou"/>
+    <Item english="One to a line: Name: value" text="Unu pro riga: Nùmene: valore"/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Sa risposta no est testu: $INT_REPLACE$ byte."/>
+    <Item english="The address is not an http or https address." text="S'indiritzu no est unu indiritzu http o https."/>
+    <Item english="This is not a curl command." text="Custu no est unu cumandu curl."/>
+    <Item english="The command has no address." text="Su cumandu non tenet indiritzu."/>
+    <Item english="The command's address is not an http or https address." text="S'indiritzu de su cumandu no est unu indiritzu http o https."/>
 </NativeLangExtra>

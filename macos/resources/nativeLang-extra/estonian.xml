@@ -208,4 +208,31 @@
     <Item english="Show the bare key in hexadecimal" text="Näita võtit ennast heksadetsimaalkujul"/>
     <Item english="Empty: a random salt each time" text="Tühi: iga kord juhuslik sool"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt loeb ainult esimesed 72 baiti."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-päring"/>
+    <Item english="Send" text="Saada"/>
+    <Item english="Parameters" text="Parameetrid"/>
+    <Item english="Headers" text="Päised"/>
+    <Item english="Body" text="Keha"/>
+    <Item english="Options" text="Valikud"/>
+    <Item english="Content type:" text="Sisu tüüp:"/>
+    <Item english="User name:" text="Kasutajanimi:"/>
+    <Item english="Password:" text="Parool:"/>
+    <Item english="Timeout (seconds):" text="Ajalimiit (sekundites):"/>
+    <Item english="Follow redirects" text="Järgi ümbersuunamisi"/>
+    <Item english="Allow invalid certificates" text="Luba kehtetud sertifikaadid"/>
+    <Item english="Format JSON" text="Vorminda JSON"/>
+    <Item english="Paste curl Command" text="Kleebi curli käsk"/>
+    <Item english="Copy as curl" text="Kopeeri curli käsuna"/>
+    <Item english="Open in New Document" text="Ava uues dokumendis"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Igale reale üks: nimi=väärtus. Need lisatakse aadressile kodeeritult."/>
+    <Item english="One to a line: Name: value" text="Igale reale üks: Nimi: väärtus"/>
+    <Item english="Sent as it is written, in UTF-8." text="Saadetakse nii, nagu on kirjutatud, UTF-8 kodeeringus."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Vastus ei ole tekst: $INT_REPLACE$ baiti."/>
+    <Item english="The address is not an http or https address." text="Aadress ei ole http- ega https-aadress."/>
+    <Item english="This is not a curl command." text="See ei ole curli käsk."/>
+    <Item english="The command has no address." text="Käsus puudub aadress."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Käsk loeb oma andmed failist, mida siin ei tehta."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Vorme ja failide üleslaadimisi käsust ei loeta."/>
+    <Item english="The command's address is not an http or https address." text="Käsu aadress ei ole http- ega https-aadress."/>
 </NativeLangExtra>

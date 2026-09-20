@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="إظهار المفتاح نفسه بالنظام الست عشري"/>
     <Item english="Empty: a random salt each time" text="فارغ: ملح عشوائي في كل مرة"/>
     <Item english="bcrypt reads only the first 72 bytes." text="يقرأ bcrypt أول 72 بايت فقط."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="طلب HTTP"/>
+    <Item english="Send" text="إرسال"/>
+    <Item english="Parameters" text="المعاملات"/>
+    <Item english="Headers" text="الترويسات"/>
+    <Item english="Body" text="الجسم"/>
+    <Item english="Options" text="خيارات"/>
+    <Item english="Content type:" text="نوع المحتوى:"/>
+    <Item english="User name:" text="اسم المستخدم:"/>
+    <Item english="Password:" text="كلمة المرور:"/>
+    <Item english="Timeout (seconds):" text="المهلة (بالثواني):"/>
+    <Item english="Follow redirects" text="اتباع عمليات إعادة التوجيه"/>
+    <Item english="Allow invalid certificates" text="السماح بالشهادات غير الصالحة"/>
+    <Item english="Format JSON" text="تنسيق JSON"/>
+    <Item english="Paste curl Command" text="لصق أمر curl"/>
+    <Item english="Copy as curl" text="نسخ بصيغة curl"/>
+    <Item english="Open in New Document" text="فتح في مستند جديد"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="واحد في كل سطر: الاسم=القيمة. تُضاف إلى العنوان بعد ترميزها."/>
+    <Item english="One to a line: Name: value" text="واحدة في كل سطر: الاسم: القيمة"/>
+    <Item english="Sent as it is written, in UTF-8." text="يُرسل كما هو مكتوب، بترميز UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="الرد ليس نصاً: $INT_REPLACE$ بايت."/>
+    <Item english="The address is not an http or https address." text="العنوان ليس عنوان http أو https."/>
+    <Item english="This is not a curl command." text="هذا ليس أمر curl."/>
+    <Item english="The command has no address." text="الأمر لا يحتوي على عنوان."/>
+    <Item english="The command reads its data from a file, which is not done here." text="يقرأ الأمر بياناته من ملف، وهذا غير مدعوم هنا."/>
+    <Item english="Forms and uploads of files are not read from a command." text="لا تُقرأ النماذج وعمليات رفع الملفات من الأمر."/>
+    <Item english="The command's address is not an http or https address." text="عنوان الأمر ليس عنوان http أو https."/>
 </NativeLangExtra>

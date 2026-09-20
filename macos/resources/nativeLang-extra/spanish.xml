@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Mostrar la clave en bruto en hexadecimal"/>
     <Item english="Empty: a random salt each time" text="Vacío: una sal aleatoria cada vez"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt solo lee los primeros 72 bytes."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Solicitud HTTP"/>
+    <Item english="Send" text="Enviar"/>
+    <Item english="Parameters" text="Parámetros"/>
+    <Item english="Headers" text="Encabezados"/>
+    <Item english="Body" text="Cuerpo"/>
+    <Item english="Options" text="Opciones"/>
+    <Item english="Content type:" text="Tipo de contenido:"/>
+    <Item english="User name:" text="Nombre de usuario:"/>
+    <Item english="Password:" text="Contraseña:"/>
+    <Item english="Timeout (seconds):" text="Tiempo de espera (segundos):"/>
+    <Item english="Follow redirects" text="Seguir redirecciones"/>
+    <Item english="Allow invalid certificates" text="Permitir certificados no válidos"/>
+    <Item english="Format JSON" text="Formatear JSON"/>
+    <Item english="Paste curl Command" text="Pegar comando curl"/>
+    <Item english="Copy as curl" text="Copiar como curl"/>
+    <Item english="Open in New Document" text="Abrir en un documento nuevo"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Uno por línea: nombre=valor. Se añaden a la dirección, codificados."/>
+    <Item english="One to a line: Name: value" text="Uno por línea: Nombre: valor"/>
+    <Item english="Sent as it is written, in UTF-8." text="Se envía tal como está escrito, en UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="La respuesta no es texto: $INT_REPLACE$ bytes."/>
+    <Item english="The address is not an http or https address." text="La dirección no es una dirección http o https."/>
+    <Item english="This is not a curl command." text="Esto no es un comando curl."/>
+    <Item english="The command has no address." text="El comando no tiene dirección."/>
+    <Item english="The command reads its data from a file, which is not done here." text="El comando lee sus datos de un archivo, lo que aquí no se hace."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Los formularios y las subidas de archivos no se leen de un comando."/>
+    <Item english="The command's address is not an http or https address." text="La dirección del comando no es una dirección http o https."/>
 </NativeLangExtra>

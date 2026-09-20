@@ -211,4 +211,31 @@
     <Item english="Show the bare key in hexadecimal" text="Показать сам ключ в шестнадцатеричном виде"/>
     <Item english="Empty: a random salt each time" text="Пусто: каждый раз случайная соль"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt читает только первые 72 байта."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-запрос"/>
+    <Item english="Send" text="Отправить"/>
+    <Item english="Parameters" text="Параметры"/>
+    <Item english="Headers" text="Заголовки"/>
+    <Item english="Body" text="Тело"/>
+    <Item english="Options" text="Настройки"/>
+    <Item english="Content type:" text="Тип содержимого:"/>
+    <Item english="User name:" text="Имя пользователя:"/>
+    <Item english="Password:" text="Пароль:"/>
+    <Item english="Timeout (seconds):" text="Тайм-аут (секунды):"/>
+    <Item english="Follow redirects" text="Следовать перенаправлениям"/>
+    <Item english="Allow invalid certificates" text="Разрешить недействительные сертификаты"/>
+    <Item english="Format JSON" text="Форматировать JSON"/>
+    <Item english="Paste curl Command" text="Вставить команду curl"/>
+    <Item english="Copy as curl" text="Копировать как curl"/>
+    <Item english="Open in New Document" text="Открыть в новом документе"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="По одному в строке: имя=значение. Добавляются к адресу в закодированном виде."/>
+    <Item english="One to a line: Name: value" text="По одному в строке: Имя: значение"/>
+    <Item english="Sent as it is written, in UTF-8." text="Отправляется как написано, в UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Ответ не является текстом: $INT_REPLACE$ байт."/>
+    <Item english="The address is not an http or https address." text="Адрес не является адресом http или https."/>
+    <Item english="This is not a curl command." text="Это не команда curl."/>
+    <Item english="The command has no address." text="В команде нет адреса."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Команда читает данные из файла, здесь это не поддерживается."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Формы и отправка файлов из команды не читаются."/>
+    <Item english="The command's address is not an http or https address." text="Адрес в команде не является адресом http или https."/>
 </NativeLangExtra>

@@ -213,4 +213,31 @@
     <Item english="Show the bare key in hexadecimal" text="Show the bare key in hexadecimal"/>
     <Item english="Empty: a random salt each time" text="Empty: a random salt each time"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt reads only the first 72 bytes."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP Request"/>
+    <Item english="Send" text="Send"/>
+    <Item english="Parameters" text="Parameters"/>
+    <Item english="Headers" text="Headers"/>
+    <Item english="Body" text="Body"/>
+    <Item english="Options" text="Options"/>
+    <Item english="Content type:" text="Content type:"/>
+    <Item english="User name:" text="User name:"/>
+    <Item english="Password:" text="Password:"/>
+    <Item english="Timeout (seconds):" text="Timeout (seconds):"/>
+    <Item english="Follow redirects" text="Follow redirects"/>
+    <Item english="Allow invalid certificates" text="Allow invalid certificates"/>
+    <Item english="Format JSON" text="Format JSON"/>
+    <Item english="Paste curl Command" text="Paste curl Command"/>
+    <Item english="Copy as curl" text="Copy as curl"/>
+    <Item english="Open in New Document" text="Open in New Document"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="One to a line: name=value. They are added to the address, encoded."/>
+    <Item english="One to a line: Name: value" text="One to a line: Name: value"/>
+    <Item english="Sent as it is written, in UTF-8." text="Sent as it is written, in UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="The answer is not text: $INT_REPLACE$ bytes."/>
+    <Item english="The address is not an http or https address." text="The address is not an http or https address."/>
+    <Item english="This is not a curl command." text="This is not a curl command."/>
+    <Item english="The command has no address." text="The command has no address."/>
+    <Item english="The command reads its data from a file, which is not done here." text="The command reads its data from a file, which is not done here."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Forms and uploads of files are not read from a command."/>
+    <Item english="The command's address is not an http or https address." text="The command's address is not an http or https address."/>
 </NativeLangExtra>

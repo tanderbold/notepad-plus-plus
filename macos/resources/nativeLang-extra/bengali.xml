@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="শুধু কী-টি হেক্সাডেসিমেলে দেখান"/>
     <Item english="Empty: a random salt each time" text="ফাঁকা: প্রতিবার এলোমেলো সল্ট"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt শুধু প্রথম 72 বাইট পড়ে।"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP অনুরোধ"/>
+    <Item english="Send" text="পাঠান"/>
+    <Item english="Parameters" text="প্যারামিটার"/>
+    <Item english="Headers" text="হেডার"/>
+    <Item english="Body" text="বডি"/>
+    <Item english="Options" text="বিকল্প"/>
+    <Item english="Content type:" text="কনটেন্টের ধরন:"/>
+    <Item english="User name:" text="ব্যবহারকারীর নাম:"/>
+    <Item english="Password:" text="পাসওয়ার্ড:"/>
+    <Item english="Timeout (seconds):" text="টাইমআউট (সেকেন্ড):"/>
+    <Item english="Follow redirects" text="রিডাইরেক্ট অনুসরণ করুন"/>
+    <Item english="Allow invalid certificates" text="অবৈধ সার্টিফিকেট অনুমোদন করুন"/>
+    <Item english="Format JSON" text="JSON ফরম্যাট করুন"/>
+    <Item english="Paste curl Command" text="curl কমান্ড পেস্ট করুন"/>
+    <Item english="Copy as curl" text="curl হিসেবে কপি করুন"/>
+    <Item english="Open in New Document" text="নতুন নথিতে খুলুন"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="প্রতি লাইনে একটি: নাম=মান। এগুলি এনকোড করে ঠিকানার সঙ্গে যোগ করা হয়।"/>
+    <Item english="One to a line: Name: value" text="প্রতি লাইনে একটি: নাম: মান"/>
+    <Item english="Sent as it is written, in UTF-8." text="যেমন লেখা আছে তেমনই পাঠানো হয়, UTF-8-এ।"/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="উত্তরটি টেক্সট নয়: $INT_REPLACE$ বাইট।"/>
+    <Item english="The address is not an http or https address." text="ঠিকানাটি http বা https ঠিকানা নয়।"/>
+    <Item english="This is not a curl command." text="এটি curl কমান্ড নয়।"/>
+    <Item english="The command has no address." text="কমান্ডে কোনো ঠিকানা নেই।"/>
+    <Item english="The command reads its data from a file, which is not done here." text="কমান্ডটি একটি ফাইল থেকে ডেটা পড়ে, যা এখানে করা হয় না।"/>
+    <Item english="Forms and uploads of files are not read from a command." text="ফর্ম ও ফাইল আপলোড কমান্ড থেকে পড়া হয় না।"/>
+    <Item english="The command's address is not an http or https address." text="কমান্ডের ঠিকানাটি http বা https ঠিকানা নয়।"/>
 </NativeLangExtra>

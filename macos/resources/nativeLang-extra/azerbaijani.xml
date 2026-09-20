@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Açarın özünü onaltılıq şəkildə göstər"/>
     <Item english="Empty: a random salt each time" text="Boş: hər dəfə təsadüfi duz"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt yalnız ilk 72 baytı oxuyur."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP Sorğusu"/>
+    <Item english="Send" text="Göndər"/>
+    <Item english="Parameters" text="Parametrlər"/>
+    <Item english="Headers" text="Başlıqlar"/>
+    <Item english="Body" text="Gövdə"/>
+    <Item english="Options" text="Seçimlər"/>
+    <Item english="Content type:" text="Məzmun növü:"/>
+    <Item english="User name:" text="İstifadəçi adı:"/>
+    <Item english="Password:" text="Parol:"/>
+    <Item english="Timeout (seconds):" text="Vaxt limiti (saniyə):"/>
+    <Item english="Follow redirects" text="Yönləndirmələri izlə"/>
+    <Item english="Allow invalid certificates" text="Etibarsız sertifikatlara icazə ver"/>
+    <Item english="Format JSON" text="JSON-u formatla"/>
+    <Item english="Paste curl Command" text="curl Əmrini Yapışdır"/>
+    <Item english="Copy as curl" text="curl Kimi Kopyala"/>
+    <Item english="Open in New Document" text="Yeni Sənəddə Aç"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Hər sətirdə bir: ad=dəyər. Onlar kodlaşdırılaraq ünvana əlavə edilir."/>
+    <Item english="One to a line: Name: value" text="Hər sətirdə bir: Ad: dəyər"/>
+    <Item english="Sent as it is written, in UTF-8." text="Yazıldığı kimi, UTF-8 ilə göndərilir."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Cavab mətn deyil: $INT_REPLACE$ bayt."/>
+    <Item english="The address is not an http or https address." text="Ünvan http və ya https ünvanı deyil."/>
+    <Item english="This is not a curl command." text="Bu, curl əmri deyil."/>
+    <Item english="The command has no address." text="Əmrdə ünvan yoxdur."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Əmr məlumatlarını fayldan oxuyur, bu isə burada edilmir."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formalar və fayl yükləmələri əmrdən oxunmur."/>
+    <Item english="The command's address is not an http or https address." text="Əmrdəki ünvan http və ya https ünvanı deyil."/>
 </NativeLangExtra>

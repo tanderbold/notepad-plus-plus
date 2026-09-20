@@ -85,4 +85,17 @@
     <Item english="Digits (0-9)" text="Sifroù (0-9)"/>
     <Item english="Symbols:" text="Arouezioù:"/>
     <Item english="Insert into Document" text="Enlakaat en teuliad"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Reked HTTP"/>
+    <Item english="Send" text="Kas"/>
+    <Item english="Parameters" text="Arventennoù"/>
+    <Item english="Headers" text="Talbennoù"/>
+    <Item english="Body" text="Korf"/>
+    <Item english="Options" text="Dibarzhioù"/>
+    <Item english="User name:" text="Anv arveriad:"/>
+    <Item english="Password:" text="Ger-tremen:"/>
+    <Item english="Paste curl Command" text="Pegañ un urzhiad curl"/>
+    <Item english="Copy as curl" text="Eilañ evel curl"/>
+    <Item english="Open in New Document" text="Digeriñ en un teuliad nevez"/>
+    <Item english="This is not a curl command." text="N'eo ket un urzhiad curl."/>
 </NativeLangExtra>

@@ -165,4 +165,28 @@
     <Item english="Show the bare key in hexadecimal" text="Mostre la clâf nude in esadecimâl"/>
     <Item english="Empty: a random salt each time" text="Vueit: une sâl casuâl ogni volte"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt al lei dome i prins 72 byte."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Richieste HTTP"/>
+    <Item english="Send" text="Mande"/>
+    <Item english="Parameters" text="Parametris"/>
+    <Item english="Headers" text="Intestazions"/>
+    <Item english="Body" text="Cuarp"/>
+    <Item english="Options" text="Opzions"/>
+    <Item english="Content type:" text="Tip di contignût:"/>
+    <Item english="User name:" text="Non utent:"/>
+    <Item english="Password:" text="Password:"/>
+    <Item english="Timeout (seconds):" text="Timeout (seconts):"/>
+    <Item english="Allow invalid certificates" text="Permet certificâts no valits"/>
+    <Item english="Format JSON" text="Formate JSON"/>
+    <Item english="Paste curl Command" text="Tache comant curl"/>
+    <Item english="Copy as curl" text="Copie come curl"/>
+    <Item english="Open in New Document" text="Vierç intun gnûf document"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Un par rie: non=valôr. A vegnin zontâts ae direzion, codificâts."/>
+    <Item english="One to a line: Name: value" text="Un par rie: Non: valôr"/>
+    <Item english="Sent as it is written, in UTF-8." text="Mandât cemût che al è scrit, in UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="La rispueste no je test: $INT_REPLACE$ byte."/>
+    <Item english="The address is not an http or https address." text="La direzion no je une direzion http o https."/>
+    <Item english="This is not a curl command." text="Chest nol è un comant curl."/>
+    <Item english="The command has no address." text="Il comant nol à nissune direzion."/>
+    <Item english="The command's address is not an http or https address." text="La direzion dal comant no je une direzion http o https."/>
 </NativeLangExtra>

@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Mostra la clau sola en hexadecimal"/>
     <Item english="Empty: a random salt each time" text="Buit: una sal aleatòria cada vegada"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt només llegeix els primers 72 bytes."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Petició HTTP"/>
+    <Item english="Send" text="Envia"/>
+    <Item english="Parameters" text="Paràmetres"/>
+    <Item english="Headers" text="Capçaleres"/>
+    <Item english="Body" text="Cos"/>
+    <Item english="Options" text="Opcions"/>
+    <Item english="Content type:" text="Tipus de contingut:"/>
+    <Item english="User name:" text="Nom d'usuari:"/>
+    <Item english="Password:" text="Contrasenya:"/>
+    <Item english="Timeout (seconds):" text="Temps d'espera (segons):"/>
+    <Item english="Follow redirects" text="Segueix les redireccions"/>
+    <Item english="Allow invalid certificates" text="Permet certificats no vàlids"/>
+    <Item english="Format JSON" text="Formata el JSON"/>
+    <Item english="Paste curl Command" text="Enganxa l'ordre curl"/>
+    <Item english="Copy as curl" text="Copia com a curl"/>
+    <Item english="Open in New Document" text="Obre en un document nou"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Un per línia: nom=valor. S'afegeixen a l'adreça, codificats."/>
+    <Item english="One to a line: Name: value" text="Una per línia: Nom: valor"/>
+    <Item english="Sent as it is written, in UTF-8." text="S'envia tal com està escrit, en UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="La resposta no és text: $INT_REPLACE$ bytes."/>
+    <Item english="The address is not an http or https address." text="L'adreça no és una adreça http o https."/>
+    <Item english="This is not a curl command." text="Això no és una ordre curl."/>
+    <Item english="The command has no address." text="L'ordre no té adreça."/>
+    <Item english="The command reads its data from a file, which is not done here." text="L'ordre llegeix les dades d'un fitxer, cosa que aquí no es fa."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Els formularis i les pujades de fitxers no es llegeixen d'una ordre."/>
+    <Item english="The command's address is not an http or https address." text="L'adreça de l'ordre no és una adreça http o https."/>
 </NativeLangExtra>

@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="A puszta kulcs megjelenítése hexadecimálisan"/>
     <Item english="Empty: a random salt each time" text="Üres: mindig új véletlenszerű só"/>
     <Item english="bcrypt reads only the first 72 bytes." text="A bcrypt csak az első 72 bájtot olvassa be."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-kérés"/>
+    <Item english="Send" text="Küldés"/>
+    <Item english="Parameters" text="Paraméterek"/>
+    <Item english="Headers" text="Fejlécek"/>
+    <Item english="Body" text="Törzs"/>
+    <Item english="Options" text="Beállítások"/>
+    <Item english="Content type:" text="Tartalomtípus:"/>
+    <Item english="User name:" text="Felhasználónév:"/>
+    <Item english="Password:" text="Jelszó:"/>
+    <Item english="Timeout (seconds):" text="Időkorlát (másodperc):"/>
+    <Item english="Follow redirects" text="Átirányítások követése"/>
+    <Item english="Allow invalid certificates" text="Érvénytelen tanúsítványok engedélyezése"/>
+    <Item english="Format JSON" text="JSON formázása"/>
+    <Item english="Paste curl Command" text="curl-parancs beillesztése"/>
+    <Item english="Copy as curl" text="Másolás curl-parancsként"/>
+    <Item english="Open in New Document" text="Megnyitás új dokumentumban"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Soronként egy: név=érték. Kódolva adódnak hozzá a címhez."/>
+    <Item english="One to a line: Name: value" text="Soronként egy: Név: érték"/>
+    <Item english="Sent as it is written, in UTF-8." text="Úgy lesz elküldve, ahogy le van írva, UTF-8 kódolással."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="A válasz nem szöveg: $INT_REPLACE$ bájt."/>
+    <Item english="The address is not an http or https address." text="A cím nem http- vagy https-cím."/>
+    <Item english="This is not a curl command." text="Ez nem curl-parancs."/>
+    <Item english="The command has no address." text="A parancsban nincs cím."/>
+    <Item english="The command reads its data from a file, which is not done here." text="A parancs fájlból olvassa az adatait, ami itt nem támogatott."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Az űrlapok és fájlfeltöltések nem olvashatók be parancsból."/>
+    <Item english="The command's address is not an http or https address." text="A parancsban lévő cím nem http- vagy https-cím."/>
 </NativeLangExtra>

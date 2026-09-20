@@ -44,4 +44,10 @@
     <Item english="Uppercase letters (A-Z)" text="Letres majúscules (A-Z)"/>
     <Item english="Lowercase letters (a-z)" text="Letres minúscules (a-z)"/>
     <Item english="Symbols:" text="Simbols :"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="Parameters" text="Paramètres"/>
+    <Item english="Options" text="Opcions"/>
+    <Item english="User name:" text="Nòm d'usuari :"/>
+    <Item english="Copy as curl" text="Copiar coma curl"/>
+    <Item english="Open in New Document" text="Daurir en un document nau"/>
 </NativeLangExtra>

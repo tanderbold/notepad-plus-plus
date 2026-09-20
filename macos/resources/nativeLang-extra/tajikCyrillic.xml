@@ -204,4 +204,27 @@
     <Item english="Show the bare key in hexadecimal" text="Намоиши худи калид дар шакли шонздаҳӣ"/>
     <Item english="Empty: a random salt each time" text="Холӣ: ҳар дафъа намаки тасодуфӣ"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt танҳо 72 байти аввалро мехонад."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Дархости HTTP"/>
+    <Item english="Send" text="Фиристодан"/>
+    <Item english="Parameters" text="Параметрҳо"/>
+    <Item english="Headers" text="Сарлавҳаҳо"/>
+    <Item english="Options" text="Танзимот"/>
+    <Item english="Content type:" text="Навъи мӯҳтаво:"/>
+    <Item english="User name:" text="Номи корбар:"/>
+    <Item english="Password:" text="Парол:"/>
+    <Item english="Timeout (seconds):" text="Вақти интизорӣ (сония):"/>
+    <Item english="Format JSON" text="Шаклбандии JSON"/>
+    <Item english="Paste curl Command" text="Часбондани фармони curl"/>
+    <Item english="Copy as curl" text="Нусхагирӣ чун curl"/>
+    <Item english="Open in New Document" text="Боз кардан дар санади ҷадид"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Дар ҳар сатр яктоӣ: ном=арзиш. Онҳо дар шакли рамзгузоришуда ба суроға илова мешаванд."/>
+    <Item english="One to a line: Name: value" text="Дар ҳар сатр яктоӣ: Ном: арзиш"/>
+    <Item english="Sent as it is written, in UTF-8." text="Чунон ки навишта шудааст, дар UTF-8 фиристода мешавад."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Ҷавоб матн нест: $INT_REPLACE$ байт."/>
+    <Item english="The address is not an http or https address." text="Суроға суроғаи http ё https нест."/>
+    <Item english="This is not a curl command." text="Ин фармони curl нест."/>
+    <Item english="The command has no address." text="Дар фармон суроға нест."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Фармон маълумоти худро аз файл мехонад, ки ин ҷо иҷро намешавад."/>
+    <Item english="The command's address is not an http or https address." text="Суроғаи фармон суроғаи http ё https нест."/>
 </NativeLangExtra>

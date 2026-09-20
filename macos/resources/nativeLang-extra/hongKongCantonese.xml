@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="用十六進位顯示金鑰本身"/>
     <Item english="Empty: a random salt each time" text="留空：每次用新嘅隨機鹽值"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt 淨係讀頭 72 個位元組。"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP 請求"/>
+    <Item english="Send" text="傳送"/>
+    <Item english="Parameters" text="參數"/>
+    <Item english="Headers" text="標頭"/>
+    <Item english="Body" text="內文"/>
+    <Item english="Options" text="選項"/>
+    <Item english="Content type:" text="內容類型："/>
+    <Item english="User name:" text="用戶名稱："/>
+    <Item english="Password:" text="密碼："/>
+    <Item english="Timeout (seconds):" text="逾時（秒）："/>
+    <Item english="Follow redirects" text="跟隨重新導向"/>
+    <Item english="Allow invalid certificates" text="容許無效嘅憑證"/>
+    <Item english="Format JSON" text="格式化 JSON"/>
+    <Item english="Paste curl Command" text="貼 curl 指令"/>
+    <Item english="Copy as curl" text="抄做 curl 指令"/>
+    <Item english="Open in New Document" text="喺新文件度打開"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="一行一個：名=值。佢哋會編碼之後加落網址度。"/>
+    <Item english="One to a line: Name: value" text="一行一個：名: 值"/>
+    <Item english="Sent as it is written, in UTF-8." text="照原樣用 UTF-8 傳送。"/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="回應唔係文字：$INT_REPLACE$ 個位元組。"/>
+    <Item english="The address is not an http or https address." text="個網址唔係 http 或者 https 網址。"/>
+    <Item english="This is not a curl command." text="呢個唔係 curl 指令。"/>
+    <Item english="The command has no address." text="個指令冇網址。"/>
+    <Item english="The command reads its data from a file, which is not done here." text="個指令要喺檔案度讀資料，呢度做唔到。"/>
+    <Item english="Forms and uploads of files are not read from a command." text="指令入面嘅表格同檔案上載唔會讀。"/>
+    <Item english="The command's address is not an http or https address." text="指令入面嘅網址唔係 http 或者 https 網址。"/>
 </NativeLangExtra>

@@ -208,4 +208,31 @@
     <Item english="Show the bare key in hexadecimal" text="Εμφάνιση του σκέτου κλειδιού σε δεκαεξαδική μορφή"/>
     <Item english="Empty: a random salt each time" text="Κενό: τυχαίο αλάτι κάθε φορά"/>
     <Item english="bcrypt reads only the first 72 bytes." text="Το bcrypt διαβάζει μόνο τα πρώτα 72 bytes."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Αίτημα HTTP"/>
+    <Item english="Send" text="Αποστολή"/>
+    <Item english="Parameters" text="Παράμετροι"/>
+    <Item english="Headers" text="Κεφαλίδες"/>
+    <Item english="Body" text="Σώμα"/>
+    <Item english="Options" text="Επιλογές"/>
+    <Item english="Content type:" text="Τύπος περιεχομένου:"/>
+    <Item english="User name:" text="Όνομα χρήστη:"/>
+    <Item english="Password:" text="Κωδικός πρόσβασης:"/>
+    <Item english="Timeout (seconds):" text="Χρονικό όριο (δευτερόλεπτα):"/>
+    <Item english="Follow redirects" text="Ακολούθηση ανακατευθύνσεων"/>
+    <Item english="Allow invalid certificates" text="Αποδοχή μη έγκυρων πιστοποιητικών"/>
+    <Item english="Format JSON" text="Μορφοποίηση JSON"/>
+    <Item english="Paste curl Command" text="Επικόλληση εντολής curl"/>
+    <Item english="Copy as curl" text="Αντιγραφή ως curl"/>
+    <Item english="Open in New Document" text="Άνοιγμα σε νέο έγγραφο"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Μία ανά γραμμή: όνομα=τιμή. Προστίθενται στη διεύθυνση, κωδικοποιημένες."/>
+    <Item english="One to a line: Name: value" text="Μία ανά γραμμή: Όνομα: τιμή"/>
+    <Item english="Sent as it is written, in UTF-8." text="Αποστέλλεται όπως είναι γραμμένο, σε UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Η απάντηση δεν είναι κείμενο: $INT_REPLACE$ bytes."/>
+    <Item english="The address is not an http or https address." text="Η διεύθυνση δεν είναι διεύθυνση http ή https."/>
+    <Item english="This is not a curl command." text="Αυτή δεν είναι εντολή curl."/>
+    <Item english="The command has no address." text="Η εντολή δεν έχει διεύθυνση."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Η εντολή διαβάζει τα δεδομένα της από αρχείο, κάτι που δεν γίνεται εδώ."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Οι φόρμες και οι αποστολές αρχείων δεν διαβάζονται από εντολή."/>
+    <Item english="The command's address is not an http or https address." text="Η διεύθυνση της εντολής δεν είναι διεύθυνση http ή https."/>
 </NativeLangExtra>

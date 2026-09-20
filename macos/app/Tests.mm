@@ -5818,11 +5818,12 @@ int NppMacRunTests(AppDelegate *app) {
             if (![titles isEqualToArray:md5Titles]) threeAlike = NO;
         }
         Check(@"Tools (the menu)", @"Hashes holds Notepad++'s four digests first, the port's six, then bcrypt, scrypt, Argon2 and PBKDF2, every one with the digests' three commands; "
-              @"Base holds Base64, Base58 and Base32; and Password Generator follows - named whole, with no ellipsis to be taken for a name cut short",
+              @"Base holds Base64, Base58 and Base32; and Password Generator and HTTP Request follow - named whole, with no ellipsis to be taken for a name cut short",
               [hashTitles isEqualToArray:@[@"MD5", @"SHA-1", @"SHA-256", @"SHA-512", @"SHA-224", @"SHA-384", @"SHA3-256", @"SHA3-512",
                                            @"BLAKE2b", @"CRC-32", @"-", @"bcrypt", @"scrypt", @"Argon2", @"PBKDF2"]] && threeEach && threeAlike &&
               [baseTitles isEqualToArray:@[@"Base64…", @"Base58…", @"Base32…"]] &&
-              [NppEnglishTitle(tools.itemArray.lastObject) isEqualToString:@"Password Generator"] && tools.numberOfItems == 3);
+              [NppEnglishTitle(tools.itemArray[2]) isEqualToString:@"Password Generator"] &&
+              [NppEnglishTitle(tools.itemArray[3]) isEqualToString:@"HTTP Request"] && tools.numberOfItems == 4);
 
         // Notepad++'s ids still find its own digests one level further down, and the
         // port's digests are not taken for them because they too say "Generate…".
@@ -6166,6 +6167,371 @@ int NppMacRunTests(AppDelegate *app) {
         else [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"NppPasswordGenerator"];
         tp.localizationFile = languageBefore ?: @"";
         [app applyLocalization];
+    }
+
+    printf("\n== Tools: HTTP Request ==\n");
+    {
+        NSData *(^utf8)(NSString *) = ^NSData *(NSString *text) { return [text dataUsingEncoding:NSUTF8StringEncoding]; };
+        NSString *(^named)(NSArray<NppHttpPair *> *, NSString *) = ^NSString *(NSArray<NppHttpPair *> *pairs, NSString *name) {
+            for (NppHttpPair *pair in pairs) if ([pair.name caseInsensitiveCompare:name] == NSOrderedSame) return pair.value;
+            return nil;
+        };
+
+        NSPasteboard *board = [NSPasteboard generalPasteboard];
+        // What is typed, a pair to a line.
+        NSArray<NppHttpPair *> *typed = [NppHttpPair pairsFromText:@"Accept: application/json\n\n# a note\n  X-Token :  a:b  \nFlag\n" separator:@":"];
+        Check(@"Tools > HTTP Request (pairs)", @"\"Name: value\" lines become pairs in their order: blank lines and # lines passed over, "
+              @"spaces trimmed, only the first colon dividing, a bare name given an empty value - and they are written back the same",
+              typed.count == 3 && [typed[0].name isEqualToString:@"Accept"] && [typed[0].value isEqualToString:@"application/json"] &&
+              [typed[1].name isEqualToString:@"X-Token"] && [typed[1].value isEqualToString:@"a:b"] &&
+              [typed[2].name isEqualToString:@"Flag"] && typed[2].value.length == 0 &&
+              [[NppHttpPair textFromPairs:typed separator:@":"] isEqualToString:@"Accept: application/json\nX-Token: a:b\nFlag: "] &&
+              [[NppHttpPair textFromPairs:[NppHttpPair pairsFromText:@"a=1\nb = x=y" separator:@"="] separator:@"="] isEqualToString:@"a=1\nb=x=y"]);
+
+        NppHttpRequest *built = [[NppHttpRequest alloc] init];
+        built.address = @"example.com/search?q=1";
+        built.parameters = @[[NppHttpPair pairWithName:@"name" value:@"Иван & co"], [NppHttpPair pairWithName:@"a b" value:@"1+1=2"]];
+        NSString *withQuery = [built url].absoluteString;
+        built.address = @"https://example.com/a path/файл"; built.parameters = @[];
+        NSString *spaced = [built url].absoluteString;
+        NppHttpRequest *bad = [[NppHttpRequest alloc] init];
+        BOOL refused = [bad url] == nil;
+        bad.address = @"file:///etc/passwd"; refused = refused && [bad url] == nil;
+        bad.address = @"ftp://example.com/x"; refused = refused && [bad url] == nil;
+        Check(@"Tools > HTTP Request (the address)", @"an address without a scheme is http; parameters join its query percent-encoded; a space and Cyrillic in the "
+              @"path are encoded; nothing, file: and ftp: are no address to send to",
+              [withQuery isEqualToString:@"http://example.com/search?q=1&name=%D0%98%D0%B2%D0%B0%D0%BD%20%26%20co&a%20b=1%2B1%3D2"] &&
+              [spaced isEqualToString:@"https://example.com/a%20path/%D1%84%D0%B0%D0%B9%D0%BB"] && refused);
+
+        // A request written out for curl, and read back from that.
+        NppHttpRequest *out = [[NppHttpRequest alloc] init];
+        out.method = @"PUT"; out.address = @"https://api.example.com/items/7";
+        out.headers = @[[NppHttpPair pairWithName:@"Content-Type" value:@"application/json"], [NppHttpPair pairWithName:@"X-Note" value:@"it's"]];
+        out.body = utf8(@"{\"name\": \"O'Brien\",\n \"n\": 1}");
+        out.username = @"igor"; out.password = @"p:w d"; out.allowInvalidCertificates = YES; out.timeout = 5;
+        NSString *command = [out curlCommand];
+        NSString *why = nil;
+        NppHttpRequest *back = [NppHttpRequest requestFromCurlCommand:command error:&why];
+        Check(@"Tools > HTTP Request (Copy as curl)", @"the command names the method, quotes every value for the shell - an apostrophe and a line break among them - "
+              @"and, read back, is the same request",
+              [command hasPrefix:@"curl -X PUT 'https://api.example.com/items/7' \\\n  -H 'Content-Type: application/json' \\\n  -H 'X-Note: it'\\''s' \\\n  -u 'igor:p:w d'"] &&
+              [command hasSuffix:@"-L -k -m 5"] && back != nil && [back.method isEqualToString:@"PUT"] &&
+              [back.address isEqualToString:out.address] && [back.body isEqualToData:out.body] && back.headers.count == 2 &&
+              [named(back.headers, @"X-Note") isEqualToString:@"it's"] && [back.username isEqualToString:@"igor"] &&
+              [back.password isEqualToString:@"p:w d"] && back.allowInvalidCertificates && back.followRedirects && back.timeout == 5);
+
+        // Commands as they are found in the wild.
+        NppHttpRequest *chrome = [NppHttpRequest requestFromCurlCommand:
+            @"curl 'https://example.com/api/login' \\\n  -H 'accept: */*' \\\n  -H \"x-q: say \\\"hi\\\" $HOME\" \\\n"
+            @"  --data-raw $'{\"text\":\"line1\\nline2 \\u0416 it\\'s\"}' \\\n  --compressed -o /dev/null" error:NULL];
+        NppHttpRequest *terse = [NppHttpRequest requestFromCurlCommand:@"curl -sSLkX DELETE -uadmin:secret -m10 http://localhost:8080/x" error:NULL];
+        NppHttpRequest *asQuery = [NppHttpRequest requestFromCurlCommand:@"curl -G --data-urlencode 'q=a b&c' -d page=2 --url example.com/find -I" error:NULL];
+        NppHttpRequest *json = [NppHttpRequest requestFromCurlCommand:@"/usr/bin/curl --json '{\"a\":1}' --oauth2-bearer tok -A agent/1 -e http://from -b 'sid=9' https://example.com/j" error:NULL];
+        NppHttpRequest *form = [NppHttpRequest requestFromCurlCommand:@"curl -d a=1 -d b=2 --header='X-A: 1' https://example.com/f" error:NULL];
+        Check(@"Tools > HTTP Request (Paste curl Command: a browser's)", @"quotes of both kinds, a continued line, bash's $'…' with \\n, \\u and \\' in it; the body makes it a POST; "
+              @"--compressed and -o with its file are passed over; curl follows no redirects unless told to",
+              [chrome.address isEqualToString:@"https://example.com/api/login"] && [chrome.method isEqualToString:@"POST"] &&
+              [chrome.body isEqualToData:utf8(@"{\"text\":\"line1\nline2 Ж it's\"}")] && chrome.headers.count == 2 &&
+              [named(chrome.headers, @"x-q") isEqualToString:@"say \"hi\" $HOME"] && !chrome.followRedirects);
+        Check(@"Tools > HTTP Request (Paste curl Command: options)", @"short options run together with a value at the end (-sSLkX DELETE), a value stuck to its letter (-uadmin:secret, -m10); "
+              @"-G with --data-urlencode puts the data in the address; -I is HEAD; --json, --oauth2-bearer, -A, -e, -b become the headers they stand for; several -d are joined with &",
+              [terse.method isEqualToString:@"DELETE"] && terse.followRedirects && terse.allowInvalidCertificates && [terse.username isEqualToString:@"admin"] &&
+              [terse.password isEqualToString:@"secret"] && terse.timeout == 10 && [terse.address isEqualToString:@"http://localhost:8080/x"] &&
+              [asQuery.address isEqualToString:@"example.com/find?q=a%20b%26c&page=2"] && [asQuery.method isEqualToString:@"HEAD"] && asQuery.body == nil &&
+              [json.method isEqualToString:@"POST"] && [named(json.headers, @"Content-Type") isEqualToString:@"application/json"] &&
+              [named(json.headers, @"Accept") isEqualToString:@"application/json"] && [named(json.headers, @"Authorization") isEqualToString:@"Bearer tok"] &&
+              [named(json.headers, @"User-Agent") isEqualToString:@"agent/1"] && [named(json.headers, @"Referer") isEqualToString:@"http://from"] &&
+              [named(json.headers, @"Cookie") isEqualToString:@"sid=9"] && [json.body isEqualToData:utf8(@"{\"a\":1}")] &&
+              [form.body isEqualToData:utf8(@"a=1&b=2")] && [named(form.headers, @"X-A") isEqualToString:@"1"]);
+
+        NSString *notCurl = nil, *noAddress = nil, *fromFile = nil, *aForm = nil, *notWeb = nil;
+        BOOL allRefused = ![NppHttpRequest requestFromCurlCommand:@"wget http://example.com" error:&notCurl] &&
+                          ![NppHttpRequest requestFromCurlCommand:@"curl -X POST -H 'A: b'" error:&noAddress] &&
+                          ![NppHttpRequest requestFromCurlCommand:@"curl -d @secrets.txt http://example.com" error:&fromFile] &&
+                          ![NppHttpRequest requestFromCurlCommand:@"curl -F file=@a.png http://example.com" error:&aForm] &&
+                          ![NppHttpRequest requestFromCurlCommand:@"curl file:///etc/passwd" error:&notWeb];
+        Check(@"Tools > HTTP Request (Paste curl Command: what is refused)", @"what is not a curl command, one with no address, one that reads its data or a form from a file, "
+              @"and one whose address is not the web's - each refused with its reason",
+              allRefused && [notCurl isEqualToString:@"This is not a curl command."] && [noAddress isEqualToString:@"The command has no address."] &&
+              [fromFile hasPrefix:@"The command reads its data from a file"] && [aForm hasPrefix:@"Forms and uploads"] && [notWeb containsString:@"not an http or https address"]);
+
+        // End to end against a real server, started for this test, which says back what it was asked.
+        NSString *script = [[NSBundle mainBundle] pathForResource:@"test-http-server" ofType:@"py"];
+        NSTask *server = nil;
+        NSInteger port = 0;
+        if (script) {
+            server = [[NSTask alloc] init];
+            server.executableURL = [NSURL fileURLWithPath:@"/usr/bin/python3"];
+            server.arguments = @[script];
+            NSPipe *serverOut = [NSPipe pipe];
+            server.standardOutput = serverOut;
+            if ([server launchAndReturnError:NULL]) {
+                NSString *text = [[NSString alloc] initWithData:[serverOut.fileHandleForReading availableData] encoding:NSUTF8StringEncoding];
+                NSScanner *scanner = [NSScanner scannerWithString:text ?: @""];
+                [scanner scanUpToCharactersFromSet:[NSCharacterSet decimalDigitCharacterSet] intoString:NULL];
+                [scanner scanInteger:&port];
+            }
+        }
+        if (port <= 0) {
+            Check(@"Tools > HTTP Request (sending)", @"the test server could not be started", NO);
+        } else {
+            NSString *base = [NSString stringWithFormat:@"http://127.0.0.1:%ld", (long)port];
+            NSDictionary *(^echoed)(NppHttpResponse *) = ^NSDictionary *(NppHttpResponse *response) {
+                return response.body.length ? [NSJSONSerialization JSONObjectWithData:response.body options:0 error:NULL] : nil;
+            };
+
+            NppHttpRequest *get = [[NppHttpRequest alloc] init];
+            get.address = [base stringByAppendingString:@"/echo?fixed=1"];
+            get.parameters = @[[NppHttpPair pairWithName:@"q" value:@"a b&c"], [NppHttpPair pairWithName:@"имя" value:@"Жук"]];
+            get.headers = @[[NppHttpPair pairWithName:@"X-Custom" value:@"42"], [NppHttpPair pairWithName:@"Accept" value:@"application/json"]];
+            NppHttpResponse *got = [NppHttpClient send:get cancelled:nil];
+            NSDictionary *saw = echoed(got);
+            NSArray *wantQuery = @[@[@"fixed", @"1"], @[@"q", @"a b&c"], @[@"имя", @"Жук"]];
+            Check(@"Tools > HTTP Request (GET)", @"the server sees the method, the address's own query with the parameters after it - decoded back to what was typed - and the headers given; "
+                  @"the answer has its status line, its headers in their order, and the time it took",
+                  got.error == nil && got.status == 200 && [got.statusLine hasPrefix:@"HTTP/1."] && [got.statusLine hasSuffix:@"200 OK"] &&
+                  [saw[@"method"] isEqualToString:@"GET"] && [saw[@"query"] isEqualToArray:wantQuery] &&
+                  [saw[@"headers"][@"x-custom"] isEqualToString:@"42"] && [saw[@"headers"][@"accept"] isEqualToString:@"application/json"] &&
+                  [saw[@"headers"][@"user-agent"] hasPrefix:@"NotepadMac/"] && [[got valueOfHeader:@"x-test-server"] isEqualToString:@"notepad"] &&
+                  [[got valueOfHeader:@"Content-Type"] isEqualToString:@"application/json"] && got.elapsed > 0 && got.redirects == 0 &&
+                  [[got headerText] hasPrefix:got.statusLine] && [[got headerText] containsString:@"\nX-Test-Server: notepad"]);
+
+            BOOL bodies = YES;
+            for (NSString *method in @[@"POST", @"PUT", @"PATCH", @"DELETE"]) {
+                NppHttpRequest *post = [[NppHttpRequest alloc] init];
+                post.method = method; post.address = [base stringByAppendingString:@"/echo"];
+                post.headers = @[[NppHttpPair pairWithName:@"Content-Type" value:@"application/json; charset=utf-8"]];
+                post.body = utf8(@"{\"имя\": \"Жук\", \"n\": [1, 2]}\n");
+                NSDictionary *sawPost = echoed([NppHttpClient send:post cancelled:nil]);
+                if (![sawPost[@"method"] isEqualToString:method] || ![sawPost[@"body"] isEqualToString:@"{\"имя\": \"Жук\", \"n\": [1, 2]}\n"] ||
+                    ![sawPost[@"headers"][@"content-type"] isEqualToString:@"application/json; charset=utf-8"] ||
+                    [sawPost[@"headers"][@"content-length"] integerValue] != (NSInteger)post.body.length) {
+                    bodies = NO; printf("    %s: %s\n", method.UTF8String, sawPost.description.UTF8String);
+                }
+            }
+            Check(@"Tools > HTTP Request (POST, PUT, PATCH, DELETE)", @"each reaches the server under its own name with the body byte for byte and the content type given", bodies);
+
+            NppHttpRequest *auth = [[NppHttpRequest alloc] init];
+            auth.address = [base stringByAppendingString:@"/echo"]; auth.username = @"igor"; auth.password = @"pa:ss word";
+            NSDictionary *sawAuth = echoed([NppHttpClient send:auth cancelled:nil]);
+            NSString *wantAuth = [@"Basic " stringByAppendingString:[utf8(@"igor:pa:ss word") base64EncodedStringWithOptions:0]];
+            NppHttpRequest *head = [[NppHttpRequest alloc] init];
+            head.method = @"HEAD"; head.address = [base stringByAppendingString:@"/echo"];
+            NppHttpResponse *headed = [NppHttpClient send:head cancelled:nil];
+            NppHttpRequest *options = [[NppHttpRequest alloc] init];
+            options.method = @"OPTIONS"; options.address = [base stringByAppendingString:@"/echo"];
+            Check(@"Tools > HTTP Request (a name and password, HEAD, OPTIONS)", @"the name and password go as Basic authentication; HEAD brings the headers and no body; OPTIONS arrives as OPTIONS",
+                  [sawAuth[@"headers"][@"authorization"] isEqualToString:wantAuth] &&
+                  headed.status == 200 && headed.body.length == 0 && [headed valueOfHeader:@"Content-Length"].integerValue > 0 && headed.error == nil &&
+                  [echoed([NppHttpClient send:options cancelled:nil])[@"method"] isEqualToString:@"OPTIONS"]);
+
+            NppHttpRequest *moved = [[NppHttpRequest alloc] init];
+            moved.address = [base stringByAppendingString:@"/redirect"];
+            NppHttpResponse *followed = [NppHttpClient send:moved cancelled:nil];
+            moved.followRedirects = NO;
+            NppHttpResponse *stayed = [NppHttpClient send:moved cancelled:nil];
+            NppHttpRequest *missing = [[NppHttpRequest alloc] init];
+            missing.address = [base stringByAppendingString:@"/status/404"];
+            NppHttpResponse *notFound = [NppHttpClient send:missing cancelled:nil];
+            missing.address = [base stringByAppendingString:@"/status/500"];
+            Check(@"Tools > HTTP Request (redirects and statuses)", @"a redirect is followed to its end - the last answer's headers, the address arrived at, one redirect counted - or, unticked, "
+                  @"shown as the 302 it is with its Location; 404 and 500 are answers, not errors",
+                  followed.status == 200 && followed.redirects == 1 && [followed.finalAddress hasSuffix:@"/echo?redirected=1"] &&
+                  [echoed(followed)[@"query"] isEqualToArray:@[@[@"redirected", @"1"]]] && [followed valueOfHeader:@"Location"] == nil &&
+                  stayed.status == 302 && [[stayed valueOfHeader:@"Location"] isEqualToString:@"/echo?redirected=1"] && [[stayed text] isEqualToString:@"moved"] &&
+                  notFound.status == 404 && notFound.error == nil && [[notFound text] isEqualToString:@"status 404"] &&
+                  [NppHttpClient send:missing cancelled:nil].status == 500);
+
+            NppHttpRequest *other = [[NppHttpRequest alloc] init];
+            other.address = [base stringByAppendingString:@"/latin1"];
+            NSString *latin = [[NppHttpClient send:other cancelled:nil] text];
+            other.address = [base stringByAppendingString:@"/binary"];
+            NppHttpResponse *binary = [NppHttpClient send:other cancelled:nil];
+            other.address = [base stringByAppendingString:@"/gzip"];
+            NSString *unpacked = [[NppHttpClient send:other cancelled:nil] text];
+            Check(@"Tools > HTTP Request (what the body is)", @"a body is read in the charset its Content-Type names; bytes that are no text are said to be none and kept as bytes; "
+                  @"a gzip-encoded body is unpacked",
+                  [latin isEqualToString:@"café crème"] && [binary text] == nil && binary.body.length == 4 && [unpacked isEqualToString:@"unpacked text"]);
+
+            NppHttpRequest *slow = [[NppHttpRequest alloc] init];
+            slow.address = [base stringByAppendingString:@"/slow"]; slow.timeout = 0.5;
+            NSDate *began = [NSDate date];
+            NppHttpResponse *timedOut = [NppHttpClient send:slow cancelled:nil];
+            NSTimeInterval waited = -began.timeIntervalSinceNow;
+            slow.timeout = 30;
+            began = [NSDate date];
+            __block int asked = 0;
+            NppHttpResponse *givenUp = [NppHttpClient send:slow cancelled:^BOOL { return ++asked > 2; }];
+            NSTimeInterval untilGivenUp = -began.timeIntervalSinceNow;
+            NppHttpRequest *nobody = [[NppHttpRequest alloc] init];
+            nobody.address = @"http://127.0.0.1:1/"; nobody.timeout = 5;
+            NppHttpResponse *unreachable = [NppHttpClient send:nobody cancelled:nil];
+            Check(@"Tools > HTTP Request (what goes wrong)", @"a server slower than the timeout is given up on at the timeout, with the reason; a request cancelled stops at once; "
+                  @"a port nobody listens on is an error in words and no status",
+                  timedOut.status == 0 && timedOut.error.length > 0 && waited < 2.5 &&
+                  [givenUp.error isEqualToString:@"Cancelled."] && untilGivenUp < 2.5 &&
+                  unreachable.status == 0 && unreachable.error.length > 0 && unreachable.body.length == 0);
+
+            // The window: what is typed into it is what is sent, and the answer is shown.
+            NppPreferences *hp = [NppPreferences shared];
+            NSString *languageBefore = hp.localizationFile;
+            hp.localizationFile = @"";
+            [app applyLocalization];
+            NSDictionary *savedBefore = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppHttpRequest"];
+            NSMenu *tools = nil;
+            for (NSMenuItem *top in NSApp.mainMenu.itemArray) if ([NppEnglishMenuTitle(top.submenu) isEqualToString:@"Tools"]) tools = top.submenu;
+            NSMenuItem *httpItem = nil;
+            for (NSMenuItem *item in tools.itemArray) if ([NppEnglishTitle(item) isEqualToString:@"HTTP Request"]) httpItem = item;
+            [NSApp sendAction:httpItem.action to:httpItem.target from:httpItem];
+            NppHttpWindow *hw = [NppHttpWindow shared];
+            BOOL opened = httpItem != nil && hw.panel.isVisible && [hw.panel.title isEqualToString:@"HTTP Request"];
+
+            [hw.method selectItemWithTitle:@"POST"];
+            hw.address.stringValue = [NSString stringWithFormat:@"127.0.0.1:%ld/echo", (long)port];
+            hw.parameters.string = @"page=2\nq=two words";
+            hw.headers.string = @"X-From: window\n# not sent\nAccept: */*";
+            hw.body.string = @"{\"ok\":true}";
+            [hw.contentType selectItemWithTitle:@"application/json"];
+            hw.username.stringValue = @""; hw.password.stringValue = @""; hw.timeout.stringValue = @"10";
+            hw.followRedirects.state = NSControlStateValueOn; hw.allowInvalidCertificates.state = NSControlStateValueOff;
+            hw.formatJSON.state = NSControlStateValueOff; hw.answerSection.selectedSegment = 0;
+            [hw sendAndWait];
+            NSDictionary *sawWindow = [NSJSONSerialization JSONObjectWithData:utf8(hw.answer.string) options:0 error:NULL];
+            NSArray *windowQuery = @[@[@"page", @"2"], @[@"q", @"two words"]];
+            BOOL sent = [sawWindow[@"method"] isEqualToString:@"POST"] && [sawWindow[@"query"] isEqualToArray:windowQuery] &&
+                        [sawWindow[@"headers"][@"x-from"] isEqualToString:@"window"] && [sawWindow[@"headers"][@"content-type"] isEqualToString:@"application/json"] &&
+                        [sawWindow[@"body"] isEqualToString:@"{\"ok\":true}"] && sawWindow[@"headers"][@"# not sent"] == nil;
+            BOOL statusShown = [hw.status.stringValue hasPrefix:@"HTTP/1."] && [hw.status.stringValue containsString:@"200 OK"] && [hw.status.stringValue containsString:@" ms"];
+            NSString *oneLine = [hw.answer.string copy];      // (a text view's string is its live store)
+            hw.formatJSON.state = NSControlStateValueOn; [hw answerSectionChanged:nil];
+            // (Laid out means white space only: taken out again, it is the answer as it came.)
+            BOOL laidOut = [hw.answer.string hasPrefix:@"{\n  \"method\": \"POST\",\n  \"path\": \"/echo\",\n  \"query\": [\n    [\n      \"page\",\n      \"2\"\n    ],"] &&
+                           ![oneLine containsString:@"\n"] &&
+                           [[NSJSONSerialization JSONObjectWithData:utf8(hw.answer.string) options:0 error:NULL] isEqual:sawWindow];
+            hw.answerSection.selectedSegment = 1; [hw answerSectionChanged:nil];
+            BOOL headersShown = [hw.answer.string hasPrefix:@"HTTP/1."] && [hw.answer.string containsString:@"X-Test-Server: notepad"];
+            hw.answerSection.selectedSegment = 0; [hw answerSectionChanged:nil];
+            Check(@"Tools > HTTP Request (the window)", @"the menu item opens it; method, address, parameters, headers (a # line left out), body and its content type are what the server sees; "
+                  @"the status line, time and size are shown; the JSON answer is laid out when that is ticked; Headers shows the answer's headers",
+                  opened && sent && statusShown && laidOut && headersShown);
+
+            // A header's own Content-Type wins over the pop-up's; with no body the pop-up adds nothing.
+            hw.headers.string = @"content-type: text/csv";
+            BOOL ownType = [hw request].headers.count == 1 && [[hw request].headers[0].value isEqualToString:@"text/csv"];
+            hw.headers.string = @""; hw.body.string = @"";
+            BOOL noType = [hw request].headers.count == 0 && [hw request].body == nil;
+            Check(@"Tools > HTTP Request (the content type)", @"a Content-Type among the headers is the one sent, not the pop-up's; without a body none is added", ownType && noType);
+
+            // Sections: one in view at a time, each with its hint.
+            BOOL sections = YES;
+            for (NSInteger i = 0; i < 4; ++i) {
+                hw.section.selectedSegment = i; [hw sectionChanged:nil];
+                NSArray<NSView *> *areas = @[hw.parameters.enclosingScrollView, hw.headers.enclosingScrollView, hw.body.enclosingScrollView, hw.username];
+                for (NSInteger k = 0; k < 4; ++k) if (areas[(NSUInteger)k].isHiddenOrHasHiddenAncestor != (k != i)) sections = NO;
+                if ((i == 3) != hw.hint.hidden) sections = NO;
+            }
+            hw.section.selectedSegment = 0; [hw sectionChanged:nil];
+            Check(@"Tools > HTTP Request (sections)", @"Parameters, Headers, Body and Options are shown one at a time, the first three with a line on how to write them", sections);
+
+            // curl both ways through the clipboard.
+            [board clearContents];
+            [board setString:[NSString stringWithFormat:@"curl -X PATCH '%@/echo?x=1' -H 'X-Pasted: yes' -u me:pw --data-raw 'a=1' -k", base] forType:NSPasteboardTypeString];
+            BOOL pasted = [hw pasteCurlCommand:nil];
+            BOOL filled = [hw.method.titleOfSelectedItem isEqualToString:@"PATCH"] && [hw.address.stringValue hasSuffix:@"/echo?x=1"] &&
+                          [hw.headers.string isEqualToString:@"X-Pasted: yes"] && [hw.body.string isEqualToString:@"a=1"] &&
+                          [hw.username.stringValue isEqualToString:@"me"] && [hw.password.stringValue isEqualToString:@"pw"] &&
+                          hw.allowInvalidCertificates.state == NSControlStateValueOn && hw.followRedirects.state == NSControlStateValueOff;
+            [hw sendAndWait];
+            NSDictionary *sawPasted = [NSJSONSerialization JSONObjectWithData:hw.response.body options:0 error:NULL];
+            [hw copyAsCurl:nil];
+            NSString *copied = [board stringForType:NSPasteboardTypeString];
+            [board clearContents];
+            [board setString:@"ls -la" forType:NSPasteboardTypeString];
+            BOOL notPasted = ![hw pasteCurlCommand:nil] && [hw.status.stringValue isEqualToString:@"This is not a curl command."] &&
+                             [hw.method.titleOfSelectedItem isEqualToString:@"PATCH"];
+            Check(@"Tools > HTTP Request (curl through the clipboard)", @"Paste curl Command fills the controls from the command, and what is then sent is that request; "
+                  @"Copy as curl writes them out again; something else on the clipboard is refused in words and changes nothing",
+                  pasted && filled && [sawPasted[@"method"] isEqualToString:@"PATCH"] && [sawPasted[@"headers"][@"x-pasted"] isEqualToString:@"yes"] &&
+                  [sawPasted[@"body"] isEqualToString:@"a=1"] && [sawPasted[@"headers"][@"authorization"] hasPrefix:@"Basic "] &&
+                  [copied hasPrefix:@"curl -X PATCH 'http://127.0.0.1:"] && [copied containsString:@"-H 'X-Pasted: yes'"] && [copied containsString:@"-u 'me:pw'"] &&
+                  [copied containsString:@"--data-raw 'a=1'"] && [copied hasSuffix:@"-k"] && notPasted);
+
+            // The answer into the editor, in the language its content type names.
+            NSUInteger tabsBefore = ed.documents.count;
+            hw.formatJSON.state = NSControlStateValueOn; [hw answerSectionChanged:nil];
+            [hw openAnswer:nil];
+            Check(@"Tools > HTTP Request (Open in New Document)", @"the answer's body becomes a new document, laid out as it was shown, and a JSON answer is given the JSON language",
+                  ed.documents.count == tabsBefore + 1 && [DocText(ed) isEqualToString:hw.answer.string] && [DocText(ed) containsString:@"\"method\": \"PATCH\""] &&
+                  [ed.currentDocument.language.name isEqualToString:@"json"]);
+            [sci message:SCI_SETSAVEPOINT];
+            [ed closeCurrentDocument];
+
+            NSDictionary *kept = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppHttpRequest"];
+            hw.address.stringValue = @"mailto:someone"; hw.password.stringValue = @"";
+            [hw send:nil];
+            Check(@"Tools > HTTP Request (kept, and what is not sent)", @"the request is remembered for the next time - its password excepted; an address that is not the web's is said so and nothing is sent",
+                  [kept[@"method"] isEqualToString:@"PATCH"] && [kept[@"address"] hasSuffix:@"/echo?x=1"] && [kept[@"headers"] isEqualToString:@"X-Pasted: yes"] &&
+                  [kept[@"username"] isEqualToString:@"me"] && kept[@"password"] == nil &&
+                  [hw.status.stringValue isEqualToString:@"The address is not an http or https address."] && hw.response.status == 0);
+
+            // A binary answer in the window: said to be no text, its beginning as bytes.
+            hw.address.stringValue = [base stringByAppendingString:@"/binary"]; [hw.method selectItemWithTitle:@"GET"]; hw.body.string = @""; hw.headers.string = @"";
+            hw.username.stringValue = @"";
+            [hw sendAndWait];
+            Check(@"Tools > HTTP Request (an answer that is no text)", @"four bytes that are no text are said to be four bytes, and shown in hexadecimal",
+                  [hw.answer.string isEqualToString:@"The answer is not text: 4 bytes.\n\nfffe00c3"]);
+
+            // In another language, with every text in view.
+            hp.localizationFile = @"russian.xml";
+            [app applyLocalization];
+            [hw show];
+            NSString *(^cutIn)(NSWindow *) = ^NSString *(NSWindow *window) {
+                [window.contentView layoutSubtreeIfNeeded];
+                NSMutableArray<NSString *> *cut = [NSMutableArray array];
+                NSMutableArray<NSView *> *queue = [NSMutableArray arrayWithObject:window.contentView];
+                while (queue.count) {
+                    NSView *v = queue.firstObject; [queue removeObjectAtIndex:0];
+                    if (v.hidden) continue;
+                    [queue addObjectsFromArray:v.subviews];
+                    BOOL isLabel = [v isKindOfClass:[NSTextField class]] && !((NSTextField *)v).editable && !((NSTextField *)v).selectable;
+                    BOOL isButton = [v isKindOfClass:[NSButton class]] && ![v isKindOfClass:[NSPopUpButton class]];
+                    BOOL isSegments = [v isKindOfClass:[NSSegmentedControl class]];
+                    if (!isLabel && !isButton && !isSegments) continue;
+                    NSControl *c = (NSControl *)v;
+                    NSString *text = isLabel ? c.stringValue : isButton ? ((NSButton *)c).title : [(NSSegmentedControl *)c labelForSegment:0];
+                    if (!text.length) continue;
+                    NSSize need = c.cell.wraps ? [c.cell cellSizeForBounds:NSMakeRect(0, 0, NSWidth(c.frame), 10000)] : c.cell.cellSize;
+                    if (c.cell.wraps) need.width = 0;
+                    NSRect inWindow = [v convertRect:v.bounds toView:nil];
+                    if (need.width > NSWidth(c.frame) + 1.5 || need.height > NSHeight(c.frame) + 1.5 ||
+                        NSMaxX(inWindow) > NSWidth(window.contentView.frame) + 0.5 || NSMinX(inWindow) < -0.5)
+                        [cut addObject:[NSString stringWithFormat:@"\"%@\" needs %.0fx%.0f, has %.0fx%.0f", text, need.width, need.height, NSWidth(c.frame), NSHeight(c.frame)]];
+                }
+                return [cut componentsJoinedByString:@"; "];
+            };
+            NSMutableString *cut = [NSMutableString string];
+            for (NSInteger i = 0; i < 4; ++i) { hw.section.selectedSegment = i; [hw sectionChanged:nil]; [cut appendString:cutIn(hw.panel)]; }
+            if (cut.length) printf("    cut in Russian: %s\n", cut.UTF8String);
+            hw.section.selectedSegment = 1; [hw sectionChanged:nil];
+            printf("    l10n http: %s | %s | %s | %s | %s | %s\n", hw.panel.title.UTF8String, hw.sendButton.title.UTF8String, [hw.section labelForSegment:1].UTF8String,
+                   hw.hint.stringValue.UTF8String, hw.followRedirects.title.UTF8String, httpItem.title.UTF8String);
+            Check(@"Tools > HTTP Request (in another language)", @"in Russian the menu item, the window's title, sections, labels, hints and buttons are Russian, and no text is cut in any section",
+                  !cut.length && [httpItem.title isEqualToString:@"HTTP-запрос"] && [hw.panel.title isEqualToString:@"HTTP-запрос"] &&
+                  [hw.sendButton.title isEqualToString:@"Отправить"] && [[hw.section labelForSegment:1] isEqualToString:@"Заголовки"] &&
+                  [hw.hint.stringValue isEqualToString:@"По одному в строке: Имя: значение"] && [hw.followRedirects.title isEqualToString:@"Следовать перенаправлениям"]);
+
+            hw.section.selectedSegment = 0; [hw sectionChanged:nil];
+            [hw.panel orderOut:nil];
+            if (savedBefore) [[NSUserDefaults standardUserDefaults] setObject:savedBefore forKey:@"NppHttpRequest"];
+            else [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"NppHttpRequest"];
+            hp.localizationFile = languageBefore ?: @"";
+            [app applyLocalization];
+
+            NppHttpRequest *quit = [[NppHttpRequest alloc] init];
+            quit.address = [base stringByAppendingString:@"/quit"]; quit.timeout = 3;
+            [NppHttpClient send:quit cancelled:nil];
+        }
+        if (server.isRunning) [server terminate];
     }
 
     printf("\n== Macro ==\n");

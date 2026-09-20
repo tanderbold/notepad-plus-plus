@@ -193,4 +193,31 @@
     <Item english="Show the bare key in hexadecimal" text="แสดงเฉพาะคีย์ในรูปเลขฐานสิบหก"/>
     <Item english="Empty: a random salt each time" text="ว่าง: สุ่ม Salt ใหม่ทุกครั้ง"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt อ่านเฉพาะ 72 ไบต์แรกเท่านั้น"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="คำขอ HTTP"/>
+    <Item english="Send" text="ส่ง"/>
+    <Item english="Parameters" text="พารามิเตอร์"/>
+    <Item english="Headers" text="ส่วนหัว"/>
+    <Item english="Body" text="เนื้อความ"/>
+    <Item english="Options" text="ตัวเลือก"/>
+    <Item english="Content type:" text="ชนิดเนื้อหา:"/>
+    <Item english="User name:" text="ชื่อผู้ใช้:"/>
+    <Item english="Password:" text="รหัสผ่าน:"/>
+    <Item english="Timeout (seconds):" text="ระยะหมดเวลา (วินาที):"/>
+    <Item english="Follow redirects" text="ติดตามการเปลี่ยนเส้นทาง"/>
+    <Item english="Allow invalid certificates" text="อนุญาตใบรับรองที่ไม่ถูกต้อง"/>
+    <Item english="Format JSON" text="จัดรูปแบบ JSON"/>
+    <Item english="Paste curl Command" text="วางคำสั่ง curl"/>
+    <Item english="Copy as curl" text="คัดลอกเป็น curl"/>
+    <Item english="Open in New Document" text="เปิดในเอกสารใหม่"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="บรรทัดละหนึ่งรายการ: ชื่อ=ค่า โดยจะเข้ารหัสแล้วเพิ่มลงในที่อยู่"/>
+    <Item english="One to a line: Name: value" text="บรรทัดละหนึ่งรายการ: ชื่อ: ค่า"/>
+    <Item english="Sent as it is written, in UTF-8." text="ส่งตามที่เขียนไว้ ในรูปแบบ UTF-8"/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="ข้อมูลตอบกลับไม่ใช่ข้อความ: $INT_REPLACE$ ไบต์"/>
+    <Item english="The address is not an http or https address." text="ที่อยู่นี้ไม่ใช่ที่อยู่ http หรือ https"/>
+    <Item english="This is not a curl command." text="นี่ไม่ใช่คำสั่ง curl"/>
+    <Item english="The command has no address." text="คำสั่งนี้ไม่มีที่อยู่"/>
+    <Item english="The command reads its data from a file, which is not done here." text="คำสั่งนี้อ่านข้อมูลจากไฟล์ ซึ่งไม่รองรับที่นี่"/>
+    <Item english="Forms and uploads of files are not read from a command." text="ไม่อ่านฟอร์มและการอัปโหลดไฟล์จากคำสั่ง"/>
+    <Item english="The command's address is not an http or https address." text="ที่อยู่ในคำสั่งไม่ใช่ที่อยู่ http หรือ https"/>
 </NativeLangExtra>

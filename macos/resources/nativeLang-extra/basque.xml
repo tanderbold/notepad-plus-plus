@@ -200,4 +200,31 @@
     <Item english="Show the bare key in hexadecimal" text="Erakutsi gako hutsa hamaseitarrean"/>
     <Item english="Empty: a random salt each time" text="Hutsik: ausazko gatza aldiro"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt-ek lehen 72 byteak bakarrik irakurtzen ditu."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP Eskaera"/>
+    <Item english="Send" text="Bidali"/>
+    <Item english="Parameters" text="Parametroak"/>
+    <Item english="Headers" text="Goiburuak"/>
+    <Item english="Body" text="Gorputza"/>
+    <Item english="Options" text="Aukerak"/>
+    <Item english="Content type:" text="Eduki mota:"/>
+    <Item english="User name:" text="Erabiltzaile-izena:"/>
+    <Item english="Password:" text="Pasahitza:"/>
+    <Item english="Timeout (seconds):" text="Denbora-muga (segundoak):"/>
+    <Item english="Follow redirects" text="Jarraitu birbideratzeak"/>
+    <Item english="Allow invalid certificates" text="Baimendu baliogabeko ziurtagiriak"/>
+    <Item english="Format JSON" text="Formateatu JSON"/>
+    <Item english="Paste curl Command" text="Itsatsi curl Komandoa"/>
+    <Item english="Copy as curl" text="Kopiatu curl gisa"/>
+    <Item english="Open in New Document" text="Ireki Dokumentu Berrian"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Lerroko bat: izena=balioa. Helbideari gehitzen zaizkio, kodifikatuta."/>
+    <Item english="One to a line: Name: value" text="Lerroko bat: Izena: balioa"/>
+    <Item english="Sent as it is written, in UTF-8." text="Idatzita dagoen bezala bidaltzen da, UTF-8n."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Erantzuna ez da testua: $INT_REPLACE$ byte."/>
+    <Item english="The address is not an http or https address." text="Helbidea ez da http edo https helbide bat."/>
+    <Item english="This is not a curl command." text="Hau ez da curl komando bat."/>
+    <Item english="The command has no address." text="Komandoak ez du helbiderik."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Komandoak fitxategi batetik irakurtzen ditu datuak, eta hori ez da hemen egiten."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Inprimakiak eta fitxategi-igoerak ez dira komando batetik irakurtzen."/>
+    <Item english="The command's address is not an http or https address." text="Komandoaren helbidea ez da http edo https helbide bat."/>
 </NativeLangExtra>

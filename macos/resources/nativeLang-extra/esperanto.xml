@@ -208,4 +208,31 @@
     <Item english="Show the bare key in hexadecimal" text="Montru la nudan ŝlosilon deksesume"/>
     <Item english="Empty: a random salt each time" text="Malplena: hazarda salo ĉiufoje"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt legas nur la unuajn 72 bajtojn."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-peto"/>
+    <Item english="Send" text="Sendu"/>
+    <Item english="Parameters" text="Parametroj"/>
+    <Item english="Headers" text="Kaplinioj"/>
+    <Item english="Body" text="Korpo"/>
+    <Item english="Options" text="Agordoj"/>
+    <Item english="Content type:" text="Tipo de enhavo:"/>
+    <Item english="User name:" text="Uzantnomo:"/>
+    <Item english="Password:" text="Pasvorto:"/>
+    <Item english="Timeout (seconds):" text="Tempolimo (sekundoj):"/>
+    <Item english="Follow redirects" text="Sekvu alidirektojn"/>
+    <Item english="Allow invalid certificates" text="Permesu nevalidajn atestilojn"/>
+    <Item english="Format JSON" text="Formatu JSON"/>
+    <Item english="Paste curl Command" text="Algluu curl-komandon"/>
+    <Item english="Copy as curl" text="Kopiu kiel curl"/>
+    <Item english="Open in New Document" text="Malfermu en nova dokumento"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Po unu en linio: nomo=valoro. Ili estas aldonataj al la adreso, koditaj."/>
+    <Item english="One to a line: Name: value" text="Po unu en linio: Nomo: valoro"/>
+    <Item english="Sent as it is written, in UTF-8." text="Sendata tiel, kiel ĝi estas skribita, en UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="La respondo ne estas teksto: $INT_REPLACE$ bajtoj."/>
+    <Item english="The address is not an http or https address." text="La adreso ne estas http- aŭ https-adreso."/>
+    <Item english="This is not a curl command." text="Tio ĉi ne estas curl-komando."/>
+    <Item english="The command has no address." text="La komando ne havas adreson."/>
+    <Item english="The command reads its data from a file, which is not done here." text="La komando legas siajn datumojn el dosiero, kio ne estas farata ĉi tie."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formularoj kaj alŝutoj de dosieroj ne estas legataj el komando."/>
+    <Item english="The command's address is not an http or https address." text="La adreso de la komando ne estas http- aŭ https-adreso."/>
 </NativeLangExtra>

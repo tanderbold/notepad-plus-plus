@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Vis sjølve nøkkelen i hexadesimal form"/>
     <Item english="Empty: a random salt each time" text="Tomt: eit tilfeldig salt kvar gong"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt les berre dei første 72 bytane."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-førespurnad"/>
+    <Item english="Send" text="Send"/>
+    <Item english="Parameters" text="Parametrar"/>
+    <Item english="Headers" text="Hovudfelt"/>
+    <Item english="Body" text="Meldingskropp"/>
+    <Item english="Options" text="Innstillingar"/>
+    <Item english="Content type:" text="Innhaldstype:"/>
+    <Item english="User name:" text="Brukarnamn:"/>
+    <Item english="Password:" text="Passord:"/>
+    <Item english="Timeout (seconds):" text="Tidsavbrot (sekund):"/>
+    <Item english="Follow redirects" text="Følg omdirigeringar"/>
+    <Item english="Allow invalid certificates" text="Tillat ugyldige sertifikat"/>
+    <Item english="Format JSON" text="Formater JSON"/>
+    <Item english="Paste curl Command" text="Lim inn curl-kommando"/>
+    <Item english="Copy as curl" text="Kopier som curl"/>
+    <Item english="Open in New Document" text="Opne i nytt dokument"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Éin per linje: namn=verdi. Dei blir lagde til adressa, koda."/>
+    <Item english="One to a line: Name: value" text="Éin per linje: Namn: verdi"/>
+    <Item english="Sent as it is written, in UTF-8." text="Blir sendt slik det er skrive, i UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Svaret er ikkje tekst: $INT_REPLACE$ byte."/>
+    <Item english="The address is not an http or https address." text="Adressa er ikkje ei http- eller https-adresse."/>
+    <Item english="This is not a curl command." text="Dette er ikkje ein curl-kommando."/>
+    <Item english="The command has no address." text="Kommandoen har inga adresse."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Kommandoen les data frå ei fil, og det blir ikkje gjort her."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Skjema og filopplastingar blir ikkje lesne frå ein kommando."/>
+    <Item english="The command's address is not an http or https address." text="Adressa i kommandoen er ikkje ei http- eller https-adresse."/>
 </NativeLangExtra>

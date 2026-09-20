@@ -204,4 +204,31 @@
     <Item english="Show the bare key in hexadecimal" text="მხოლოდ გასაღების ჩვენება თექვსმეტობით ფორმატში"/>
     <Item english="Empty: a random salt each time" text="ცარიელი: ყოველ ჯერ შემთხვევითი მარილი"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt მხოლოდ პირველ 72 ბაიტს კითხულობს."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP მოთხოვნა"/>
+    <Item english="Send" text="გაგზავნა"/>
+    <Item english="Parameters" text="პარამეტრები"/>
+    <Item english="Headers" text="თავსართები"/>
+    <Item english="Body" text="სხეული"/>
+    <Item english="Options" text="ოფციები"/>
+    <Item english="Content type:" text="შიგთავსის ტიპი:"/>
+    <Item english="User name:" text="მომხმარებლის სახელი:"/>
+    <Item english="Password:" text="პაროლი:"/>
+    <Item english="Timeout (seconds):" text="დროის ლიმიტი (წამი):"/>
+    <Item english="Follow redirects" text="გადამისამართებების მიყოლა"/>
+    <Item english="Allow invalid certificates" text="არასწორი სერტიფიკატების დაშვება"/>
+    <Item english="Format JSON" text="JSON-ის ფორმატირება"/>
+    <Item english="Paste curl Command" text="curl ბრძანების ჩასმა"/>
+    <Item english="Copy as curl" text="კოპირება curl-ის სახით"/>
+    <Item english="Open in New Document" text="გახსნა ახალ დოკუმენტში"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="თითო სტრიქონში ერთი: სახელი=მნიშვნელობა. ისინი კოდირებული სახით ემატება მისამართს."/>
+    <Item english="One to a line: Name: value" text="თითო სტრიქონში ერთი: სახელი: მნიშვნელობა"/>
+    <Item english="Sent as it is written, in UTF-8." text="იგზავნება ისე, როგორც დაწერილია, UTF-8 კოდირებით."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="პასუხი ტექსტი არ არის: $INT_REPLACE$ ბაიტი."/>
+    <Item english="The address is not an http or https address." text="მისამართი არ არის http ან https მისამართი."/>
+    <Item english="This is not a curl command." text="ეს არ არის curl ბრძანება."/>
+    <Item english="The command has no address." text="ბრძანებაში მისამართი არ არის."/>
+    <Item english="The command reads its data from a file, which is not done here." text="ბრძანება მონაცემებს ფაილიდან კითხულობს, რაც აქ არ ხდება."/>
+    <Item english="Forms and uploads of files are not read from a command." text="ფორმები და ფაილების ატვირთვა ბრძანებიდან არ იკითხება."/>
+    <Item english="The command's address is not an http or https address." text="ბრძანების მისამართი არ არის http ან https მისამართი."/>
 </NativeLangExtra>

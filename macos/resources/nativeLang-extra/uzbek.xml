@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Kalitning oʻzini oʻn oltilik koʻrinishda koʻrsatmoq"/>
     <Item english="Empty: a random salt each time" text="Boʻsh: har safar tasodifiy tuz"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt faqat dastlabki 72 baytni oʻqiydi."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP soʻrovi"/>
+    <Item english="Send" text="Yubormoq"/>
+    <Item english="Parameters" text="Parametrlar"/>
+    <Item english="Headers" text="Sarlavhalar"/>
+    <Item english="Body" text="Tana"/>
+    <Item english="Options" text="Sozlamalar"/>
+    <Item english="Content type:" text="Kontent turi:"/>
+    <Item english="User name:" text="Foydalanuvchi nomi:"/>
+    <Item english="Password:" text="Parol:"/>
+    <Item english="Timeout (seconds):" text="Kutish vaqti (soniya):"/>
+    <Item english="Follow redirects" text="Qayta yoʻnaltirishlarga ergashmoq"/>
+    <Item english="Allow invalid certificates" text="Yaroqsiz sertifikatlarga ruxsat bermoq"/>
+    <Item english="Format JSON" text="JSONni formatlamoq"/>
+    <Item english="Paste curl Command" text="curl buyrugʻini joylashtirmoq"/>
+    <Item english="Copy as curl" text="curl sifatida nusxa olmoq"/>
+    <Item english="Open in New Document" text="Yangi faylda ochmoq"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Har satrda bittadan: nom=qiymat. Ular kodlangan holda manzilga qoʻshiladi."/>
+    <Item english="One to a line: Name: value" text="Har satrda bittadan: Nom: qiymat"/>
+    <Item english="Sent as it is written, in UTF-8." text="Yozilganidek, UTF-8 da yuboriladi."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Javob matn emas: $INT_REPLACE$ bayt."/>
+    <Item english="The address is not an http or https address." text="Manzil http yoki https manzili emas."/>
+    <Item english="This is not a curl command." text="Bu curl buyrugʻi emas."/>
+    <Item english="The command has no address." text="Buyruqda manzil yoʻq."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Buyruq ma’lumotlarini fayldan oʻqiydi, bu yerda bu qoʻllab-quvvatlanmaydi."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formalar va fayl yuklashlar buyruqdan oʻqilmaydi."/>
+    <Item english="The command's address is not an http or https address." text="Buyruqdagi manzil http yoki https manzili emas."/>
 </NativeLangExtra>

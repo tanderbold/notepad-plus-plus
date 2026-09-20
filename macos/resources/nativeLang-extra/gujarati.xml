@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="ફક્ત કી હેક્સાડેસિમલમાં બતાવો"/>
     <Item english="Empty: a random salt each time" text="ખાલી: દર વખતે રેન્ડમ સોલ્ટ"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt ફક્ત પહેલા 72 બાઇટ વાંચે છે."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP રિક્વેસ્ટ"/>
+    <Item english="Send" text="મોકલો"/>
+    <Item english="Parameters" text="પરિમાણો"/>
+    <Item english="Headers" text="હેડર્સ"/>
+    <Item english="Body" text="બોડી"/>
+    <Item english="Options" text="વિકલ્પો"/>
+    <Item english="Content type:" text="કન્ટેન્ટ પ્રકાર:"/>
+    <Item english="User name:" text="વપરાશકર્તા નામ:"/>
+    <Item english="Password:" text="પાસવર્ડ:"/>
+    <Item english="Timeout (seconds):" text="ટાઇમઆઉટ (સેકન્ડ):"/>
+    <Item english="Follow redirects" text="રીડાયરેક્ટને અનુસરો"/>
+    <Item english="Allow invalid certificates" text="અમાન્ય પ્રમાણપત્રોને મંજૂરી આપો"/>
+    <Item english="Format JSON" text="JSON ફોર્મેટ કરો"/>
+    <Item english="Paste curl Command" text="curl કમાન્ડ પેસ્ટ કરો"/>
+    <Item english="Copy as curl" text="curl તરીકે કૉપિ કરો"/>
+    <Item english="Open in New Document" text="નવા ડોક્યુમેન્ટમાં ખોલો"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="દરેક લાઇનમાં એક: નામ=કિંમત. તે એન્કોડ કરીને સરનામામાં ઉમેરાય છે."/>
+    <Item english="One to a line: Name: value" text="દરેક લાઇનમાં એક: નામ: કિંમત"/>
+    <Item english="Sent as it is written, in UTF-8." text="જેમ લખ્યું છે તેમ જ, UTF-8 માં મોકલાય છે."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="જવાબ ટેક્સ્ટ નથી: $INT_REPLACE$ બાઇટ."/>
+    <Item english="The address is not an http or https address." text="આ સરનામું http કે https સરનામું નથી."/>
+    <Item english="This is not a curl command." text="આ curl કમાન્ડ નથી."/>
+    <Item english="The command has no address." text="કમાન્ડમાં કોઈ સરનામું નથી."/>
+    <Item english="The command reads its data from a file, which is not done here." text="કમાન્ડ તેનો ડેટા ફાઈલમાંથી વાંચે છે, જે અહીં થતું નથી."/>
+    <Item english="Forms and uploads of files are not read from a command." text="ફોર્મ અને ફાઈલ અપલોડ કમાન્ડમાંથી વાંચવામાં આવતા નથી."/>
+    <Item english="The command's address is not an http or https address." text="કમાન્ડનું સરનામું http કે https સરનામું નથી."/>
 </NativeLangExtra>

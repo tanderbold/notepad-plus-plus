@@ -119,4 +119,16 @@
     <Item english="At least one character of each kind" text="Okungenani uhlamvu olulodwa lohlobo ngalunye"/>
     <Item english="Choose at least one kind of character." text="Khetha okungenani uhlobo olulodwa lwezinhlamvu."/>
     <Item english="Insert into Document" text="Faka kudokhumenti"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="Isicelo se-HTTP"/>
+    <Item english="Send" text="Thumela"/>
+    <Item english="Options" text="Izinketho"/>
+    <Item english="Content type:" text="Uhlobo lokuqukethwe:"/>
+    <Item english="User name:" text="Igama lomsebenzisi:"/>
+    <Item english="Password:" text="Iphasiwedi:"/>
+    <Item english="Paste curl Command" text="Namathisela umyalo we-curl"/>
+    <Item english="Copy as curl" text="Kopisha njenge-curl"/>
+    <Item english="Open in New Document" text="Vula kudokhumenti entsha"/>
+    <Item english="This is not a curl command." text="Lokhu akuwona umyalo we-curl."/>
+    <Item english="The command has no address." text="Umyalo awunalo ikheli."/>
 </NativeLangExtra>

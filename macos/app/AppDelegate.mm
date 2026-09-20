@@ -1216,6 +1216,7 @@ static NSString *Ordinal(NSUInteger n) {
     }
     [toolsMenu addItemWithTitle:@"Base" action:nil keyEquivalent:@""].submenu = baseMenu;
     [self item:@"Password Generator" action:@selector(showPasswordGenerator:) key:@"" flags:0 menu:toolsMenu];
+    [self item:@"HTTP Request" action:@selector(showHttpRequest:) key:@"" flags:0 menu:toolsMenu];
     toolsItem.submenu = toolsMenu;
 
     // ---- Macro
@@ -2005,6 +2006,23 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
     NSString *selected = [self.editor.sci selectedString];
     if (selected.length) window.input.string = selected;
     [window showForEncoding:(NppBaseEncoding)sender.tag];
+}
+
+/// The answer's body as a new document, in the language its content type names - JSON as JSON, a page as HTML.
+- (void)showHttpRequest:(id)sender {
+    NppHttpWindow *window = [NppHttpWindow shared];
+    __weak __typeof__(self) weakSelf = self;
+    window.openInNewDocument = ^(NSString *text, NSString *contentType) {
+        [weakSelf.editor newDocument];
+        [weakSelf.editor.sci setString:text];
+        NSString *type = contentType.lowercaseString;
+        NSString *language = [type containsString:@"json"] ? @"json" : [type containsString:@"html"] ? @"html"
+                           : [type containsString:@"xml"] ? @"xml" : [type containsString:@"javascript"] ? @"javascript"
+                           : [type containsString:@"css"] ? @"css" : [type containsString:@"yaml"] ? @"yaml" : nil;
+        if (language) [weakSelf.editor setLanguageNamed:language];
+        [weakSelf.window makeKeyAndOrderFront:nil];
+    };
+    [window show];
 }
 
 - (void)showPasswordGenerator:(id)sender {
@@ -4414,6 +4432,12 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
             BOOL decoding = [which isEqualToString:@"unbase"];
             w.direction.selectedSegment = decoding ? 1 : 0;
             w.input.string = decoding ? @"2NEpo7TZRRrLZSi2U" : @"Hello World!"; [w refresh];
+            view = w.panel.contentView;
+        } else if ([which hasPrefix:@"http"]) {
+            // tools:http, or tools:http:<address> to send a request and show its answer
+            [self showHttpRequest:nil];
+            NppHttpWindow *w = [NppHttpWindow shared];
+            if (which.length > 5) { w.address.stringValue = [which substringFromIndex:5]; [w sendAndWait]; }
             view = w.panel.contentView;
         } else {
             [self showPasswordGenerator:nil];

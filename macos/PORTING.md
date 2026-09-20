@@ -416,7 +416,7 @@ repositories were read to establish what the commands are and how they behave.
   Function List are a split view and floating panels rather than a dockable
   layout that can be rearranged and saved.
 
-### Tools: hashes, Base encodings and passwords
+### Tools: hashes, Base encodings, passwords and HTTP requests
 
 Upstream's Tools menu is four digests. Here they sit under **Tools > Hashes**
 with what the port adds, the ids and shortcuts of upstream's twelve commands
@@ -453,6 +453,31 @@ kept (`ShortcutMapper` finds them one level further down):
   each password can be had beside it - any of the four password hashes with
   its default settings, or any digest - which is what one stores where the
   password is to be checked.
+
+- **Tools > HTTP Request**: what one would give curl. A method (GET, POST,
+  PUT, PATCH, DELETE, HEAD, OPTIONS), an address (without a scheme it is
+  http), query parameters and headers typed one to a line (`name=value`,
+  `Name: value`; a `#` line is left out) - the parameters added to the
+  address percent-encoded - a body with its content type, a name and password
+  for Basic authentication, a timeout, whether redirects are followed and
+  whether a certificate that fails is let through (curl's `-k`). The answer
+  is shown as it came: status line, time, size, where a redirect led; the
+  headers in their order; the body in the charset its Content-Type names,
+  JSON laid out if wanted (white space only - keys keep their order, numbers
+  their spelling), bytes that are no text said to be none and shown in
+  hexadecimal. **Open in New Document** puts the body in a tab with the
+  language its content type names. **Copy as curl** writes the request as a
+  command quoted for the shell; **Paste curl Command** reads one - quotes of
+  both kinds, continued lines, bash's `$'…'` as browsers' "Copy as cURL"
+  writes it, short options run together, `-X -H -d --data-raw
+  --data-urlencode --json -u -k -L -I -G -A -e -b -m --url
+  --oauth2-bearer`, the rest passed over with their values; a command that
+  reads its data or a form from a file is refused rather than read. Sent with
+  libcurl (already linked for FTP) off the main thread, Send becoming Cancel;
+  only http and https are spoken, redirects included, so a pasted address
+  cannot read a file. The request is remembered, its password excepted. The
+  suite drives it against `test-http-server.py`, which says back what it was
+  asked.
 
 Where the code comes from: CommonCrypto for the SHA-2 family, HMAC and PBKDF2;
 zlib for CRC-32; Argon2 and BLAKE2b are the reference implementation
@@ -741,6 +766,7 @@ macos/
     ├── LanguageDetection.mm a language from a file's contents
     ├── LanguageModel.mm    reads the trained model
     ├── CryptoTools.mm      password hashes, SHA-3, Base58/32, passwords
+    ├── HttpRequest.mm      Tools > HTTP Request: the request, curl both ways, libcurl
     ├── ToolsWindows.mm     the windows of the Tools menu
     ├── StyleCatalog.mm     parses stylers.model.xml
     ├── LangMap.h           generated: language -> Lexilla lexer ID

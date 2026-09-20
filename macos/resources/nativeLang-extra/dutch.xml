@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="De kale sleutel hexadecimaal weergeven"/>
     <Item english="Empty: a random salt each time" text="Leeg: elke keer een willekeurige salt"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt leest alleen de eerste 72 bytes."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP-verzoek"/>
+    <Item english="Send" text="Verzenden"/>
+    <Item english="Parameters" text="Parameters"/>
+    <Item english="Headers" text="Headers"/>
+    <Item english="Body" text="Body"/>
+    <Item english="Options" text="Opties"/>
+    <Item english="Content type:" text="Inhoudstype:"/>
+    <Item english="User name:" text="Gebruikersnaam:"/>
+    <Item english="Password:" text="Wachtwoord:"/>
+    <Item english="Timeout (seconds):" text="Time-out (seconden):"/>
+    <Item english="Follow redirects" text="Omleidingen volgen"/>
+    <Item english="Allow invalid certificates" text="Ongeldige certificaten toestaan"/>
+    <Item english="Format JSON" text="JSON opmaken"/>
+    <Item english="Paste curl Command" text="curl-opdracht plakken"/>
+    <Item english="Copy as curl" text="Als curl kopiëren"/>
+    <Item english="Open in New Document" text="In nieuw document openen"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Eén per regel: naam=waarde. Ze worden gecodeerd aan het adres toegevoegd."/>
+    <Item english="One to a line: Name: value" text="Eén per regel: Naam: waarde"/>
+    <Item english="Sent as it is written, in UTF-8." text="Wordt verzonden zoals het geschreven is, in UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Het antwoord is geen tekst: $INT_REPLACE$ bytes."/>
+    <Item english="The address is not an http or https address." text="Het adres is geen http- of https-adres."/>
+    <Item english="This is not a curl command." text="Dit is geen curl-opdracht."/>
+    <Item english="The command has no address." text="De opdracht bevat geen adres."/>
+    <Item english="The command reads its data from a file, which is not done here." text="De opdracht leest zijn gegevens uit een bestand; dat wordt hier niet gedaan."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Formulieren en bestandsuploads worden niet uit een opdracht gelezen."/>
+    <Item english="The command's address is not an http or https address." text="Het adres van de opdracht is geen http- of https-adres."/>
 </NativeLangExtra>

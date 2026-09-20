@@ -155,4 +155,28 @@
     <Item english="Insert into Document" text="Isingit sa Kasulatan"/>
     <Item english="Show the bare key in hexadecimal" text="Ipakita ang hilaw na susi sa hexadecimal"/>
     <Item english="bcrypt reads only the first 72 bytes." text="Binabasa ng bcrypt ang unang 72 byte lamang."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="Send" text="Ipadala"/>
+    <Item english="Parameters" text="Mga Parameter"/>
+    <Item english="Headers" text="Mga Header"/>
+    <Item english="Content type:" text="Uri ng nilalaman:"/>
+    <Item english="User name:" text="Pangalan ng user:"/>
+    <Item english="Password:" text="Password:"/>
+    <Item english="Timeout (seconds):" text="Timeout (segundo):"/>
+    <Item english="Follow redirects" text="Sundan ang mga redirect"/>
+    <Item english="Allow invalid certificates" text="Pahintulutan ang mga hindi valid na sertipiko"/>
+    <Item english="Format JSON" text="I-format ang JSON"/>
+    <Item english="Paste curl Command" text="Idikit ang Utos ng curl"/>
+    <Item english="Copy as curl" text="Sipiin bilang curl"/>
+    <Item english="Open in New Document" text="Buksan sa Bagong Kasulatan"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Isa sa bawat taludtod: pangalan=halaga. Idinadagdag ang mga ito sa address, naka-encode."/>
+    <Item english="One to a line: Name: value" text="Isa sa bawat taludtod: Pangalan: halaga"/>
+    <Item english="Sent as it is written, in UTF-8." text="Ipinapadala gaya ng nakasulat, sa UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Ang tugon ay hindi teksto: $INT_REPLACE$ byte."/>
+    <Item english="The address is not an http or https address." text="Ang address ay hindi http o https address."/>
+    <Item english="This is not a curl command." text="Hindi ito utos ng curl."/>
+    <Item english="The command has no address." text="Walang address ang utos."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Binabasa ng utos ang data nito mula sa isang pila, na hindi ginagawa rito."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Hindi binabasa mula sa utos ang mga form at pag-upload ng pila."/>
+    <Item english="The command's address is not an http or https address." text="Ang address ng utos ay hindi http o https address."/>
 </NativeLangExtra>

@@ -173,4 +173,24 @@
     <Item english="At least one character of each kind" text="ھەر بىر خىلدىن كەم دېگەندە بىر ھەرپ"/>
     <Item english="Choose at least one kind of character." text="كەم دېگەندە بىر خىل ھەرپنى تاللاڭ."/>
     <Item english="Insert into Document" text="ھۆججەتكە قىستۇرۇش"/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP ئىلتىماسى"/>
+    <Item english="Send" text="يوللاش"/>
+    <Item english="Parameters" text="پارامېتېرلار"/>
+    <Item english="Options" text="تاللانمىلار"/>
+    <Item english="Content type:" text="مەزمۇن تىپى:"/>
+    <Item english="User name:" text="ئىشلەتكۈچى ئىسمى:"/>
+    <Item english="Password:" text="پارول:"/>
+    <Item english="Allow invalid certificates" text="ئىناۋەتسىز گۇۋاھنامىلەرگە يول قويۇش"/>
+    <Item english="Format JSON" text="JSON نى فورماتلاش"/>
+    <Item english="Paste curl Command" text="curl بۇيرۇقىنى چاپلاش"/>
+    <Item english="Copy as curl" text="curl سۈپىتىدە كۆچۈرۈش"/>
+    <Item english="Open in New Document" text="يېڭى ھۆججەتتە ئېچىش"/>
+    <Item english="One to a line: Name: value" text="ھەر قۇرغا بىردىن: ئىسىم: قىممەت"/>
+    <Item english="Sent as it is written, in UTF-8." text="يېزىلغان پېتى UTF-8 دا يوللىنىدۇ."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="جاۋاب تېكىست ئەمەس: $INT_REPLACE$ بايت."/>
+    <Item english="The address is not an http or https address." text="ئادرېس http ياكى https ئادرېسى ئەمەس."/>
+    <Item english="This is not a curl command." text="بۇ curl بۇيرۇقى ئەمەس."/>
+    <Item english="The command has no address." text="بۇيرۇقتا ئادرېس يوق."/>
+    <Item english="The command's address is not an http or https address." text="بۇيرۇقتىكى ئادرېس http ياكى https ئادرېسى ئەمەس."/>
 </NativeLangExtra>

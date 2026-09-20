@@ -210,4 +210,31 @@
     <Item english="Show the bare key in hexadecimal" text="Prikaži sam ključ heksadecimalno"/>
     <Item english="Empty: a random salt each time" text="Prazno: svaki put nasumična so"/>
     <Item english="bcrypt reads only the first 72 bytes." text="bcrypt čita samo prva 72 bajta."/>
+    <!-- Tools: HTTP Request -->
+    <Item english="HTTP Request" text="HTTP zahtev"/>
+    <Item english="Send" text="Pošalji"/>
+    <Item english="Parameters" text="Parametri"/>
+    <Item english="Headers" text="Zaglavlja"/>
+    <Item english="Body" text="Telo"/>
+    <Item english="Options" text="Opcije"/>
+    <Item english="Content type:" text="Tip sadržaja:"/>
+    <Item english="User name:" text="Korisničko ime:"/>
+    <Item english="Password:" text="Lozinka:"/>
+    <Item english="Timeout (seconds):" text="Vremensko ograničenje (sekunde):"/>
+    <Item english="Follow redirects" text="Prati preusmeravanja"/>
+    <Item english="Allow invalid certificates" text="Dozvoli neispravne sertifikate"/>
+    <Item english="Format JSON" text="Formatiraj JSON"/>
+    <Item english="Paste curl Command" text="Nalepi curl komandu"/>
+    <Item english="Copy as curl" text="Kopiraj kao curl"/>
+    <Item english="Open in New Document" text="Otvori u novom dokumentu"/>
+    <Item english="One to a line: name=value. They are added to the address, encoded." text="Po jedan u liniji: ime=vrednost. Dodaju se adresi, kodirani."/>
+    <Item english="One to a line: Name: value" text="Po jedan u liniji: Ime: vrednost"/>
+    <Item english="Sent as it is written, in UTF-8." text="Šalje se onako kako je napisano, u UTF-8."/>
+    <Item english="The answer is not text: $INT_REPLACE$ bytes." text="Odgovor nije tekst (bajtova: $INT_REPLACE$)."/>
+    <Item english="The address is not an http or https address." text="Adresa nije http ili https adresa."/>
+    <Item english="This is not a curl command." text="Ovo nije curl komanda."/>
+    <Item english="The command has no address." text="Komanda nema adresu."/>
+    <Item english="The command reads its data from a file, which is not done here." text="Komanda čita podatke iz datoteke, što se ovde ne radi."/>
+    <Item english="Forms and uploads of files are not read from a command." text="Obrasci i otpremanje datoteka se ne čitaju iz komande."/>
+    <Item english="The command's address is not an http or https address." text="Adresa u komandi nije http ili https adresa."/>
 </NativeLangExtra>

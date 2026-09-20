@@ -145,6 +145,7 @@ cp "$ROOT/macos/resources/contextMenu.xml" "$APP/Contents/Resources/"
 cp "$ROOT/macos/resources/language-model.bin"    "$APP/Contents/Resources/"
 # The FTP tests need a server to talk to; this one exists only for them.
 cp "$ROOT/macos/test-ftp-server.py"         "$APP/Contents/Resources/"
+cp "$ROOT/macos/test-http-server.py"        "$APP/Contents/Resources/"
 # Notepad++'s own colour themes; the Style Configurator and Preferences list these.
 mkdir -p "$APP/Contents/Resources/themes"
 cp "$ROOT"/PowerEditor/installer/themes/*.xml "$APP/Contents/Resources/themes/"
