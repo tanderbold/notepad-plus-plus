@@ -1,3 +1,7 @@
+> **This branch (`macos-port`) is a native macOS port of Notepad++.** What it does, how to install and
+> build it: [macos/README.md](macos/README.md). Engineering notes: [macos/PORTING.md](macos/PORTING.md);
+> briefing for AI coding agents: [AGENTS.md](AGENTS.md). Everything below is upstream's README, unchanged.
+
 What is Notepad++ ?
 ===================
 
