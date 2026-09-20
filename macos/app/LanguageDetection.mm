@@ -419,57 +419,11 @@ static double IniLikeness(NSString *sample) {
 /// What the trained model makes of the text, as the set it was fitted to
 /// offer: the fewest languages whose likelihoods reach the coverage chosen on
 /// held-back fragments. nil when the model has nothing to say.
-/// A type declared behind an access modifier - "public enum Status", "internal
-/// sealed class X", "public final class Y" - is written that way in C#, Java
-/// and (classes and interfaces) ActionScript, and nowhere else Notepad++
-/// knows. A short fragment gives the model little else to go by, so the
-/// declaration decides which of them are offered, and what else it says
-/// decides between them: nil when there is no such declaration.
-- (nullable NSArray<NSString *> *)languagesDeclaringTypesIn:(NSString *)sample {
-    static NSRegularExpression *declaration;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        declaration = [NSRegularExpression regularExpressionWithPattern:
-            @"^[ \\t]*(?:public|private|protected|internal)[ \\t]+((?:(?:static|sealed|abstract|final|partial|readonly|strictfp|dynamic)[ \\t]+)*)"
-            @"(enum|class|interface|struct|record|@interface)[ \\t]+[A-Za-z_][A-Za-z0-9_]*([^\\n{]*)"
-                                                               options:NSRegularExpressionAnchorsMatchLines error:NULL];
-    });
-    NSArray<NSTextCheckingResult *> *found = [declaration matchesInString:sample options:0 range:NSMakeRange(0, sample.length)];
-    if (!found.count) return nil;
-    BOOL onlyCSharp = NO, notCSharp = NO, enumOnly = YES;
-    for (NSTextCheckingResult *m in found) {
-        NSString *modifiers = [sample substringWithRange:[m rangeAtIndex:1]];
-        NSString *kind = [sample substringWithRange:[m rangeAtIndex:2]];
-        NSString *rest = [sample substringWithRange:[m rangeAtIndex:3]];
-        NSString *whole = [sample substringWithRange:m.range];
-        if (![kind isEqualToString:@"enum"]) enumOnly = NO;
-        if ([whole hasPrefix:@"internal"] || [whole containsString:@" internal "] || [kind isEqualToString:@"struct"] ||
-            [modifiers containsString:@"sealed"] || [modifiers containsString:@"partial"] || [modifiers containsString:@"readonly"] ||
-            [rest rangeOfString:@":"].location != NSNotFound) onlyCSharp = YES;
-        if ([modifiers containsString:@"final"] || [modifiers containsString:@"strictfp"] || [kind isEqualToString:@"@interface"] ||
-            [rest containsString:@" extends "] || [rest containsString:@" implements "]) notCSharp = YES;
-    }
-    // What the body says: members given numbers and properties are C#'s, not Java's.
-    NSRegularExpression *numbered = [NSRegularExpression regularExpressionWithPattern:@"^[ \\t]*[A-Za-z_][A-Za-z0-9_]*[ \\t]*=[ \\t]*-?(?:0x)?[0-9A-Fa-f]+[ \\t]*,?[ \\t]*$"
-                                                                              options:NSRegularExpressionAnchorsMatchLines error:NULL];
-    BOOL leansCSharp = [numbered firstMatchInString:sample options:0 range:NSMakeRange(0, sample.length)] != nil ||
-                       [sample containsString:@"{ get;"] || [sample containsString:@"using System"] || [sample containsString:@"namespace "];
-    BOOL leansJava = [sample containsString:@"import java"] || [sample containsString:@"package "] || [sample containsString:@"@Override"] ||
-                     [sample containsString:@"System.out."];
-    if (onlyCSharp && !notCSharp) return @[@"cs"];
-    if (notCSharp && !onlyCSharp) return enumOnly ? @[@"java"] : @[@"java", @"actionscript"];
-    NSMutableArray *names = [NSMutableArray arrayWithArray:leansJava && !leansCSharp ? @[@"java", @"cs"] : @[@"cs", @"java"]];
-    if (!enumOnly && !leansCSharp && !leansJava) [names addObject:@"actionscript"];
-    return names;
-}
-
 - (NSArray<NppLanguage *> *)languagesFromModelForContents:(NSString *)text {
     NppLanguageModel *model = [NppLanguageModel sharedModel];
     if (!model) return nil;
 
     NSArray<NSString *> *offered = [model languagesOfferedForText:text];
-    // (A declaration speaks even where the text is too short for the model to.)
-    if (!offered && [self languagesDeclaringTypesIn:[self sampleOfContents:text]].count) offered = @[];
     if (!offered) return nil;
 
     // The marks are read alongside the model rather than instead of it. The
@@ -480,12 +434,6 @@ static double IniLikeness(NSString *sample) {
     // to nothing else. Two of them put the language on the list.
     NSMutableArray<NSString *> *names = [offered mutableCopy];
     NSString *sample = [self sampleOfContents:text];
-    // A declaration only a few languages can make settles which are offered;
-    // what the model had besides (PowerShell for a bare enum, say) is not.
-    NSArray<NSString *> *declared = [self languagesDeclaringTypesIn:sample];
-    // (Unless the model is already sure of one of them: a whole Java file needs no question.)
-    BOOL modelIsSure = offered.count == 1 && [declared containsObject:offered.firstObject];
-    if (declared.count && !modelIsSure) names = [declared mutableCopy];
     NSDictionary<NSString *, NSArray<NSString *> *> *marks = StructuralMarks();
     for (NSString *name in [marks.allKeys sortedArrayUsingSelector:@selector(compare:)]) {
         if ([names containsObject:name]) continue;
