@@ -1215,7 +1215,7 @@ static NSString *Ordinal(NSUInteger n) {
         mi.target = self; mi.tag = bases[k].encoding;
     }
     [toolsMenu addItemWithTitle:@"Base" action:nil keyEquivalent:@""].submenu = baseMenu;
-    [self item:@"Password…" action:@selector(showPasswordGenerator:) key:@"" flags:0 menu:toolsMenu];
+    [self item:@"Password Generator" action:@selector(showPasswordGenerator:) key:@"" flags:0 menu:toolsMenu];
     toolsItem.submenu = toolsMenu;
 
     // ---- Macro

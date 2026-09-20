@@ -143,7 +143,6 @@
     <!-- Tools: Hashes, Base, Password -->
     <Item english="Hashes" text="ஹாஷ்கள்"/>
     <Item english="Base" text="Base"/>
-    <Item english="Password…" text="கடவுச்சொல்…"/>
     <Item english="Base64…" text="Base64…"/>
     <Item english="Base58…" text="Base58…"/>
     <Item english="Base32…" text="Base32…"/>

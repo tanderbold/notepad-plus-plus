@@ -63,7 +63,6 @@
     <Item english="View 2" text="Gwel 2"/>
     <!-- Tools: Hashes, Base, Password -->
     <Item english="Base" text="Base"/>
-    <Item english="Password…" text="Ger-tremen…"/>
     <Item english="Base64…" text="Base64…"/>
     <Item english="Base58…" text="Base58…"/>
     <Item english="Base32…" text="Base32…"/>
