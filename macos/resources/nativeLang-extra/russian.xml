@@ -238,4 +238,5 @@
     <Item english="The command reads its data from a file, which is not done here." text="Команда читает данные из файла, здесь это не поддерживается."/>
     <Item english="Forms and uploads of files are not read from a command." text="Формы и отправка файлов из команды не читаются."/>
     <Item english="The command's address is not an http or https address." text="Адрес в команде не является адресом http или https."/>
+    <Item english="An unofficial macOS port. Notepad++ is by Don HO." text="Неофициальный порт для macOS. Автор Notepad++ — Don HO."/>
 </NativeLangExtra>

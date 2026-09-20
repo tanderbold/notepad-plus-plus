@@ -43,6 +43,11 @@ static NSTextField *Label(NSString *text, NSRect frame, NSFont *font) {
 @property (nonatomic, strong) NSImageView *icon;
 @end
 
+NSString *NppProjectAddress(NSString *path) {
+    NSString *front = [@"https://github.com/" stringByAppendingString:[NppPreferences shared].updateRepository ?: @""];
+    return path.length ? [NSString stringWithFormat:@"%@/%@", front, path] : front;
+}
+
 @implementation NppAboutWindow
 
 + (instancetype)shared {
@@ -90,10 +95,11 @@ static NSTextField *Label(NSString *text, NSRect frame, NSFont *font) {
                                NSMakeRect(20, 306, 400, 18), [NSFont systemFontOfSize:NSFont.smallSystemFontSize]);
     built.textColor = [NSColor secondaryLabelColor];   // upstream greys it out
     [v addSubview:built];
-    [v addSubview:Label(@"Don HO", NSMakeRect(20, 280, 400, 18), [NSFont systemFontOfSize:NSFont.systemFontSize])];
-    [v addSubview:LinkButton(@"https://notepad-plus-plus.org/", NSMakeRect(20, 256, 400, 20), self)];
-    NSString *repo = [NppPreferences shared].updateRepository;
-    [v addSubview:LinkButton([NSString stringWithFormat:@"https://github.com/%@", repo], NSMakeRect(20, 234, 400, 20), self)];
+    // Whose this is, and where to go with it: the port's own repository. Notepad++'s author is named
+    // as the author of what this is a port of - credit, not a contact.
+    [v addSubview:Label(@"An unofficial macOS port. Notepad++ is by Don HO.", NSMakeRect(20, 280, 400, 18), [NSFont systemFontOfSize:NSFont.systemFontSize])];
+    [v addSubview:LinkButton(NppProjectAddress(@""), NSMakeRect(20, 256, 400, 20), self)];
+    [v addSubview:LinkButton(NppProjectAddress(@"issues"), NSMakeRect(20, 234, 400, 20), self)];
 
     NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(20, 56, 400, 168)];
     scroll.hasVerticalScroller = YES;

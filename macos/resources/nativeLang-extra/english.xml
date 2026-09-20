@@ -240,4 +240,5 @@
     <Item english="The command reads its data from a file, which is not done here." text="The command reads its data from a file, which is not done here."/>
     <Item english="Forms and uploads of files are not read from a command." text="Forms and uploads of files are not read from a command."/>
     <Item english="The command's address is not an http or https address." text="The command's address is not an http or https address."/>
+    <Item english="An unofficial macOS port. Notepad++ is by Don HO." text="An unofficial macOS port. Notepad++ is by Don HO."/>
 </NativeLangExtra>

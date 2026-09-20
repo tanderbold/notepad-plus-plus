@@ -6823,16 +6823,32 @@ int NppMacRunTests(AppDelegate *app) {
         Check(@"IDM_CMDLINEARGUMENTS", @"documents the accepted arguments",
               [[ed commandLineArgumentsHelp] containsString:@"NPPMAC_TEST"]);
 
-        // Opening browsers from a test would be rude; assert the URLs are valid.
-        NSDictionary *links = @{@"IDM_HOMESWEETHOME": @"https://notepad-plus-plus.org/",
-                                @"IDM_PROJECTPAGE":   @"https://github.com/notepad-plus-plus/notepad-plus-plus",
+        // Opening browsers from a test would be rude; what is looked at is where each command would go.
+        // The port is released and supported from its own repository - the one Check for Updates asks -
+        // so Home, Project Page and Forum lead there, and nothing leads to Notepad++'s site or forum.
+        NSString *repository = [@"https://github.com/" stringByAppendingString:[NppPreferences shared].updateRepository];
+        NSDictionary *links = @{@"IDM_HOMESWEETHOME": [repository stringByAppendingString:@"#readme"],
+                                @"IDM_PROJECTPAGE":   repository,
                                 @"IDM_ONLINEDOCUMENT":@"https://npp-user-manual.org/",
-                                @"IDM_FORUM":         @"https://community.notepad-plus-plus.org/"};
+                                @"IDM_FORUM":         [repository stringByAppendingString:@"/discussions"]};
+        NSDictionary<NSNumber *, NSMenuItem *> *helpItems = [app.shortcutStore menuItemsByIdentifier];
+        NSDictionary *helpIDs = @{@"IDM_HOMESWEETHOME": @47001, @"IDM_PROJECTPAGE": @47002, @"IDM_ONLINEDOCUMENT": @47003, @"IDM_FORUM": @47004};
         for (NSString *cmd in links) {
             NSURL *u = [NSURL URLWithString:links[cmd]];
-            Check(cmd, @"points at a valid https URL",
-                  u != nil && [u.scheme isEqualToString:@"https"] && u.host.length > 0);
+            NSMenuItem *item = helpItems[helpIDs[cmd]];
+            Check(cmd, @"leads to this port's own repository (the manual, to the manual), over https",
+                  u != nil && [u.scheme isEqualToString:@"https"] && u.host.length > 0 &&
+                  [item.representedObject isEqualToString:links[cmd]]);
         }
+        BOOL noneUpstream = YES;
+        for (NSMenuItem *top in NSApp.mainMenu.itemArray) {
+            if (![NppEnglishMenuTitle(top.submenu) isEqualToString:@"Help"] && ![NppEnglishMenuTitle(top.submenu) isEqualToString:@"?"]) continue;
+            for (NSMenuItem *mi in top.submenu.itemArray) {
+                NSString *to = [mi.representedObject isKindOfClass:[NSString class]] ? mi.representedObject : @"";
+                if ([to containsString:@"notepad-plus-plus.org"] || [to containsString:@"github.com/notepad-plus-plus/"]) noneUpstream = NO;
+            }
+        }
+        Check(@"Help (whose it is)", @"no command of the Help menu sends a user of the Mac version to Notepad++'s site, forum or repository", noneUpstream);
 
         [[NSUserDefaults standardUserDefaults] setObject:@"proxy.example:8080" forKey:@"NppMacUpdaterProxy"];
         Check(@"IDM_CONFUPDATERPROXY", @"remembers the proxy setting",
@@ -6848,19 +6864,22 @@ int NppMacRunTests(AppDelegate *app) {
         }
         NppAboutWindow *aw = [NppAboutWindow shared];
         [aw show];
-        BOOL versionShown = NO, licenceShown = NO, homeLink = NO;
+        BOOL versionShown = NO, licenceShown = NO, homeLink = NO, issuesLink = NO, upstreamLink = NO;
         NSMutableArray *views = [NSMutableArray arrayWithObject:aw.panel.contentView];
         while (views.count) {
             NSView *view = views.lastObject; [views removeLastObject];
             [views addObjectsFromArray:view.subviews];
             if ([view isKindOfClass:[NSTextField class]] && [((NSTextField *)view).stringValue isEqualToString:[NppAboutWindow versionLine]]) versionShown = YES;
             if ([view isKindOfClass:[NSTextView class]] && [((NSTextView *)view).string isEqualToString:NppLicenceText]) licenceShown = YES;
-            if ([view isKindOfClass:[NSButton class]] && [view.identifier isEqualToString:@"https://notepad-plus-plus.org/"]) homeLink = YES;
+            if ([view isKindOfClass:[NSButton class]] && [view.identifier isEqualToString:NppProjectAddress(@"")]) homeLink = YES;
+            if ([view isKindOfClass:[NSButton class]] && [view.identifier isEqualToString:NppProjectAddress(@"issues")]) issuesLink = YES;
+            if ([view isKindOfClass:[NSButton class]] && [view.identifier containsString:@"notepad-plus-plus.org"]) upstreamLink = YES;
         }
         BOOL shown = aw.panel.isVisible;
         [aw.panel orderOut:nil];
-        Check(@"IDM_ABOUT", @"upstream's About box: version and bitness, build time, home page and the licence",
-              about != nil && about.action == @selector(showAbout:) && shown && versionShown && licenceShown && homeLink &&
+        Check(@"IDM_ABOUT", @"upstream's About box: version and bitness, build time and the licence - with this port's own repository "
+              @"and its Issues where upstream has its site, and no link to Notepad++'s",
+              about != nil && about.action == @selector(showAbout:) && shown && versionShown && licenceShown && homeLink && issuesLink && !upstreamLink &&
               [[NppAboutWindow versionLine] containsString:[NppAboutWindow bitness]]);
 
         NSString *pluginDir = [ed.defaultSessionPath.stringByDeletingLastPathComponent

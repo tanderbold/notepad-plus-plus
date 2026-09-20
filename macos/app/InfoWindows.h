@@ -3,6 +3,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// An address in the repository this port is released and supported from (the one Check for Updates
+/// asks): "" for its front page, "issues", "discussions", "releases". Nothing the application shows
+/// sends a user to the Notepad++ project with a question about the Mac version.
+FOUNDATION_EXPORT NSString *NppProjectAddress(NSString *path);
+
 /// Upstream's licence text, as the About box shows it.
 extern NSString *const NppLicenceText;
 

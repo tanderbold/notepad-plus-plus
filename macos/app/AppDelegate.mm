@@ -1378,10 +1378,14 @@ static NSString *Ordinal(NSUInteger n) {
     NSMenuItem *helpItem = [[NSMenuItem alloc] init];
     [bar addItem:helpItem];
     NSMenu *helpMenu = [[NSMenu alloc] initWithTitle:@"Help"];
-    NSArray *links = @[@[@"Notepad++ Home", @"https://notepad-plus-plus.org/"],
-                       @[@"Notepad++ Project Page", @"https://github.com/notepad-plus-plus/notepad-plus-plus"],
+    // Upstream's four commands, with their names (and so their translations), leading to this port's own
+    // places: the Mac version is released and supported from its repository, and a question about it taken
+    // to Notepad++'s site or forum would reach people who did not make it. The manual alone is upstream's:
+    // it describes the behaviour this application follows, and there is no other.
+    NSArray *links = @[@[@"Notepad++ Home", [NppProjectAddress(@"") stringByAppendingString:@"#readme"]],
+                       @[@"Notepad++ Project Page", NppProjectAddress(@"")],
                        @[@"Notepad++ Online User Manual", @"https://npp-user-manual.org/"],
-                       @[@"Notepad++ Community (Forum)", @"https://community.notepad-plus-plus.org/"]];
+                       @[@"Notepad++ Community (Forum)", NppProjectAddress(@"discussions")]];
     for (NSArray *link in links) {
         NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:link[0] action:@selector(openHelpLink:) keyEquivalent:@""];
         mi.target = self; mi.representedObject = link[1];
