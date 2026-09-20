@@ -445,7 +445,7 @@ kept (`ShortcutMapper` finds them one level further down):
   (`48656c`, `48 65 6C`, `0x48, 0x65`, `48:65`); decoding gives the text and
   the bytes in hexadecimal, or the bytes alone when they are not UTF-8. The
   window opens with the editor's selection.
-- **Tools > Password…**: length, how many, upper and lower case, digits, a
+- **Tools > Password Generator**: length, how many, upper and lower case, digits, a
   list of symbols one can edit, look-alikes left out, at least one of each
   kind. Characters are drawn with `SecRandomCopyBytes` and rejection sampling,
   so none is likelier than another; the entropy is shown; the settings are
@@ -526,69 +526,89 @@ line for interactive programs, and NppExec's highlight filters.
 Notepad++ has nothing of the kind; it is offered here as a setting, and only
 consulted when the name says nothing: a file with no extension, or a fragment
 pasted into an empty document. The answer is a set - one language, a list of
-up to ten to choose from, or nothing when more than ten would fit - and it is
-built in three layers:
+up to ten to choose from, or nothing when more than ten would fit - and it
+comes from two places only:
 
 1. **What the text says outright**: a shebang line, `<?php`, `<?xml`, an HTML
-   doctype, an editor modeline, JSON that parses. Taken as given.
+   doctype, an editor modeline, JSON that parses. Taken as given; this is
+   reading a declaration, not guessing.
 2. **A trained model**, `macos/resources/language-model.bin`, read by
-   `app/LanguageModel.mm`. Ninety independent yes-or-no judgements, one
-   per language, so that a text two languages could have written scores well
-   for both and both are offered. Trained by `macos/train-language-model.py`
-   from the Linguist samples, Rosetta Code, Lexilla's lexer examples, the
-   function-list corpus, this repository's own files, examples written for the
-   languages none of those has (`macos/resources/language-samples`: ASN.1,
-   AviSynth, eScript, Fortran 77, GUI4CLI, Hollywood, JSON5, JSP, KiXtart, NFO,
-   OScript, registry files, SPICE, txt2tags) and
-   generated Intel HEX, S-record and Tektronix hex images - and trained on
-   pieces of three to forty lines as well as whole files, because pieces are
-   what it is asked about. Features are byte n-grams, whole words, and the
-   first word and first and last character of each line, every one a 64-bit
-   key the application computes the same way; the trainer reads its own file
-   back and the two answer identically. The scale at which scores become
-   likelihoods and the level a language has to reach are fitted on held-back
-   files, for the rule itself: as many right answers as possible with as few
-   lists as possible. Rosetta Code is split for testing by task, so two
-   versions of one program never sit on both sides.
-3. **Marks** that belong to one language and to nothing else - `[CmdletBinding`,
-   `\documentclass`, `End Sub` - put their language on the list whatever the
-   rest of the text looks like: a PowerShell script whose body is shell
-   commands reads as shell to the model, and the marks are what say otherwise.
+   `app/LanguageModel.mm`, for everything else. Ninety-one independent
+   yes-or-no judgements, one per language, so that a text two languages could
+   have written scores well for both and both are offered.
 
-The old keyword-list rules remain for what has no examples at all (the
-output-only lexers: error lists, escape sequences, search results), and are
-only reached when the model has nothing to say.
+There is nothing else. An earlier layer of hand-written marks (`End Sub`,
+`\documentclass`, a regular expression for a C# type declaration) and the
+keyword-list rules under it are gone: each was a patch over something the
+model had not seen, and the cure for that is to show it. What it gets wrong
+is put right in its training data or its features, and nowhere else.
 
-One language is applied on its own only when it reaches a second level, fitted
-after the first by the same measure; below it the best three are offered as a
-list instead. On the present data the fit puts that level at the first one
-(0.40): lone answers are already right 96-99% of the time, and turning the
-unsure ones into lists costs more than it saves. The level is in the model
-file (format 5), so a retrain on other data moves it without a code change.
+**What it learns from** (`macos/train-language-model.py`): the Linguist
+samples; Rosetta Code; Lexilla's lexer examples; the function-list corpus;
+this repository's own files; examples written for the languages nothing else
+has (`macos/resources/language-samples`); generated Intel HEX, S-record and
+Tektronix hex images; and **real projects** (`macos/fetch-language-corpus.py`,
+about 3 GB, not in the repository): shallow clones of some ninety well-known
+repositories - the classes, enums, handlers and configuration people actually
+paste, which Rosetta's puzzles are not - and, for the languages no well-known
+project is written in (INI, registry files, KiXtart, AutoIt, COBOL...), files
+found by extension through GitHub's code search, two from a repository at
+most, so that no one author is the language. Files are labelled by extension
+as Notepad++ would open them; `Makefile` and `CMakeLists.txt` by name; `.tex`
+as LaTeX or plain TeX by what its first lines say. No project gives more than
+120 files to a language. It was the lack of this that made a plain C# enum
+unrecognisable: C# had been ten real files and 150 puzzles.
+
+**Features** are byte n-grams (2, 3, 4), whole words, the first word and the
+first and last character of each line, and **pairs of neighbouring words**
+(`public enum`, `end sub`, `def __init__`), every one a 64-bit key the
+application computes the same way; the trainer reads its own file back and
+the two answer identically. It trains on pieces of three to forty lines as
+well as whole files, because pieces are what it is asked about. The scale at
+which scores become likelihoods, the level a language has to reach, and the
+second level above which one language is applied on its own (below it the
+best three are offered instead) are fitted on held-back files, for the rule
+itself: as many right answers as possible with as few lists as possible. All
+three are in the model file (format 5), so a retrain moves them without a
+code change. Held-back files are split from the training ones by project
+folder and, for Rosetta Code, by task, so two versions of one program never
+sit on both sides.
 
 Measured on files the model never saw (the half of the held-back files not
-used to fit the rule; 1,089 whole files and about 1,070 fragments of each
-length):
+used to fit the rule; about 3,200 of each kind, two thirds of them from the
+real projects, which are harder than what was measured before them):
 
 | Text | Right first | Right in what is offered | One language | One and right | A list | Nothing |
 |---|---|---|---|---|---|---|
-| whole file | 94.6% | 94.8% | 85% | 99% | 10% | 4% |
-| 40 lines | 95.1% | 95.1% | 85% | 99% | 12% | 3% |
-| 20 lines | 93.6% | 95.0% | 81% | 98% | 17% | 2% |
-| 10 lines | 90.6% | 93.8% | 71% | 98% | 26% | 3% |
-| 5 lines | 85.2% | 92.6% | 53% | 95% | 45% | 2% |
+| whole file | 92.3% | 94.6% | 80% | 98% | 17% | 3% |
+| 40 lines | 90.9% | 93.5% | 76% | 97% | 21% | 3% |
+| 20 lines | 89.4% | 92.5% | 72% | 97% | 25% | 3% |
+| 10 lines | 86.7% | 91.2% | 64% | 96% | 33% | 3% |
+| 5 lines | 81.8% | 88.8% | 50% | 95% | 47% | 3% |
+| quoting another language | 61.3% | 71.7% | 57% | 70% | 35% | 8% |
 
-By source, whole files: Linguist 86.9% first (the most varied, and the most
-telling), the repository's own files 89.8%, Rosetta Code 97.3%. What is
-misread is mostly family: C as C++, Scheme as Lisp, Raku as Perl, TypeScript
-as JavaScript, ASP as HTML.
+By source, whole files: real projects 90.7% first, Linguist 86.8%, the
+repository's own files 96.2%, Rosetta Code 97.4%. What is misread is mostly
+family or emptiness: plain TeX and sparse XML as plain text, C++ as C and C as
+C++, INI as properties, ASP as HTML.
+
+The last row is the known weakness, measured so that it can be held to: a
+piece of one language with a block of another set into it - a script that
+writes out a unit file, a program with a query in it. A bag of features
+cannot tell the quotation from the text around it, and when the quotation is
+most of the lines it wins: a PowerShell script that is one line of PowerShell
+and nine of a systemd unit is read as INI. Training on such pieces was tried
+and moved the first choice from 61% to 63% while turning many sure answers
+into lists, so it is not done; the hand-written mark that used to rescue that
+script is not coming back either.
 
 ```
-python3 macos/train-language-model.py --linguist <github-linguist> --rosetta <RosettaCodeData>
+python3 macos/fetch-language-corpus.py <repos>        # needs git, and gh logged in for the search
+python3 macos/train-language-model.py --linguist <github-linguist> --rosetta <RosettaCodeData> --repos <repos> --report
 python3 macos/train-language-model.py --model macos/resources/language-model.bin --try file...
 ```
 
-Training takes about ninety seconds and needs numpy. The corpora are not in
+Training takes about four minutes and needs numpy. The corpora are not in
 this repository: Linguist is github.com/github-linguist/linguist, Rosetta
 Code is github.com/acmeism/RosettaCodeData.
 

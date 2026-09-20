@@ -58,8 +58,8 @@ def setting(name, default, kind=int):
 # ---- what a piece of text is measured by -----------------------------------
 
 NGRAM_SIZES = tuple(int(n) for n in os.environ.get("NPP_NGRAMS", "2,3,4").split(","))
-TAG_WORD, TAG_FIRST_WORD, TAG_LINE_SHAPE = 5, 6, 7
-WORD_LENGTH, FIRST_WORD_LENGTH = 24, 16
+TAG_WORD, TAG_FIRST_WORD, TAG_LINE_SHAPE, TAG_WORD_PAIR = 5, 6, 7, 8
+WORD_LENGTH, FIRST_WORD_LENGTH, PAIR_WORD_LENGTH = 24, 16, 16
 
 # ---- how much of each file, and how it is cut up ---------------------------
 
@@ -70,19 +70,21 @@ CROPS_PER_FILE = setting("NPP_CROPS", 4)
 CROP_LINES = (3, 5, 8, 12, 20, 40)
 TEST_LINES = (5, 10, 20, 40)
 LEAST_FRAGMENT_BYTES = 40
+QUOTING_ONE_IN = setting("NPP_QUOTING_ONE_IN", 3)   # one held-back file in so many also gives a piece that quotes another language
 
 # ---- how much of each language, and from where ------------------------------
 
-VARIED_CAP = setting("NPP_VARIED_CAP", 150)     # Linguist, Lexilla, corpus, repo
+VARIED_CAP = setting("NPP_VARIED_CAP", 400)     # Linguist, Lexilla, corpus, repo, repos
 ROSETTA_CAP = setting("NPP_ROSETTA_CAP", 150)
 ROSETTA_PER_TASK = 2
+REPO_FILES_PER_PROJECT = setting("NPP_REPO_FILES", 120)
 LEAST_FILES = 3
 HOLDOUT = setting("NPP_HOLDOUT", 0.3, float)
 
 # ---- the model --------------------------------------------------------------
 
-FEATURES_PER_LANGUAGE = setting("NPP_PER_LANG", 500)
-MOST_FEATURES = setting("NPP_FEATURES", 36000)
+FEATURES_PER_LANGUAGE = setting("NPP_PER_LANG", 700)
+MOST_FEATURES = setting("NPP_FEATURES", 50000)
 LEAST_DF = 3
 EPOCHS = setting("NPP_EPOCHS", 15)
 BATCH = 256
@@ -119,8 +121,12 @@ def language_extensions():
     text = open(path, encoding="utf-8", errors="replace").read()
     by_extension, names = {}, []
     claimants = collections.Counter()
-    for match in re.finditer(r'<Language\s+name="([^"]+)"\s+ext="([^"]*)"', text):
-        name, extensions = match.group(1), match.group(2)
+    # (Attributes in whatever order the file has them: Lua's entry puts ext before name.)
+    for tag in re.finditer(r'<Language\s[^>]*>', text):
+        name_at, ext_at = re.search(r'\bname="([^"]+)"', tag.group(0)), re.search(r'\bext="([^"]*)"', tag.group(0))
+        if not name_at or not ext_at:
+            continue
+        name, extensions = name_at.group(1), ext_at.group(1)
         names.append(name)
         for extension in extensions.split():
             by_extension[extension.lower()] = name
@@ -190,7 +196,7 @@ class Sample:
         self.raw, self.path, self.source, self.group = raw, path, source, group
 
 
-def gather(by_extension, names, linguist, rosetta):
+def gather(by_extension, names, linguist, rosetta, repos=None):
     known = set(names)
     samples = []
 
@@ -266,6 +272,46 @@ def gather(by_extension, names, linguist, rosetta):
         raw = read_sample(path)
         if raw:
             samples.append(Sample(language, raw, path, "corpus", path))
+
+    # Real-world repositories (fetch-language-corpus.py): what people write and
+    # paste - classes, enums, handlers, configuration. By extension, as
+    # Notepad++ takes a file.
+    if repos:
+        skip = SKIP_DIRECTORIES | {"vendor", "third_party", "thirdparty", "dist", "out", "target", "testdata", "fixtures",
+                                   "__pycache__", ".github", "docs", "doc"}
+        for project in sorted(os.listdir(repos)) if os.path.isdir(repos) else []:
+            base = os.path.join(repos, project)
+            if not os.path.isdir(base):
+                continue
+            per_language = collections.Counter()
+            for walked, subdirectories, files in os.walk(base):
+                subdirectories[:] = sorted(d for d in subdirectories if d not in skip and not d.startswith("."))
+                for name in sorted(files):
+                    extension = extension_of(name)
+                    # The files Notepad++ knows by name rather than by extension.
+                    by_name = {"makefile": "makefile", "gnumakefile": "makefile", "cmakelists.txt": "cmake"}.get(name.lower())
+                    if by_name and by_name in names:
+                        extension, language = "", by_name
+                    elif not extension or extension in SKIP_EXTENSIONS:
+                        continue
+                    else:
+                        language = by_extension.get(extension)
+                    if extension == "tex":
+                        # Two languages share .tex; a LaTeX file says so in its first lines.
+                        head = read_sample(os.path.join(walked, name)) or b""
+                        language = "latex" if (b"\\documentclass" in head or b"\\begin{" in head or b"\\usepackage" in head) else "tex"
+                    elif extension in language_extensions.ambiguous:
+                        continue
+                    # Not more of one project than of the others: a big one would be the language.
+                    if not language or per_language[language] >= REPO_FILES_PER_PROJECT:
+                        continue
+                    path = os.path.join(walked, name)
+                    raw = read_sample(path)
+                    if raw and len(raw) > 200:
+                        per_language[language] += 1
+                        # Split by folder: a project wholly on one side would leave some
+                        # language with no real code to learn from.
+                        samples.append(Sample(language, raw, path, "repos", walked))
 
     # Examples written for the languages no corpus has (language-samples/<name>/),
     # and the hex formats, which are mechanical enough to generate.
@@ -461,6 +507,11 @@ def feature_keys(norm):
         match = _WORD.match(line)
         if match:
             other.append(keyed(TAG_FIRST_WORD, match.group(0)[:FIRST_WORD_LENGTH]))
+        # Neighbouring words of a line: "public enum", "let mut", "end function".
+        # One word is shared by a dozen languages where the pair belongs to two.
+        tokens = _WORD.findall(line)
+        for first, second in zip(tokens, tokens[1:]):
+            other.append(keyed(TAG_WORD_PAIR, first[:PAIR_WORD_LENGTH] + b" " + second[:PAIR_WORD_LENGTH]))
     if other:
         parts.append(np.array(other, dtype=np.uint64))
     if not parts:
@@ -509,11 +560,44 @@ def windows(norm, lengths, rng):
     return out
 
 
+def quoting(norm, guest, rng):
+    """A piece of one text with a block of another set into it: a script that
+    writes out a configuration file, a program with a query in it. Code quotes
+    other languages all the time, and what it is does not change when it does -
+    even when, as with a unit file written out by a few lines of script, there
+    is rather more of the block than of what is around it."""
+    host, other = norm.split(b"\n"), guest.split(b"\n")
+    length = rng.choice((8, 12, 18, 26))
+    start = rng.randrange(0, max(1, len(host) - length + 1))
+    piece = host[start:start + length]
+    own = sum(1 for line in piece if line.strip())
+    if own < 4:
+        return None
+    take = rng.randrange(2, own + own // 2 + 1)
+    begin = rng.randrange(0, max(1, len(other) - take + 1))
+    block = [line for line in other[begin:begin + take]]
+    if sum(1 for line in block if line.strip()) < 2:
+        return None
+    at = rng.randrange(1, len(piece))
+    return b"\n".join(piece[:at] + block + piece[at:])
+
+
 def make_examples(samples, label_of, training):
     examples = []
     for i, sample in enumerate(samples):
         norm = normalise(sample.raw)
         label = label_of[sample.language]
+        # Measured, not learnt from. Learning from such pieces was tried: the first choice hardly moved
+        # (61% to 63% right on these, ordinary pieces the same) and what grew was the lists - offered for
+        # 60% of five-line pieces instead of 47%. A bag of features has no way to tell a quotation from
+        # the text around it; the row in the report is there so that whatever replaces it can be held to this.
+        if not training and stable_hash("quoting:" + sample.path) % QUOTING_ONE_IN == 0 and len(samples) > 1:
+            rng = random.Random(stable_hash("quote:" + sample.path))
+            guest = samples[rng.randrange(len(samples))]
+            if guest.language != sample.language:
+                mixed = quoting(norm, normalise(guest.raw), rng)
+                if mixed:
+                    examples.append(Example(label, mixed, "quoting", sample.source, sample.path))
         examples.append(Example(label, head_of(norm), "head", sample.source, sample.path))
         rng = random.Random(stable_hash("crop:" + sample.path))
         if training:
@@ -760,12 +844,12 @@ def diagnose(held, scores, temperature, half):
     evidence = np.array([e.evidence for e in held], dtype=np.float32)
     order, sorted_p = sorted_probabilities(scores, evidence, temperature, half)
     rank = np.argmax(order == labels[:, None], axis=1)
-    kinds = ["head"] + list(TEST_LINES)
+    kinds = ["head"] + list(TEST_LINES) + ["quoting"]
     print(f"\n{'fragment':<10}" + "".join(f"{'in ' + str(k):>8}" for k in (1, 2, 3, 5, 10)))
     for kind in kinds:
         rows = np.array([e.kind == kind for e in held])
         if rows.any():
-            label = "whole" if kind == "head" else f"{kind} lines"
+            label = "whole" if kind == "head" else "quoting" if kind == "quoting" else f"{kind} lines"
             print(f"{label:<10}" + "".join(f"{100 * np.mean(rank[rows] < k):>7.1f}%" for k in (1, 2, 3, 5, 10)))
     if MODEL_KIND == "independent":
         print("\nwhat each level would offer (10- and 20-line fragments):")
@@ -902,7 +986,7 @@ def report(held, scores, languages, temperature, half, coverage, by_source=True)
     order, size = offered(p, coverage)
     inside = contains(order, size, labels)
     top = order[:, 0] == labels
-    kinds = ["head"] + list(TEST_LINES)
+    kinds = ["head"] + list(TEST_LINES) + ["quoting"]
 
     print(f"\n{'fragment':<10}{'n':>6}{'first':>8}{'in set':>8}{'size':>6}"
           f"{'one':>7}{'one ok':>8}{'list':>7}{'none':>7}")
@@ -914,7 +998,7 @@ def report(held, scores, languages, temperature, half, coverage, by_source=True)
         one = size[rows] == 1
         listed = (size[rows] > 1) & (size[rows] <= MOST_TO_OFFER)
         none = (size[rows] > MOST_TO_OFFER) | (size[rows] == 0)
-        label = "whole" if kind == "head" else f"{kind} lines"
+        label = "whole" if kind == "head" else "quoting" if kind == "quoting" else f"{kind} lines"
         print(f"{label:<10}{n:>6}{100 * top[rows].mean():>7.1f}%{100 * inside[rows].mean():>7.1f}%"
               f"{size[rows].mean():>6.1f}{100 * one.mean():>6.0f}%"
               f"{100 * (one & top[rows]).mean() / max(1e-9, one.mean()):>7.0f}%"
@@ -952,6 +1036,7 @@ def main():
     parser.add_argument("--out", default=os.path.join(HERE, "resources", "language-model.bin"))
     parser.add_argument("--rosetta", default="")
     parser.add_argument("--linguist", default="")
+    parser.add_argument("--repos", default="", help="a folder of cloned repositories (fetch-language-corpus.py)")
     parser.add_argument("--model", default="", help="read this model instead of training")
     parser.add_argument("--try", dest="try_files", nargs="*", default=[],
                         help="files to classify with the model")
@@ -970,7 +1055,7 @@ def main():
     started = time.time()
     by_extension, names = language_extensions()
     print("==> gathering", flush=True)
-    samples = gather(by_extension, names, args.linguist or None, args.rosetta or None)
+    samples = gather(by_extension, names, args.linguist or None, args.rosetta or None, args.repos or None)
     train_samples, test_samples, composition = choose(samples)
     languages = sorted(composition)
     label_of = {name: i for i, name in enumerate(languages)}
@@ -1003,7 +1088,8 @@ def main():
     print("==> fitting the rule", flush=True)
     # Half the held-back files fit the rule, the other half measure it: a rule
     # measured on what it was fitted to flatters itself.
-    calibration = [e for e in held if stable_hash("half:" + e.path) % 2 == 0]
+    # (Not the pieces that quote another language: those are there to be measured - see make_examples.)
+    calibration = [e for e in held if stable_hash("half:" + e.path) % 2 == 0 and e.kind != "quoting"]
     check = [e for e in held if stable_hash("half:" + e.path) % 2 == 1]
     scores = scores_of(calibration, W, b)
     labels = np.array([e.label for e in calibration])

@@ -4,20 +4,7 @@
 #import "LanguageModel.h"
 #import <objc/runtime.h>
 
-/// The C character tests may only be given a byte; handing them a UTF-16 unit
-/// reads past the end of their table, which is how a file with a Cyrillic or
-/// CJK character in it brought the whole run down.
-static inline BOOL NppIsWordCharacter(unichar c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
-}
-
 static inline BOOL NppIsDigit(unichar c) { return c >= '0' && c <= '9'; }
-
-/// Below this much text there is nothing to judge by, and a guess made on two
-/// or three words would be wrong as often as not. A file this short is left
-/// alone unless it says outright what it is.
-static const NSUInteger kLeastWords = 12;
-static const NSUInteger kLeastCharacters = 40;
 
 /// Only the beginning of a file is read: it is enough to tell what it is, and
 /// a whole large file is not worth walking for the answer.
@@ -63,70 +50,6 @@ static NSDictionary<NSString *, NSString *> *ModelineNames(void) {
         };
     });
     return names;
-}
-
-/// Shapes that belong to one language and are not words any keyword list holds:
-/// a TeX environment, an include line, a section header. Keyword counting alone
-/// leaves several languages with nothing to go on, and these are what it misses.
-static NSDictionary<NSString *, NSArray<NSString *> *> *StructuralMarks(void) {
-    static NSDictionary *marks;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        // Each of these has to belong to its language and to almost nothing
-        // else: two of them in a text are taken as that language's presence
-        // whatever the rest of it looks like. A mark as ordinary as "def " or
-        // "->" would drag its language into every list.
-        marks = @{
-            @"latex":      @[@"\\begin{", @"\\end{", @"\\documentclass", @"\\usepackage",
-                             @"\\section{"],
-            @"tex":        @[@"\\def\\", @"\\hbox", @"\\vbox", @"\\catcode", @"\\newif",
-                             @"\\expandafter", @"\\csname"],
-            @"makefile":   @[@".PHONY", @"$(CC)", @"$(MAKE)", @"$(shell", @"$(wildcard"],
-            @"vb":         @[@"End Sub", @"End Function", @"End If", @"Private Sub", @"Public Sub",
-                             @"End Class", @"End Module", @" As Integer", @" As String"],
-            @"typescript": @[@"export type", @": Promise<", @"as const", @"export interface",
-                             @": string[]", @"implements "],
-            @"batch":      @[@"@echo off", @"%~dp0", @"goto :", @"set /p", @"%errorlevel%"],
-            @"powershell": @[@"$PSScriptRoot", @"Write-Host", @"-ErrorAction", @"[CmdletBinding",
-                             @"Write-Output", @"$args[", @"$($", @"-like ", @"-match ",
-                             @"-eq ", @"-ne ", @"-not ", @"]::", @"param(", @"Get-"],
-            @"cs":         @[@"using System", @"string[] args", @"Console.WriteLine",
-                             @"async Task", @"nameof(", @"IEnumerable<", @"#region"],
-            @"java":       @[@"public static void main", @"import java.", @"@Override",
-                             @"System.out."],
-            @"rust":       @[@"let mut ", @"impl ", @"#[derive", @"::new(", @"fn main()"],
-            @"go":         @[@"package main", @"import (", @"func main()", @"fmt."],
-            @"php":        @[@"$this->", @"<?=", @"::class"],
-            @"perl":       @[@"use strict", @"my $", @"=~", @"@_"],
-            @"ruby":       @[@"attr_accessor", @"do |", @"puts ", @"require '"],
-        };
-    });
-    return marks;
-}
-
-/// Files that are nothing but sections and assignments: [name] on its own line,
-/// then key=value. No keyword list has anything to say about them, and the
-/// shape is the whole of what they are.
-static double IniLikeness(NSString *sample) {
-    NSArray<NSString *> *lines = [sample componentsSeparatedByString:@"\n"];
-    NSUInteger sections = 0, assignments = 0, other = 0;
-    for (NSString *raw in lines) {
-        NSString *line = [raw stringByTrimmingCharactersInSet:
-            [NSCharacterSet whitespaceCharacterSet]];
-        if (!line.length || [line hasPrefix:@";"] || [line hasPrefix:@"#"]) continue;
-        if ([line hasPrefix:@"["] && [line hasSuffix:@"]"]) { sections++; continue; }
-        NSRange equals = [line rangeOfString:@"="];
-        if (equals.location != NSNotFound && equals.location > 0 &&
-            [line rangeOfString:@";"].location == NSNotFound &&
-            ![line hasSuffix:@"{"] && ![line hasSuffix:@","]) {
-            assignments++;
-            continue;
-        }
-        other++;
-    }
-    NSUInteger counted = sections + assignments + other;
-    if (counted < 4 || !sections || !assignments) return 0;
-    return (double)(sections + assignments) / (double)counted;
 }
 
 @implementation LanguageCatalog (Detection)
@@ -262,133 +185,6 @@ static double IniLikeness(NSString *sample) {
     return nil;
 }
 
-#pragma mark - What its words suggest
-
-/// keyword -> how many languages list it. Built once from the catalog itself.
-- (NSDictionary<NSString *, NSNumber *> *)keywordOwnerCounts {
-    static const char kCountsKey = 0;
-    NSDictionary *cached = objc_getAssociatedObject(self, &kCountsKey);
-    if (cached) return cached;
-
-    NSMutableDictionary<NSString *, NSNumber *> *counts = [NSMutableDictionary dictionary];
-    for (NppLanguage *language in self.allLanguages) {
-        for (NSString *word in [self keywordsOfLanguage:language]) {
-            counts[word] = @(counts[word].integerValue + 1);
-        }
-    }
-    objc_setAssociatedObject(self, &kCountsKey, counts, OBJC_ASSOCIATION_RETAIN);
-    return counts;
-}
-
-/// The distinct words a language claims, lowercased.
-- (NSSet<NSString *> *)keywordsOfLanguage:(NppLanguage *)language {
-    static const char kWordsKey = 0;
-    NSMutableDictionary *cache = objc_getAssociatedObject(self, &kWordsKey);
-    if (!cache) {
-        cache = [NSMutableDictionary dictionary];
-        objc_setAssociatedObject(self, &kWordsKey, cache, OBJC_ASSOCIATION_RETAIN);
-    }
-    NSSet *cached = cache[language.name ?: @""];
-    if (cached) return cached;
-
-    NSMutableSet<NSString *> *words = [NSMutableSet set];
-    for (NSString *list in language.keywordSets.allValues) {
-        for (NSString *word in [list componentsSeparatedByString:@" "]) {
-            // Only words a text can be scanned for: the keyword lists also hold
-            // operators and fragments, which no word boundary would find.
-            if (word.length < 2) continue;
-            NSString *lower = word.lowercaseString;
-            BOOL plain = YES;
-            for (NSUInteger i = 0; i < lower.length; ++i) {
-                unichar c = [lower characterAtIndex:i];
-                if (!(NppIsWordCharacter(c) || c == '_' || c == '-' || c == '.')) { plain = NO; break; }
-            }
-            if (plain) [words addObject:lower];
-        }
-    }
-    cache[language.name ?: @""] = words;
-    return words;
-}
-
-- (NSDictionary<NSString *, NSNumber *> *)languageScoresForContents:(NSString *)text {
-    NSString *sample = [self sampleOfContents:text];
-    if (sample.length < kLeastCharacters) return @{};
-
-    // The words of the text, and how often each occurs.
-    NSMutableDictionary<NSString *, NSNumber *> *seen = [NSMutableDictionary dictionary];
-    NSMutableString *word = [NSMutableString string];
-    NSUInteger total = 0;
-    for (NSUInteger i = 0; i <= sample.length; ++i) {
-        unichar c = i < sample.length ? [sample characterAtIndex:i] : ' ';
-        if (NppIsWordCharacter(c) || c == '_' || c == '-' || c == '.' || c == '#' || c == '@') {
-            [word appendFormat:@"%C", c];
-            continue;
-        }
-        if (word.length >= 2) {
-            NSString *lower = word.lowercaseString;
-            seen[lower] = @(seen[lower].integerValue + 1);
-            total++;
-        }
-        [word setString:@""];
-    }
-    if (total < kLeastWords) return @{};
-
-    NSDictionary<NSString *, NSNumber *> *owners = [self keywordOwnerCounts];
-    NSMutableDictionary<NSString *, NSNumber *> *scores = [NSMutableDictionary dictionary];
-    for (NppLanguage *language in self.allLanguages) {
-        if ([language.name isEqualToString:@"normal"]) continue;
-        NSSet<NSString *> *keywords = [self keywordsOfLanguage:language];
-        if (keywords.count < 4) continue;      // too little to judge by
-
-        double score = 0;
-        NSUInteger distinct = 0;
-        for (NSString *found in seen) {
-            if (![keywords containsObject:found]) continue;
-            distinct++;
-
-            // A word every language claims says nothing; one claimed by a
-            // single language says more. A long word says more than a short
-            // one, which is as often as not an ordinary English word. And
-            // repeating a word adds less each time, so one word cannot carry
-            // a whole file.
-            NSInteger claimants = MAX((NSInteger)1, owners[found].integerValue);
-            double weight = log(1.0 + (double)found.length) / (double)claimants;
-            score += weight * (1.0 + log((double)seen[found].integerValue));
-        }
-
-        // Three different words at the least: one or two are coincidence.
-        if (distinct < 3) continue;
-
-        // Divided by the size of the language's own list as well as by the size
-        // of the text. Without this a language that claims two thousand words,
-        // as SQL and PowerShell do, matches something in every file and wins
-        // them all.
-        if (score > 0) {
-            scores[language.name] = @(score / (sqrt((double)total) * sqrt((double)keywords.count)));
-        }
-    }
-
-    // What a language looks like, over and above the words it uses. Several
-    // languages have keyword lists too thin or too ordinary to be told apart by
-    // words alone, and their shapes are what give them away.
-    NSDictionary<NSString *, NSArray<NSString *> *> *marks = StructuralMarks();
-    for (NSString *name in marks) {
-        NSUInteger hits = 0;
-        for (NSString *mark in marks[name]) {
-            // Case matters: Visual Basic writes "End If", Fortran writes
-            // "END IF", and ignoring the difference hands one the other's files.
-            if ([sample rangeOfString:mark].location != NSNotFound) hits++;
-        }
-        if (hits < 2) continue;                      // one shape is a coincidence
-        double bonus = 0.03 * (double)hits;
-        scores[name] = @(scores[name].doubleValue + bonus);
-    }
-
-    double iniLike = IniLikeness(sample);
-    if (iniLike > 0.8) scores[@"ini"] = @(scores[@"ini"].doubleValue + 0.06 * iniLike);
-    return scores;
-}
-
 #pragma mark - The answer
 
 - (NSArray<NppLanguage *> *)languagesMatchingContents:(NSString *)text {
@@ -397,82 +193,23 @@ static double IniLikeness(NSString *sample) {
     NppLanguage *declared = [self declaredLanguageInContents:text];
     if (declared) return @[declared];
 
-    // The model answers with a set: one language, a short list, or nothing
-    // when more than ten would fit. Only when it cannot judge the text at all
-    // - there is no model, or too little text - do the rules get a turn.
-    NSArray<NppLanguage *> *fromModel = [self languagesFromModelForContents:text];
-    if (!fromModel) return [self languagesFromRulesForContents:text];
-    if (fromModel.count) return fromModel;
-
-    // The model found no language it was sure enough of. It was never shown
-    // an example of a fifth of the list, and for those the rules are the
-    // only judge there is: whatever they offer among the languages the model
-    // does not know is offered, and nothing else.
-    NSSet<NSString *> *known = [NSSet setWithArray:[NppLanguageModel sharedModel].languageNames];
-    NSMutableArray<NppLanguage *> *unknown = [NSMutableArray array];
-    for (NppLanguage *language in [self languagesFromRulesForContents:text]) {
-        if (![known containsObject:language.name]) [unknown addObject:language];
-    }
-    return unknown;
+    // Everything else is the trained model's to say: one language, a short
+    // list, or nothing. There are no hand-written marks or keyword rules
+    // beside it - what it gets wrong is put right in its training data.
+    return [self languagesFromModelForContents:text] ?: @[];
 }
 
 /// What the trained model makes of the text, as the set it was fitted to
-/// offer: the fewest languages whose likelihoods reach the coverage chosen on
-/// held-back fragments. nil when the model has nothing to say.
+/// offer. nil when there is no model or the text is too little to judge.
 - (NSArray<NppLanguage *> *)languagesFromModelForContents:(NSString *)text {
     NppLanguageModel *model = [NppLanguageModel sharedModel];
     if (!model) return nil;
-
     NSArray<NSString *> *offered = [model languagesOfferedForText:text];
     if (!offered) return nil;
-
-    // The marks are read alongside the model rather than instead of it. The
-    // model judges the text as a whole and can be talked round by a file that
-    // is mostly one language quoting another - a PowerShell script whose body
-    // is shell commands and a unit file reads as shell and ini - while a mark
-    // such as "[environment]::" or "$($args[0])" belongs to one language and
-    // to nothing else. Two of them put the language on the list.
-    NSMutableArray<NSString *> *names = [offered mutableCopy];
-    NSString *sample = [self sampleOfContents:text];
-    NSDictionary<NSString *, NSArray<NSString *> *> *marks = StructuralMarks();
-    for (NSString *name in [marks.allKeys sortedArrayUsingSelector:@selector(compare:)]) {
-        if ([names containsObject:name]) continue;
-        NSUInteger hits = 0;
-        for (NSString *mark in marks[name]) {
-            if ([sample rangeOfString:mark].location != NSNotFound) hits++;
-        }
-        if (hits >= 2) [names addObject:name];
-    }
-    if (names.count > NppMostLanguagesToOffer) return @[];
-
     NSMutableArray<NppLanguage *> *fitting = [NSMutableArray array];
-    for (NSString *name in names) {
+    for (NSString *name in offered) {
         NppLanguage *language = [self languageNamed:name];
         if (language && ![language.name isEqualToString:@"normal"]) [fitting addObject:language];
-    }
-    return fitting;
-}
-
-/// The marks and the keyword counting, as they were before the model.
-- (NSArray<NppLanguage *> *)languagesFromRulesForContents:(NSString *)text {
-    NSDictionary<NSString *, NSNumber *> *scores = [self languageScoresForContents:text];
-    if (!scores.count) return @[];
-
-    NSArray<NSString *> *ranked = [scores keysSortedByValueUsingComparator:
-                                   ^NSComparisonResult(NSNumber *a, NSNumber *b) {
-        return [b compare:a];
-    }];
-    double top = scores[ranked.firstObject].doubleValue;
-    if (top <= 0) return @[];
-
-    // A language is worth offering when it is at least in the same class as the
-    // best one. Anything far below is noise from a word or two in a comment.
-    NSMutableArray<NppLanguage *> *fitting = [NSMutableArray array];
-    for (NSString *name in ranked) {
-        if (scores[name].doubleValue < top * 0.5) break;
-        NppLanguage *language = [self languageNamed:name];
-        if (language) [fitting addObject:language];
-        if (fitting.count > NppMostLanguagesToOffer) return @[];
     }
     return fitting;
 }

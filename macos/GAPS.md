@@ -93,9 +93,12 @@ What is left of that list, none of it a defect in what exists:
 2. The plan's wording was wrong in two places and nothing is missing:
    `${name}` and two-digit `\\10` are not Boost's syntax (`$+{name}` and
    `$10` are, and work); Notepad++ has no "line context" in its results.
-3. The single-answer level of the language model comes out equal to the
-   ordinary one on the present data, so the short list is not shown; a
-   retrain on other data moves it without a code change.
+3. Working out a language from a text is the trained model's alone now: the
+   hand-written marks and keyword rules beside it are removed, and it learns
+   from real projects as well (PORTING.md has the sources and the numbers).
+   Its known weakness is a text that quotes another language at length - a
+   script that writes out a unit file is read as the unit file - which the
+   trainer measures ("quoting", 61% right first) rather than patches.
 
 ## What the Windows version has and this does not
 

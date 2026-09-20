@@ -21,8 +21,8 @@ static const NSUInteger kLeastBytes = 40;
 
 // The tags in the top byte of a feature key. Byte n-grams carry their own size
 // there; the rest are hashed.
-enum { kTagWord = 5, kTagFirstWord = 6, kTagLineShape = 7 };
-static const size_t kWordLength = 24, kFirstWordLength = 16;
+enum { kTagWord = 5, kTagFirstWord = 6, kTagLineShape = 7, kTagWordPair = 8 };
+static const size_t kWordLength = 24, kFirstWordLength = 16, kPairWordLength = 16;
 
 @implementation NppLanguageModel {
     std::vector<std::string> _languages;
@@ -212,6 +212,23 @@ static inline uint64_t Keyed(uint64_t tag, const uint8_t *bytes, size_t length) 
                 size_t wordEnd = from;
                 while (wordEnd < to && IsWordByte(bytes[wordEnd])) ++wordEnd;
                 counts[Keyed(kTagFirstWord, bytes + from, MIN(wordEnd - from, kFirstWordLength))] += 1;
+            }
+            // Neighbouring words of the line, each cut to sixteen bytes, with a
+            // space between: "public enum", "let mut" - as the trainer pairs them.
+            uint8_t pair[2 * kPairWordLength + 1];
+            size_t previousLength = 0;
+            for (size_t i = from; i < to;) {
+                if (!IsWordStart(bytes[i])) { ++i; continue; }
+                size_t start = i;
+                while (i < to && IsWordByte(bytes[i])) ++i;
+                size_t wordLength = MIN(i - start, (size_t)kPairWordLength);
+                if (previousLength) {
+                    pair[previousLength] = ' ';
+                    memcpy(pair + previousLength + 1, bytes + start, wordLength);
+                    counts[Keyed(kTagWordPair, pair, previousLength + 1 + wordLength)] += 1;
+                }
+                memcpy(pair, bytes + start, wordLength);
+                previousLength = wordLength;
             }
         }
         lineStart = lineEnd + 1;

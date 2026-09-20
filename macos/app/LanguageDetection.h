@@ -24,13 +24,8 @@ extern const NSUInteger NppMostLanguagesToOffer;
 
 /// What the text says about itself outright: a shebang line, an XML or PHP
 /// opening tag, an HTML doctype, an editor modeline, or JSON that parses.
-/// These are taken as given; the scoring below is only reached without one.
+/// These are taken as given; the trained model is only asked without one.
 - (nullable NppLanguage *)declaredLanguageInContents:(NSString *)text;
-
-/// How much each language's own keyword list is borne out by the text. A word
-/// claimed by many languages counts for little, one claimed by a single
-/// language counts for a lot. Scores are per language name, largest is best.
-- (NSDictionary<NSString *, NSNumber *> *)languageScoresForContents:(NSString *)text;
 
 @end
 
