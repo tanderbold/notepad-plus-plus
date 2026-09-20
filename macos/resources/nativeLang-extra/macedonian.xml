@@ -128,4 +128,74 @@
     <Item english="Transparent" text="Проѕирно"/>
     <Item english="View 1" text="Поглед 1"/>
     <Item english="View 2" text="Поглед 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Хешови"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Лозинка…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC клуч (незадолжително):"/>
+    <Item english="Salt (hexadecimal):" text="Сол (хексадецимално):"/>
+    <Item english="Random" text="Случајна"/>
+    <Item english="Cost (4-31):" text="Цена (4-31):"/>
+    <Item english="Version:" text="Верзија:"/>
+    <Item english="N, as a power of 2:" text="N, како степен на 2:"/>
+    <Item english="Block size (r):" text="Големина на блок (r):"/>
+    <Item english="Parallelism (p):" text="Паралелизам (p):"/>
+    <Item english="Variant:" text="Варијанта:"/>
+    <Item english="Memory (KiB):" text="Меморија (KiB):"/>
+    <Item english="Iterations:" text="Итерации:"/>
+    <Item english="Parallelism:" text="Паралелизам:"/>
+    <Item english="Digest:" text="Хеш-функција:"/>
+    <Item english="Hash length (bytes):" text="Должина на хешот (бајти):"/>
+    <Item english="Hash:" text="Хеш:"/>
+    <Item english="Verify" text="Провери"/>
+    <Item english="Hash to check the password against:" text="Хеш за проверка на лозинката:"/>
+    <Item english="The salt is not valid hexadecimal." text="Солта не е валиден хексадецимален запис."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt бара сол од точно 16 бајти."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 бара сол од најмалку 8 бајти."/>
+    <Item english="The hash could not be generated with these settings." text="Хешот не може да се генерира со овие подесувања."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Ова не е bcrypt, scrypt, Argon2 или PBKDF2 хеш."/>
+    <Item english="The password matches the hash." text="Лозинката се совпаѓа со хешот."/>
+    <Item english="The password does not match the hash." text="Лозинката не се совпаѓа со хешот."/>
+    <Item english="The cost must be between 4 and 31." text="Цената мора да биде помеѓу 4 и 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Верзијата мора да биде 2a, 2b или 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N мора да биде помеѓу 2^1 и 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r и p мора да бидат помеѓу 1 и 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Овие подесувања бараат повеќе од 2 GB меморија."/>
+    <Item english="The parallelism must be between 1 and 64." text="Паралелизмот мора да биде помеѓу 1 и 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Бројот на итерации мора да биде помеѓу 1 и 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Меморијата мора да биде најмалку 8 KiB за секоја нишка."/>
+    <Item english="These settings need more than 4 GB of memory." text="Овие подесувања бараат повеќе од 4 GB меморија."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Хеш-функцијата мора да биде SHA-1, SHA-256 или SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Бројот на итерации мора да биде помеѓу 1 и 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Должината на хешот мора да биде помеѓу 4 и 1024 бајти."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (безбеден за URL)"/>
+    <Item english="Encode" text="Кодирај"/>
+    <Item english="Decode" text="Декодирај"/>
+    <Item english="The input is:" text="Влезот е:"/>
+    <Item english="Bytes in hexadecimal" text="Бајти во хексадецимален запис"/>
+    <Item english="Input:" text="Влез:"/>
+    <Item english="Result:" text="Резултат:"/>
+    <Item english="Text:" text="Текст:"/>
+    <Item english="Bytes in hexadecimal:" text="Бајти во хексадецимален запис:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Влезот не е бајти во хексадецимален запис."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Влезот не е валиден $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Декодираните бајти не се UTF-8 текст; прикажани се само хексадецимално."/>
+    <Item english="Password Generator" text="Генератор на лозинки"/>
+    <Item english="Length:" text="Должина:"/>
+    <Item english="Number of passwords:" text="Број на лозинки:"/>
+    <Item english="Uppercase letters (A-Z)" text="Големи букви (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Мали букви (a-z)"/>
+    <Item english="Digits (0-9)" text="Цифри (0-9)"/>
+    <Item english="Symbols:" text="Симболи:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Изостави ги знаците што личат еден на друг (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Најмалку еден знак од секој вид"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Ентропија: околу $INT_REPLACE$ бита"/>
+    <Item english="Choose at least one kind of character." text="Изберете најмалку еден вид знаци."/>
+    <Item english="Insert into Document" text="Вметни во документот"/>
+    <Item english="Show the bare key in hexadecimal" text="Покажи го самиот клуч хексадецимално"/>
+    <Item english="Empty: a random salt each time" text="Празно: секој пат случајна сол"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt ги чита само првите 72 бајти."/>
 </NativeLangExtra>

@@ -4,8 +4,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// The first four are Notepad++'s own, in its menu's order; the rest are the port's.
 typedef NS_ENUM(NSInteger, NppDigest) {
     NppDigestMD5, NppDigestSHA1, NppDigestSHA256, NppDigestSHA512,
+    NppDigestSHA224, NppDigestSHA384, NppDigestSHA3_256, NppDigestSHA3_512, NppDigestBLAKE2b, NppDigestCRC32,
+    NppDigestCount,
 };
 
 typedef NS_ENUM(NSInteger, NppTabSort) {
@@ -17,6 +20,9 @@ typedef NS_ENUM(NSInteger, NppTabSort) {
 
 // Hashes
 + (NSString *)hashOfData:(NSData *)data digest:(NppDigest)digest;
+/// Of a text as the dialog takes it: the whole of it, or each line on its own
+/// (an empty line giving an empty line), as "Treat each line as a separate string" has it.
++ (NSString *)hashOfText:(NSString *)text eachLine:(BOOL)eachLine digest:(NppDigest)digest;
 + (NSString *)nameOfDigest:(NppDigest)digest;
 - (NSString *)hashOfSelection:(NppDigest)digest;
 - (NSString *)hashOfFiles:(NSArray<NSString *> *)paths digest:(NppDigest)digest;

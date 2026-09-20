@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Transparent"/>
     <Item english="View 1" text="Vederea 1"/>
     <Item english="View 2" text="Vederea 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hash-uri"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Parolă…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Cheie HMAC (opțională):"/>
+    <Item english="Salt (hexadecimal):" text="Salt (hexazecimal):"/>
+    <Item english="Random" text="Aleatoriu"/>
+    <Item english="Cost (4-31):" text="Cost (4-31):"/>
+    <Item english="Version:" text="Versiune:"/>
+    <Item english="N, as a power of 2:" text="N, ca putere a lui 2:"/>
+    <Item english="Block size (r):" text="Dimensiunea blocului (r):"/>
+    <Item english="Parallelism (p):" text="Paralelism (p):"/>
+    <Item english="Variant:" text="Variantă:"/>
+    <Item english="Memory (KiB):" text="Memorie (KiB):"/>
+    <Item english="Iterations:" text="Iterații:"/>
+    <Item english="Parallelism:" text="Paralelism:"/>
+    <Item english="Digest:" text="Funcție hash:"/>
+    <Item english="Hash length (bytes):" text="Lungimea hash-ului (octeți):"/>
+    <Item english="Hash:" text="Hash:"/>
+    <Item english="Verify" text="Verifică"/>
+    <Item english="Hash to check the password against:" text="Hash-ul cu care se verifică parola:"/>
+    <Item english="The salt is not valid hexadecimal." text="Salt-ul nu este hexazecimal valid."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt necesită un salt de exact 16 octeți."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 necesită un salt de cel puțin 8 octeți."/>
+    <Item english="The hash could not be generated with these settings." text="Hash-ul nu a putut fi generat cu aceste setări."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Acesta nu este un hash bcrypt, scrypt, Argon2 sau PBKDF2."/>
+    <Item english="The password matches the hash." text="Parola corespunde hash-ului."/>
+    <Item english="The password does not match the hash." text="Parola nu corespunde hash-ului."/>
+    <Item english="The cost must be between 4 and 31." text="Costul trebuie să fie între 4 și 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Versiunea trebuie să fie 2a, 2b sau 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N trebuie să fie între 2^1 și 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r și p trebuie să fie între 1 și 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Aceste setări necesită mai mult de 2 GB de memorie."/>
+    <Item english="The parallelism must be between 1 and 64." text="Paralelismul trebuie să fie între 1 și 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Numărul de iterații trebuie să fie între 1 și 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Memoria trebuie să fie de cel puțin 8 KiB pentru fiecare fir."/>
+    <Item english="These settings need more than 4 GB of memory." text="Aceste setări necesită mai mult de 4 GB de memorie."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Funcția hash trebuie să fie SHA-1, SHA-256 sau SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Numărul de iterații trebuie să fie între 1 și 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Lungimea hash-ului trebuie să fie între 4 și 1024 de octeți."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (sigur pentru URL)"/>
+    <Item english="Encode" text="Codifică"/>
+    <Item english="Decode" text="Decodifică"/>
+    <Item english="The input is:" text="Intrarea este:"/>
+    <Item english="Bytes in hexadecimal" text="Octeți în hexazecimal"/>
+    <Item english="Input:" text="Intrare:"/>
+    <Item english="Result:" text="Rezultat:"/>
+    <Item english="Text:" text="Text:"/>
+    <Item english="Bytes in hexadecimal:" text="Octeți în hexazecimal:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Intrarea nu reprezintă octeți scriși în hexazecimal."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Intrarea nu este $STR_REPLACE$ valid."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Octeții decodificați nu sunt text UTF-8; sunt afișați doar în hexazecimal."/>
+    <Item english="Password Generator" text="Generator de parole"/>
+    <Item english="Length:" text="Lungime:"/>
+    <Item english="Number of passwords:" text="Număr de parole:"/>
+    <Item english="Uppercase letters (A-Z)" text="Majuscule (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Minuscule (a-z)"/>
+    <Item english="Digits (0-9)" text="Cifre (0-9)"/>
+    <Item english="Symbols:" text="Simboluri:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Omite caracterele care seamănă între ele (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Cel puțin un caracter de fiecare fel"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropie (biți): aproximativ $INT_REPLACE$"/>
+    <Item english="Choose at least one kind of character." text="Alege cel puțin un fel de caractere."/>
+    <Item english="Insert into Document" text="Inserează în document"/>
+    <Item english="Show the bare key in hexadecimal" text="Afișează cheia brută în hexazecimal"/>
+    <Item english="Empty: a random salt each time" text="Gol: salt aleatoriu de fiecare dată"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt citește doar primii 72 de octeți."/>
 </NativeLangExtra>

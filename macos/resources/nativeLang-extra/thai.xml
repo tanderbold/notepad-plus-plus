@@ -124,4 +124,74 @@
     <Item english="Transparent" text="โปร่งแสง"/>
     <Item english="View 1" text="มุมมอง 1"/>
     <Item english="View 2" text="มุมมอง 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="แฮช"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="รหัสผ่าน…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="คีย์ HMAC (ไม่บังคับ):"/>
+    <Item english="Salt (hexadecimal):" text="Salt (เลขฐานสิบหก):"/>
+    <Item english="Random" text="สุ่ม"/>
+    <Item english="Cost (4-31):" text="ค่า Cost (4-31):"/>
+    <Item english="Version:" text="เวอร์ชัน:"/>
+    <Item english="N, as a power of 2:" text="N ในรูปกำลังของ 2:"/>
+    <Item english="Block size (r):" text="ขนาดบล็อก (r):"/>
+    <Item english="Parallelism (p):" text="ระดับการทำงานขนาน (p):"/>
+    <Item english="Variant:" text="รูปแบบ:"/>
+    <Item english="Memory (KiB):" text="หน่วยความจำ (KiB):"/>
+    <Item english="Iterations:" text="จำนวนรอบ:"/>
+    <Item english="Parallelism:" text="ระดับการทำงานขนาน:"/>
+    <Item english="Digest:" text="ฟังก์ชันแฮช:"/>
+    <Item english="Hash length (bytes):" text="ความยาวแฮช (ไบต์):"/>
+    <Item english="Hash:" text="แฮช:"/>
+    <Item english="Verify" text="ตรวจสอบ"/>
+    <Item english="Hash to check the password against:" text="แฮชที่ใช้ตรวจสอบรหัสผ่าน:"/>
+    <Item english="The salt is not valid hexadecimal." text="Salt ไม่ใช่เลขฐานสิบหกที่ถูกต้อง"/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt ต้องใช้ Salt ขนาด 16 ไบต์พอดี"/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 ต้องใช้ Salt ขนาดอย่างน้อย 8 ไบต์"/>
+    <Item english="The hash could not be generated with these settings." text="ไม่สามารถสร้างแฮชด้วยการตั้งค่าเหล่านี้ได้"/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="นี่ไม่ใช่แฮชของ bcrypt, scrypt, Argon2 หรือ PBKDF2"/>
+    <Item english="The password matches the hash." text="รหัสผ่านตรงกับแฮช"/>
+    <Item english="The password does not match the hash." text="รหัสผ่านไม่ตรงกับแฮช"/>
+    <Item english="The cost must be between 4 and 31." text="ค่า Cost ต้องอยู่ระหว่าง 4 ถึง 31"/>
+    <Item english="The version must be 2a, 2b or 2y." text="เวอร์ชันต้องเป็น 2a, 2b หรือ 2y"/>
+    <Item english="N must be between 2^1 and 2^24." text="N ต้องอยู่ระหว่าง 2^1 ถึง 2^24"/>
+    <Item english="r and p must be between 1 and 64." text="r และ p ต้องอยู่ระหว่าง 1 ถึง 64"/>
+    <Item english="These settings need more than 2 GB of memory." text="การตั้งค่าเหล่านี้ต้องใช้หน่วยความจำมากกว่า 2 GB"/>
+    <Item english="The parallelism must be between 1 and 64." text="ระดับการทำงานขนานต้องอยู่ระหว่าง 1 ถึง 64"/>
+    <Item english="The iterations must be between 1 and 1000." text="จำนวนรอบต้องอยู่ระหว่าง 1 ถึง 1000"/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="หน่วยความจำต้องมีอย่างน้อย 8 KiB ต่อหนึ่งเธรด"/>
+    <Item english="These settings need more than 4 GB of memory." text="การตั้งค่าเหล่านี้ต้องใช้หน่วยความจำมากกว่า 4 GB"/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="ฟังก์ชันแฮชต้องเป็น SHA-1, SHA-256 หรือ SHA-512"/>
+    <Item english="The iterations must be between 1 and 100000000." text="จำนวนรอบต้องอยู่ระหว่าง 1 ถึง 100000000"/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="ความยาวแฮชต้องอยู่ระหว่าง 4 ถึง 1024 ไบต์"/>
+    <Item english="Base64 (URL-safe)" text="Base64 (ใช้ใน URL ได้)"/>
+    <Item english="Encode" text="เข้ารหัส"/>
+    <Item english="Decode" text="ถอดรหัส"/>
+    <Item english="The input is:" text="ข้อมูลเข้าเป็น:"/>
+    <Item english="Bytes in hexadecimal" text="ไบต์ในรูปเลขฐานสิบหก"/>
+    <Item english="Input:" text="ข้อมูลเข้า:"/>
+    <Item english="Result:" text="ผลลัพธ์:"/>
+    <Item english="Text:" text="ข้อความ:"/>
+    <Item english="Bytes in hexadecimal:" text="ไบต์ในรูปเลขฐานสิบหก:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="ข้อมูลเข้าไม่ใช่ไบต์ที่เขียนเป็นเลขฐานสิบหก"/>
+    <Item english="The input is not valid $STR_REPLACE$." text="ข้อมูลเข้าไม่ใช่ $STR_REPLACE$ ที่ถูกต้อง"/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="ไบต์ที่ถอดรหัสแล้วไม่ใช่ข้อความ UTF-8 จึงแสดงเป็นเลขฐานสิบหกเท่านั้น"/>
+    <Item english="Password Generator" text="ตัวสร้างรหัสผ่าน"/>
+    <Item english="Length:" text="ความยาว:"/>
+    <Item english="Number of passwords:" text="จำนวนรหัสผ่าน:"/>
+    <Item english="Uppercase letters (A-Z)" text="ตัวอักษรใหญ่ (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="ตัวอักษรเล็ก (a-z)"/>
+    <Item english="Digits (0-9)" text="ตัวเลข (0-9)"/>
+    <Item english="Symbols:" text="สัญลักษณ์:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="ไม่ใช้อักขระที่ดูคล้ายกัน (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="มีอักขระแต่ละชนิดอย่างน้อยหนึ่งตัว"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="เอนโทรปี: ประมาณ $INT_REPLACE$ บิต"/>
+    <Item english="Choose at least one kind of character." text="เลือกชนิดอักขระอย่างน้อยหนึ่งชนิด"/>
+    <Item english="Insert into Document" text="แทรกลงในเอกสาร"/>
+    <Item english="Show the bare key in hexadecimal" text="แสดงเฉพาะคีย์ในรูปเลขฐานสิบหก"/>
+    <Item english="Empty: a random salt each time" text="ว่าง: สุ่ม Salt ใหม่ทุกครั้ง"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt อ่านเฉพาะ 72 ไบต์แรกเท่านั้น"/>
 </NativeLangExtra>

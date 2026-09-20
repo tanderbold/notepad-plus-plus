@@ -141,4 +141,74 @@
     <Item english="Transparent" text="투명"/>
     <Item english="View 1" text="보기 1"/>
     <Item english="View 2" text="보기 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="해시"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="비밀번호…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC 키 (선택 사항):"/>
+    <Item english="Salt (hexadecimal):" text="솔트 (16진수):"/>
+    <Item english="Random" text="무작위"/>
+    <Item english="Cost (4-31):" text="비용 (4-31):"/>
+    <Item english="Version:" text="버전:"/>
+    <Item english="N, as a power of 2:" text="N (2의 거듭제곱):"/>
+    <Item english="Block size (r):" text="블록 크기 (r):"/>
+    <Item english="Parallelism (p):" text="병렬도 (p):"/>
+    <Item english="Variant:" text="변형:"/>
+    <Item english="Memory (KiB):" text="메모리 (KiB):"/>
+    <Item english="Iterations:" text="반복 횟수:"/>
+    <Item english="Parallelism:" text="병렬도:"/>
+    <Item english="Digest:" text="해시 함수:"/>
+    <Item english="Hash length (bytes):" text="해시 길이 (바이트):"/>
+    <Item english="Hash:" text="해시:"/>
+    <Item english="Verify" text="검증"/>
+    <Item english="Hash to check the password against:" text="비밀번호를 대조할 해시:"/>
+    <Item english="The salt is not valid hexadecimal." text="솔트가 유효한 16진수가 아닙니다."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt에는 정확히 16바이트의 솔트가 필요합니다."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2에는 8바이트 이상의 솔트가 필요합니다."/>
+    <Item english="The hash could not be generated with these settings." text="이 설정으로는 해시를 생성할 수 없습니다."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="bcrypt, scrypt, Argon2 또는 PBKDF2 해시가 아닙니다."/>
+    <Item english="The password matches the hash." text="비밀번호가 해시와 일치합니다."/>
+    <Item english="The password does not match the hash." text="비밀번호가 해시와 일치하지 않습니다."/>
+    <Item english="The cost must be between 4 and 31." text="비용은 4에서 31 사이여야 합니다."/>
+    <Item english="The version must be 2a, 2b or 2y." text="버전은 2a, 2b 또는 2y여야 합니다."/>
+    <Item english="N must be between 2^1 and 2^24." text="N은 2^1에서 2^24 사이여야 합니다."/>
+    <Item english="r and p must be between 1 and 64." text="r과 p는 1에서 64 사이여야 합니다."/>
+    <Item english="These settings need more than 2 GB of memory." text="이 설정에는 2 GB가 넘는 메모리가 필요합니다."/>
+    <Item english="The parallelism must be between 1 and 64." text="병렬도는 1에서 64 사이여야 합니다."/>
+    <Item english="The iterations must be between 1 and 1000." text="반복 횟수는 1에서 1000 사이여야 합니다."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="메모리는 스레드당 8 KiB 이상이어야 합니다."/>
+    <Item english="These settings need more than 4 GB of memory." text="이 설정에는 4 GB가 넘는 메모리가 필요합니다."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="해시 함수는 SHA-1, SHA-256 또는 SHA-512여야 합니다."/>
+    <Item english="The iterations must be between 1 and 100000000." text="반복 횟수는 1에서 100000000 사이여야 합니다."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="해시 길이는 4에서 1024바이트 사이여야 합니다."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL 안전)"/>
+    <Item english="Encode" text="인코딩"/>
+    <Item english="Decode" text="디코딩"/>
+    <Item english="The input is:" text="입력 형식:"/>
+    <Item english="Bytes in hexadecimal" text="16진수 바이트"/>
+    <Item english="Input:" text="입력:"/>
+    <Item english="Result:" text="결과:"/>
+    <Item english="Text:" text="텍스트:"/>
+    <Item english="Bytes in hexadecimal:" text="16진수 바이트:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="입력이 16진수로 표기된 바이트가 아닙니다."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="입력이 유효한 $STR_REPLACE$ 형식이 아닙니다."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="디코딩된 바이트가 UTF-8 텍스트가 아니므로 16진수로만 표시합니다."/>
+    <Item english="Password Generator" text="비밀번호 생성기"/>
+    <Item english="Length:" text="길이:"/>
+    <Item english="Number of passwords:" text="비밀번호 개수:"/>
+    <Item english="Uppercase letters (A-Z)" text="대문자 (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="소문자 (a-z)"/>
+    <Item english="Digits (0-9)" text="숫자 (0-9)"/>
+    <Item english="Symbols:" text="기호:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="비슷하게 보이는 문자 제외 (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="각 종류의 문자를 하나 이상 포함"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="엔트로피: 약 $INT_REPLACE$비트"/>
+    <Item english="Choose at least one kind of character." text="문자 종류를 하나 이상 선택하세요."/>
+    <Item english="Insert into Document" text="문서에 삽입"/>
+    <Item english="Show the bare key in hexadecimal" text="키 자체를 16진수로 표시"/>
+    <Item english="Empty: a random salt each time" text="비어 있음: 매번 무작위 솔트"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt는 처음 72바이트만 읽습니다."/>
 </NativeLangExtra>

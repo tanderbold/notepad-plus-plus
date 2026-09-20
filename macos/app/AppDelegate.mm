@@ -44,6 +44,7 @@
 #include "SciLexer.h"
 #import "Tests.h"
 #import "InfoWindows.h"
+#import "ToolsWindows.h"
 #import "UpdateChecker.h"
 #import "DockingManager.h"
 #import "ScriptCommands.h"
@@ -1167,9 +1168,12 @@ static NSString *Ordinal(NSUInteger n) {
     NSMenuItem *toolsItem = [[NSMenuItem alloc] init];
     [bar addItem:toolsItem];
     NSMenu *toolsMenu = [[NSMenu alloc] initWithTitle:@"Tools"];
-    NSArray *digestNames = @[@"MD5", @"SHA-1", @"SHA-256", @"SHA-512"];
-    for (NSUInteger d = 0; d < digestNames.count; ++d) {
-        NSMenu *sub = [[NSMenu alloc] initWithTitle:digestNames[d]];
+    // Hashes: Notepad++'s four digests first and as it has them, then the ones
+    // the port adds, then the password hashes, which take settings and a window.
+    NSMenu *hashesMenu = [[NSMenu alloc] initWithTitle:@"Hashes"];
+    for (NSInteger d = 0; d < NppDigestCount; ++d) {
+        NSString *digestName = [EditorController nameOfDigest:(NppDigest)d];
+        NSMenu *sub = [[NSMenu alloc] initWithTitle:digestName];
         struct { NSString *title; SEL sel; } rows[] = {
             {@"Generate…",                            @selector(hashGenerate:)},
             {@"Generate from files…",                 @selector(hashFromFiles:)},
@@ -1178,11 +1182,40 @@ static NSString *Ordinal(NSUInteger n) {
         for (size_t r = 0; r < sizeof(rows)/sizeof(rows[0]); ++r) {
             NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:rows[r].title
                                                         action:rows[r].sel keyEquivalent:@""];
-            mi.target = self; mi.tag = (NSInteger)d;
+            mi.target = self; mi.tag = d;
             [sub addItem:mi];
         }
-        [toolsMenu addItemWithTitle:digestNames[d] action:nil keyEquivalent:@""].submenu = sub;
+        [hashesMenu addItemWithTitle:digestName action:nil keyEquivalent:@""].submenu = sub;
     }
+    // The password hashes, with the same three commands as the digests have.
+    [hashesMenu addItem:[NSMenuItem separatorItem]];
+    NSArray<NSString *> *passwordHashes = @[@"bcrypt", @"scrypt", @"Argon2", @"PBKDF2"];      // in NppPasswordHash's order
+    for (NSUInteger k = 0; k < passwordHashes.count; ++k) {
+        NSMenu *sub = [[NSMenu alloc] initWithTitle:passwordHashes[k]];
+        struct { NSString *title; SEL sel; } rows[] = {
+            {@"Generate…",                            @selector(passwordHashGenerate:)},
+            {@"Generate from files…",                 @selector(passwordHashFromFiles:)},
+            {@"Generate from selection into clipboard", @selector(passwordHashToClipboard:)},
+        };
+        for (size_t r = 0; r < sizeof(rows)/sizeof(rows[0]); ++r) {
+            NSMenuItem *mi = [[NSMenuItem alloc] initWithTitle:rows[r].title action:rows[r].sel keyEquivalent:@""];
+            mi.target = self; mi.tag = (NSInteger)k;
+            [sub addItem:mi];
+        }
+        [hashesMenu addItemWithTitle:passwordHashes[k] action:nil keyEquivalent:@""].submenu = sub;
+    }
+    [toolsMenu addItemWithTitle:@"Hashes" action:nil keyEquivalent:@""].submenu = hashesMenu;
+
+    NSMenu *baseMenu = [[NSMenu alloc] initWithTitle:@"Base"];
+    struct { NSString *title; NppBaseEncoding encoding; } bases[] = {
+        {@"Base64…", NppBase64}, {@"Base58…", NppBase58}, {@"Base32…", NppBase32},
+    };
+    for (size_t k = 0; k < sizeof(bases)/sizeof(bases[0]); ++k) {
+        NSMenuItem *mi = [baseMenu addItemWithTitle:bases[k].title action:@selector(showBase:) keyEquivalent:@""];
+        mi.target = self; mi.tag = bases[k].encoding;
+    }
+    [toolsMenu addItemWithTitle:@"Base" action:nil keyEquivalent:@""].submenu = baseMenu;
+    [self item:@"Password…" action:@selector(showPasswordGenerator:) key:@"" flags:0 menu:toolsMenu];
     toolsItem.submenu = toolsMenu;
 
     // ---- Macro
@@ -1938,23 +1971,49 @@ static NSString *LanguageMenuTitle(NSString *name) { return [LanguageCatalog men
 }
 
 - (void)hashGenerate:(NSMenuItem *)sender {
-    NppDigest d = (NppDigest)sender.tag;
-    NSString *input = [self promptForString:
-        [NSString stringWithFormat:@"%@ of text", [EditorController nameOfDigest:d]] default:@""];
-    if (!input) return;
-    NSString *hash = [EditorController hashOfData:[input dataUsingEncoding:NSUTF8StringEncoding] digest:d];
-    [self presentText:hash title:[EditorController nameOfDigest:d]];
+    [[NppDigestWindow shared] showForDigest:(NppDigest)sender.tag fromFiles:NO];
 }
 
 - (void)hashFromFiles:(NSMenuItem *)sender {
-    NppDigest d = (NppDigest)sender.tag;
-    NSOpenPanel *panel = [NSOpenPanel openPanel];
-    panel.allowsMultipleSelection = YES;
-    if ([panel runModal] != NSModalResponseOK) return;
-    NSMutableArray *paths = [NSMutableArray array];
-    for (NSURL *u in panel.URLs) [paths addObject:u.path];
-    [self presentText:[self.editor hashOfFiles:paths digest:d]
-                title:[NSString stringWithFormat:@"%@ of files", [EditorController nameOfDigest:d]]];
+    [[NppDigestWindow shared] showForDigest:(NppDigest)sender.tag fromFiles:YES];
+}
+
+- (void)passwordHashGenerate:(NSMenuItem *)sender {
+    [[NppPasswordHashWindow shared] showForKind:(NppPasswordHash)sender.tag fromFiles:NO];
+}
+
+- (void)passwordHashFromFiles:(NSMenuItem *)sender {
+    [[NppPasswordHashWindow shared] showForKind:(NppPasswordHash)sender.tag fromFiles:YES];
+}
+
+/// As the digests' command: of the selection, or of the document when nothing is selected - with the
+/// kind's default settings and a salt made for the occasion, which the string put on the clipboard carries.
+- (void)passwordHashToClipboard:(NSMenuItem *)sender {
+    ScintillaView *sci = self.editor.sci;
+    NSString *text = [sci selectedString];
+    if (!text.length) text = [sci string];
+    NSString *hash = text.length ? [NppPasswordHashWindow defaultHashOf:[text dataUsingEncoding:NSUTF8StringEncoding]
+                                                                   kind:(NppPasswordHash)sender.tag] : nil;
+    if (!hash) { NppBeep(); return; }
+    [self.editor copyToClipboard:hash];
+}
+
+/// What is selected in the editor is what one most likely came to encode or decode.
+- (void)showBase:(NSMenuItem *)sender {
+    NppBaseWindow *window = [NppBaseWindow shared];
+    (void)window.panel;
+    NSString *selected = [self.editor.sci selectedString];
+    if (selected.length) window.input.string = selected;
+    [window showForEncoding:(NppBaseEncoding)sender.tag];
+}
+
+- (void)showPasswordGenerator:(id)sender {
+    NppPasswordWindow *window = [NppPasswordWindow shared];
+    __weak __typeof__(self) weakSelf = self;
+    window.insertIntoDocument = ^(NSString *text) {
+        [weakSelf.editor.sci setStringProperty:SCI_REPLACESEL parameter:0 value:text];
+    };
+    [window show];
 }
 
 - (void)hashToClipboard:(NSMenuItem *)sender {
@@ -4331,8 +4390,38 @@ static NppMatchFlags FlagsForTag(NSInteger tag) {
     } else if (panel && !strcmp(panel, "debug")) {
         [self showDebugInfo:nil];
         view = [NppDebugInfoWindow shared].panel.contentView;
+    } else if (panel && !strncmp(panel, "tools:", 6)) {
+        // tools:digest, tools:files, tools:bcrypt, tools:scrypt, tools:argon2, tools:pbkdf2, tools:base, tools:unbase, tools:password
+        NSString *which = @(panel + 6);
+        NSUInteger kind = [@[@"bcrypt", @"scrypt", @"argon2", @"pbkdf2"] indexOfObject:which];
+        if ([which isEqualToString:@"digest"] || [which isEqualToString:@"files"]) {
+            NppDigestWindow *w = [NppDigestWindow shared];
+            [w showForDigest:NppDigestSHA256 fromFiles:[which isEqualToString:@"files"]];
+            w.input.string = @"The quick brown fox\njumps over the lazy dog"; [w refresh];
+            view = w.panel.contentView;
+        } else if (kind != NSNotFound) {
+            NppPasswordHashWindow *w = [NppPasswordHashWindow shared];
+            [w showForKind:(NppPasswordHash)kind fromFiles:NO];
+            w.input.string = @"correct horse battery staple";
+            if (kind == NppPasswordHashBcrypt) [(NSTextField *)w.fields[@"bcryptCost"] setStringValue:@"6"];
+            if (kind == NppPasswordHashPBKDF2) [(NSTextField *)w.fields[@"pbkdf2Rounds"] setStringValue:@"1000"];
+            [w refreshAndWait];
+            w.toVerify.stringValue = w.result.string; [w verifyAndWait];
+            view = w.panel.contentView;
+        } else if ([which hasSuffix:@"base"]) {
+            NppBaseWindow *w = [NppBaseWindow shared];
+            [w showForEncoding:NppBase58];
+            BOOL decoding = [which isEqualToString:@"unbase"];
+            w.direction.selectedSegment = decoding ? 1 : 0;
+            w.input.string = decoding ? @"2NEpo7TZRRrLZSi2U" : @"Hello World!"; [w refresh];
+            view = w.panel.contentView;
+        } else {
+            [self showPasswordGenerator:nil];
+            view = [NppPasswordWindow shared].panel.contentView;
+        }
+        [view.window.contentView layoutSubtreeIfNeeded];
     }
-    if (panel && (!strcmp(panel, "about") || !strcmp(panel, "debug") || !strcmp(panel, "mapper"))) {
+    if (panel && (!strcmp(panel, "about") || !strcmp(panel, "debug") || !strcmp(panel, "mapper") || !strncmp(panel, "tools:", 6))) {
         // The window's frame draws its background, which a view capture leaves out.
         view.wantsLayer = YES;
         [view.effectiveAppearance performAsCurrentDrawingAppearance:^{

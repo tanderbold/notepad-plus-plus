@@ -76,4 +76,69 @@
     <Item english="Transparent" text="Trasparente"/>
     <Item english="View 1" text="Vista 1"/>
     <Item english="View 2" text="Vista 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hash"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Password…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Ciave HMAC (opsionaƚe):"/>
+    <Item english="Salt (hexadecimal):" text="Saƚe (exadesimaƚe):"/>
+    <Item english="Random" text="Casuaƚe"/>
+    <Item english="Cost (4-31):" text="Costo (4-31):"/>
+    <Item english="Version:" text="Version:"/>
+    <Item english="N, as a power of 2:" text="N, cofà potensa de 2:"/>
+    <Item english="Block size (r):" text="Dimension bloco (r):"/>
+    <Item english="Parallelism (p):" text="Paraƚeƚismo (p):"/>
+    <Item english="Variant:" text="Variante:"/>
+    <Item english="Memory (KiB):" text="Memoria (KiB):"/>
+    <Item english="Iterations:" text="Iterasion:"/>
+    <Item english="Parallelism:" text="Paraƚeƚismo:"/>
+    <Item english="Digest:" text="Funsion de hash:"/>
+    <Item english="Hash length (bytes):" text="Ƚonghesa hash (byte):"/>
+    <Item english="Hash:" text="Hash:"/>
+    <Item english="Verify" text="Verìfega"/>
+    <Item english="Hash to check the password against:" text="Hash par verifegare ƚa password:"/>
+    <Item english="The salt is not valid hexadecimal." text="El saƚe no'l xe mìa on exadesimaƚe vaƚido."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 el vol on saƚe de almanco 8 byte."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Sto cuà no'l xe mìa on hash bcrypt, scrypt, Argon2 o PBKDF2."/>
+    <Item english="The password matches the hash." text="Ƚa password ƚa corisponde a'l hash."/>
+    <Item english="The password does not match the hash." text="Ƚa password no ƚa corisponde mìa a'l hash."/>
+    <Item english="The cost must be between 4 and 31." text="El costo el ga da èsare tra 4 e 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Ƚa version ƚa ga da èsare 2a, 2b o 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N el ga da èsare tra 2^1 e 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r e p i ga da èsare tra 1 e 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Ste inpostasion ƚe ga bixogno de pì de 2 GB de memoria."/>
+    <Item english="The parallelism must be between 1 and 64." text="El paraƚeƚismo el ga da èsare tra 1 e 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Ƚe iterasion ƚe ga da èsare tra 1 e 1000."/>
+    <Item english="These settings need more than 4 GB of memory." text="Ste inpostasion ƚe ga bixogno de pì de 4 GB de memoria."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Ƚa funsion de hash ƚa ga da èsare SHA-1, SHA-256 o SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Ƚe iterasion ƚe ga da èsare tra 1 e 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Ƚa ƚonghesa de'l hash ƚa ga da èsare tra 4 e 1024 byte."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (par URL)"/>
+    <Item english="Encode" text="Codefega"/>
+    <Item english="Decode" text="Decodefega"/>
+    <Item english="The input is:" text="L'input el xe:"/>
+    <Item english="Bytes in hexadecimal" text="Byte en exadesimaƚe"/>
+    <Item english="Input:" text="Input:"/>
+    <Item english="Result:" text="Rixultado:"/>
+    <Item english="Text:" text="Testo:"/>
+    <Item english="Bytes in hexadecimal:" text="Byte en exadesimaƚe:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="L'input no'l xe mìa byte scriti en exadesimaƚe."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="L'input no'l xe mìa $STR_REPLACE$ vaƚido."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="I byte decodefegà no i xe mìa testo UTF-8; i xe mostrà soƚo en exadesimaƚe."/>
+    <Item english="Password Generator" text="Xenerador de password"/>
+    <Item english="Length:" text="Ƚonghesa:"/>
+    <Item english="Number of passwords:" text="Nùmaro de password:"/>
+    <Item english="Uppercase letters (A-Z)" text="Ƚètare maiùscoƚe (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Ƚètare minùscoƚe (a-z)"/>
+    <Item english="Digits (0-9)" text="Sifre (0-9)"/>
+    <Item english="Symbols:" text="Sinboƚi:"/>
+    <Item english="At least one character of each kind" text="Almanco on caràtare par ogni tipo"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropia: sirca $INT_REPLACE$ bit"/>
+    <Item english="Choose at least one kind of character." text="Sèji almanco on tipo de caràtare."/>
+    <Item english="Insert into Document" text="Inserisi inte'l documento"/>
+    <Item english="Show the bare key in hexadecimal" text="Mostra ƚa ciave nuda en exadesimaƚe"/>
+    <Item english="Empty: a random salt each time" text="Vodo: on saƚe casuaƚe ogni volta"/>
 </NativeLangExtra>

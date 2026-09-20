@@ -40,6 +40,12 @@ for path in files:
         for word in KEEP:
             if word in en and word not in text:
                 problems.append(f"{word} is gone from {en!r}: {text!r}")
+        for placeholder in ("$STR_REPLACE$", "$INT_REPLACE$"):
+            if en.count(placeholder) != text.count(placeholder):
+                problems.append(f"{placeholder} of {en!r} is not kept: {text!r}")
+        # The localiser reads "Group|Field" as two texts; one of ours must not look like that by accident.
+        if "|" in text and "|" not in en:
+            problems.append(f"a | in {text!r}")
         if "\n" in text or "\t" in text:
             problems.append(f"a line break or tab in {text!r}")
     print(f"{name}: {len(seen)} of {len(master)} texts" + ("" if not problems else f", {len(problems)} problem(s)"))

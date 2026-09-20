@@ -50,6 +50,8 @@
 #import "UpdateChecker.h"
 #import "ScriptCommands.h"
 #import "ContextMenuFile.h"
+#import "CryptoTools.h"
+#import "ToolsWindows.h"
 #import "ScintillaView.h"
 #include "SciLexer.h"
 #include "ILexer.h"
@@ -4607,6 +4609,8 @@ int NppMacRunTests(AppDelegate *app) {
                 offered++;
                 if (where == 0) wasFirst++;
             }
+            printf("    corpus: %lu files, %lu offered their language, %lu first; not offered: %s\n", (unsigned long)total,
+                   (unsigned long)offered, (unsigned long)wasFirst, [notOffered componentsJoinedByString:@" "].UTF8String);
             Check(@"IDM_LANG_DETECT (a file of each language)",
                   @"nearly all of the corpus is offered its own language, and "
                   @"nearly all of those have it first in the list",
@@ -5526,6 +5530,630 @@ int NppMacRunTests(AppDelegate *app) {
                   [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString]
                       isEqualToString:hashes[i].want]);
         }
+    }
+
+    printf("\n== Tools: the digests the port adds ==\n");
+    {
+        NSData *abc = [@"abc" dataUsingEncoding:NSUTF8StringEncoding];
+        struct { NppDigest d; NSString *want; } more[] = {
+            {NppDigestSHA224,   @"23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7"},
+            {NppDigestSHA384,   @"cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed"
+                                 "8086072ba1e7cc2358baeca134c825a7"},
+            {NppDigestSHA3_256, @"3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"},
+            {NppDigestSHA3_512, @"b751850b1a57168a5693cd924b6b096e08f621827444f70d884f5d0240d2712e"
+                                 "10e116e9192af3c91a7ec57647e3934057340b4cf408d5a56592f8274eec53f0"},
+            {NppDigestBLAKE2b,  @"ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d1"
+                                 "7d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923"},
+        };
+        BOOL allRight = YES;
+        for (size_t i = 0; i < sizeof(more)/sizeof(more[0]); ++i) {
+            NSString *got = [EditorController hashOfData:abc digest:more[i].d];
+            if (![got isEqualToString:more[i].want]) {
+                allRight = NO;
+                printf("    %s: %s\n", [EditorController nameOfDigest:more[i].d].UTF8String, got.UTF8String);
+            }
+        }
+        Check(@"Tools > Hashes (SHA-224, SHA-384, SHA3-256, SHA3-512, BLAKE2b)",
+              @"each gives the published digest of \"abc\"", allRight);
+
+        // Two hundred bytes is more than one block of SHA3-256's 136, so the
+        // absorbing loop is gone round, not only the padding.
+        NSData *long3 = [[@"" stringByPaddingToLength:200 withString:@"a" startingAtIndex:0] dataUsingEncoding:NSUTF8StringEncoding];
+        Check(@"Tools > Hashes (SHA-3 over more than a block)", @"a text longer than the sponge's rate is absorbed block by block",
+              [[EditorController hashOfData:long3 digest:NppDigestSHA3_256]
+                  isEqualToString:@"cce34485baf2bf2aca99b94833892a4f52896d3d153f7b840cc4f9fe695f1387"]);
+
+        Check(@"Tools > Hashes (CRC-32)", @"the check value of \"123456789\" is cbf43926",
+              [[EditorController hashOfData:[@"123456789" dataUsingEncoding:NSUTF8StringEncoding] digest:NppDigestCRC32]
+                  isEqualToString:@"cbf43926"]);
+
+        NSData *mac = [NppCrypto hmacOfData:[@"The quick brown fox jumps over the lazy dog" dataUsingEncoding:NSUTF8StringEncoding]
+                                        key:[@"key" dataUsingEncoding:NSUTF8StringEncoding] digest:@"SHA-256"];
+        Check(@"Tools > Hashes (HMAC)", @"HMAC-SHA-256 with a key gives the well-known value, and an unknown digest gives nothing",
+              [[NppCrypto hexOfData:mac] isEqualToString:@"f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8"] &&
+              [NppCrypto hmacOfData:abc key:abc digest:@"SHA-999"] == nil);
+
+        // "Treat each line as a separate string", as upstream's dialog has it:
+        // a digest per line, an empty line left empty, either kind of line end.
+        NSString *md5abc = @"900150983cd24fb0d6963f7d28e17f72", *md5x = @"9dd4e461268c8034f5c8564e155c67a6";
+        NSString *perLine = [EditorController hashOfText:@"abc\r\n\nx\n" eachLine:YES digest:NppDigestMD5];
+        NSString *whole = [EditorController hashOfText:@"abc" eachLine:NO digest:NppDigestMD5];
+        Check(@"Tools > Hashes (each line as a separate string)",
+              @"one digest for each line, empty lines kept empty; unticked, one digest for all of it",
+              [perLine isEqualToString:[NSString stringWithFormat:@"%@\n\n%@", md5abc, md5x]] && [whole isEqualToString:md5abc]);
+    }
+
+    printf("\n== Tools: password hashes ==\n");
+    {
+        NSData *(^utf8)(NSString *) = ^NSData *(NSString *text) { return [text dataUsingEncoding:NSUTF8StringEncoding]; };
+
+        // bcrypt, against the vectors of its reference implementations. The
+        // salt is given here as it is written in the hash, and read back.
+        struct { NSString *password, *version; int cost; NSString *want; } crypts[] = {
+            {@"U*U", @"2a", 5, @"$2a$05$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW"},
+            {@"", @"2a", 6, @"$2a$06$DCq7YPn5Rq63x1Lad4cll.TV4S6ytwfsfvkgY8jIucDrjc8deX1s."},
+            {@"пароль", @"2b", 6, @"$2b$06$abcdefghijklmnopqrstuu0RbYLPpyLm/x71XGmlHQAdqmD5AbL2G"},
+        };
+        BOOL bcryptRight = YES;
+        for (size_t i = 0; i < sizeof(crypts)/sizeof(crypts[0]); ++i) {
+            BOOL matches = [[NppCrypto password:utf8(crypts[i].password) matches:crypts[i].want] boolValue];
+            BOOL refuses = ![[NppCrypto password:utf8([crypts[i].password stringByAppendingString:@"x"]) matches:crypts[i].want] boolValue];
+            if (!matches || !refuses) { bcryptRight = NO; printf("    bcrypt vector %zu: matches %d refuses %d\n", i, matches, refuses); }
+        }
+        NppPasswordHashSettings *bcrypt = [NppPasswordHashSettings defaultsForKind:NppPasswordHashBcrypt];
+        bcrypt.bcryptCost = 5; bcrypt.bcryptVersion = @"2y";
+        NSData *salt16 = [NppCrypto dataFromHex:@"000102030405060708090a0b0c0d0e0f"];
+        NppPasswordHashResult *made = [NppCrypto hashPassword:utf8(@"correct horse") salt:salt16 settings:bcrypt];
+        Check(@"Tools > Hashes > bcrypt", @"the reference vectors verify (an empty password and a Cyrillic one among them), "
+              @"a wrong password does not, and a hash made here is $2y$05$, 60 characters, and verifies",
+              bcryptRight && [made.encoded hasPrefix:@"$2y$05$"] && made.encoded.length == 60 && made.key.length == 23 &&
+              [[NppCrypto password:utf8(@"correct horse") matches:made.encoded] boolValue] &&
+              ![[NppCrypto password:utf8(@"correct horsf") matches:made.encoded] boolValue]);
+
+        // Past 72 bytes bcrypt reads no further: that is the algorithm, and what every other implementation does.
+        NSString *long72 = [@"" stringByPaddingToLength:72 withString:@"0123456789" startingAtIndex:0];
+        NppPasswordHashResult *a72 = [NppCrypto hashPassword:utf8(long72) salt:salt16 settings:bcrypt];
+        NppPasswordHashResult *b72 = [NppCrypto hashPassword:utf8([long72 stringByAppendingString:@"tail"]) salt:salt16 settings:bcrypt];
+        bcrypt.bcryptCost = 3;
+        Check(@"Tools > Hashes > bcrypt (limits)", @"only the first 72 bytes count; a cost below 4 or a salt that is not 16 bytes is refused",
+              [a72.encoded isEqualToString:b72.encoded] && [bcrypt problem] != nil &&
+              [NppCrypto hashPassword:utf8(@"x") salt:salt16 settings:bcrypt] == nil &&
+              [NppCrypto hashPassword:utf8(@"x") salt:utf8(@"short") settings:[NppPasswordHashSettings defaultsForKind:NppPasswordHashBcrypt]] == nil);
+
+        // scrypt: two of RFC 7914's vectors, one with sixteen lanes and one with a large N.
+        NppPasswordHashSettings *scrypt = [NppPasswordHashSettings defaultsForKind:NppPasswordHashScrypt];
+        scrypt.scryptLogN = 10; scrypt.scryptR = 8; scrypt.scryptP = 16; scrypt.keyLength = 64;
+        NppPasswordHashResult *s1 = [NppCrypto hashPassword:utf8(@"password") salt:utf8(@"NaCl") settings:scrypt];
+        scrypt.scryptLogN = 14; scrypt.scryptP = 1; scrypt.keyLength = 32;
+        NppPasswordHashResult *s2 = [NppCrypto hashPassword:utf8(@"pleaseletmein") salt:utf8(@"SodiumChloride") settings:scrypt];
+        Check(@"Tools > Hashes > scrypt", @"RFC 7914's vectors come out, and the string written for one verifies against its password only",
+              [[NppCrypto hexOfData:s1.key] isEqualToString:@"fdbabe1c9d3472007856e7190d01e9fe7c6ad7cbc8237830e77376634b373162"
+                                                             "2eaf30d92e22a3886ff109279d9830dac727afb94a83ee6d8360cbdfa2cc0640"] &&
+              [[NppCrypto hexOfData:s2.key] isEqualToString:@"7023bdcb3afd7348461c06cd81fd38ebfda8fbba904f8e3ea9b543f6545da1f2"] &&
+              [s2.encoded hasPrefix:@"$scrypt$ln=14,r=8,p=1$U29kaXVtQ2hsb3JpZGU$"] &&
+              [[NppCrypto password:utf8(@"pleaseletmein") matches:s2.encoded] boolValue] &&
+              ![[NppCrypto password:utf8(@"pleaseletmeout") matches:s2.encoded] boolValue]);
+        scrypt.scryptLogN = 24; scrypt.scryptR = 64;
+        Check(@"Tools > Hashes > scrypt (limits)", @"settings that would need more than 2 GB are refused rather than tried",
+              [scrypt problem] != nil && [NppCrypto hashPassword:utf8(@"x") salt:utf8(@"saltsalt") settings:scrypt] == nil);
+
+        // Argon2, all three variants, against the reference implementation's own output.
+        struct { NppArgon2Variant v; NSString *want; } argons[] = {
+            {NppArgon2id, @"$argon2id$v=19$m=64,t=2,p=2$c29tZXNhbHQ$lDh0Fd+4TtGXdGWh6GJgc630K9Turh+qHdTiOh/2hZ8"},
+            {NppArgon2i,  @"$argon2i$v=19$m=64,t=2,p=2$c29tZXNhbHQ$u3EC2QpYDSqhwag4F/JKsYx8yBDM0sKg0MgMlK0pkWc"},
+            {NppArgon2d,  @"$argon2d$v=19$m=64,t=2,p=2$c29tZXNhbHQ$1q8bgD0xYiK3sMCt/uIryr7jP0g04fs9QOITesC7M88"},
+        };
+        BOOL argonRight = YES;
+        for (size_t i = 0; i < 3; ++i) {
+            NppPasswordHashSettings *argon = [NppPasswordHashSettings defaultsForKind:NppPasswordHashArgon2];
+            argon.argon2Variant = argons[i].v; argon.argon2Memory = 64; argon.argon2Passes = 2; argon.argon2Lanes = 2; argon.keyLength = 32;
+            NppPasswordHashResult *got = [NppCrypto hashPassword:utf8(@"password") salt:utf8(@"somesalt") settings:argon];
+            if (![got.encoded isEqualToString:argons[i].want] || got.key.length != 32 ||
+                ![[NppCrypto password:utf8(@"password") matches:argons[i].want] boolValue] ||
+                [[NppCrypto password:utf8(@"Password") matches:argons[i].want] boolValue]) {
+                argonRight = NO; printf("    argon2 variant %zu: %s\n", i, got.encoded.UTF8String);
+            }
+        }
+        NppPasswordHashSettings *thin = [NppPasswordHashSettings defaultsForKind:NppPasswordHashArgon2];
+        thin.argon2Memory = 8; thin.argon2Lanes = 4;
+        Check(@"Tools > Hashes > Argon2", @"argon2id, argon2i and argon2d give the reference implementation's strings and verify; "
+              @"too little memory for the lanes, or a salt under 8 bytes, is refused",
+              argonRight && [thin problem] != nil &&
+              [NppCrypto hashPassword:utf8(@"x") salt:utf8(@"short") settings:[NppPasswordHashSettings defaultsForKind:NppPasswordHashArgon2]] == nil);
+
+        NppPasswordHashSettings *pbkdf2 = [NppPasswordHashSettings defaultsForKind:NppPasswordHashPBKDF2];
+        pbkdf2.pbkdf2Rounds = 4096; pbkdf2.keyLength = 32;
+        NppPasswordHashResult *derived = [NppCrypto hashPassword:utf8(@"password") salt:utf8(@"salt") settings:pbkdf2];
+        Check(@"Tools > Hashes > PBKDF2", @"PBKDF2-HMAC-SHA-256 of \"password\" and \"salt\" over 4096 rounds is the known key, and its string verifies",
+              [[NppCrypto hexOfData:derived.key] isEqualToString:@"c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a"] &&
+              [derived.encoded hasPrefix:@"$pbkdf2-sha256$4096$c2FsdA$"] &&
+              [[NppCrypto password:utf8(@"password") matches:derived.encoded] boolValue] &&
+              ![[NppCrypto password:utf8(@"passwor") matches:derived.encoded] boolValue]);
+
+        Check(@"Tools > Hashes (what is not a hash)", @"a string of no known scheme is said to be none, rather than a mismatch",
+              [NppCrypto password:utf8(@"x") matches:@"5f4dcc3b5aa765d61d8327deb882cf99"] == nil &&
+              [NppCrypto password:utf8(@"x") matches:@"$9z$12$whatever"] == nil &&
+              [NppCrypto password:utf8(@"x") matches:@"$2b$12$tooshort"] == nil);
+    }
+
+    printf("\n== Tools: Base64, Base58, Base32 and bytes in hexadecimal ==\n");
+    {
+        NSData *(^utf8)(NSString *) = ^NSData *(NSString *text) { return [text dataUsingEncoding:NSUTF8StringEncoding]; };
+        NSData *(^hex)(NSString *) = ^NSData *(NSString *text) { return [NppCrypto dataFromHex:text]; };
+
+        Check(@"Tools > Base (bytes written as hexadecimal)",
+              @"plain, spaced, with 0x and commas, with colons, in either case; half a byte or a stray letter is refused",
+              [hex(@"48656c6c6f") isEqualToData:utf8(@"Hello")] && [hex(@"48 65 6C 6c 6F") isEqualToData:utf8(@"Hello")] &&
+              [hex(@"0x48, 0x65, 0X6c,0x6c ,0x6f") isEqualToData:utf8(@"Hello")] && [hex(@"48:65:6c:6c:6f\n") isEqualToData:utf8(@"Hello")] &&
+              hex(@"").length == 0 && hex(@"") != nil && hex(@"486") == nil && hex(@"4 8") == nil && hex(@"48 6g") == nil &&
+              [[NppCrypto hexOfData:utf8(@"Hello")] isEqualToString:@"48656c6c6f"]);
+
+        Check(@"Tools > Base > Base64", @"a Cyrillic string there and back; the URL alphabet; unpadded and wrapped input is read; rubbish is not",
+              [[NppCrypto encode:utf8(@"Привет") as:NppBase64] isEqualToString:@"0J/RgNC40LLQtdGC"] &&
+              [[NppCrypto decode:@"0J/RgNC40LLQtdGC" as:NppBase64] isEqualToData:utf8(@"Привет")] &&
+              [[NppCrypto encode:hex(@"fbff") as:NppBase64URL] isEqualToString:@"-_8="] &&
+              [[NppCrypto encode:hex(@"fbff") as:NppBase64] isEqualToString:@"+/8="] &&
+              [[NppCrypto decode:@"-_8" as:NppBase64] isEqualToData:hex(@"fbff")] &&
+              [[NppCrypto decode:@"SGVs\r\nbG8=\n" as:NppBase64] isEqualToData:utf8(@"Hello")] &&
+              [NppCrypto decode:@"SGVsbG8*" as:NppBase64] == nil && [NppCrypto decode:@"SGVsb" as:NppBase64] == nil);
+
+        Check(@"Tools > Base > Base58", @"Bitcoin's alphabet: leading zero bytes become 1s and come back, a text goes there and back, "
+              @"and the letters the alphabet leaves out (0, O, I, l) are refused",
+              [[NppCrypto encode:utf8(@"Hello World!") as:NppBase58] isEqualToString:@"2NEpo7TZRRrLZSi2U"] &&
+              [[NppCrypto decode:@"2NEpo7TZRRrLZSi2U" as:NppBase58] isEqualToData:utf8(@"Hello World!")] &&
+              [[NppCrypto encode:hex(@"0000287fb4cd") as:NppBase58] isEqualToString:@"11233QC4"] &&
+              [[NppCrypto decode:@"11233QC4" as:NppBase58] isEqualToData:hex(@"0000287fb4cd")] &&
+              [[NppCrypto encode:[NSData data] as:NppBase58] isEqualToString:@""] &&
+              [NppCrypto decode:@"2NEpo7TZRRrLZSi20" as:NppBase58] == nil && [NppCrypto decode:@"Il" as:NppBase58] == nil);
+
+        Check(@"Tools > Base > Base58Check", @"a Bitcoin address is its version and hash with four bytes of checksum; one wrong character and it is refused",
+              [[NppCrypto encode:hex(@"00f54a5851e9372b87810a8e60cdd2e7cfd80b6e31") as:NppBase58Check]
+                  isEqualToString:@"1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs"] &&
+              [[NppCrypto decode:@"1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs" as:NppBase58Check]
+                  isEqualToData:hex(@"00f54a5851e9372b87810a8e60cdd2e7cfd80b6e31")] &&
+              [NppCrypto decode:@"1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAt" as:NppBase58Check] == nil);
+
+        Check(@"Tools > Base > Base32", @"RFC 4648's vectors there and back, lower case and unpadded input read too",
+              [[NppCrypto encode:utf8(@"foobar") as:NppBase32] isEqualToString:@"MZXW6YTBOI======"] &&
+              [[NppCrypto encode:utf8(@"fo") as:NppBase32] isEqualToString:@"MZXQ===="] &&
+              [[NppCrypto decode:@"MZXW6YTBOI======" as:NppBase32] isEqualToData:utf8(@"foobar")] &&
+              [[NppCrypto decode:@"mzxw6ytboi" as:NppBase32] isEqualToData:utf8(@"foobar")] &&
+              [NppCrypto decode:@"MZXW1" as:NppBase32] == nil);
+    }
+
+    printf("\n== Tools: passwords ==\n");
+    {
+        NSString *upper = @"ABCDEFGHIJKLMNOPQRSTUVWXYZ", *lower = @"abcdefghijklmnopqrstuvwxyz", *digits = @"0123456789", *marks = @"!@#$%^&*";
+        NSCharacterSet *(^setOf)(NSString *) = ^NSCharacterSet *(NSString *text) { return [NSCharacterSet characterSetWithCharactersInString:text]; };
+        BOOL lengthsRight = YES, everySetSeen = YES, onlyFromSets = YES;
+        NSCharacterSet *allowed = setOf([@[upper, lower, digits, marks] componentsJoinedByString:@""]);
+        NSMutableSet<NSString *> *seen = [NSMutableSet set];
+        for (int i = 0; i < 200; ++i) {
+            NSString *one = [NppCrypto passwordOfLength:12 fromSets:@[upper, lower, digits, marks] requireEach:YES random:nil];
+            [seen addObject:one ?: @""];
+            if (one.length != 12) lengthsRight = NO;
+            if ([one rangeOfCharacterFromSet:allowed.invertedSet].location != NSNotFound) onlyFromSets = NO;
+            for (NSString *set in @[upper, lower, digits, marks])
+                if ([one rangeOfCharacterFromSet:setOf(set)].location == NSNotFound) everySetSeen = NO;
+        }
+        Check(@"Tools > Password (made from the chosen sets)",
+              @"two hundred passwords of twelve: each twelve long, from the chosen characters only, with one of every set in each, and no two alike",
+              lengthsRight && onlyFromSets && everySetSeen && seen.count == 200);
+
+        // Over many draws every character of the alphabet turns up, and none much more than its share.
+        NSCountedSet<NSString *> *tally = [NSCountedSet set];
+        NSString *many = [NppCrypto passwordOfLength:20000 fromSets:@[digits] requireEach:NO random:nil];
+        for (NSUInteger i = 0; i < many.length; ++i) [tally addObject:[many substringWithRange:NSMakeRange(i, 1)]];
+        NSUInteger least = NSUIntegerMax, most = 0;
+        for (NSString *digit in tally) { least = MIN(least, [tally countForObject:digit]); most = MAX(most, [tally countForObject:digit]); }
+        Check(@"Tools > Password (drawn evenly)", @"of 20000 digits each of the ten turns up about 2000 times",
+              tally.count == 10 && least > 1700 && most < 2300);
+
+        // With the draws dictated, the result is known exactly: what the generator asks for and in what order.
+        __block NSMutableArray<NSNumber *> *asked = [NSMutableArray array];
+        NSString *fixed = [NppCrypto passwordOfLength:4 fromSets:@[@"ab", @"12"] requireEach:YES
+                                               random:^uint32_t(uint32_t below) { [asked addObject:@(below)]; return 0; }];
+        Check(@"Tools > Password (how it draws)", @"one from each set first, the rest from all of them, then a shuffle - and nothing but the generator decides",
+              [asked isEqualToArray:@[@2, @2, @4, @4, @4, @3, @2]] && fixed.length == 4 &&
+              [[fixed stringByTrimmingCharactersInSet:setOf(@"ab12")] isEqualToString:@""]);
+
+        NSString *emoji = [NppCrypto passwordOfLength:6 fromSets:@[@"😀é"] requireEach:NO random:nil];
+        __block NSUInteger pieces = 0;
+        [emoji enumerateSubstringsInRange:NSMakeRange(0, emoji.length) options:NSStringEnumerationByComposedCharacterSequences
+                               usingBlock:^(NSString *, NSRange, NSRange, BOOL *) { pieces++; }];
+        Check(@"Tools > Password (edges)", @"nothing to draw from gives nothing; a set repeated counts once; an emoji is one character; "
+              @"more sets than characters still gives the length asked for; look-alikes can be left out",
+              [NppCrypto passwordOfLength:8 fromSets:@[] requireEach:YES random:nil] == nil &&
+              [NppCrypto passwordOfLength:8 fromSets:@[@""] requireEach:YES random:nil] == nil &&
+              [NppCrypto passwordOfLength:0 fromSets:@[digits] requireEach:NO random:nil] == nil &&
+              [[NppCrypto passwordOfLength:5 fromSets:@[@"x", @"x", @"xx"] requireEach:YES random:nil] isEqualToString:@"xxxxx"] &&
+              pieces == 6 &&
+              [NppCrypto passwordOfLength:2 fromSets:@[upper, lower, digits, marks] requireEach:YES random:nil].length == 2 &&
+              [[NppCrypto withoutLookalikes:@"ABCO0oIl1|xyz"] isEqualToString:@"ABCxyz"]);
+
+        Check(@"Tools > Password (entropy)", @"sixteen characters out of 62 is a little over 95 bits",
+              fabs([NppCrypto entropyOfLength:16 alphabetSize:62] - 95.27) < 0.01 && [NppCrypto entropyOfLength:16 alphabetSize:1] == 0);
+    }
+
+    printf("\n== Tools: the menu and its windows ==\n");
+    {
+        NppPreferences *tp = [NppPreferences shared];
+        NSString *languageBefore = tp.localizationFile;
+        tp.localizationFile = @"";
+        [app applyLocalization];
+        NSDictionary *passwordSettingsBefore = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppPasswordGenerator"];
+
+        NSMenu *tools = nil;
+        for (NSMenuItem *top in NSApp.mainMenu.itemArray) if ([NppEnglishMenuTitle(top.submenu) isEqualToString:@"Tools"]) tools = top.submenu;
+        NSMenu *(^submenu)(NSMenu *, NSString *) = ^NSMenu *(NSMenu *menu, NSString *title) {
+            for (NSMenuItem *item in menu.itemArray) if ([NppEnglishTitle(item) isEqualToString:title]) return item.submenu;
+            return nil;
+        };
+        NSMenu *hashes = submenu(tools, @"Hashes"), *base = submenu(tools, @"Base");
+        NSMutableArray<NSString *> *hashTitles = [NSMutableArray array], *baseTitles = [NSMutableArray array];
+        for (NSMenuItem *item in hashes.itemArray) [hashTitles addObject:item.isSeparatorItem ? @"-" : NppEnglishTitle(item)];
+        for (NSMenuItem *item in base.itemArray) [baseTitles addObject:NppEnglishTitle(item)];
+        BOOL threeEach = YES;
+        for (NSMenuItem *item in hashes.itemArray) if (item.submenu && item.submenu.numberOfItems != 3) threeEach = NO;
+        // Every hash, old or new, has the same three commands under the same names.
+        BOOL threeAlike = YES;
+        NSMutableArray<NSString *> *md5Titles = [NSMutableArray array];
+        for (NSMenuItem *item in submenu(hashes, @"MD5").itemArray) [md5Titles addObject:NppEnglishTitle(item)];
+        for (NSMenuItem *item in hashes.itemArray) {
+            if (!item.submenu) continue;
+            NSMutableArray<NSString *> *titles = [NSMutableArray array];
+            for (NSMenuItem *command in item.submenu.itemArray) [titles addObject:NppEnglishTitle(command)];
+            if (![titles isEqualToArray:md5Titles]) threeAlike = NO;
+        }
+        Check(@"Tools (the menu)", @"Hashes holds Notepad++'s four digests first, the port's six, then bcrypt, scrypt, Argon2 and PBKDF2, every one with the digests' three commands; "
+              @"Base holds Base64, Base58 and Base32; and Password… follows",
+              [hashTitles isEqualToArray:@[@"MD5", @"SHA-1", @"SHA-256", @"SHA-512", @"SHA-224", @"SHA-384", @"SHA3-256", @"SHA3-512",
+                                           @"BLAKE2b", @"CRC-32", @"-", @"bcrypt", @"scrypt", @"Argon2", @"PBKDF2"]] && threeEach && threeAlike &&
+              [baseTitles isEqualToArray:@[@"Base64…", @"Base58…", @"Base32…"]] &&
+              [NppEnglishTitle(tools.itemArray.lastObject) isEqualToString:@"Password…"] && tools.numberOfItems == 3);
+
+        // Notepad++'s ids still find its own digests one level further down, and the
+        // port's digests are not taken for them because they too say "Generate…".
+        NSDictionary<NSNumber *, NSMenuItem *> *byID = [app.shortcutStore menuItemsByIdentifier];
+        NSMenu *sha1 = submenu(hashes, @"SHA-1"), *sha224 = submenu(hashes, @"SHA-224");
+        BOOL portsHaveNone = YES;
+        for (NSNumber *identifier in byID) if (byID[identifier].menu == sha224 || byID[identifier].menu == base) portsHaveNone = NO;
+        Check(@"Tools (Notepad++'s command ids)", @"IDM_TOOL_SHA1_GENERATE and its two neighbours are the items under Hashes > SHA-1, "
+              @"MD5's are MD5's, and SHA-224's items carry no id of Notepad++'s",
+              byID[@48507] == sha1.itemArray[0] && byID[@48508] == sha1.itemArray[1] && byID[@48509] == sha1.itemArray[2] &&
+              byID[@48501] == submenu(hashes, @"MD5").itemArray[0] && byID[@48512] == submenu(hashes, @"SHA-512").itemArray[2] && portsHaveNone);
+
+        // The digest window, as upstream's: it answers as one types.
+        NppDigestWindow *dw = [NppDigestWindow shared];
+        [dw showForDigest:NppDigestSHA256 fromFiles:NO];
+        dw.eachLine.state = NSControlStateValueOff; dw.hmacKey.stringValue = @"";
+        dw.input.string = @"abc"; [dw refresh];
+        NSString *sha256abc = @"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+        BOOL whole = [dw.result.string isEqualToString:sha256abc];
+        dw.input.string = @"abc\n\nabc"; dw.eachLine.state = NSControlStateValueOn; [dw refresh];
+        BOOL perLine = [dw.result.string isEqualToString:[NSString stringWithFormat:@"%@\n\n%@", sha256abc, sha256abc]];
+        dw.eachLine.state = NSControlStateValueOff;
+        dw.input.string = @"The quick brown fox jumps over the lazy dog"; dw.hmacKey.stringValue = @"key"; [dw refresh];
+        BOOL keyed = [dw.result.string isEqualToString:@"f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8"] && !dw.hmacKey.superview.hidden;
+        dw.input.string = @""; [dw refresh];
+        BOOL emptied = dw.result.string.length == 0;
+        [dw.clipboardButton performClick:nil];
+        dw.hmacKey.stringValue = @"";
+        Check(@"IDM_TOOL_SHA256_GENERATE (the window)", @"the digest follows the text as it is typed: of all of it, of each line, "
+              @"as an HMAC when a key is given, and nothing for nothing; its title names the digest",
+              whole && perLine && keyed && emptied && [dw.panel.title isEqualToString:@"Generate SHA-256 digest"] && dw.chooseFiles.hidden);
+
+        [dw showForDigest:NppDigestSHA3_256 fromFiles:NO];
+        dw.input.string = @"abc"; [dw refresh];
+        Check(@"Tools > Hashes > SHA3-256 (the window)", @"a digest the port adds is shown in the same window under its own name, without the HMAC key it has none for",
+              [dw.result.string isEqualToString:@"3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"] &&
+              [dw.panel.title isEqualToString:@"Generate SHA3-256 digest"] && dw.hmacKey.superview.hidden);
+
+        NSString *fileA = TempFile(@"t_digest_a.txt", @"abc"), *fileB = TempFile(@"t_digest_b.txt", @"123456789");
+        [dw showForDigest:NppDigestCRC32 fromFiles:YES];
+        [dw digestFiles:@[fileA, fileB]];
+        [dw.clipboardButton performClick:nil];
+        Check(@"IDM_TOOL_SHA256_GENERATEFROMFILE (the window)", @"from files: a line for each file, digest and name as shasum writes them, and Copy to Clipboard takes them",
+              [dw.result.string isEqualToString:@"352441c2  t_digest_a.txt\ncbf43926  t_digest_b.txt"] && !dw.chooseFiles.hidden &&
+              [dw.chooseFiles.title isEqualToString:@"Choose files to generate CRC-32..."] && dw.input.enclosingScrollView.hidden &&
+              [dw.panel.title isEqualToString:@"Generate CRC-32 digest from files"] &&
+              [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] isEqualToString:dw.result.string]);
+        [dw.panel orderOut:nil];
+
+        // Password hashes: the digests' window, with each kind's own settings above it and no others.
+        NppPasswordHashWindow *hw = [NppPasswordHashWindow shared];
+        [hw showForKind:NppPasswordHashBcrypt fromFiles:NO];
+        NSArray *bcryptRows = [hw visibleFieldNames];
+        BOOL bcryptShown = !hw.fields[@"bcryptCost"].isHiddenOrHasHiddenAncestor && hw.fields[@"argon2Memory"].isHiddenOrHasHiddenAncestor &&
+                           hw.fields[@"keyLength"].isHiddenOrHasHiddenAncestor && [hw.panel.title isEqualToString:@"Generate bcrypt digest"];
+        [hw showForKind:NppPasswordHashArgon2 fromFiles:NO];
+        BOOL argonShown = hw.fields[@"bcryptCost"].isHiddenOrHasHiddenAncestor && !hw.fields[@"argon2Memory"].isHiddenOrHasHiddenAncestor &&
+                          !hw.fields[@"keyLength"].isHiddenOrHasHiddenAncestor && [hw.panel.title isEqualToString:@"Generate Argon2 digest"];
+        Check(@"Tools > Hashes (settings of each kind)", @"bcrypt shows its cost and version, Argon2 its variant, memory, iterations, parallelism and hash length - "
+              @"each only its own, in a window named after it, with the digests' input, per-line box and result below",
+              [bcryptRows isEqualToArray:@[@"bcryptCost", @"bcryptVersion"]] && bcryptShown && argonShown &&
+              [[hw visibleFieldNames] isEqualToArray:@[@"argon2Variant", @"argon2Memory", @"argon2Passes", @"argon2Lanes", @"keyLength"]] &&
+              hw.kind == NppPasswordHashArgon2 && !hw.input.isHiddenOrHasHiddenAncestor && !hw.eachLine.isHiddenOrHasHiddenAncestor &&
+              !hw.result.isHiddenOrHasHiddenAncestor && hw.chooseFiles.hidden);
+
+        [hw showForKind:NppPasswordHashBcrypt fromFiles:NO];
+        hw.eachLine.state = hw.bareKey.state = NSControlStateValueOff;
+        hw.input.string = @"U*U";
+        [(NSTextField *)hw.fields[@"bcryptCost"] setStringValue:@"5"];
+        [(NSPopUpButton *)hw.fields[@"bcryptVersion"] selectItemWithTitle:@"2a"];
+        // The salt of the reference vector "CCCCCCCCCCCCCCCCCCCCC." as bytes.
+        hw.salt.stringValue = @"10 41 04 10 41 04 10 41 04 10 41 04 10 41 04 10";
+        [hw refreshAndWait];
+        NSString *vectorHash = @"$2a$05$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW";
+        BOOL vector = [hw.result.string isEqualToString:vectorHash];
+        hw.bareKey.state = NSControlStateValueOn; [hw refreshAndWait];
+        BOOL bare = hw.result.string.length == 46 && [NppCrypto dataFromHex:hw.result.string] != nil;
+        hw.bareKey.state = NSControlStateValueOff;
+        hw.input.string = @"U*U\n\nU*U\n"; hw.eachLine.state = NSControlStateValueOn; [hw refreshAndWait];
+        BOOL hashPerLine = [hw.result.string isEqualToString:[NSString stringWithFormat:@"%@\n\n%@", vectorHash, vectorHash]];
+        hw.eachLine.state = NSControlStateValueOff; hw.input.string = @"U*U";
+        hw.toVerify.stringValue = vectorHash; [hw verifyAndWait];
+        BOOL matches = [hw.verdict.stringValue isEqualToString:@"The password matches the hash."];
+        hw.input.string = @"U*V"; [hw verifyAndWait];
+        BOOL differs = [hw.verdict.stringValue isEqualToString:@"The password does not match the hash."];
+        hw.toVerify.stringValue = @"5f4dcc3b5aa765d61d8327deb882cf99"; [hw verifyAndWait];
+        BOOL unknown = [hw.verdict.stringValue isEqualToString:@"This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash."];
+        Check(@"Tools > Hashes > bcrypt > Generate…", @"with the vector's text, cost, version and salt the result is the vector's hash - or its bare key, "
+              @"or a hash for each line; Verify says the text matches, that another does not, and that an MD5 is no such hash",
+              vector && bare && hashPerLine && matches && differs && unknown);
+
+        // No salt given: each hash gets one of its own, so the same text twice is two different strings, both of which verify.
+        hw.salt.stringValue = @""; hw.input.string = @"same\nsame"; hw.eachLine.state = NSControlStateValueOn; [hw refreshAndWait];
+        NSArray<NSString *> *two = [hw.result.string componentsSeparatedByString:@"\n"];
+        BOOL salted = two.count == 2 && ![two[0] isEqualToString:two[1]] && [two[0] hasPrefix:@"$2a$05$"] &&
+                      [[NppCrypto password:[@"same" dataUsingEncoding:NSUTF8StringEncoding] matches:two[0]] boolValue] &&
+                      [[NppCrypto password:[@"same" dataUsingEncoding:NSUTF8StringEncoding] matches:two[1]] boolValue];
+        hw.eachLine.state = NSControlStateValueOff;
+        hw.input.string = [@"" stringByPaddingToLength:80 withString:@"x" startingAtIndex:0]; [hw refreshAndWait];
+        BOOL warned = [hw.problem.stringValue isEqualToString:@"bcrypt reads only the first 72 bytes."] && hw.result.string.length == 60;
+        hw.input.string = @"x";
+        hw.salt.stringValue = @"0102"; [hw refreshAndWait];
+        BOOL shortSalt = [hw.problem.stringValue isEqualToString:@"bcrypt takes a salt of exactly 16 bytes."] && !hw.result.string.length;
+        hw.salt.stringValue = @"xyz"; [hw refreshAndWait];
+        BOOL badSalt = [hw.problem.stringValue isEqualToString:@"The salt is not valid hexadecimal."] && !hw.result.string.length;
+        [hw newSalt:nil];
+        NSString *salt1 = hw.salt.stringValue; [hw newSalt:nil];
+        BOOL fresh = salt1.length == 32 && hw.salt.stringValue.length == 32 && ![salt1 isEqualToString:hw.salt.stringValue];
+        [(NSTextField *)hw.fields[@"bcryptCost"] setStringValue:@"40"]; [hw refreshAndWait];
+        BOOL badCost = [hw.problem.stringValue isEqualToString:@"The cost must be between 4 and 31."] && !hw.result.string.length;
+        [(NSTextField *)hw.fields[@"bcryptCost"] setStringValue:@"5"]; hw.salt.stringValue = @"";
+        Check(@"Tools > Hashes (salts, and what the window refuses)", @"without a salt every hash gets a random one and still verifies; past 72 bytes bcrypt says it reads no further; "
+              @"a salt of the wrong length, one that is not hexadecimal and a cost out of range are said in words and no hash shown; Random gives sixteen new bytes",
+              salted && warned && shortSalt && badSalt && fresh && badCost);
+
+        [hw showForKind:NppPasswordHashScrypt fromFiles:NO];
+        hw.input.string = @"pleaseletmein"; hw.bareKey.state = NSControlStateValueOn;
+        hw.salt.stringValue = [NppCrypto hexOfData:[@"SodiumChloride" dataUsingEncoding:NSUTF8StringEncoding]];
+        [(NSTextField *)hw.fields[@"scryptLogN"] setStringValue:@"14"];
+        [hw refreshAndWait];
+        BOOL scryptRight = [hw.result.string isEqualToString:@"7023bdcb3afd7348461c06cd81fd38ebfda8fbba904f8e3ea9b543f6545da1f2"];
+        [hw showForKind:NppPasswordHashArgon2 fromFiles:NO];
+        hw.input.string = @"password"; hw.bareKey.state = NSControlStateValueOff;
+        hw.salt.stringValue = [NppCrypto hexOfData:[@"somesalt" dataUsingEncoding:NSUTF8StringEncoding]];
+        [(NSTextField *)hw.fields[@"argon2Memory"] setStringValue:@"64"];
+        [(NSTextField *)hw.fields[@"argon2Lanes"] setStringValue:@"2"];
+        [(NSPopUpButton *)hw.fields[@"argon2Variant"] selectItemWithTitle:@"Argon2i"];
+        [hw refreshAndWait];
+        BOOL argonRight = [hw.result.string isEqualToString:@"$argon2i$v=19$m=64,t=2,p=2$c29tZXNhbHQ$u3EC2QpYDSqhwag4F/JKsYx8yBDM0sKg0MgMlK0pkWc"];
+        [hw showForKind:NppPasswordHashPBKDF2 fromFiles:NO];
+        hw.bareKey.state = NSControlStateValueOn;
+        hw.salt.stringValue = [NppCrypto hexOfData:[@"salt" dataUsingEncoding:NSUTF8StringEncoding]];
+        [(NSTextField *)hw.fields[@"pbkdf2Rounds"] setStringValue:@"4096"];
+        [hw refreshAndWait];
+        BOOL pbkdfRight = [hw.result.string isEqualToString:@"c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a"];
+        Check(@"Tools > Hashes > scrypt, Argon2, PBKDF2 > Generate…", @"each, given a published vector's text, salt and settings through its fields, shows the vector's result",
+              scryptRight && argonRight && pbkdfRight);
+
+        // From files, as the digests have it: a line for each file, and the file's contents are what is hashed.
+        [hw showForKind:NppPasswordHashPBKDF2 fromFiles:YES];
+        hw.bareKey.state = NSControlStateValueOn;
+        [hw hashFilesAndWait:@[TempFile(@"t_kdf_a.txt", @"password")]];
+        BOOL fromFile = [hw.result.string isEqualToString:@"c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a  t_kdf_a.txt"] &&
+                        !hw.chooseFiles.hidden && hw.input.isHiddenOrHasHiddenAncestor && hw.eachLine.hidden &&
+                        [hw.chooseFiles.title isEqualToString:@"Choose files to generate PBKDF2..."] &&
+                        [hw.panel.title isEqualToString:@"Generate PBKDF2 digest from files"];
+        [hw hashFilesAndWait:@[TempFile(@"t_kdf_b.txt", @"other")]];
+        BOOL twoFiles = [hw.result.string componentsSeparatedByString:@"\n"].count == 2 && [hw.result.string hasSuffix:@"  t_kdf_b.txt"];
+        [hw.clipboardButton performClick:nil];
+        Check(@"Tools > Hashes > PBKDF2 > Generate from files…", @"the contents of each chosen file are hashed, a line each with the file's name, and Copy to Clipboard takes them",
+              fromFile && twoFiles && [[[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString] isEqualToString:hw.result.string]);
+        hw.bareKey.state = NSControlStateValueOff; hw.salt.stringValue = @"";
+        [(NSTextField *)hw.fields[@"argon2Memory"] setStringValue:@"19456"]; [(NSTextField *)hw.fields[@"argon2Lanes"] setStringValue:@"1"];
+        [(NSTextField *)hw.fields[@"pbkdf2Rounds"] setStringValue:@"600000"]; [(NSTextField *)hw.fields[@"scryptLogN"] setStringValue:@"15"];
+        [(NSTextField *)hw.fields[@"bcryptCost"] setStringValue:@"12"];
+        [(NSPopUpButton *)hw.fields[@"argon2Variant"] selectItemAtIndex:0]; [(NSPopUpButton *)hw.fields[@"bcryptVersion"] selectItemAtIndex:0];
+        [hw.panel orderOut:nil];
+
+        // Into the clipboard: the selection, hashed with the kind's defaults and a salt of its own.
+        SetDoc(ed, @"user: hunter2 end");
+        [sci message:SCI_SETSEL wParam:6 lParam:13];
+        NSMenu *argonMenu = submenu(hashes, @"Argon2");
+        [NSApp sendAction:argonMenu.itemArray[2].action to:argonMenu.itemArray[2].target from:argonMenu.itemArray[2]];
+        NSString *clip = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
+        Check(@"Tools > Hashes > Argon2 > Generate from selection into clipboard", @"the clipboard holds an argon2id string with the default settings that the selected text verifies against",
+              [clip hasPrefix:@"$argon2id$v=19$m=19456,t=2,p=1$"] &&
+              [[NppCrypto password:[@"hunter2" dataUsingEncoding:NSUTF8StringEncoding] matches:clip] boolValue] &&
+              ![[NppCrypto password:[@"hunter3" dataUsingEncoding:NSUTF8StringEncoding] matches:clip] boolValue]);
+
+        // Base: a string or bytes in, the encoding out - and back, as text and as bytes.
+        NppBaseWindow *bw = [NppBaseWindow shared];
+        [bw showForEncoding:NppBase64];
+        bw.direction.selectedSegment = 0; [bw.inputIsText performClick:nil]; bw.variant.state = NSControlStateValueOff;
+        bw.input.string = @"Привет"; [bw refresh];
+        BOOL onlyItsOwn = [bw.panel.title isEqualToString:@"Base64"] && [bw.variant.title isEqualToString:@"Base64 (URL-safe)"] && !bw.variant.hidden;
+        for (NSView *v in bw.variant.superview.subviews) if ([v isKindOfClass:[NSPopUpButton class]]) onlyItsOwn = NO;
+        BOOL fromText = [bw.output.string isEqualToString:@"0J/RgNC40LLQtdGC"] && bw.outputBytes.enclosingScrollView.hidden && !bw.inputIsHex.superview.hidden &&
+                        [bw.outputLabel.stringValue isEqualToString:@"Result:"];
+        [bw.inputIsHex performClick:nil];
+        bw.input.string = @"fb ff"; [bw refresh];
+        BOOL fromHex = [bw.output.string isEqualToString:@"+/8="] && bw.inputIsText.state == NSControlStateValueOff;
+        [bw.variant performClick:nil];
+        BOOL urlSafe = [bw.output.string isEqualToString:@"-_8="] && bw.encoding == NppBase64URL;
+        [bw.variant performClick:nil];
+        bw.input.string = @"fb f"; [bw refresh];
+        BOOL badHex = !bw.output.string.length && [bw.problem.stringValue isEqualToString:@"The input is not bytes written in hexadecimal."];
+        Check(@"Tools > Base > Base64 (encoding)", @"a text is encoded as its UTF-8 bytes, bytes given in hexadecimal as themselves, in the URL alphabet when that is chosen; "
+              @"half a byte is said to be wrong; and the window is Base64's alone, with no choice of another encoding in it",
+              fromText && fromHex && urlSafe && badHex && onlyItsOwn);
+
+        [bw showForEncoding:NppBase58];
+        bw.direction.selectedSegment = 1;
+        bw.input.string = @"2NEpo7TZRRrLZSi2U"; [bw refresh];
+        BOOL back = [bw.output.string isEqualToString:@"Hello World!"] && [bw.outputBytes.string isEqualToString:@"48656c6c6f20576f726c6421"] &&
+                    !bw.outputBytes.enclosingScrollView.hidden && bw.inputIsHex.superview.hidden && [bw.outputLabel.stringValue isEqualToString:@"Text:"];
+        bw.input.string = @"2NEpo7TZRRrLZSi20"; [bw refresh];
+        BOOL refused = !bw.output.string.length && !bw.outputBytes.string.length && [bw.problem.stringValue isEqualToString:@"The input is not valid Base58."];
+        BOOL base58Window = [bw.panel.title isEqualToString:@"Base58"] && [bw.variant.title isEqualToString:@"Base58Check"];
+        bw.direction.selectedSegment = 0; [bw.inputIsHex performClick:nil];
+        bw.input.string = @"00f54a5851e9372b87810a8e60cdd2e7cfd80b6e31"; [bw.variant performClick:nil];
+        BOOL checked = [bw.output.string isEqualToString:@"1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs"] && bw.encoding == NppBase58Check;
+        [bw.variant performClick:nil]; [bw.inputIsText performClick:nil];
+        [bw showForEncoding:NppBase32];
+        bw.input.string = @"foobar"; [bw refresh];
+        BOOL base32Window = [bw.panel.title isEqualToString:@"Base32"] && bw.variant.hidden && [bw.output.string isEqualToString:@"MZXW6YTBOI======"];
+        [bw showForEncoding:NppBase64];
+        bw.direction.selectedSegment = 1;
+        bw.input.string = @"//8="; [bw refresh];
+        BOOL bytesOnly = !bw.output.string.length && [bw.outputBytes.string isEqualToString:@"ffff"] &&
+                         [bw.problem.stringValue hasPrefix:@"The decoded bytes are not UTF-8 text"];
+        Check(@"Tools > Base > Base58 (decoding)", @"decoding gives the text and its bytes in hexadecimal; a character outside the alphabet is refused by name; "
+              @"bytes that are no text are shown as bytes only; Base58's box adds the checksum of an address, and Base32's window has no box",
+              back && refused && bytesOnly && base58Window && checked && base32Window);
+
+        // What is selected in the editor is what the window opens with.
+        SetDoc(ed, @"see SGVsbG8= here");
+        [sci message:SCI_SETSEL wParam:4 lParam:12];
+        [NSApp sendAction:NSSelectorFromString(@"showBase:") to:app from:base.itemArray[0]];
+        bw.direction.selectedSegment = 1; [bw refresh];
+        Check(@"Tools > Base (opens with the selection)", @"the selected text is the input", [bw.input.string isEqualToString:@"SGVsbG8="] && [bw.output.string isEqualToString:@"Hello"]);
+        bw.direction.selectedSegment = 0; bw.input.string = @"";
+        [bw.panel orderOut:nil];
+
+        // The password generator.
+        NppPasswordWindow *pw = [NppPasswordWindow shared];
+        [NSApp sendAction:NSSelectorFromString(@"showPasswordGenerator:") to:app from:nil];
+        pw.upper.state = pw.lower.state = pw.digits.state = NSControlStateValueOn;
+        pw.useSymbols.state = pw.noLookalikes.state = NSControlStateValueOff; pw.requireEach.state = NSControlStateValueOn;
+        pw.length.stringValue = @"24"; pw.howMany.stringValue = @"5";
+        [pw generate:nil];
+        NSArray<NSString *> *five = [pw.result.string componentsSeparatedByString:@"\n"];
+        NSCharacterSet *alnum = [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"];
+        BOOL shaped = five.count == 5 && [NSSet setWithArray:five].count == 5;
+        for (NSString *one in five) if (one.length != 24 || [one rangeOfCharacterFromSet:alnum.invertedSet].location != NSNotFound) shaped = NO;
+        BOOL entropy = [pw.entropy.stringValue isEqualToString:@"Entropy: about 142 bits"];      // 24 * log2(62)
+        pw.upper.state = pw.lower.state = NSControlStateValueOff; pw.useSymbols.state = NSControlStateValueOn;
+        pw.symbols.stringValue = @"# $ %"; pw.howMany.stringValue = @"1"; pw.length.stringValue = @"40";
+        [pw generate:nil];
+        NSString *custom = pw.result.string;
+        BOOL ownSymbols = custom.length == 40 && [custom rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"0123456789#$%"].invertedSet].location == NSNotFound &&
+                          [custom rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"#$%"]].location != NSNotFound;
+        pw.noLookalikes.state = NSControlStateValueOn; [pw generate:nil];
+        BOOL plain = [[pw chosenSets] isEqualToArray:@[@"23456789", @"#$%"]] && [pw.result.string rangeOfString:@"0"].location == NSNotFound &&
+                     [pw.result.string rangeOfString:@"1"].location == NSNotFound;
+        pw.digits.state = pw.useSymbols.state = NSControlStateValueOff; [pw generate:nil];
+        BOOL nothing = !pw.result.string.length && [pw.entropy.stringValue isEqualToString:@"Choose at least one kind of character."];
+        Check(@"Tools > Password", @"five passwords of 24 letters and digits, all different, about 142 bits each; the symbols are the ones typed in; "
+              @"look-alikes can be left out; with no kind of character chosen it says so",
+              shaped && entropy && ownSymbols && plain && nothing);
+
+        // A hash of each password, of the kind chosen, with that kind's default settings.
+        pw.digits.state = NSControlStateValueOn; pw.length.stringValue = @"16"; pw.howMany.stringValue = @"2";
+        NSMutableArray<NSString *> *kindTitles = [NSMutableArray array];
+        for (NSMenuItem *item in pw.hashKind.itemArray) [kindTitles addObject:item.title];
+        [pw.hashKind selectItemWithTitle:@"None"]; [NSApp sendAction:pw.hashKind.action to:pw.hashKind.target from:pw.hashKind];
+        [pw generateAndWait];
+        BOOL noneShown = !pw.hashes.string.length && pw.hashes.enclosingScrollView.hidden;
+        [pw.hashKind selectItemWithTitle:@"SHA-256"]; [NSApp sendAction:pw.hashKind.action to:pw.hashKind.target from:pw.hashKind];
+        [pw generateAndWait];
+        NSArray<NSString *> *made = [pw.result.string componentsSeparatedByString:@"\n"], *digests = [pw.hashes.string componentsSeparatedByString:@"\n"];
+        BOOL digested = made.count == 2 && digests.count == 2 && !pw.hashes.enclosingScrollView.hidden;
+        for (NSUInteger i = 0; digested && i < 2; ++i)
+            digested = [digests[i] isEqualToString:[EditorController hashOfData:[made[i] dataUsingEncoding:NSUTF8StringEncoding] digest:NppDigestSHA256]];
+        [pw.hashKind selectItemWithTitle:@"Argon2"]; [NSApp sendAction:pw.hashKind.action to:pw.hashKind.target from:pw.hashKind];
+        [pw generateAndWait];
+        made = [pw.result.string componentsSeparatedByString:@"\n"];
+        NSArray<NSString *> *argons = [pw.hashes.string componentsSeparatedByString:@"\n"];
+        BOOL argoned = made.count == 2 && argons.count == 2;
+        for (NSUInteger i = 0; argoned && i < 2; ++i)
+            argoned = [argons[i] hasPrefix:@"$argon2id$v=19$m=19456,t=2,p=1$"] && [[NppCrypto password:[made[i] dataUsingEncoding:NSUTF8StringEncoding] matches:argons[i]] boolValue];
+        BOOL keptKind = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppPasswordGenerator"][@"hash"] isEqualToString:@"Argon2"];
+        [pw.hashKind selectItemWithTitle:@"None"]; [NSApp sendAction:pw.hashKind.action to:pw.hashKind.target from:pw.hashKind];
+        Check(@"Tools > Password (with its hash)", @"the kinds are None, the four password hashes and the ten digests; SHA-256 gives each password's digest, "
+              @"Argon2 a default-settings string each password verifies against; None shows nothing; the choice is remembered",
+              kindTitles.count == 15 && [[kindTitles subarrayWithRange:NSMakeRange(0, 6)] isEqualToArray:@[@"None", @"bcrypt", @"scrypt", @"Argon2", @"PBKDF2", @"MD5"]] &&
+              noneShown && digested && argoned && keptKind);
+
+        pw.howMany.stringValue = @"1"; pw.length.stringValue = @"12"; [pw generate:nil];
+        NSDictionary *kept = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"NppPasswordGenerator"];
+        SetDoc(ed, @"password=");
+        [sci message:SCI_GOTOPOS wParam:9];
+        [pw insert:nil];
+        NSString *inserted = [sci string];
+        [pw.result.window makeFirstResponder:nil];
+        Check(@"Tools > Password (kept and used)", @"the settings are remembered for the next time, and Insert into Document puts the password at the caret",
+              [kept[@"length"] integerValue] == 12 && [kept[@"digits"] boolValue] && ![kept[@"upper"] boolValue] && [kept[@"symbols"] isEqualToString:@"# $ %"] &&
+              inserted.length == 9 + 12 && [inserted hasPrefix:@"password="] && [[inserted substringFromIndex:9] isEqualToString:pw.result.string]);
+
+        // In another language: the windows' own texts are translated, and every one of them fits.
+        tp.localizationFile = @"russian.xml";
+        [app applyLocalization];
+        NSString *(^cutIn)(NSWindow *) = ^NSString *(NSWindow *window) {
+            [window.contentView layoutSubtreeIfNeeded];
+            NSMutableArray<NSString *> *bad = [NSMutableArray array];
+            NSMutableArray<NSView *> *queue = [NSMutableArray arrayWithObject:window.contentView];
+            while (queue.count) {
+                NSView *v = queue.firstObject; [queue removeObjectAtIndex:0];
+                if (v.hidden) continue;
+                [queue addObjectsFromArray:v.subviews];
+                BOOL isLabel = [v isKindOfClass:[NSTextField class]] && !((NSTextField *)v).editable && !((NSTextField *)v).selectable;
+                BOOL isButton = [v isKindOfClass:[NSButton class]] && ![v isKindOfClass:[NSPopUpButton class]];
+                if (!isLabel && !isButton) continue;
+                NSControl *c = (NSControl *)v;
+                NSString *text = isLabel ? c.stringValue : ((NSButton *)c).title;
+                if (!text.length) continue;
+                NSSize need = c.cell.wraps ? [c.cell cellSizeForBounds:NSMakeRect(0, 0, NSWidth(c.frame), 10000)] : c.cell.cellSize;
+                if (c.cell.wraps) need.width = 0;
+                NSRect inWindow = [v convertRect:v.bounds toView:nil];
+                if (need.width > NSWidth(c.frame) + 1.5 || need.height > NSHeight(c.frame) + 1.5 ||
+                    NSMaxX(inWindow) > NSWidth(window.contentView.frame) + 0.5 || NSMinX(inWindow) < -0.5)
+                    [bad addObject:[NSString stringWithFormat:@"\"%@\" needs %.0fx%.0f, has %.0fx%.0f", text, need.width, need.height, NSWidth(c.frame), NSHeight(c.frame)]];
+            }
+            return [bad componentsJoinedByString:@"; "];
+        };
+        [dw showForDigest:NppDigestSHA384 fromFiles:NO];
+        [hw showForKind:NppPasswordHashArgon2 fromFiles:NO];
+        hw.toVerify.stringValue = @"x"; [hw verifyAndWait];
+        [bw showForEncoding:NppBase58]; bw.direction.selectedSegment = 1; bw.input.string = @"0"; [bw refresh];
+        [pw show]; [pw.hashKind selectItemAtIndex:5]; [NSApp sendAction:pw.hashKind.action to:pw.hashKind.target from:pw.hashKind]; [pw generateAndWait];
+        NSString *cut = [@[cutIn(dw.panel), cutIn(hw.panel), cutIn(bw.panel), cutIn(pw.panel)] componentsJoinedByString:@""];
+        if (cut.length) printf("    cut in Russian: %s\n", cut.UTF8String);
+        NSString *hashesTitle = nil;
+        for (NSMenuItem *item in tools.itemArray) if (item.submenu == hashes) hashesTitle = item.title;
+        printf("    l10n tools 2: %s | %s | %s | %s\n", hw.panel.title.UTF8String, hw.bareKey.title.UTF8String, hw.salt.placeholderString.UTF8String, [pw.hashKind itemAtIndex:0].title.UTF8String);
+        printf("    l10n tools: %s | %s | %s | %s | %s | %s\n", dw.panel.title.UTF8String, dw.eachLine.title.UTF8String, hw.verdict.stringValue.UTF8String,
+               bw.problem.stringValue.UTF8String, pw.entropy.stringValue.UTF8String, hashesTitle.UTF8String);
+        Check(@"Tools (in another language)", @"in Russian the menu, the windows' titles, labels, buttons and messages are Russian - the digest's name and the "
+              @"placeholders filled in - and no text is cut",
+              !cut.length && [hashesTitle isEqualToString:@"Хеши"] && [dw.panel.title containsString:@"SHA-384"] && ![dw.panel.title containsString:@"Generate"] &&
+              ![dw.eachLine.title containsString:@"Treat"] && [hw.verdict.stringValue isEqualToString:@"Это не хеш bcrypt, scrypt, Argon2 или PBKDF2."] &&
+              [hw.panel.title containsString:@"Argon2"] && ![hw.panel.title containsString:@"Generate"] && [hw.bareKey.title isEqualToString:@"Показать сам ключ в шестнадцатеричном виде"] &&
+              [hw.salt.placeholderString isEqualToString:@"Пусто: каждый раз случайная соль"] && ![[pw.hashKind itemAtIndex:0].title isEqualToString:@"None"] && [[pw.hashKind itemAtIndex:1].title isEqualToString:@"bcrypt"] && [bw.problem.stringValue isEqualToString:@"Ввод не является корректным Base58."] &&
+              [bw.outputLabel.stringValue isEqualToString:@"Текст:"] && [pw.panel.title isEqualToString:@"Генератор паролей"] &&
+              [pw.upper.title isEqualToString:@"Заглавные буквы (A-Z)"] && [pw.entropy.stringValue hasPrefix:@"Энтропия: около "] &&
+              [pw.entropy.stringValue hasSuffix:@" бит"]);
+
+        [pw.hashKind selectItemAtIndex:0]; [NSApp sendAction:pw.hashKind.action to:pw.hashKind.target from:pw.hashKind];
+        for (NSPanel *panel in @[dw.panel, hw.panel, bw.panel, pw.panel]) [panel orderOut:nil];
+        bw.input.string = @""; hw.toVerify.stringValue = @""; hw.input.string = @"";
+        if (passwordSettingsBefore) [[NSUserDefaults standardUserDefaults] setObject:passwordSettingsBefore forKey:@"NppPasswordGenerator"];
+        else [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"NppPasswordGenerator"];
+        tp.localizationFile = languageBefore ?: @"";
+        [app applyLocalization];
     }
 
     printf("\n== Macro ==\n");

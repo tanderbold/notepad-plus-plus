@@ -139,4 +139,74 @@
     <Item english="Transparent" text="Läbipaistev"/>
     <Item english="View 1" text="Vaade 1"/>
     <Item english="View 2" text="Vaade 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Räsid"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Parool…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC-võti (valikuline):"/>
+    <Item english="Salt (hexadecimal):" text="Sool (heksadetsimaalne):"/>
+    <Item english="Random" text="Juhuslik"/>
+    <Item english="Cost (4-31):" text="Kulu (4-31):"/>
+    <Item english="Version:" text="Versioon:"/>
+    <Item english="N, as a power of 2:" text="N, arvu 2 astmena:"/>
+    <Item english="Block size (r):" text="Ploki suurus (r):"/>
+    <Item english="Parallelism (p):" text="Paralleelsus (p):"/>
+    <Item english="Variant:" text="Variant:"/>
+    <Item english="Memory (KiB):" text="Mälu (KiB):"/>
+    <Item english="Iterations:" text="Iteratsioonid:"/>
+    <Item english="Parallelism:" text="Paralleelsus:"/>
+    <Item english="Digest:" text="Räsifunktsioon:"/>
+    <Item english="Hash length (bytes):" text="Räsi pikkus (baitides):"/>
+    <Item english="Hash:" text="Räsi:"/>
+    <Item english="Verify" text="Kontrolli"/>
+    <Item english="Hash to check the password against:" text="Räsi, millega parooli võrrelda:"/>
+    <Item english="The salt is not valid hexadecimal." text="Sool ei ole korrektsel heksadetsimaalkujul."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt vajab täpselt 16-baidist soola."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 vajab vähemalt 8-baidist soola."/>
+    <Item english="The hash could not be generated with these settings." text="Nende sätetega ei õnnestunud räsi arvutada."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="See ei ole bcrypt-, scrypt-, Argon2- ega PBKDF2-räsi."/>
+    <Item english="The password matches the hash." text="Parool vastab räsile."/>
+    <Item english="The password does not match the hash." text="Parool ei vasta räsile."/>
+    <Item english="The cost must be between 4 and 31." text="Kulu peab olema vahemikus 4–31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Versioon peab olema 2a, 2b või 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N peab olema vahemikus 2^1–2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r ja p peavad olema vahemikus 1–64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Need sätted vajavad üle 2 GB mälu."/>
+    <Item english="The parallelism must be between 1 and 64." text="Paralleelsus peab olema vahemikus 1–64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Iteratsioonide arv peab olema vahemikus 1–1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Mälu peab olema vähemalt 8 KiB iga lõime kohta."/>
+    <Item english="These settings need more than 4 GB of memory." text="Need sätted vajavad üle 4 GB mälu."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Räsifunktsioon peab olema SHA-1, SHA-256 või SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Iteratsioonide arv peab olema vahemikus 1–100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Räsi pikkus peab olema vahemikus 4–1024 baiti."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-ile sobiv)"/>
+    <Item english="Encode" text="Kodeeri"/>
+    <Item english="Decode" text="Dekodeeri"/>
+    <Item english="The input is:" text="Sisend on:"/>
+    <Item english="Bytes in hexadecimal" text="Baidid heksadetsimaalkujul"/>
+    <Item english="Input:" text="Sisend:"/>
+    <Item english="Result:" text="Tulemus:"/>
+    <Item english="Text:" text="Tekst:"/>
+    <Item english="Bytes in hexadecimal:" text="Baidid heksadetsimaalkujul:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Sisend ei ole heksadetsimaalkujul kirjutatud baidid."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Sisend ei ole korrektne $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Dekodeeritud baidid ei ole UTF-8 tekst; neid kuvatakse ainult heksadetsimaalkujul."/>
+    <Item english="Password Generator" text="Parooligeneraator"/>
+    <Item english="Length:" text="Pikkus:"/>
+    <Item english="Number of passwords:" text="Paroolide arv:"/>
+    <Item english="Uppercase letters (A-Z)" text="Suurtähed (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Väiketähed (a-z)"/>
+    <Item english="Digits (0-9)" text="Numbrid (0-9)"/>
+    <Item english="Symbols:" text="Sümbolid:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Jäta välja sarnase välimusega märgid (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Vähemalt üks märk igast liigist"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entroopia: umbes $INT_REPLACE$ bitti"/>
+    <Item english="Choose at least one kind of character." text="Vali vähemalt üks märgiliik."/>
+    <Item english="Insert into Document" text="Sisesta dokumenti"/>
+    <Item english="Show the bare key in hexadecimal" text="Näita võtit ennast heksadetsimaalkujul"/>
+    <Item english="Empty: a random salt each time" text="Tühi: iga kord juhuslik sool"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt loeb ainult esimesed 72 baiti."/>
 </NativeLangExtra>

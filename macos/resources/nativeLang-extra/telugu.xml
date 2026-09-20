@@ -141,4 +141,74 @@
     <Item english="Transparent" text="పారదర్శక"/>
     <Item english="View 1" text="వ్యూ 1"/>
     <Item english="View 2" text="వ్యూ 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="హ్యాష్‌లు"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="పాస్‌వర్డ్…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC కీ (ఐచ్ఛికం):"/>
+    <Item english="Salt (hexadecimal):" text="సాల్ట్ (హెక్సాడెసిమల్):"/>
+    <Item english="Random" text="ర్యాండమ్"/>
+    <Item english="Cost (4-31):" text="కాస్ట్ (4-31):"/>
+    <Item english="Version:" text="వెర్షన్:"/>
+    <Item english="N, as a power of 2:" text="N, 2 యొక్క ఘాతంగా:"/>
+    <Item english="Block size (r):" text="బ్లాక్ సైజ్ (r):"/>
+    <Item english="Parallelism (p):" text="సమాంతరత (p):"/>
+    <Item english="Variant:" text="వేరియంట్:"/>
+    <Item english="Memory (KiB):" text="మెమరీ (KiB):"/>
+    <Item english="Iterations:" text="ఇటరేషన్లు:"/>
+    <Item english="Parallelism:" text="సమాంతరత:"/>
+    <Item english="Digest:" text="హ్యాష్ ఫంక్షన్:"/>
+    <Item english="Hash length (bytes):" text="హ్యాష్ పొడవు (బైట్‌లు):"/>
+    <Item english="Hash:" text="హ్యాష్:"/>
+    <Item english="Verify" text="ధృవీకరించు"/>
+    <Item english="Hash to check the password against:" text="పాస్‌వర్డ్‌ను సరిచూడాల్సిన హ్యాష్:"/>
+    <Item english="The salt is not valid hexadecimal." text="సాల్ట్ చెల్లుబాటు అయ్యే హెక్సాడెసిమల్ కాదు."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt కు సరిగ్గా 16 బైట్‌ల సాల్ట్ అవసరం."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 కు కనీసం 8 బైట్‌ల సాల్ట్ అవసరం."/>
+    <Item english="The hash could not be generated with these settings." text="ఈ సెట్టింగ్‌లతో హ్యాష్‌ను రూపొందించడం సాధ్యం కాలేదు."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="ఇది bcrypt, scrypt, Argon2 లేదా PBKDF2 హ్యాష్ కాదు."/>
+    <Item english="The password matches the hash." text="పాస్‌వర్డ్ హ్యాష్‌తో సరిపోలింది."/>
+    <Item english="The password does not match the hash." text="పాస్‌వర్డ్ హ్యాష్‌తో సరిపోలలేదు."/>
+    <Item english="The cost must be between 4 and 31." text="కాస్ట్ 4 మరియు 31 మధ్య ఉండాలి."/>
+    <Item english="The version must be 2a, 2b or 2y." text="వెర్షన్ 2a, 2b లేదా 2y అయి ఉండాలి."/>
+    <Item english="N must be between 2^1 and 2^24." text="N 2^1 మరియు 2^24 మధ్య ఉండాలి."/>
+    <Item english="r and p must be between 1 and 64." text="r మరియు p 1 మరియు 64 మధ్య ఉండాలి."/>
+    <Item english="These settings need more than 2 GB of memory." text="ఈ సెట్టింగ్‌లకు 2 GB కంటే ఎక్కువ మెమరీ అవసరం."/>
+    <Item english="The parallelism must be between 1 and 64." text="సమాంతరత 1 మరియు 64 మధ్య ఉండాలి."/>
+    <Item english="The iterations must be between 1 and 1000." text="ఇటరేషన్లు 1 మరియు 1000 మధ్య ఉండాలి."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="ప్రతి థ్రెడ్‌కు మెమరీ కనీసం 8 KiB ఉండాలి."/>
+    <Item english="These settings need more than 4 GB of memory." text="ఈ సెట్టింగ్‌లకు 4 GB కంటే ఎక్కువ మెమరీ అవసరం."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="హ్యాష్ ఫంక్షన్ SHA-1, SHA-256 లేదా SHA-512 అయి ఉండాలి."/>
+    <Item english="The iterations must be between 1 and 100000000." text="ఇటరేషన్లు 1 మరియు 100000000 మధ్య ఉండాలి."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="హ్యాష్ పొడవు 4 మరియు 1024 బైట్‌ల మధ్య ఉండాలి."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-సురక్షితం)"/>
+    <Item english="Encode" text="ఎన్‌కోడ్ చేయి"/>
+    <Item english="Decode" text="డీకోడ్ చేయి"/>
+    <Item english="The input is:" text="ఇన్‌పుట్ రకం:"/>
+    <Item english="Bytes in hexadecimal" text="హెక్సాడెసిమల్‌లో బైట్‌లు"/>
+    <Item english="Input:" text="ఇన్‌పుట్:"/>
+    <Item english="Result:" text="ఫలితం:"/>
+    <Item english="Text:" text="టెక్స్ట్:"/>
+    <Item english="Bytes in hexadecimal:" text="హెక్సాడెసిమల్‌లో బైట్‌లు:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="ఇన్‌పుట్ హెక్సాడెసిమల్‌లో రాసిన బైట్‌లు కాదు."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="ఇన్‌పుట్ చెల్లుబాటు అయ్యే $STR_REPLACE$ కాదు."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="డీకోడ్ చేసిన బైట్‌లు UTF-8 టెక్స్ట్ కాదు; అవి హెక్సాడెసిమల్‌లో మాత్రమే చూపబడ్డాయి."/>
+    <Item english="Password Generator" text="పాస్‌వర్డ్ జనరేటర్"/>
+    <Item english="Length:" text="పొడవు:"/>
+    <Item english="Number of passwords:" text="పాస్‌వర్డ్‌ల సంఖ్య:"/>
+    <Item english="Uppercase letters (A-Z)" text="పెద్ద అక్షరాలు (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="చిన్న అక్షరాలు (a-z)"/>
+    <Item english="Digits (0-9)" text="అంకెలు (0-9)"/>
+    <Item english="Symbols:" text="చిహ్నాలు:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="ఒకేలా కనిపించే క్యారెక్టర్లను వదిలివేయి (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="ప్రతి రకం నుండి కనీసం ఒక క్యారెక్టర్"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="ఎంట్రోపీ: సుమారు $INT_REPLACE$ బిట్‌లు"/>
+    <Item english="Choose at least one kind of character." text="కనీసం ఒక రకం క్యారెక్టర్లను ఎంచుకోండి."/>
+    <Item english="Insert into Document" text="డాక్యుమెంట్‌లో చొప్పించు"/>
+    <Item english="Show the bare key in hexadecimal" text="కీని మాత్రమే హెక్సాడెసిమల్‌లో చూపించు"/>
+    <Item english="Empty: a random salt each time" text="ఖాళీ: ప్రతిసారీ ర్యాండమ్ సాల్ట్"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt మొదటి 72 బైట్‌లను మాత్రమే చదువుతుంది."/>
 </NativeLangExtra>

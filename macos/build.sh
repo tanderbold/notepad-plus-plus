@@ -23,6 +23,7 @@ fi
 CXXFLAGS=(-std=c++17 -DNDEBUG -DSCI_LEXER -O2 -fPIC -Wno-deprecated-declarations ${ARCHS[@]+"${ARCHS[@]}"})
 INCLUDES=(-I"$SCI/include" -I"$SCI/src" -I"$SCI/cocoa" -I"$LEX/include" -I"$SRC"
           -I"$ROOT/PowerEditor/src/uchardet"
+          -I"$ROOT/macos/third_party/argon2"
           -I"$(xcrun --show-sdk-path)/usr/include/libxml2")
 
 # Objects built for one set of architectures must not serve another, so the
@@ -57,6 +58,18 @@ for f in "$UCHARDET"/*.cpp; do
     o="$UCOBJ/$(basename "${f%.cpp}").o"
     [ "$o" -nt "$f" ] && [ "$o" -nt "$0" ] && continue
     clang++ -std=c++17 -DNDEBUG -O2 -fPIC -w ${ARCHS[@]+"${ARCHS[@]}"} -I "$UCHARDET" -c "$f" -o "$o"
+done
+
+# Argon2's reference implementation (macos/third_party/argon2, CC0), for
+# Tools > Hashes. Lanes are worked through one after another: the answer is the
+# same, and a hash made from a dialog has no need of threads.
+ARGON2="$ROOT/macos/third_party/argon2"
+A2OBJ="$OUT/argon2obj-${NPPMAC_ARCH:-universal}"
+mkdir -p "$A2OBJ"
+for f in "$ARGON2"/*.c "$ARGON2"/blake2/*.c; do
+    o="$A2OBJ/$(basename "${f%.c}").o"
+    [ "$o" -nt "$f" ] && [ "$o" -nt "$0" ] && continue
+    clang -std=c99 -DNDEBUG -DARGON2_NO_THREADS -O2 -w ${ARCHS[@]+"${ARCHS[@]}"} -I "$ARGON2" -c "$f" -o "$o"
 done
 
 echo "==> libscintilla-cocoa.a"
@@ -98,7 +111,7 @@ if [ ${#STALE[@]} -gt 0 ]; then
         clang++ $CXXFLAGS_STR $INCLUDES_STR -fobjc-arc -MMD -MF "$APPOBJ/{}.d" \
             -c "$SRC/{}.mm" -o "$APPOBJ/{}.o" || { rm -f "$APPOBJ/{}.o"; exit 255; }'
 fi
-clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o "$UCOBJ"/*.o \
+clang++ -std=c++17 -fobjc-arc -O2 ${ARCHS[@]+"${ARCHS[@]}"} "$APPOBJ"/*.o "$UCOBJ"/*.o "$A2OBJ"/*.o \
     "$OUT/libscintilla-cocoa.a" "$LEX/bin/liblexilla.a" \
     -framework Cocoa -framework QuartzCore -framework Security -lcurl -lxml2 -lz \
     -o "$OUT/NotepadMac"

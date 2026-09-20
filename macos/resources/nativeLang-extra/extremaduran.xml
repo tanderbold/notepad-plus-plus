@@ -36,4 +36,22 @@
     <Item english="Valid JSON." text="JSON váliu."/>
     <Item english="View 1" text="Vista 1"/>
     <Item english="View 2" text="Vista 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Base" text="Base"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="Version:" text="Versión :"/>
+    <Item english="Variant:" text="Varianti :"/>
+    <Item english="Memory (KiB):" text="Memoria (KiB) :"/>
+    <Item english="Iterations:" text="Iterazionis :"/>
+    <Item english="Verify" text="Comprebal"/>
+    <Item english="Encode" text="Coifical"/>
+    <Item english="Input:" text="Entrá :"/>
+    <Item english="Result:" text="Resultáu :"/>
+    <Item english="Text:" text="Testu :"/>
+    <Item english="Uppercase letters (A-Z)" text="Letras mayúsculas (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Letras minúsculas (a-z)"/>
+    <Item english="Symbols:" text="Símbolus :"/>
+    <Item english="Insert into Document" text="Insertal nel documentu"/>
 </NativeLangExtra>

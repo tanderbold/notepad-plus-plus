@@ -135,4 +135,74 @@
     <Item english="Transparent" text="გამჭვირვალე"/>
     <Item english="View 1" text="ხედი 1"/>
     <Item english="View 2" text="ხედი 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="ჰეშები"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="პაროლი…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC გასაღები (არასავალდებულო):"/>
+    <Item english="Salt (hexadecimal):" text="მარილი (თექვსმეტობითი):"/>
+    <Item english="Random" text="შემთხვევითი"/>
+    <Item english="Cost (4-31):" text="ღირებულება (4-31):"/>
+    <Item english="Version:" text="ვერსია:"/>
+    <Item english="N, as a power of 2:" text="N, 2-ის ხარისხად:"/>
+    <Item english="Block size (r):" text="ბლოკის ზომა (r):"/>
+    <Item english="Parallelism (p):" text="პარალელიზმი (p):"/>
+    <Item english="Variant:" text="ვარიანტი:"/>
+    <Item english="Memory (KiB):" text="მეხსიერება (KiB):"/>
+    <Item english="Iterations:" text="იტერაციები:"/>
+    <Item english="Parallelism:" text="პარალელიზმი:"/>
+    <Item english="Digest:" text="ჰეშ-ფუნქცია:"/>
+    <Item english="Hash length (bytes):" text="ჰეშის სიგრძე (ბაიტი):"/>
+    <Item english="Hash:" text="ჰეში:"/>
+    <Item english="Verify" text="შემოწმება"/>
+    <Item english="Hash to check the password against:" text="ჰეში პაროლის შესამოწმებლად:"/>
+    <Item english="The salt is not valid hexadecimal." text="მარილი არ არის სწორი თექვსმეტობითი ჩანაწერი."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt-ს ზუსტად 16-ბაიტიანი მარილი სჭირდება."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2-ს მინიმუმ 8-ბაიტიანი მარილი სჭირდება."/>
+    <Item english="The hash could not be generated with these settings." text="ამ პარამეტრებით ჰეშის შექმნა ვერ მოხერხდა."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="ეს არ არის bcrypt, scrypt, Argon2 ან PBKDF2 ჰეში."/>
+    <Item english="The password matches the hash." text="პაროლი ემთხვევა ჰეშს."/>
+    <Item english="The password does not match the hash." text="პაროლი არ ემთხვევა ჰეშს."/>
+    <Item english="The cost must be between 4 and 31." text="ღირებულება 4-დან 31-მდე უნდა იყოს."/>
+    <Item english="The version must be 2a, 2b or 2y." text="ვერსია 2a, 2b ან 2y უნდა იყოს."/>
+    <Item english="N must be between 2^1 and 2^24." text="N 2^1-დან 2^24-მდე უნდა იყოს."/>
+    <Item english="r and p must be between 1 and 64." text="r და p 1-დან 64-მდე უნდა იყოს."/>
+    <Item english="These settings need more than 2 GB of memory." text="ამ პარამეტრებს 2 GB-ზე მეტი მეხსიერება სჭირდება."/>
+    <Item english="The parallelism must be between 1 and 64." text="პარალელიზმი 1-დან 64-მდე უნდა იყოს."/>
+    <Item english="The iterations must be between 1 and 1000." text="იტერაციების რაოდენობა 1-დან 1000-მდე უნდა იყოს."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="მეხსიერება თითოეული ნაკადისთვის მინიმუმ 8 KiB უნდა იყოს."/>
+    <Item english="These settings need more than 4 GB of memory." text="ამ პარამეტრებს 4 GB-ზე მეტი მეხსიერება სჭირდება."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="ჰეშ-ფუნქცია SHA-1, SHA-256 ან SHA-512 უნდა იყოს."/>
+    <Item english="The iterations must be between 1 and 100000000." text="იტერაციების რაოდენობა 1-დან 100000000-მდე უნდა იყოს."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="ჰეშის სიგრძე 4-დან 1024 ბაიტამდე უნდა იყოს."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-ისთვის)"/>
+    <Item english="Encode" text="კოდირება"/>
+    <Item english="Decode" text="დეკოდირება"/>
+    <Item english="The input is:" text="შეყვანის ტიპი:"/>
+    <Item english="Bytes in hexadecimal" text="ბაიტები თექვსმეტობით ფორმატში"/>
+    <Item english="Input:" text="შეყვანა:"/>
+    <Item english="Result:" text="შედეგი:"/>
+    <Item english="Text:" text="ტექსტი:"/>
+    <Item english="Bytes in hexadecimal:" text="ბაიტები თექვსმეტობით ფორმატში:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="შეყვანილი მნიშვნელობა არ არის თექვსმეტობით ფორმატში ჩაწერილი ბაიტები."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="შეყვანილი მნიშვნელობა არ არის სწორი $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="დეკოდირებული ბაიტები UTF-8 ტექსტი არ არის; ისინი ნაჩვენებია მხოლოდ თექვსმეტობით ფორმატში."/>
+    <Item english="Password Generator" text="პაროლების გენერატორი"/>
+    <Item english="Length:" text="სიგრძე:"/>
+    <Item english="Number of passwords:" text="პაროლების რაოდენობა:"/>
+    <Item english="Uppercase letters (A-Z)" text="დიდი ასოები (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="პატარა ასოები (a-z)"/>
+    <Item english="Digits (0-9)" text="ციფრები (0-9)"/>
+    <Item english="Symbols:" text="სიმბოლოები:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="მსგავსი სიმბოლოების გამორიცხვა (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="მინიმუმ ერთი სიმბოლო თითოეული სახეობიდან"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="ენტროპია: დაახლოებით $INT_REPLACE$ ბიტი"/>
+    <Item english="Choose at least one kind of character." text="აირჩიეთ სიმბოლოების მინიმუმ ერთი სახეობა."/>
+    <Item english="Insert into Document" text="დოკუმენტში ჩასმა"/>
+    <Item english="Show the bare key in hexadecimal" text="მხოლოდ გასაღების ჩვენება თექვსმეტობით ფორმატში"/>
+    <Item english="Empty: a random salt each time" text="ცარიელი: ყოველ ჯერ შემთხვევითი მარილი"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt მხოლოდ პირველ 72 ბაიტს კითხულობს."/>
 </NativeLangExtra>

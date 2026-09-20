@@ -135,4 +135,74 @@
     <Item english="Transparent" text="Тунгалаг"/>
     <Item english="View 1" text="Харагдац 1"/>
     <Item english="View 2" text="Харагдац 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Хэшүүд"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Нууц үг…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC түлхүүр (заавал биш):"/>
+    <Item english="Salt (hexadecimal):" text="Давс (16-тын тооллоор):"/>
+    <Item english="Random" text="Санамсаргүй"/>
+    <Item english="Cost (4-31):" text="Өртөг (4-31):"/>
+    <Item english="Version:" text="Хувилбар:"/>
+    <Item english="N, as a power of 2:" text="N, 2-ын зэргээр:"/>
+    <Item english="Block size (r):" text="Блокийн хэмжээ (r):"/>
+    <Item english="Parallelism (p):" text="Зэрэгцээ байдал (p):"/>
+    <Item english="Variant:" text="Төрөл:"/>
+    <Item english="Memory (KiB):" text="Санах ой (KiB):"/>
+    <Item english="Iterations:" text="Давталт:"/>
+    <Item english="Parallelism:" text="Зэрэгцээ байдал:"/>
+    <Item english="Digest:" text="Хэш функц:"/>
+    <Item english="Hash length (bytes):" text="Хэшийн урт (байт):"/>
+    <Item english="Hash:" text="Хэш:"/>
+    <Item english="Verify" text="Шалгах"/>
+    <Item english="Hash to check the password against:" text="Нууц үгийг шалгах хэш:"/>
+    <Item english="The salt is not valid hexadecimal." text="Давс нь зөв 16-тын тооллын бичлэг биш байна."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt-д яг 16 байтын давс хэрэгтэй."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2-д дор хаяж 8 байтын давс хэрэгтэй."/>
+    <Item english="The hash could not be generated with these settings." text="Эдгээр тохиргоогоор хэш үүсгэж чадсангүй."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Энэ нь bcrypt, scrypt, Argon2 эсвэл PBKDF2 хэш биш байна."/>
+    <Item english="The password matches the hash." text="Нууц үг хэштэй таарч байна."/>
+    <Item english="The password does not match the hash." text="Нууц үг хэштэй таарахгүй байна."/>
+    <Item english="The cost must be between 4 and 31." text="Өртөг нь 4-өөс 31 хүртэл байх ёстой."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Хувилбар нь 2a, 2b эсвэл 2y байх ёстой."/>
+    <Item english="N must be between 2^1 and 2^24." text="N нь 2^1-ээс 2^24 хүртэл байх ёстой."/>
+    <Item english="r and p must be between 1 and 64." text="r ба p нь 1-ээс 64 хүртэл байх ёстой."/>
+    <Item english="These settings need more than 2 GB of memory." text="Эдгээр тохиргоонд 2 GB-аас их санах ой хэрэгтэй."/>
+    <Item english="The parallelism must be between 1 and 64." text="Зэрэгцээ байдал нь 1-ээс 64 хүртэл байх ёстой."/>
+    <Item english="The iterations must be between 1 and 1000." text="Давталтын тоо нь 1-ээс 1000 хүртэл байх ёстой."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Санах ой нь урсгал бүрт дор хаяж 8 KiB байх ёстой."/>
+    <Item english="These settings need more than 4 GB of memory." text="Эдгээр тохиргоонд 4 GB-аас их санах ой хэрэгтэй."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Хэш функц нь SHA-1, SHA-256 эсвэл SHA-512 байх ёстой."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Давталтын тоо нь 1-ээс 100000000 хүртэл байх ёстой."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Хэшийн урт нь 4-өөс 1024 байт хүртэл байх ёстой."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-д зориулсан)"/>
+    <Item english="Encode" text="Кодлох"/>
+    <Item english="Decode" text="Код тайлах"/>
+    <Item english="The input is:" text="Оролт нь:"/>
+    <Item english="Bytes in hexadecimal" text="16-тын тооллоор бичсэн байт"/>
+    <Item english="Input:" text="Оролт:"/>
+    <Item english="Result:" text="Үр дүн:"/>
+    <Item english="Text:" text="Текст:"/>
+    <Item english="Bytes in hexadecimal:" text="16-тын тооллоор бичсэн байт:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Оролт нь 16-тын тооллоор бичсэн байт биш байна."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Оролт нь зөв $STR_REPLACE$ биш байна."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Тайлсан байтууд нь UTF-8 текст биш; тэдгээрийг зөвхөн 16-тын тооллоор харууллаа."/>
+    <Item english="Password Generator" text="Нууц үг үүсгэгч"/>
+    <Item english="Length:" text="Урт:"/>
+    <Item english="Number of passwords:" text="Нууц үгийн тоо:"/>
+    <Item english="Uppercase letters (A-Z)" text="Том үсэг (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Жижиг үсэг (a-z)"/>
+    <Item english="Digits (0-9)" text="Цифр (0-9)"/>
+    <Item english="Symbols:" text="Тусгай тэмдэгт:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Төстэй харагддаг тэмдэгтийг хасах (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Төрөл бүрээс дор хаяж нэг тэмдэгт"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Энтропи: ойролцоогоор $INT_REPLACE$ бит"/>
+    <Item english="Choose at least one kind of character." text="Дор хаяж нэг төрлийн тэмдэгт сонгоно уу."/>
+    <Item english="Insert into Document" text="Баримтад оруулах"/>
+    <Item english="Show the bare key in hexadecimal" text="Түлхүүрийг дангаар нь 16-тын тооллоор харуулах"/>
+    <Item english="Empty: a random salt each time" text="Хоосон: тухай бүрд санамсаргүй давс"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt зөвхөн эхний 72 байтыг уншина."/>
 </NativeLangExtra>

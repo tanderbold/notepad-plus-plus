@@ -96,4 +96,74 @@
     <Item english="Transparent" text="Trasparent"/>
     <Item english="View 1" text="Viodude 1"/>
     <Item english="View 2" text="Viodude 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hash"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Password…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Clâf HMAC (facoltative):"/>
+    <Item english="Salt (hexadecimal):" text="Sâl (esadecimâl):"/>
+    <Item english="Random" text="Casuâl"/>
+    <Item english="Cost (4-31):" text="Cost (4-31):"/>
+    <Item english="Version:" text="Version:"/>
+    <Item english="N, as a power of 2:" text="N, tant che potence di 2:"/>
+    <Item english="Block size (r):" text="Dimension dal bloc (r):"/>
+    <Item english="Parallelism (p):" text="Paralelisim (p):"/>
+    <Item english="Variant:" text="Variant:"/>
+    <Item english="Memory (KiB):" text="Memorie (KiB):"/>
+    <Item english="Iterations:" text="Iterazions:"/>
+    <Item english="Parallelism:" text="Paralelisim:"/>
+    <Item english="Digest:" text="Funzion di hash:"/>
+    <Item english="Hash length (bytes):" text="Lungjece dal hash (byte):"/>
+    <Item english="Hash:" text="Hash:"/>
+    <Item english="Verify" text="Verifiche"/>
+    <Item english="Hash to check the password against:" text="Hash par verificâ la password:"/>
+    <Item english="The salt is not valid hexadecimal." text="La sâl no je un esadecimâl valit."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt al domande une sâl di 16 byte esats."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 al domande une sâl di almancul 8 byte."/>
+    <Item english="The hash could not be generated with these settings." text="Nol è stât pussibil gjenerâ il hash cun chestis impostazions."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Chest nol è un hash bcrypt, scrypt, Argon2 o PBKDF2."/>
+    <Item english="The password matches the hash." text="La password e corispuint al hash."/>
+    <Item english="The password does not match the hash." text="La password no corispuint al hash."/>
+    <Item english="The cost must be between 4 and 31." text="Il cost al à di jessi tra 4 e 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="La version e à di jessi 2a, 2b o 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N al à di jessi tra 2^1 e 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r e p a àn di jessi tra 1 e 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Chestis impostazions a domandin plui di 2 GB di memorie."/>
+    <Item english="The parallelism must be between 1 and 64." text="Il paralelisim al à di jessi tra 1 e 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Lis iterazions a àn di jessi tra 1 e 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="La memorie e à di jessi almancul 8 KiB par ogni fîl."/>
+    <Item english="These settings need more than 4 GB of memory." text="Chestis impostazions a domandin plui di 4 GB di memorie."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="La funzion di hash e à di jessi SHA-1, SHA-256 o SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Lis iterazions a àn di jessi tra 1 e 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="La lungjece dal hash e à di jessi tra 4 e 1024 byte."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (par URL)"/>
+    <Item english="Encode" text="Codifiche"/>
+    <Item english="Decode" text="Decodifiche"/>
+    <Item english="The input is:" text="La jentrade e je:"/>
+    <Item english="Bytes in hexadecimal" text="Byte in esadecimâl"/>
+    <Item english="Input:" text="Jentrade:"/>
+    <Item english="Result:" text="Risultât:"/>
+    <Item english="Text:" text="Test:"/>
+    <Item english="Bytes in hexadecimal:" text="Byte in esadecimâl:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="La jentrade no je fate di byte scrits in esadecimâl."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="La jentrade no je $STR_REPLACE$ valit."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="I byte decodificâts no son test UTF-8; a son mostrâts dome in esadecimâl."/>
+    <Item english="Password Generator" text="Gjeneradôr di passwords"/>
+    <Item english="Length:" text="Lungjece:"/>
+    <Item english="Number of passwords:" text="Numar di passwords:"/>
+    <Item english="Uppercase letters (A-Z)" text="Letaris maiusculis (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Letaris minusculis (a-z)"/>
+    <Item english="Digits (0-9)" text="Cifris (0-9)"/>
+    <Item english="Symbols:" text="Simbui:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Lasse fûr i caratars che si somein (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Almancul un caratar di ogni gjenar"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropie: cirche $INT_REPLACE$ bit"/>
+    <Item english="Choose at least one kind of character." text="Sielç almancul un gjenar di caratar."/>
+    <Item english="Insert into Document" text="Inserìs tal document"/>
+    <Item english="Show the bare key in hexadecimal" text="Mostre la clâf nude in esadecimâl"/>
+    <Item english="Empty: a random salt each time" text="Vueit: une sâl casuâl ogni volte"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt al lei dome i prins 72 byte."/>
 </NativeLangExtra>

@@ -139,4 +139,74 @@
     <Item english="Transparent" text="Caurspīdīgs"/>
     <Item english="View 1" text="1. skats"/>
     <Item english="View 2" text="2. skats"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Jaucējkodi"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Parole…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC atslēga (neobligāta):"/>
+    <Item english="Salt (hexadecimal):" text="Sāls (heksadecimāla):"/>
+    <Item english="Random" text="Nejauša"/>
+    <Item english="Cost (4-31):" text="Izmaksas (4-31):"/>
+    <Item english="Version:" text="Versija:"/>
+    <Item english="N, as a power of 2:" text="N kā skaitļa 2 pakāpe:"/>
+    <Item english="Block size (r):" text="Bloka izmērs (r):"/>
+    <Item english="Parallelism (p):" text="Paralēlisms (p):"/>
+    <Item english="Variant:" text="Variants:"/>
+    <Item english="Memory (KiB):" text="Atmiņa (KiB):"/>
+    <Item english="Iterations:" text="Iterācijas:"/>
+    <Item english="Parallelism:" text="Paralēlisms:"/>
+    <Item english="Digest:" text="Jaucējfunkcija:"/>
+    <Item english="Hash length (bytes):" text="Jaucējkoda garums (baitos):"/>
+    <Item english="Hash:" text="Jaucējkods:"/>
+    <Item english="Verify" text="Pārbaudīt"/>
+    <Item english="Hash to check the password against:" text="Jaucējkods, ar kuru pārbaudīt paroli:"/>
+    <Item english="The salt is not valid hexadecimal." text="Sāls nav derīgs heksadecimāls pieraksts."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt vajadzīga tieši 16 baitu sāls."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 vajadzīga vismaz 8 baitu sāls."/>
+    <Item english="The hash could not be generated with these settings." text="Ar šiem iestatījumiem jaucējkodu neizdevās izveidot."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Šis nav bcrypt, scrypt, Argon2 vai PBKDF2 jaucējkods."/>
+    <Item english="The password matches the hash." text="Parole atbilst jaucējkodam."/>
+    <Item english="The password does not match the hash." text="Parole neatbilst jaucējkodam."/>
+    <Item english="The cost must be between 4 and 31." text="Izmaksām jābūt no 4 līdz 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Versijai jābūt 2a, 2b vai 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N jābūt no 2^1 līdz 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r un p jābūt no 1 līdz 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Šiem iestatījumiem vajag vairāk nekā 2 GB atmiņas."/>
+    <Item english="The parallelism must be between 1 and 64." text="Paralēlismam jābūt no 1 līdz 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Iterāciju skaitam jābūt no 1 līdz 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Atmiņai jābūt vismaz 8 KiB katram pavedienam."/>
+    <Item english="These settings need more than 4 GB of memory." text="Šiem iestatījumiem vajag vairāk nekā 4 GB atmiņas."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Jaucējfunkcijai jābūt SHA-1, SHA-256 vai SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Iterāciju skaitam jābūt no 1 līdz 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Jaucējkoda garumam jābūt no 4 līdz 1024 baitiem."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (piemērots URL)"/>
+    <Item english="Encode" text="Kodēt"/>
+    <Item english="Decode" text="Dekodēt"/>
+    <Item english="The input is:" text="Ievade ir:"/>
+    <Item english="Bytes in hexadecimal" text="Baiti heksadecimālā pierakstā"/>
+    <Item english="Input:" text="Ievade:"/>
+    <Item english="Result:" text="Rezultāts:"/>
+    <Item english="Text:" text="Teksts:"/>
+    <Item english="Bytes in hexadecimal:" text="Baiti heksadecimālā pierakstā:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Ievade nav baiti heksadecimālā pierakstā."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Ievade nav derīgs $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Dekodētie baiti nav UTF-8 teksts; tie parādīti tikai heksadecimālā pierakstā."/>
+    <Item english="Password Generator" text="Paroļu ģenerators"/>
+    <Item english="Length:" text="Garums:"/>
+    <Item english="Number of passwords:" text="Paroļu skaits:"/>
+    <Item english="Uppercase letters (A-Z)" text="Lielie burti (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Mazie burti (a-z)"/>
+    <Item english="Digits (0-9)" text="Cipari (0-9)"/>
+    <Item english="Symbols:" text="Simboli:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Izlaist līdzīga izskata rakstzīmes (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Vismaz viena katra veida rakstzīme"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropija bitos: aptuveni $INT_REPLACE$"/>
+    <Item english="Choose at least one kind of character." text="Izvēlieties vismaz vienu rakstzīmju veidu."/>
+    <Item english="Insert into Document" text="Ievietot dokumentā"/>
+    <Item english="Show the bare key in hexadecimal" text="Rādīt pašu atslēgu heksadecimālā pierakstā"/>
+    <Item english="Empty: a random salt each time" text="Tukšs: katrreiz nejauša sāls"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt nolasa tikai pirmos 72 baitus."/>
 </NativeLangExtra>

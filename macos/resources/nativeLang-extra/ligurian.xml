@@ -71,4 +71,35 @@
     <Item english="Transparent" text="Trasparente"/>
     <Item english="View 1" text="Vista 1"/>
     <Item english="View 2" text="Vista 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hash"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Password…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="Salt (hexadecimal):" text="Sâ (ezadeximale):"/>
+    <Item english="Cost (4-31):" text="Costo (4-31):"/>
+    <Item english="Version:" text="Verscion:"/>
+    <Item english="Block size (r):" text="Dimenscion do blòcco (r):"/>
+    <Item english="Parallelism (p):" text="Paralelismo (p):"/>
+    <Item english="Variant:" text="Variante:"/>
+    <Item english="Iterations:" text="Iteraçioin:"/>
+    <Item english="Parallelism:" text="Paralelismo:"/>
+    <Item english="Hash length (bytes):" text="Longhessa do hash (byte):"/>
+    <Item english="Hash:" text="Hash:"/>
+    <Item english="Verify" text="Verifica"/>
+    <Item english="Base64 (URL-safe)" text="Base64 (pe URL)"/>
+    <Item english="Encode" text="Codifica"/>
+    <Item english="Decode" text="Decodifica"/>
+    <Item english="Bytes in hexadecimal" text="Byte in ezadeximale"/>
+    <Item english="Text:" text="Tèsto:"/>
+    <Item english="Bytes in hexadecimal:" text="Byte in ezadeximale:"/>
+    <Item english="Length:" text="Longhessa:"/>
+    <Item english="Number of passwords:" text="Numero de password:"/>
+    <Item english="Uppercase letters (A-Z)" text="Maiuscole (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Minuscole (a-z)"/>
+    <Item english="Digits (0-9)" text="Numeri (0-9)"/>
+    <Item english="Symbols:" text="Scinboli:"/>
+    <Item english="Insert into Document" text="Introduxi into documento"/>
 </NativeLangExtra>

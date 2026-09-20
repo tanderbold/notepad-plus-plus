@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Празрысты"/>
     <Item english="View 1" text="Выгляд 1"/>
     <Item english="View 2" text="Выгляд 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Хэшы"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Пароль…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Ключ HMAC (неабавязкова):"/>
+    <Item english="Salt (hexadecimal):" text="Соль (шаснаццатковая):"/>
+    <Item english="Random" text="Выпадковая"/>
+    <Item english="Cost (4-31):" text="Кошт (4-31):"/>
+    <Item english="Version:" text="Версія:"/>
+    <Item english="N, as a power of 2:" text="N, як ступень двойкі:"/>
+    <Item english="Block size (r):" text="Памер блока (r):"/>
+    <Item english="Parallelism (p):" text="Паралелізм (p):"/>
+    <Item english="Variant:" text="Варыянт:"/>
+    <Item english="Memory (KiB):" text="Памяць (КіБ):"/>
+    <Item english="Iterations:" text="Ітэрацыі:"/>
+    <Item english="Parallelism:" text="Паралелізм:"/>
+    <Item english="Digest:" text="Хэш-функцыя:"/>
+    <Item english="Hash length (bytes):" text="Даўжыня хэша (байтаў):"/>
+    <Item english="Hash:" text="Хэш:"/>
+    <Item english="Verify" text="Праверыць"/>
+    <Item english="Hash to check the password against:" text="Хэш для праверкі пароля:"/>
+    <Item english="The salt is not valid hexadecimal." text="Соль не з'яўляецца шаснаццатковым запісам."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="Для bcrypt патрэбна соль роўна з 16 байтаў."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Для Argon2 патрэбна соль не карацейшая за 8 байтаў."/>
+    <Item english="The hash could not be generated with these settings." text="З гэтымі наладамі хэш стварыць не ўдалося."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Гэта не хэш bcrypt, scrypt, Argon2 або PBKDF2."/>
+    <Item english="The password matches the hash." text="Пароль адпавядае хэшу."/>
+    <Item english="The password does not match the hash." text="Пароль не адпавядае хэшу."/>
+    <Item english="The cost must be between 4 and 31." text="Кошт павінен быць ад 4 да 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Версія павінна быць 2a, 2b або 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N павінна быць ад 2^1 да 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r і p павінны быць ад 1 да 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Для гэтых налад патрэбна больш за 2 ГБ памяці."/>
+    <Item english="The parallelism must be between 1 and 64." text="Паралелізм павінен быць ад 1 да 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Колькасць ітэрацый павінна быць ад 1 да 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Памяці павінна быць не менш за 8 КіБ на кожны паток."/>
+    <Item english="These settings need more than 4 GB of memory." text="Для гэтых налад патрэбна больш за 4 ГБ памяці."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Хэш-функцыя павінна быць SHA-1, SHA-256 або SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Колькасць ітэрацый павінна быць ад 1 да 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Даўжыня хэша павінна быць ад 4 да 1024 байтаў."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (для URL)"/>
+    <Item english="Encode" text="Кадаваць"/>
+    <Item english="Decode" text="Дэкадаваць"/>
+    <Item english="The input is:" text="На ўваходзе:"/>
+    <Item english="Bytes in hexadecimal" text="Байты ў шаснаццатковым выглядзе"/>
+    <Item english="Input:" text="Уваходныя даныя:"/>
+    <Item english="Result:" text="Вынік:"/>
+    <Item english="Text:" text="Тэкст:"/>
+    <Item english="Bytes in hexadecimal:" text="Байты ў шаснаццатковым выглядзе:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Уваходныя даныя не з'яўляюцца шаснаццатковым запісам байтаў."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Уваходныя даныя не з'яўляюцца карэктным $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Дэкадаваныя байты не з'яўляюцца тэкстам UTF-8; яны паказаны толькі ў шаснаццатковым выглядзе."/>
+    <Item english="Password Generator" text="Генератар пароляў"/>
+    <Item english="Length:" text="Даўжыня:"/>
+    <Item english="Number of passwords:" text="Колькасць пароляў:"/>
+    <Item english="Uppercase letters (A-Z)" text="Вялікія літары (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Малыя літары (a-z)"/>
+    <Item english="Digits (0-9)" text="Лічбы (0-9)"/>
+    <Item english="Symbols:" text="Сімвалы:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Выключыць падобныя сімвалы (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Прынамсі адзін сімвал кожнага віду"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Энтрапія: каля $INT_REPLACE$ бітаў"/>
+    <Item english="Choose at least one kind of character." text="Выберыце прынамсі адзін від сімвалаў."/>
+    <Item english="Insert into Document" text="Уставіць у дакумент"/>
+    <Item english="Show the bare key in hexadecimal" text="Паказаць сам ключ у шаснаццатковым выглядзе"/>
+    <Item english="Empty: a random salt each time" text="Пуста: кожны раз выпадковая соль"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt чытае толькі першыя 72 байты."/>
 </NativeLangExtra>

@@ -61,4 +61,29 @@
     <Item english="Transparent" text="Treuzwelus"/>
     <Item english="View 1" text="Gwel 1"/>
     <Item english="View 2" text="Gwel 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Ger-tremen…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="Random" text="Dre zegouezh"/>
+    <Item english="Version:" text="Stumm:"/>
+    <Item english="Memory (KiB):" text="Memor (KiB):"/>
+    <Item english="Verify" text="Gwiriañ"/>
+    <Item english="The version must be 2a, 2b or 2y." text="Ar stumm a rank bezañ 2a, 2b pe 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N a rank bezañ etre 2^1 ha 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r ha p a rank bezañ etre 1 ha 64."/>
+    <Item english="Encode" text="Enkodañ"/>
+    <Item english="Input:" text="Enmont:"/>
+    <Item english="Result:" text="Disoc'h:"/>
+    <Item english="Text:" text="Testenn:"/>
+    <Item english="Password Generator" text="Ganer gerioù-tremen"/>
+    <Item english="Length:" text="Hirder:"/>
+    <Item english="Number of passwords:" text="Niver a c'herioù-tremen:"/>
+    <Item english="Uppercase letters (A-Z)" text="Lizherennoù bras (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Lizherennoù munut (a-z)"/>
+    <Item english="Digits (0-9)" text="Sifroù (0-9)"/>
+    <Item english="Symbols:" text="Arouezioù:"/>
+    <Item english="Insert into Document" text="Enlakaat en teuliad"/>
 </NativeLangExtra>

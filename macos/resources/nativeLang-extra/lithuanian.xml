@@ -139,4 +139,74 @@
     <Item english="Transparent" text="Permatomas"/>
     <Item english="View 1" text="1 vaizdas"/>
     <Item english="View 2" text="2 vaizdas"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Santraukos"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Slaptažodis…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC raktas (neprivalomas):"/>
+    <Item english="Salt (hexadecimal):" text="Druska (šešioliktainė):"/>
+    <Item english="Random" text="Atsitiktinė"/>
+    <Item english="Cost (4-31):" text="Kaina (4-31):"/>
+    <Item english="Version:" text="Versija:"/>
+    <Item english="N, as a power of 2:" text="N, kaip 2 laipsnis:"/>
+    <Item english="Block size (r):" text="Bloko dydis (r):"/>
+    <Item english="Parallelism (p):" text="Lygiagretumas (p):"/>
+    <Item english="Variant:" text="Variantas:"/>
+    <Item english="Memory (KiB):" text="Atmintis (KiB):"/>
+    <Item english="Iterations:" text="Iteracijos:"/>
+    <Item english="Parallelism:" text="Lygiagretumas:"/>
+    <Item english="Digest:" text="Santraukos funkcija:"/>
+    <Item english="Hash length (bytes):" text="Santraukos ilgis (baitais):"/>
+    <Item english="Hash:" text="Santrauka:"/>
+    <Item english="Verify" text="Tikrinti"/>
+    <Item english="Hash to check the password against:" text="Santrauka, su kuria tikrinamas slaptažodis:"/>
+    <Item english="The salt is not valid hexadecimal." text="Druska užrašyta ne šešioliktainiu formatu."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt reikia lygiai 16 baitų druskos."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 reikia bent 8 baitų druskos."/>
+    <Item english="The hash could not be generated with these settings." text="Su šiais nustatymais santraukos sugeneruoti nepavyko."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Tai nėra bcrypt, scrypt, Argon2 ar PBKDF2 santrauka."/>
+    <Item english="The password matches the hash." text="Slaptažodis atitinka santrauką."/>
+    <Item english="The password does not match the hash." text="Slaptažodis neatitinka santraukos."/>
+    <Item english="The cost must be between 4 and 31." text="Kaina turi būti nuo 4 iki 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Versija turi būti 2a, 2b arba 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N turi būti nuo 2^1 iki 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r ir p turi būti nuo 1 iki 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Šiems nustatymams reikia daugiau nei 2 GB atminties."/>
+    <Item english="The parallelism must be between 1 and 64." text="Lygiagretumas turi būti nuo 1 iki 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Iteracijų skaičius turi būti nuo 1 iki 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Kiekvienai gijai turi tekti bent 8 KiB atminties."/>
+    <Item english="These settings need more than 4 GB of memory." text="Šiems nustatymams reikia daugiau nei 4 GB atminties."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Santraukos funkcija turi būti SHA-1, SHA-256 arba SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Iteracijų skaičius turi būti nuo 1 iki 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Santraukos ilgis turi būti nuo 4 iki 1024 baitų."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (tinka URL)"/>
+    <Item english="Encode" text="Koduoti"/>
+    <Item english="Decode" text="Dekoduoti"/>
+    <Item english="The input is:" text="Įvestis yra:"/>
+    <Item english="Bytes in hexadecimal" text="Baitai šešioliktainiu formatu"/>
+    <Item english="Input:" text="Įvestis:"/>
+    <Item english="Result:" text="Rezultatas:"/>
+    <Item english="Text:" text="Tekstas:"/>
+    <Item english="Bytes in hexadecimal:" text="Baitai šešioliktainiu formatu:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Įvestis nėra baitai, užrašyti šešioliktainiu formatu."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Įvestis nėra tinkamas $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Dekoduoti baitai nėra UTF-8 tekstas; jie rodomi tik šešioliktainiu formatu."/>
+    <Item english="Password Generator" text="Slaptažodžių generatorius"/>
+    <Item english="Length:" text="Ilgis:"/>
+    <Item english="Number of passwords:" text="Slaptažodžių skaičius:"/>
+    <Item english="Uppercase letters (A-Z)" text="Didžiosios raidės (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Mažosios raidės (a-z)"/>
+    <Item english="Digits (0-9)" text="Skaitmenys (0-9)"/>
+    <Item english="Symbols:" text="Simboliai:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Praleisti panašiai atrodančius ženklus (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Bent po vieną kiekvienos rūšies ženklą"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropija bitais: apie $INT_REPLACE$"/>
+    <Item english="Choose at least one kind of character." text="Pasirinkite bent vieną ženklų rūšį."/>
+    <Item english="Insert into Document" text="Įterpti į dokumentą"/>
+    <Item english="Show the bare key in hexadecimal" text="Rodyti patį raktą šešioliktainiu formatu"/>
+    <Item english="Empty: a random salt each time" text="Tuščia: kaskart atsitiktinė druska"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt nuskaito tik pirmuosius 72 baitus."/>
 </NativeLangExtra>

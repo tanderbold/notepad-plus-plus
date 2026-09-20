@@ -416,6 +416,16 @@ static NSString *MenuKey(NSMenuItem *item, NSArray<NSString *> *path) {
         byTopAndLabel = a;
         byLabel = b;
     });
+    // Tools: Notepad++ has its four digests at the top of the menu; here they
+    // are gathered under Hashes with the ones the port adds. A digest upstream
+    // has is found by its path without that level, and nothing else in Tools
+    // is Notepad++'s - least of all by a label ("Generate...") that each digest has.
+    if (path.count >= 2 && [path[0] isEqualToString:@"Tools"]) {
+        if (![path[1] isEqualToString:@"Hashes"] || path.count != 3) return 0;
+        NSString *exact = [NSString stringWithFormat:@"tools/%@/%@", NormalisedLabel(path[2]), NormalisedLabel(NppEnglishTitle(item))];
+        return [byTopAndLabel[exact] intValue];
+    }
+    if (path.count == 1 && [path[0] isEqualToString:@"Tools"]) return 0;
     NSString *label = NormalisedLabel(NppEnglishTitle(item));
     NSMutableArray *whole = [NSMutableArray array];
     for (NSUInteger i = 0; i < path.count; ++i) {

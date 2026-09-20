@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Transparent"/>
     <Item english="View 1" text="Vue 1"/>
     <Item english="View 2" text="Vue 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Empreintes"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Mot de passe…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Clé HMAC (facultative) :"/>
+    <Item english="Salt (hexadecimal):" text="Sel (hexadécimal) :"/>
+    <Item english="Random" text="Aléatoire"/>
+    <Item english="Cost (4-31):" text="Coût (4-31) :"/>
+    <Item english="Version:" text="Version :"/>
+    <Item english="N, as a power of 2:" text="N, en puissance de 2 :"/>
+    <Item english="Block size (r):" text="Taille de bloc (r) :"/>
+    <Item english="Parallelism (p):" text="Parallélisme (p) :"/>
+    <Item english="Variant:" text="Variante :"/>
+    <Item english="Memory (KiB):" text="Mémoire (Kio) :"/>
+    <Item english="Iterations:" text="Itérations :"/>
+    <Item english="Parallelism:" text="Parallélisme :"/>
+    <Item english="Digest:" text="Fonction de hachage :"/>
+    <Item english="Hash length (bytes):" text="Longueur de l’empreinte (octets) :"/>
+    <Item english="Hash:" text="Empreinte :"/>
+    <Item english="Verify" text="Vérifier"/>
+    <Item english="Hash to check the password against:" text="Empreinte à laquelle comparer le mot de passe :"/>
+    <Item english="The salt is not valid hexadecimal." text="Le sel n’est pas de l’hexadécimal valide."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt demande un sel d’exactement 16 octets."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 demande un sel d’au moins 8 octets."/>
+    <Item english="The hash could not be generated with these settings." text="L’empreinte n’a pas pu être générée avec ces paramètres."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Ce n’est pas une empreinte bcrypt, scrypt, Argon2 ou PBKDF2."/>
+    <Item english="The password matches the hash." text="Le mot de passe correspond à l’empreinte."/>
+    <Item english="The password does not match the hash." text="Le mot de passe ne correspond pas à l’empreinte."/>
+    <Item english="The cost must be between 4 and 31." text="Le coût doit être compris entre 4 et 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="La version doit être 2a, 2b ou 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N doit être compris entre 2^1 et 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r et p doivent être compris entre 1 et 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Ces paramètres demandent plus de 2 Go de mémoire."/>
+    <Item english="The parallelism must be between 1 and 64." text="Le parallélisme doit être compris entre 1 et 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Le nombre d’itérations doit être compris entre 1 et 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="La mémoire doit être d’au moins 8 Kio pour chaque fil."/>
+    <Item english="These settings need more than 4 GB of memory." text="Ces paramètres demandent plus de 4 Go de mémoire."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="La fonction de hachage doit être SHA-1, SHA-256 ou SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Le nombre d’itérations doit être compris entre 1 et 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="La longueur de l’empreinte doit être comprise entre 4 et 1024 octets."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (pour URL)"/>
+    <Item english="Encode" text="Encoder"/>
+    <Item english="Decode" text="Décoder"/>
+    <Item english="The input is:" text="L’entrée est :"/>
+    <Item english="Bytes in hexadecimal" text="Octets en hexadécimal"/>
+    <Item english="Input:" text="Entrée :"/>
+    <Item english="Result:" text="Résultat :"/>
+    <Item english="Text:" text="Texte :"/>
+    <Item english="Bytes in hexadecimal:" text="Octets en hexadécimal :"/>
+    <Item english="The input is not bytes written in hexadecimal." text="L’entrée n’est pas une suite d’octets en hexadécimal."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="L’entrée n’est pas du $STR_REPLACE$ valide."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Les octets décodés ne sont pas du texte UTF-8 ; ils sont affichés uniquement en hexadécimal."/>
+    <Item english="Password Generator" text="Générateur de mots de passe"/>
+    <Item english="Length:" text="Longueur :"/>
+    <Item english="Number of passwords:" text="Nombre de mots de passe :"/>
+    <Item english="Uppercase letters (A-Z)" text="Lettres majuscules (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Lettres minuscules (a-z)"/>
+    <Item english="Digits (0-9)" text="Chiffres (0-9)"/>
+    <Item english="Symbols:" text="Symboles :"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Exclure les caractères qui se ressemblent (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Au moins un caractère de chaque type"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropie : environ $INT_REPLACE$ bits"/>
+    <Item english="Choose at least one kind of character." text="Choisissez au moins un type de caractère."/>
+    <Item english="Insert into Document" text="Insérer dans le document"/>
+    <Item english="Show the bare key in hexadecimal" text="Afficher la clé brute en hexadécimal"/>
+    <Item english="Empty: a random salt each time" text="Vide : sel aléatoire à chaque fois"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt ne lit que les 72 premiers octets."/>
 </NativeLangExtra>

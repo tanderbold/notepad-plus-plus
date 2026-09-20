@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Przezroczysty"/>
     <Item english="View 1" text="Widok 1"/>
     <Item english="View 2" text="Widok 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hashe"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Hasło…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Klucz HMAC (opcjonalnie):"/>
+    <Item english="Salt (hexadecimal):" text="Sól (szesnastkowo):"/>
+    <Item english="Random" text="Losowa"/>
+    <Item english="Cost (4-31):" text="Koszt (4-31):"/>
+    <Item english="Version:" text="Wersja:"/>
+    <Item english="N, as a power of 2:" text="N jako potęga liczby 2:"/>
+    <Item english="Block size (r):" text="Rozmiar bloku (r):"/>
+    <Item english="Parallelism (p):" text="Równoległość (p):"/>
+    <Item english="Variant:" text="Wariant:"/>
+    <Item english="Memory (KiB):" text="Pamięć (KiB):"/>
+    <Item english="Iterations:" text="Iteracje:"/>
+    <Item english="Parallelism:" text="Równoległość:"/>
+    <Item english="Digest:" text="Funkcja skrótu:"/>
+    <Item english="Hash length (bytes):" text="Długość hasha (bajty):"/>
+    <Item english="Hash:" text="Hash:"/>
+    <Item english="Verify" text="Sprawdź"/>
+    <Item english="Hash to check the password against:" text="Hash, z którym porównać hasło:"/>
+    <Item english="The salt is not valid hexadecimal." text="Sól nie jest poprawnym zapisem szesnastkowym."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt wymaga soli o długości dokładnie 16 bajtów."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 wymaga soli o długości co najmniej 8 bajtów."/>
+    <Item english="The hash could not be generated with these settings." text="Nie udało się wygenerować hasha przy tych ustawieniach."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="To nie jest hash bcrypt, scrypt, Argon2 ani PBKDF2."/>
+    <Item english="The password matches the hash." text="Hasło pasuje do hasha."/>
+    <Item english="The password does not match the hash." text="Hasło nie pasuje do hasha."/>
+    <Item english="The cost must be between 4 and 31." text="Koszt musi być z zakresu od 4 do 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Wersja musi być 2a, 2b lub 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N musi być z zakresu od 2^1 do 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r i p muszą być z zakresu od 1 do 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Te ustawienia wymagają ponad 2 GB pamięci."/>
+    <Item english="The parallelism must be between 1 and 64." text="Równoległość musi być z zakresu od 1 do 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Liczba iteracji musi być z zakresu od 1 do 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Pamięć musi wynosić co najmniej 8 KiB na każdy wątek."/>
+    <Item english="These settings need more than 4 GB of memory." text="Te ustawienia wymagają ponad 4 GB pamięci."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Funkcja skrótu musi być SHA-1, SHA-256 lub SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Liczba iteracji musi być z zakresu od 1 do 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Długość hasha musi być z zakresu od 4 do 1024 bajtów."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (bezpieczny dla URL)"/>
+    <Item english="Encode" text="Koduj"/>
+    <Item english="Decode" text="Dekoduj"/>
+    <Item english="The input is:" text="Dane wejściowe to:"/>
+    <Item english="Bytes in hexadecimal" text="Bajty w zapisie szesnastkowym"/>
+    <Item english="Input:" text="Dane wejściowe:"/>
+    <Item english="Result:" text="Wynik:"/>
+    <Item english="Text:" text="Tekst:"/>
+    <Item english="Bytes in hexadecimal:" text="Bajty w zapisie szesnastkowym:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Dane wejściowe nie są bajtami w zapisie szesnastkowym."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Dane wejściowe nie są poprawnym ciągiem $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Zdekodowane bajty nie są tekstem UTF-8; pokazano je tylko szesnastkowo."/>
+    <Item english="Password Generator" text="Generator haseł"/>
+    <Item english="Length:" text="Długość:"/>
+    <Item english="Number of passwords:" text="Liczba haseł:"/>
+    <Item english="Uppercase letters (A-Z)" text="Wielkie litery (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Małe litery (a-z)"/>
+    <Item english="Digits (0-9)" text="Cyfry (0-9)"/>
+    <Item english="Symbols:" text="Symbole:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Pomiń podobnie wyglądające znaki (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Co najmniej jeden znak każdego rodzaju"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropia: około $INT_REPLACE$ bitów"/>
+    <Item english="Choose at least one kind of character." text="Wybierz co najmniej jeden rodzaj znaków."/>
+    <Item english="Insert into Document" text="Wstaw do dokumentu"/>
+    <Item english="Show the bare key in hexadecimal" text="Pokaż sam klucz szesnastkowo"/>
+    <Item english="Empty: a random salt each time" text="Puste: za każdym razem losowa sól"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt odczytuje tylko pierwsze 72 bajty."/>
 </NativeLangExtra>

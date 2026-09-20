@@ -141,4 +141,74 @@
     <Item english="Transparent" text="透明"/>
     <Item english="View 1" text="ビュー 1"/>
     <Item english="View 2" text="ビュー 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="ハッシュ"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="パスワード…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC キー (省略可):"/>
+    <Item english="Salt (hexadecimal):" text="ソルト (16進数):"/>
+    <Item english="Random" text="ランダム"/>
+    <Item english="Cost (4-31):" text="コスト (4-31):"/>
+    <Item english="Version:" text="バージョン:"/>
+    <Item english="N, as a power of 2:" text="N (2 のべき乗):"/>
+    <Item english="Block size (r):" text="ブロックサイズ (r):"/>
+    <Item english="Parallelism (p):" text="並列度 (p):"/>
+    <Item english="Variant:" text="バリアント:"/>
+    <Item english="Memory (KiB):" text="メモリー (KiB):"/>
+    <Item english="Iterations:" text="反復回数:"/>
+    <Item english="Parallelism:" text="並列度:"/>
+    <Item english="Digest:" text="ハッシュ関数:"/>
+    <Item english="Hash length (bytes):" text="ハッシュ長 (バイト):"/>
+    <Item english="Hash:" text="ハッシュ:"/>
+    <Item english="Verify" text="検証"/>
+    <Item english="Hash to check the password against:" text="パスワードと照合するハッシュ:"/>
+    <Item english="The salt is not valid hexadecimal." text="ソルトが有効な16進数ではありません。"/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt のソルトはちょうど 16 バイトでなければなりません。"/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 のソルトは 8 バイト以上でなければなりません。"/>
+    <Item english="The hash could not be generated with these settings." text="この設定ではハッシュを生成できませんでした。"/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="これは bcrypt、scrypt、Argon2、PBKDF2 のいずれのハッシュでもありません。"/>
+    <Item english="The password matches the hash." text="パスワードはハッシュと一致します。"/>
+    <Item english="The password does not match the hash." text="パスワードはハッシュと一致しません。"/>
+    <Item english="The cost must be between 4 and 31." text="コストは 4 から 31 の範囲で指定してください。"/>
+    <Item english="The version must be 2a, 2b or 2y." text="バージョンは 2a、2b、2y のいずれかにしてください。"/>
+    <Item english="N must be between 2^1 and 2^24." text="N は 2^1 から 2^24 の範囲で指定してください。"/>
+    <Item english="r and p must be between 1 and 64." text="r と p は 1 から 64 の範囲で指定してください。"/>
+    <Item english="These settings need more than 2 GB of memory." text="この設定では 2 GB を超えるメモリーが必要です。"/>
+    <Item english="The parallelism must be between 1 and 64." text="並列度は 1 から 64 の範囲で指定してください。"/>
+    <Item english="The iterations must be between 1 and 1000." text="反復回数は 1 から 1000 の範囲で指定してください。"/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="メモリーはスレッドごとに 8 KiB 以上必要です。"/>
+    <Item english="These settings need more than 4 GB of memory." text="この設定では 4 GB を超えるメモリーが必要です。"/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="ハッシュ関数は SHA-1、SHA-256、SHA-512 のいずれかにしてください。"/>
+    <Item english="The iterations must be between 1 and 100000000." text="反復回数は 1 から 100000000 の範囲で指定してください。"/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="ハッシュ長は 4 から 1024 バイトの範囲で指定してください。"/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL セーフ)"/>
+    <Item english="Encode" text="エンコード"/>
+    <Item english="Decode" text="デコード"/>
+    <Item english="The input is:" text="入力の種類:"/>
+    <Item english="Bytes in hexadecimal" text="16進数のバイト列"/>
+    <Item english="Input:" text="入力:"/>
+    <Item english="Result:" text="結果:"/>
+    <Item english="Text:" text="テキスト:"/>
+    <Item english="Bytes in hexadecimal:" text="16進数のバイト列:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="入力が16進数のバイト列ではありません。"/>
+    <Item english="The input is not valid $STR_REPLACE$." text="入力が有効な $STR_REPLACE$ ではありません。"/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="デコードしたバイト列は UTF-8 テキストではないため、16進数のみで表示しています。"/>
+    <Item english="Password Generator" text="パスワード生成"/>
+    <Item english="Length:" text="長さ:"/>
+    <Item english="Number of passwords:" text="パスワードの数:"/>
+    <Item english="Uppercase letters (A-Z)" text="大文字 (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="小文字 (a-z)"/>
+    <Item english="Digits (0-9)" text="数字 (0-9)"/>
+    <Item english="Symbols:" text="記号:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="紛らわしい文字を除外 (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="各種類の文字を 1 つ以上含める"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="エントロピー: 約 $INT_REPLACE$ ビット"/>
+    <Item english="Choose at least one kind of character." text="文字の種類を 1 つ以上選択してください。"/>
+    <Item english="Insert into Document" text="文書に挿入"/>
+    <Item english="Show the bare key in hexadecimal" text="キーそのものを16進数で表示"/>
+    <Item english="Empty: a random salt each time" text="空欄: 毎回ランダムなソルト"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt は最初の 72 バイトしか読み取りません。"/>
 </NativeLangExtra>

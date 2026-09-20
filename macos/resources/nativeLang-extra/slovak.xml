@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Priehľadné"/>
     <Item english="View 1" text="Zobrazenie 1"/>
     <Item english="View 2" text="Zobrazenie 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hashe"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Heslo…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Kľúč HMAC (voliteľný):"/>
+    <Item english="Salt (hexadecimal):" text="Soľ (šestnástkovo):"/>
+    <Item english="Random" text="Náhodná"/>
+    <Item english="Cost (4-31):" text="Náročnosť (4-31):"/>
+    <Item english="Version:" text="Verzia:"/>
+    <Item english="N, as a power of 2:" text="N ako mocnina 2:"/>
+    <Item english="Block size (r):" text="Veľkosť bloku (r):"/>
+    <Item english="Parallelism (p):" text="Paralelizmus (p):"/>
+    <Item english="Variant:" text="Variant:"/>
+    <Item english="Memory (KiB):" text="Pamäť (KiB):"/>
+    <Item english="Iterations:" text="Iterácie:"/>
+    <Item english="Parallelism:" text="Paralelizmus:"/>
+    <Item english="Digest:" text="Hashovacia funkcia:"/>
+    <Item english="Hash length (bytes):" text="Dĺžka hashu (bajty):"/>
+    <Item english="Hash:" text="Hash:"/>
+    <Item english="Verify" text="Overiť"/>
+    <Item english="Hash to check the password against:" text="Hash, voči ktorému sa má heslo overiť:"/>
+    <Item english="The salt is not valid hexadecimal." text="Soľ nie je platný šestnástkový zápis."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt vyžaduje soľ s dĺžkou presne 16 bajtov."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 vyžaduje soľ s dĺžkou aspoň 8 bajtov."/>
+    <Item english="The hash could not be generated with these settings." text="S týmito nastaveniami sa hash nepodarilo vytvoriť."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Toto nie je hash bcrypt, scrypt, Argon2 ani PBKDF2."/>
+    <Item english="The password matches the hash." text="Heslo zodpovedá hashu."/>
+    <Item english="The password does not match the hash." text="Heslo nezodpovedá hashu."/>
+    <Item english="The cost must be between 4 and 31." text="Náročnosť musí byť od 4 do 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Verzia musí byť 2a, 2b alebo 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N musí byť od 2^1 do 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r a p musia byť od 1 do 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Tieto nastavenia vyžadujú viac ako 2 GB pamäte."/>
+    <Item english="The parallelism must be between 1 and 64." text="Paralelizmus musí byť od 1 do 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Počet iterácií musí byť od 1 do 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Pamäť musí byť aspoň 8 KiB na každé vlákno."/>
+    <Item english="These settings need more than 4 GB of memory." text="Tieto nastavenia vyžadujú viac ako 4 GB pamäte."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Hashovacia funkcia musí byť SHA-1, SHA-256 alebo SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Počet iterácií musí byť od 1 do 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Dĺžka hashu musí byť od 4 do 1024 bajtov."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (bezpečné pre URL)"/>
+    <Item english="Encode" text="Zakódovať"/>
+    <Item english="Decode" text="Dekódovať"/>
+    <Item english="The input is:" text="Vstup je:"/>
+    <Item english="Bytes in hexadecimal" text="Bajty v šestnástkovom zápise"/>
+    <Item english="Input:" text="Vstup:"/>
+    <Item english="Result:" text="Výsledok:"/>
+    <Item english="Text:" text="Text:"/>
+    <Item english="Bytes in hexadecimal:" text="Bajty v šestnástkovom zápise:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Vstup nie sú bajty v šestnástkovom zápise."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Vstup nie je platný $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Dekódované bajty nie sú text UTF-8; zobrazujú sa iba šestnástkovo."/>
+    <Item english="Password Generator" text="Generátor hesiel"/>
+    <Item english="Length:" text="Dĺžka:"/>
+    <Item english="Number of passwords:" text="Počet hesiel:"/>
+    <Item english="Uppercase letters (A-Z)" text="Veľké písmená (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Malé písmená (a-z)"/>
+    <Item english="Digits (0-9)" text="Číslice (0-9)"/>
+    <Item english="Symbols:" text="Symboly:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Vynechať podobne vyzerajúce znaky (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Aspoň jeden znak z každého druhu"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropia: približne $INT_REPLACE$ bitov"/>
+    <Item english="Choose at least one kind of character." text="Vyberte aspoň jeden druh znakov."/>
+    <Item english="Insert into Document" text="Vložiť do dokumentu"/>
+    <Item english="Show the bare key in hexadecimal" text="Zobraziť samotný kľúč šestnástkovo"/>
+    <Item english="Empty: a random salt each time" text="Prázdne: zakaždým náhodná soľ"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt číta iba prvých 72 bajtov."/>
 </NativeLangExtra>

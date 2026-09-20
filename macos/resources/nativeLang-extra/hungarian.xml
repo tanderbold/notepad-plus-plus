@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Átlátszó"/>
     <Item english="View 1" text="1. nézet"/>
     <Item english="View 2" text="2. nézet"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Kivonatok"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Jelszó…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC-kulcs (nem kötelező):"/>
+    <Item english="Salt (hexadecimal):" text="Só (hexadecimális):"/>
+    <Item english="Random" text="Véletlenszerű"/>
+    <Item english="Cost (4-31):" text="Költség (4-31):"/>
+    <Item english="Version:" text="Verzió:"/>
+    <Item english="N, as a power of 2:" text="N, 2 hatványaként:"/>
+    <Item english="Block size (r):" text="Blokkméret (r):"/>
+    <Item english="Parallelism (p):" text="Párhuzamosság (p):"/>
+    <Item english="Variant:" text="Változat:"/>
+    <Item english="Memory (KiB):" text="Memória (KiB):"/>
+    <Item english="Iterations:" text="Iterációk:"/>
+    <Item english="Parallelism:" text="Párhuzamosság:"/>
+    <Item english="Digest:" text="Kivonatoló függvény:"/>
+    <Item english="Hash length (bytes):" text="Kivonat hossza (bájt):"/>
+    <Item english="Hash:" text="Kivonat:"/>
+    <Item english="Verify" text="Ellenőrzés"/>
+    <Item english="Hash to check the password against:" text="A kivonat, amellyel a jelszót össze kell vetni:"/>
+    <Item english="The salt is not valid hexadecimal." text="A só nem érvényes hexadecimális érték."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="A bcrypt pontosan 16 bájtos sót igényel."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Az Argon2 legalább 8 bájtos sót igényel."/>
+    <Item english="The hash could not be generated with these settings." text="A kivonat nem hozható létre ezekkel a beállításokkal."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Ez nem bcrypt-, scrypt-, Argon2- vagy PBKDF2-kivonat."/>
+    <Item english="The password matches the hash." text="A jelszó egyezik a kivonattal."/>
+    <Item english="The password does not match the hash." text="A jelszó nem egyezik a kivonattal."/>
+    <Item english="The cost must be between 4 and 31." text="A költségnek 4 és 31 között kell lennie."/>
+    <Item english="The version must be 2a, 2b or 2y." text="A verzió csak 2a, 2b vagy 2y lehet."/>
+    <Item english="N must be between 2^1 and 2^24." text="Az N értékének 2^1 és 2^24 között kell lennie."/>
+    <Item english="r and p must be between 1 and 64." text="Az r és a p értékének 1 és 64 között kell lennie."/>
+    <Item english="These settings need more than 2 GB of memory." text="Ezekhez a beállításokhoz több mint 2 GB memória szükséges."/>
+    <Item english="The parallelism must be between 1 and 64." text="A párhuzamosságnak 1 és 64 között kell lennie."/>
+    <Item english="The iterations must be between 1 and 1000." text="Az iterációk számának 1 és 1000 között kell lennie."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="A memóriának szálanként legalább 8 KiB-nak kell lennie."/>
+    <Item english="These settings need more than 4 GB of memory." text="Ezekhez a beállításokhoz több mint 4 GB memória szükséges."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="A kivonatoló függvény csak SHA-1, SHA-256 vagy SHA-512 lehet."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Az iterációk számának 1 és 100000000 között kell lennie."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="A kivonat hosszának 4 és 1024 bájt között kell lennie."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-biztos)"/>
+    <Item english="Encode" text="Kódolás"/>
+    <Item english="Decode" text="Dekódolás"/>
+    <Item english="The input is:" text="A bemenet:"/>
+    <Item english="Bytes in hexadecimal" text="Bájtok hexadecimálisan"/>
+    <Item english="Input:" text="Bemenet:"/>
+    <Item english="Result:" text="Eredmény:"/>
+    <Item english="Text:" text="Szöveg:"/>
+    <Item english="Bytes in hexadecimal:" text="Bájtok hexadecimálisan:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="A bemenet nem hexadecimálisan írt bájtsorozat."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="A bemenet nem érvényes $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="A dekódolt bájtok nem alkotnak UTF-8 szöveget; csak hexadecimálisan láthatók."/>
+    <Item english="Password Generator" text="Jelszógenerátor"/>
+    <Item english="Length:" text="Hossz:"/>
+    <Item english="Number of passwords:" text="Jelszavak száma:"/>
+    <Item english="Uppercase letters (A-Z)" text="Nagybetűk (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Kisbetűk (a-z)"/>
+    <Item english="Digits (0-9)" text="Számjegyek (0-9)"/>
+    <Item english="Symbols:" text="Szimbólumok:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Az egymásra hasonlító karakterek kihagyása (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Minden fajtából legalább egy karakter"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entrópia: kb. $INT_REPLACE$ bit"/>
+    <Item english="Choose at least one kind of character." text="Válasszon legalább egy karakterfajtát."/>
+    <Item english="Insert into Document" text="Beillesztés a dokumentumba"/>
+    <Item english="Show the bare key in hexadecimal" text="A puszta kulcs megjelenítése hexadecimálisan"/>
+    <Item english="Empty: a random salt each time" text="Üres: mindig új véletlenszerű só"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="A bcrypt csak az első 72 bájtot olvassa be."/>
 </NativeLangExtra>

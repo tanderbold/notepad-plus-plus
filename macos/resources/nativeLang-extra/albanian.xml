@@ -126,4 +126,74 @@
     <Item english="Transparent" text="Transparent"/>
     <Item english="View 1" text="Pamja 1"/>
     <Item english="View 2" text="Pamja 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hash-e"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Fjalëkalimi…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Çelësi HMAC (opsional):"/>
+    <Item english="Salt (hexadecimal):" text="Kripa (heksadecimale):"/>
+    <Item english="Random" text="E rastësishme"/>
+    <Item english="Cost (4-31):" text="Kostoja (4-31):"/>
+    <Item english="Version:" text="Versioni:"/>
+    <Item english="N, as a power of 2:" text="N, si fuqi e 2:"/>
+    <Item english="Block size (r):" text="Madhësia e bllokut (r):"/>
+    <Item english="Parallelism (p):" text="Paralelizmi (p):"/>
+    <Item english="Variant:" text="Varianti:"/>
+    <Item english="Memory (KiB):" text="Memoria (KiB):"/>
+    <Item english="Iterations:" text="Përsëritjet:"/>
+    <Item english="Parallelism:" text="Paralelizmi:"/>
+    <Item english="Digest:" text="Funksioni hash:"/>
+    <Item english="Hash length (bytes):" text="Gjatësia e hash-it (bajt):"/>
+    <Item english="Hash:" text="Hash-i:"/>
+    <Item english="Verify" text="Verifiko"/>
+    <Item english="Hash to check the password against:" text="Hash-i me të cilin kontrollohet fjalëkalimi:"/>
+    <Item english="The salt is not valid hexadecimal." text="Kripa nuk është heksadecimale e vlefshme."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt kërkon një kripë prej saktësisht 16 bajtësh."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 kërkon një kripë prej të paktën 8 bajtësh."/>
+    <Item english="The hash could not be generated with these settings." text="Hash-i nuk mund të gjenerohej me këto cilësime."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Ky nuk është hash bcrypt, scrypt, Argon2 ose PBKDF2."/>
+    <Item english="The password matches the hash." text="Fjalëkalimi përputhet me hash-in."/>
+    <Item english="The password does not match the hash." text="Fjalëkalimi nuk përputhet me hash-in."/>
+    <Item english="The cost must be between 4 and 31." text="Kostoja duhet të jetë midis 4 dhe 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Versioni duhet të jetë 2a, 2b ose 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N duhet të jetë midis 2^1 dhe 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r dhe p duhet të jenë midis 1 dhe 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Këto cilësime kërkojnë më shumë se 2 GB memorie."/>
+    <Item english="The parallelism must be between 1 and 64." text="Paralelizmi duhet të jetë midis 1 dhe 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Përsëritjet duhet të jenë midis 1 dhe 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Memoria duhet të jetë të paktën 8 KiB për secilën fije."/>
+    <Item english="These settings need more than 4 GB of memory." text="Këto cilësime kërkojnë më shumë se 4 GB memorie."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Funksioni hash duhet të jetë SHA-1, SHA-256 ose SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Përsëritjet duhet të jenë midis 1 dhe 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Gjatësia e hash-it duhet të jetë midis 4 dhe 1024 bajtësh."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (i sigurt për URL)"/>
+    <Item english="Encode" text="Kodo"/>
+    <Item english="Decode" text="Dekodo"/>
+    <Item english="The input is:" text="Hyrja është:"/>
+    <Item english="Bytes in hexadecimal" text="Bajte në heksadecimal"/>
+    <Item english="Input:" text="Hyrja:"/>
+    <Item english="Result:" text="Rezultati:"/>
+    <Item english="Text:" text="Teksti:"/>
+    <Item english="Bytes in hexadecimal:" text="Bajte në heksadecimal:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Hyrja nuk është bajte të shkruara në heksadecimal."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Hyrja nuk është $STR_REPLACE$ i vlefshëm."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Bajtet e dekoduara nuk janë tekst UTF-8; ato shfaqen vetëm në heksadecimal."/>
+    <Item english="Password Generator" text="Gjeneruesi i fjalëkalimeve"/>
+    <Item english="Length:" text="Gjatësia:"/>
+    <Item english="Number of passwords:" text="Numri i fjalëkalimeve:"/>
+    <Item english="Uppercase letters (A-Z)" text="Shkronja të mëdha (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Shkronja të vogla (a-z)"/>
+    <Item english="Digits (0-9)" text="Shifra (0-9)"/>
+    <Item english="Symbols:" text="Simbole:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Lëri jashtë karakteret që ngjajnë (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Të paktën një karakter nga secili lloj"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropia: rreth $INT_REPLACE$ bit"/>
+    <Item english="Choose at least one kind of character." text="Zgjidh të paktën një lloj karakteresh."/>
+    <Item english="Insert into Document" text="Fut në dokument"/>
+    <Item english="Show the bare key in hexadecimal" text="Shfaq vetë çelësin në heksadecimal"/>
+    <Item english="Empty: a random salt each time" text="Bosh: kripë e rastësishme çdo herë"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt lexon vetëm 72 bajtët e parë."/>
 </NativeLangExtra>

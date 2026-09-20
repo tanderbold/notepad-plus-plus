@@ -141,4 +141,74 @@
     <Item english="Transparent" text="透明"/>
     <Item english="View 1" text="視窗 1"/>
     <Item english="View 2" text="視窗 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="雜湊"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="密碼…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC 金鑰（可以唔填）："/>
+    <Item english="Salt (hexadecimal):" text="鹽值（十六進位）："/>
+    <Item english="Random" text="隨機"/>
+    <Item english="Cost (4-31):" text="成本 (4-31)："/>
+    <Item english="Version:" text="版本："/>
+    <Item english="N, as a power of 2:" text="N（2 嘅次方）："/>
+    <Item english="Block size (r):" text="區塊大小 (r)："/>
+    <Item english="Parallelism (p):" text="平行度 (p)："/>
+    <Item english="Variant:" text="變體："/>
+    <Item english="Memory (KiB):" text="記憶體 (KiB)："/>
+    <Item english="Iterations:" text="迭代次數："/>
+    <Item english="Parallelism:" text="平行度："/>
+    <Item english="Digest:" text="雜湊函數："/>
+    <Item english="Hash length (bytes):" text="雜湊長度（位元組）："/>
+    <Item english="Hash:" text="雜湊："/>
+    <Item english="Verify" text="驗證"/>
+    <Item english="Hash to check the password against:" text="用嚟核對密碼嘅雜湊："/>
+    <Item english="The salt is not valid hexadecimal." text="鹽值唔係有效嘅十六進位。"/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt 要啱啱好 16 個位元組嘅鹽值。"/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 要最少 8 個位元組嘅鹽值。"/>
+    <Item english="The hash could not be generated with these settings." text="用呢啲設定產生唔到雜湊。"/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="呢個唔係 bcrypt、scrypt、Argon2 或者 PBKDF2 雜湊。"/>
+    <Item english="The password matches the hash." text="密碼同雜湊吻合。"/>
+    <Item english="The password does not match the hash." text="密碼同雜湊唔吻合。"/>
+    <Item english="The cost must be between 4 and 31." text="成本一定要喺 4 至 31 之間。"/>
+    <Item english="The version must be 2a, 2b or 2y." text="版本一定要係 2a、2b 或者 2y。"/>
+    <Item english="N must be between 2^1 and 2^24." text="N 一定要喺 2^1 至 2^24 之間。"/>
+    <Item english="r and p must be between 1 and 64." text="r 同 p 一定要喺 1 至 64 之間。"/>
+    <Item english="These settings need more than 2 GB of memory." text="呢啲設定需要多過 2 GB 記憶體。"/>
+    <Item english="The parallelism must be between 1 and 64." text="平行度一定要喺 1 至 64 之間。"/>
+    <Item english="The iterations must be between 1 and 1000." text="迭代次數一定要喺 1 至 1000 之間。"/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="每條執行緒最少要有 8 KiB 記憶體。"/>
+    <Item english="These settings need more than 4 GB of memory." text="呢啲設定需要多過 4 GB 記憶體。"/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="雜湊函數一定要係 SHA-1、SHA-256 或者 SHA-512。"/>
+    <Item english="The iterations must be between 1 and 100000000." text="迭代次數一定要喺 1 至 100000000 之間。"/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="雜湊長度一定要喺 4 至 1024 個位元組之間。"/>
+    <Item english="Base64 (URL-safe)" text="Base64（URL 安全）"/>
+    <Item english="Encode" text="編碼"/>
+    <Item english="Decode" text="解碼"/>
+    <Item english="The input is:" text="輸入嘅係："/>
+    <Item english="Bytes in hexadecimal" text="十六進位嘅位元組"/>
+    <Item english="Input:" text="輸入："/>
+    <Item english="Result:" text="結果："/>
+    <Item english="Text:" text="文字："/>
+    <Item english="Bytes in hexadecimal:" text="十六進位嘅位元組："/>
+    <Item english="The input is not bytes written in hexadecimal." text="輸入嘅唔係用十六進位寫嘅位元組。"/>
+    <Item english="The input is not valid $STR_REPLACE$." text="輸入嘅唔係有效嘅 $STR_REPLACE$。"/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="解碼出嚟嘅位元組唔係 UTF-8 文字，所以淨係用十六進位顯示。"/>
+    <Item english="Password Generator" text="密碼產生器"/>
+    <Item english="Length:" text="長度："/>
+    <Item english="Number of passwords:" text="密碼數量："/>
+    <Item english="Uppercase letters (A-Z)" text="大階字母 (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="細階字母 (a-z)"/>
+    <Item english="Digits (0-9)" text="數字 (0-9)"/>
+    <Item english="Symbols:" text="符號："/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="唔要啲似樣嘅字元 (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="每種字元最少有一個"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="熵：大約 $INT_REPLACE$ 位元"/>
+    <Item english="Choose at least one kind of character." text="最少要揀一種字元。"/>
+    <Item english="Insert into Document" text="插入文件"/>
+    <Item english="Show the bare key in hexadecimal" text="用十六進位顯示金鑰本身"/>
+    <Item english="Empty: a random salt each time" text="留空：每次用新嘅隨機鹽值"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt 淨係讀頭 72 個位元組。"/>
 </NativeLangExtra>

@@ -98,4 +98,26 @@
     <Item english="Marks cleared" text="Amamaki asuliwe"/>
     <Item english="View 1" text="Ukubuka 1"/>
     <Item english="View 2" text="Ukubuka 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Iphasiwedi…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="Version:" text="Inguqulo:"/>
+    <Item english="Memory (KiB):" text="Inkumbulo (KiB):"/>
+    <Item english="Verify" text="Qinisekisa"/>
+    <Item english="Encode" text="Faka ikhodi"/>
+    <Item english="Input:" text="Okokufaka:"/>
+    <Item english="Result:" text="Umphumela:"/>
+    <Item english="Text:" text="Umbhalo:"/>
+    <Item english="Length:" text="Ubude:"/>
+    <Item english="Number of passwords:" text="Inani lamaphasiwedi:"/>
+    <Item english="Uppercase letters (A-Z)" text="Osonhlamvukazi (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Izinhlamvu ezincane (a-z)"/>
+    <Item english="Digits (0-9)" text="Izinombolo (0-9)"/>
+    <Item english="Symbols:" text="Izimpawu:"/>
+    <Item english="At least one character of each kind" text="Okungenani uhlamvu olulodwa lohlobo ngalunye"/>
+    <Item english="Choose at least one kind of character." text="Khetha okungenani uhlobo olulodwa lwezinhlamvu."/>
+    <Item english="Insert into Document" text="Faka kudokhumenti"/>
 </NativeLangExtra>

@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Providno"/>
     <Item english="View 1" text="Prikaz 1"/>
     <Item english="View 2" text="Prikaz 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Heševi"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Lozinka…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC ključ (neobavezno):"/>
+    <Item english="Salt (hexadecimal):" text="So (heksadecimalno):"/>
+    <Item english="Random" text="Nasumična"/>
+    <Item english="Cost (4-31):" text="Trošak (4-31):"/>
+    <Item english="Version:" text="Verzija:"/>
+    <Item english="N, as a power of 2:" text="N, kao stepen broja 2:"/>
+    <Item english="Block size (r):" text="Veličina bloka (r):"/>
+    <Item english="Parallelism (p):" text="Paralelizam (p):"/>
+    <Item english="Variant:" text="Varijanta:"/>
+    <Item english="Memory (KiB):" text="Memorija (KiB):"/>
+    <Item english="Iterations:" text="Iteracije:"/>
+    <Item english="Parallelism:" text="Paralelizam:"/>
+    <Item english="Digest:" text="Heš funkcija:"/>
+    <Item english="Hash length (bytes):" text="Dužina heša (bajtovi):"/>
+    <Item english="Hash:" text="Heš:"/>
+    <Item english="Verify" text="Provjeri"/>
+    <Item english="Hash to check the password against:" text="Heš s kojim se poredi lozinka:"/>
+    <Item english="The salt is not valid hexadecimal." text="So nije ispravan heksadecimalni zapis."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt zahtijeva so od tačno 16 bajtova."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 zahtijeva so od najmanje 8 bajtova."/>
+    <Item english="The hash could not be generated with these settings." text="Heš nije bilo moguće generisati s ovim postavkama."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Ovo nije bcrypt, scrypt, Argon2 ili PBKDF2 heš."/>
+    <Item english="The password matches the hash." text="Lozinka odgovara hešu."/>
+    <Item english="The password does not match the hash." text="Lozinka ne odgovara hešu."/>
+    <Item english="The cost must be between 4 and 31." text="Trošak mora biti između 4 i 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Verzija mora biti 2a, 2b ili 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N mora biti između 2^1 i 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r i p moraju biti između 1 i 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Ove postavke zahtijevaju više od 2 GB memorije."/>
+    <Item english="The parallelism must be between 1 and 64." text="Paralelizam mora biti između 1 i 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Broj iteracija mora biti između 1 i 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Memorija mora biti najmanje 8 KiB za svaku nit."/>
+    <Item english="These settings need more than 4 GB of memory." text="Ove postavke zahtijevaju više od 4 GB memorije."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Heš funkcija mora biti SHA-1, SHA-256 ili SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Broj iteracija mora biti između 1 i 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Dužina heša mora biti između 4 i 1024 bajta."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (siguran za URL)"/>
+    <Item english="Encode" text="Kodiraj"/>
+    <Item english="Decode" text="Dekodiraj"/>
+    <Item english="The input is:" text="Ulaz je:"/>
+    <Item english="Bytes in hexadecimal" text="Bajtovi u heksadecimalnom zapisu"/>
+    <Item english="Input:" text="Ulaz:"/>
+    <Item english="Result:" text="Rezultat:"/>
+    <Item english="Text:" text="Tekst:"/>
+    <Item english="Bytes in hexadecimal:" text="Bajtovi u heksadecimalnom zapisu:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Ulaz nisu bajtovi u heksadecimalnom zapisu."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Ulaz nije ispravan $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Dekodirani bajtovi nisu UTF-8 tekst; prikazani su samo heksadecimalno."/>
+    <Item english="Password Generator" text="Generator lozinki"/>
+    <Item english="Length:" text="Dužina:"/>
+    <Item english="Number of passwords:" text="Broj lozinki:"/>
+    <Item english="Uppercase letters (A-Z)" text="Velika slova (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Mala slova (a-z)"/>
+    <Item english="Digits (0-9)" text="Cifre (0-9)"/>
+    <Item english="Symbols:" text="Simboli:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Izostavi znakove koji liče jedan na drugi (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Najmanje jedan znak svake vrste"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropija: oko $INT_REPLACE$ bita"/>
+    <Item english="Choose at least one kind of character." text="Izaberite najmanje jednu vrstu znakova."/>
+    <Item english="Insert into Document" text="Umetni u dokument"/>
+    <Item english="Show the bare key in hexadecimal" text="Prikaži sam ključ heksadecimalno"/>
+    <Item english="Empty: a random salt each time" text="Prazno: svaki put nasumična so"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt čita samo prva 72 bajta."/>
 </NativeLangExtra>

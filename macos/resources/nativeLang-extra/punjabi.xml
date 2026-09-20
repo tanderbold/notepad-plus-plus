@@ -141,4 +141,74 @@
     <Item english="Transparent" text="ਪਾਰਦਰਸ਼ੀ"/>
     <Item english="View 1" text="ਦ੍ਰਿਸ਼ 1"/>
     <Item english="View 2" text="ਦ੍ਰਿਸ਼ 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="ਹੈਸ਼"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="ਪਾਸਵਰਡ…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC ਕੁੰਜੀ (ਚੋਣਵੀਂ):"/>
+    <Item english="Salt (hexadecimal):" text="ਸਾਲਟ (ਹੈਕਸਾਡੈਸੀਮਲ):"/>
+    <Item english="Random" text="ਰੈਂਡਮ"/>
+    <Item english="Cost (4-31):" text="ਲਾਗਤ (4-31):"/>
+    <Item english="Version:" text="ਵਰਜਨ:"/>
+    <Item english="N, as a power of 2:" text="N, 2 ਦੀ ਘਾਤ ਵਜੋਂ:"/>
+    <Item english="Block size (r):" text="ਬਲਾਕ ਦਾ ਆਕਾਰ (r):"/>
+    <Item english="Parallelism (p):" text="ਸਮਾਨਾਂਤਰਤਾ (p):"/>
+    <Item english="Variant:" text="ਵੇਰੀਐਂਟ:"/>
+    <Item english="Memory (KiB):" text="ਮੈਮੋਰੀ (KiB):"/>
+    <Item english="Iterations:" text="ਦੁਹਰਾਅ:"/>
+    <Item english="Parallelism:" text="ਸਮਾਨਾਂਤਰਤਾ:"/>
+    <Item english="Digest:" text="ਹੈਸ਼ ਫੰਕਸ਼ਨ:"/>
+    <Item english="Hash length (bytes):" text="ਹੈਸ਼ ਦੀ ਲੰਬਾਈ (ਬਾਈਟ):"/>
+    <Item english="Hash:" text="ਹੈਸ਼:"/>
+    <Item english="Verify" text="ਤਸਦੀਕ ਕਰੋ"/>
+    <Item english="Hash to check the password against:" text="ਹੈਸ਼ ਜਿਸ ਨਾਲ ਪਾਸਵਰਡ ਦੀ ਜਾਂਚ ਕਰਨੀ ਹੈ:"/>
+    <Item english="The salt is not valid hexadecimal." text="ਸਾਲਟ ਵੈਧ ਹੈਕਸਾਡੈਸੀਮਲ ਨਹੀਂ ਹੈ।"/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt ਲਈ ਠੀਕ 16 ਬਾਈਟ ਦਾ ਸਾਲਟ ਚਾਹੀਦਾ ਹੈ।"/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 ਲਈ ਘੱਟੋ-ਘੱਟ 8 ਬਾਈਟ ਦਾ ਸਾਲਟ ਚਾਹੀਦਾ ਹੈ।"/>
+    <Item english="The hash could not be generated with these settings." text="ਇਨ੍ਹਾਂ ਸੈਟਿੰਗਾਂ ਨਾਲ ਹੈਸ਼ ਨਹੀਂ ਬਣਾਇਆ ਜਾ ਸਕਿਆ।"/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="ਇਹ bcrypt, scrypt, Argon2 ਜਾਂ PBKDF2 ਹੈਸ਼ ਨਹੀਂ ਹੈ।"/>
+    <Item english="The password matches the hash." text="ਪਾਸਵਰਡ ਹੈਸ਼ ਨਾਲ ਮੇਲ ਖਾਂਦਾ ਹੈ।"/>
+    <Item english="The password does not match the hash." text="ਪਾਸਵਰਡ ਹੈਸ਼ ਨਾਲ ਮੇਲ ਨਹੀਂ ਖਾਂਦਾ।"/>
+    <Item english="The cost must be between 4 and 31." text="ਲਾਗਤ 4 ਅਤੇ 31 ਦੇ ਵਿਚਕਾਰ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ।"/>
+    <Item english="The version must be 2a, 2b or 2y." text="ਵਰਜਨ 2a, 2b ਜਾਂ 2y ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।"/>
+    <Item english="N must be between 2^1 and 2^24." text="N 2^1 ਅਤੇ 2^24 ਦੇ ਵਿਚਕਾਰ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।"/>
+    <Item english="r and p must be between 1 and 64." text="r ਅਤੇ p 1 ਅਤੇ 64 ਦੇ ਵਿਚਕਾਰ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ।"/>
+    <Item english="These settings need more than 2 GB of memory." text="ਇਨ੍ਹਾਂ ਸੈਟਿੰਗਾਂ ਲਈ 2 GB ਤੋਂ ਵੱਧ ਮੈਮੋਰੀ ਚਾਹੀਦੀ ਹੈ।"/>
+    <Item english="The parallelism must be between 1 and 64." text="ਸਮਾਨਾਂਤਰਤਾ 1 ਅਤੇ 64 ਦੇ ਵਿਚਕਾਰ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ।"/>
+    <Item english="The iterations must be between 1 and 1000." text="ਦੁਹਰਾਅ 1 ਅਤੇ 1000 ਦੇ ਵਿਚਕਾਰ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ।"/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="ਹਰ ਥ੍ਰੈੱਡ ਲਈ ਮੈਮੋਰੀ ਘੱਟੋ-ਘੱਟ 8 KiB ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ।"/>
+    <Item english="These settings need more than 4 GB of memory." text="ਇਨ੍ਹਾਂ ਸੈਟਿੰਗਾਂ ਲਈ 4 GB ਤੋਂ ਵੱਧ ਮੈਮੋਰੀ ਚਾਹੀਦੀ ਹੈ।"/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="ਹੈਸ਼ ਫੰਕਸ਼ਨ SHA-1, SHA-256 ਜਾਂ SHA-512 ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।"/>
+    <Item english="The iterations must be between 1 and 100000000." text="ਦੁਹਰਾਅ 1 ਅਤੇ 100000000 ਦੇ ਵਿਚਕਾਰ ਹੋਣੇ ਚਾਹੀਦੇ ਹਨ।"/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="ਹੈਸ਼ ਦੀ ਲੰਬਾਈ 4 ਅਤੇ 1024 ਬਾਈਟ ਦੇ ਵਿਚਕਾਰ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ।"/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-ਸੁਰੱਖਿਅਤ)"/>
+    <Item english="Encode" text="ਇੰਕੋਡ ਕਰੋ"/>
+    <Item english="Decode" text="ਡੀਕੋਡ ਕਰੋ"/>
+    <Item english="The input is:" text="ਇਨਪੁੱਟ ਹੈ:"/>
+    <Item english="Bytes in hexadecimal" text="ਹੈਕਸਾਡੈਸੀਮਲ ਵਿੱਚ ਬਾਈਟ"/>
+    <Item english="Input:" text="ਇਨਪੁੱਟ:"/>
+    <Item english="Result:" text="ਨਤੀਜਾ:"/>
+    <Item english="Text:" text="ਟੈਕਸਟ:"/>
+    <Item english="Bytes in hexadecimal:" text="ਹੈਕਸਾਡੈਸੀਮਲ ਵਿੱਚ ਬਾਈਟ:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="ਇਨਪੁੱਟ ਹੈਕਸਾਡੈਸੀਮਲ ਵਿੱਚ ਲਿਖੇ ਬਾਈਟ ਨਹੀਂ ਹਨ।"/>
+    <Item english="The input is not valid $STR_REPLACE$." text="ਇਨਪੁੱਟ ਵੈਧ $STR_REPLACE$ ਨਹੀਂ ਹੈ।"/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="ਡੀਕੋਡ ਕੀਤੇ ਬਾਈਟ UTF-8 ਟੈਕਸਟ ਨਹੀਂ ਹਨ; ਇਹ ਸਿਰਫ਼ ਹੈਕਸਾਡੈਸੀਮਲ ਵਿੱਚ ਵਿਖਾਏ ਗਏ ਹਨ।"/>
+    <Item english="Password Generator" text="ਪਾਸਵਰਡ ਜਨਰੇਟਰ"/>
+    <Item english="Length:" text="ਲੰਬਾਈ:"/>
+    <Item english="Number of passwords:" text="ਪਾਸਵਰਡਾਂ ਦੀ ਗਿਣਤੀ:"/>
+    <Item english="Uppercase letters (A-Z)" text="ਵੱਡੇ ਅੱਖਰ (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="ਛੋਟੇ ਅੱਖਰ (a-z)"/>
+    <Item english="Digits (0-9)" text="ਅੰਕ (0-9)"/>
+    <Item english="Symbols:" text="ਚਿੰਨ੍ਹ:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="ਇੱਕੋ ਜਿਹੇ ਦਿਸਣ ਵਾਲੇ ਅੱਖਰ ਛੱਡ ਦਿਓ (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="ਹਰ ਕਿਸਮ ਦਾ ਘੱਟੋ-ਘੱਟ ਇੱਕ ਅੱਖਰ"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="ਐਂਟਰੌਪੀ: ਲਗਭਗ $INT_REPLACE$ ਬਿੱਟ"/>
+    <Item english="Choose at least one kind of character." text="ਘੱਟੋ-ਘੱਟ ਇੱਕ ਕਿਸਮ ਦੇ ਅੱਖਰ ਚੁਣੋ।"/>
+    <Item english="Insert into Document" text="ਦਸਤਾਵੇਜ਼ ਵਿੱਚ ਸ਼ਾਮਲ ਕਰੋ"/>
+    <Item english="Show the bare key in hexadecimal" text="ਸਿਰਫ਼ ਕੁੰਜੀ ਹੈਕਸਾਡੈਸੀਮਲ ਵਿੱਚ ਦਿਖਾਓ"/>
+    <Item english="Empty: a random salt each time" text="ਖਾਲੀ: ਹਰ ਵਾਰ ਰੈਂਡਮ ਸਾਲਟ"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt ਸਿਰਫ਼ ਪਹਿਲੇ 72 ਬਾਈਟ ਪੜ੍ਹਦਾ ਹੈ।"/>
 </NativeLangExtra>

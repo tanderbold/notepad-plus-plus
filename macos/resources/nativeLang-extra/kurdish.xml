@@ -61,4 +61,30 @@
     <Item english="Which language is this?" text="ئەمە چ زمانێكە؟"/>
     <Item english="Searching..." text="گەڕان..."/>
     <Item english="Transparent" text="ڕوون"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="وشەی نهێنی…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="كلیلی HMAC (ئارەزوومەندانە):"/>
+    <Item english="Random" text="هەڕەمەكی"/>
+    <Item english="Version:" text="وەشان:"/>
+    <Item english="Memory (KiB):" text="بیرگە (KiB):"/>
+    <Item english="Verify" text="پشكنین"/>
+    <Item english="The version must be 2a, 2b or 2y." text="وەشان دەبێت 2a، 2b یان 2y بێت."/>
+    <Item english="N must be between 2^1 and 2^24." text="N دەبێت لە نێوان 2^1 و 2^24 بێت."/>
+    <Item english="r and p must be between 1 and 64." text="r و p دەبێت لە نێوان 1 و 64 بن."/>
+    <Item english="These settings need more than 2 GB of memory." text="ئەم ڕێكخستنانە پێویستیان بە زیاتر لە 2 GB بیرگە هەیە."/>
+    <Item english="These settings need more than 4 GB of memory." text="ئەم ڕێكخستنانە پێویستیان بە زیاتر لە 4 GB بیرگە هەیە."/>
+    <Item english="Result:" text="ئەنجام:"/>
+    <Item english="Text:" text="دەق:"/>
+    <Item english="Password Generator" text="دروستكەری وشەی نهێنی"/>
+    <Item english="Length:" text="درێژی:"/>
+    <Item english="Number of passwords:" text="ژمارەی وشە نهێنییەكان:"/>
+    <Item english="Uppercase letters (A-Z)" text="پیتە گەورەكان (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="پیتە بچووكەكان (a-z)"/>
+    <Item english="Digits (0-9)" text="ژمارەكان (0-9)"/>
+    <Item english="Symbols:" text="هێماكان:"/>
+    <Item english="Insert into Document" text="خستنە ناو بەڵگەنامە"/>
 </NativeLangExtra>

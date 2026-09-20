@@ -184,6 +184,14 @@ separators), upstream's default the first time, read at every right click;
 `tabContextMenu.xml` does the same for the tabs when there is one. Commands
 of Windows plugins named there (MIME Tools, NppExport) are left out.
 
+**Tools.** Beyond upstream: Hashes (six more digests, HMAC, bcrypt, scrypt,
+Argon2, PBKDF2 with their settings and a verifier), Base (Base64, Base58,
+Base32 both ways, text or bytes in hexadecimal) and a password generator; see
+PORTING.md. Upstream's digest dialogs are reproduced, and its twelve command
+ids kept. The 75 texts of these windows are in `nativeLang-extra` for every
+language, model-made like the rest of that folder and as much in want of a
+native speaker's eye.
+
 **Docking.** Done since the audit (plan 2.7): four containers with tabs,
 drag between docked and floating, the layout saved. Still different: see the
 review list above.

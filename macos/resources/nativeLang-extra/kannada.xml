@@ -115,4 +115,43 @@
     <Item english="Transparent" text="ಟ್ರ್ಯಾನ್ಸ್ಪರೆಂಟ್"/>
     <Item english="View 1" text="ವ್ಯೂ 1"/>
     <Item english="View 2" text="ವ್ಯೂ 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="ಹ್ಯಾಶಸ್"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="ಪಾಸ್‌ವರ್ಡ್…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC ಕೀ (ಆಪ್ಷನಲ್):"/>
+    <Item english="Salt (hexadecimal):" text="ಸಾಲ್ಟ್ (ಹೆಕ್ಸಾಡೆಸಿಮಲ್):"/>
+    <Item english="Random" text="ರ್ಯಾಂಡಮ್"/>
+    <Item english="Cost (4-31):" text="ಕಾಸ್ಟ್ (4-31):"/>
+    <Item english="Version:" text="ವರ್ಷನ್:"/>
+    <Item english="Block size (r):" text="ಬ್ಲಾಕ್ ಸೈಸ್ (r):"/>
+    <Item english="Parallelism (p):" text="ಪ್ಯಾರಲಲಿಸಮ್ (p):"/>
+    <Item english="Variant:" text="ವೇರಿಯಂಟ್:"/>
+    <Item english="Memory (KiB):" text="ಮೆಮೊರಿ (KiB):"/>
+    <Item english="Iterations:" text="ಇಟರೇಶನ್ಸ್:"/>
+    <Item english="Parallelism:" text="ಪ್ಯಾರಲಲಿಸಮ್:"/>
+    <Item english="Digest:" text="ಡೈಜೆಸ್ಟ್:"/>
+    <Item english="Hash length (bytes):" text="ಹ್ಯಾಶ್ ಲೆಂಗ್ತ್ (ಬೈಟ್ಸ್):"/>
+    <Item english="Hash:" text="ಹ್ಯಾಶ್:"/>
+    <Item english="Verify" text="ವೆರಿಫೈ"/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-ಸೇಫ್)"/>
+    <Item english="Encode" text="ಎನ್‌ಕೋಡ್"/>
+    <Item english="Decode" text="ಡೀಕೋಡ್"/>
+    <Item english="Bytes in hexadecimal" text="ಬೈಟ್ಸ್ ಇನ್ ಹೆಕ್ಸಾಡೆಸಿಮಲ್"/>
+    <Item english="Input:" text="ಇನ್‌ಪುಟ್:"/>
+    <Item english="Result:" text="ರಿಸಲ್ಟ್:"/>
+    <Item english="Text:" text="ಟೆಕ್ಸ್ಟ್:"/>
+    <Item english="Bytes in hexadecimal:" text="ಬೈಟ್ಸ್ ಇನ್ ಹೆಕ್ಸಾಡೆಸಿಮಲ್:"/>
+    <Item english="Password Generator" text="ಪಾಸ್‌ವರ್ಡ್ ಜನರೇಟರ್"/>
+    <Item english="Length:" text="ಲೆಂಗ್ತ್:"/>
+    <Item english="Number of passwords:" text="ನಂಬರ್ ಆಫ್ ಪಾಸ್‌ವರ್ಡ್ಸ್:"/>
+    <Item english="Uppercase letters (A-Z)" text="ಅಪ್ಪರ್‌ಕೇಸ್ ಲೆಟರ್ಸ್ (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="ಲೋಯರ್‌ಕೇಸ್ ಲೆಟರ್ಸ್ (a-z)"/>
+    <Item english="Digits (0-9)" text="ಡಿಜಿಟ್ಸ್ (0-9)"/>
+    <Item english="Symbols:" text="ಸಿಂಬಲ್ಸ್:"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="ಎಂಟ್ರೊಪಿ: ಅಬೌಟ್ $INT_REPLACE$ ಬಿಟ್ಸ್"/>
+    <Item english="Insert into Document" text="ಇನ್‌ಸರ್ಟ್ ಇನ್ಟು ಡಾಕ್ಯುಮೆಂಟ್"/>
 </NativeLangExtra>

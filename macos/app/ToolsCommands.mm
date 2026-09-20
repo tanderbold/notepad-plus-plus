@@ -4,6 +4,7 @@
 #import "InfoWindows.h"
 #import "SettingsCommands.h"
 #import "UpdateChecker.h"
+#import "CryptoTools.h"
 #import "ScintillaView.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <objc/runtime.h>
@@ -14,10 +15,17 @@
 
 + (NSString *)nameOfDigest:(NppDigest)digest {
     switch (digest) {
-        case NppDigestMD5:    return @"MD5";
-        case NppDigestSHA1:   return @"SHA-1";
-        case NppDigestSHA256: return @"SHA-256";
-        case NppDigestSHA512: return @"SHA-512";
+        case NppDigestMD5:      return @"MD5";
+        case NppDigestSHA1:     return @"SHA-1";
+        case NppDigestSHA256:   return @"SHA-256";
+        case NppDigestSHA512:   return @"SHA-512";
+        case NppDigestSHA224:   return @"SHA-224";
+        case NppDigestSHA384:   return @"SHA-384";
+        case NppDigestSHA3_256: return @"SHA3-256";
+        case NppDigestSHA3_512: return @"SHA3-512";
+        case NppDigestBLAKE2b:  return @"BLAKE2b";
+        case NppDigestCRC32:    return @"CRC-32";
+        case NppDigestCount:    break;
     }
     return @"";
 }
@@ -29,18 +37,41 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     unsigned char out[CC_SHA512_DIGEST_LENGTH];
-    CC_LONG len = (CC_LONG)data.length;
+    // CommonCrypto counts in 32 bits; a file past 4 GB is fed in pieces.
+    #define NPP_DIGEST(CTX, INIT, UPDATE, FINAL, LENGTH) { \
+        CTX ctx; INIT(&ctx); \
+        const unsigned char *bytes = (const unsigned char *)data.bytes; NSUInteger left = data.length; \
+        while (left) { CC_LONG piece = (CC_LONG)MIN(left, (NSUInteger)1 << 30); UPDATE(&ctx, bytes, piece); bytes += piece; left -= piece; } \
+        FINAL(out, &ctx); size = LENGTH; }
     NSUInteger size = 0;
     switch (digest) {
-        case NppDigestMD5:    CC_MD5(data.bytes, len, out);    size = CC_MD5_DIGEST_LENGTH;    break;
-        case NppDigestSHA1:   CC_SHA1(data.bytes, len, out);   size = CC_SHA1_DIGEST_LENGTH;   break;
-        case NppDigestSHA256: CC_SHA256(data.bytes, len, out); size = CC_SHA256_DIGEST_LENGTH; break;
-        case NppDigestSHA512: CC_SHA512(data.bytes, len, out); size = CC_SHA512_DIGEST_LENGTH; break;
+        case NppDigestMD5:    NPP_DIGEST(CC_MD5_CTX, CC_MD5_Init, CC_MD5_Update, CC_MD5_Final, CC_MD5_DIGEST_LENGTH) break;
+        case NppDigestSHA1:   NPP_DIGEST(CC_SHA1_CTX, CC_SHA1_Init, CC_SHA1_Update, CC_SHA1_Final, CC_SHA1_DIGEST_LENGTH) break;
+        case NppDigestSHA224: NPP_DIGEST(CC_SHA256_CTX, CC_SHA224_Init, CC_SHA224_Update, CC_SHA224_Final, CC_SHA224_DIGEST_LENGTH) break;
+        case NppDigestSHA256: NPP_DIGEST(CC_SHA256_CTX, CC_SHA256_Init, CC_SHA256_Update, CC_SHA256_Final, CC_SHA256_DIGEST_LENGTH) break;
+        case NppDigestSHA384: NPP_DIGEST(CC_SHA512_CTX, CC_SHA384_Init, CC_SHA384_Update, CC_SHA384_Final, CC_SHA384_DIGEST_LENGTH) break;
+        case NppDigestSHA512: NPP_DIGEST(CC_SHA512_CTX, CC_SHA512_Init, CC_SHA512_Update, CC_SHA512_Final, CC_SHA512_DIGEST_LENGTH) break;
+        case NppDigestSHA3_256: return [NppCrypto hexOfData:[NppCrypto sha3OfData:data bits:256]];
+        case NppDigestSHA3_512: return [NppCrypto hexOfData:[NppCrypto sha3OfData:data bits:512]];
+        case NppDigestBLAKE2b:  return [NppCrypto hexOfData:[NppCrypto blake2bOfData:data]];
+        case NppDigestCRC32:    return [NSString stringWithFormat:@"%08x", [NppCrypto crc32OfData:data]];
+        case NppDigestCount:    return nil;
     }
+    #undef NPP_DIGEST
 #pragma clang diagnostic pop
-    NSMutableString *hex = [NSMutableString stringWithCapacity:size * 2];
-    for (NSUInteger i = 0; i < size; ++i) [hex appendFormat:@"%02x", out[i]];
-    return hex;
+    return [NppCrypto hexOfData:[NSData dataWithBytes:out length:size]];
+}
+
++ (NSString *)hashOfText:(NSString *)text eachLine:(BOOL)eachLine digest:(NppDigest)digest {
+    if (!eachLine) return [self hashOfData:[text dataUsingEncoding:NSUTF8StringEncoding] digest:digest];
+    NSString *plain = [[text stringByReplacingOccurrencesOfString:@"\r\n" withString:@"\n"]
+                       stringByReplacingOccurrencesOfString:@"\r" withString:@"\n"];
+    // (A text that ends its last line has no empty line after it, as getline sees it upstream.)
+    if ([plain hasSuffix:@"\n"]) plain = [plain substringToIndex:plain.length - 1];
+    NSMutableArray<NSString *> *lines = [NSMutableArray array];
+    for (NSString *line in [plain componentsSeparatedByString:@"\n"])
+        [lines addObject:line.length ? [self hashOfData:[line dataUsingEncoding:NSUTF8StringEncoding] digest:digest] : @""];
+    return [lines componentsJoinedByString:@"\n"];
 }
 
 - (NSString *)hashOfSelection:(NppDigest)digest {

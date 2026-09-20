@@ -14,4 +14,18 @@
     <Item english="Icons" text="Адыргаҷқәа"/>
     <Item english="Hidden" text="Иҵәаху"/>
     <Item english="Notepad++ update" text="Notepad++ арҿыцра"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Base" text="Base"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="Version:" text="Аверсиа:"/>
+    <Item english="Result:" text="Алҵшәа:"/>
+    <Item english="Text:" text="Атекст:"/>
+    <Item english="Length:" text="Аура:"/>
+    <Item english="Uppercase letters (A-Z)" text="Анбан дуқәа (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Анбан хәыҷқәа (a-z)"/>
+    <Item english="Digits (0-9)" text="Ацифрақәа (0-9)"/>
+    <Item english="Symbols:" text="Асимволқәа:"/>
+    <Item english="Insert into Document" text="Иҭаргылатәуп адокумент ахь"/>
 </NativeLangExtra>

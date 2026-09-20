@@ -141,4 +141,74 @@
     <Item english="Transparent" text="شفاف"/>
     <Item english="View 1" text="العرض 1"/>
     <Item english="View 2" text="العرض 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="التجزئات"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="كلمة المرور…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="مفتاح HMAC (اختياري):"/>
+    <Item english="Salt (hexadecimal):" text="الملح (ست عشري):"/>
+    <Item english="Random" text="عشوائي"/>
+    <Item english="Cost (4-31):" text="التكلفة (4-31):"/>
+    <Item english="Version:" text="النسخة:"/>
+    <Item english="N, as a power of 2:" text="N، كأسّ للعدد 2:"/>
+    <Item english="Block size (r):" text="حجم الكتلة (r):"/>
+    <Item english="Parallelism (p):" text="التوازي (p):"/>
+    <Item english="Variant:" text="النوع:"/>
+    <Item english="Memory (KiB):" text="الذاكرة (KiB):"/>
+    <Item english="Iterations:" text="التكرارات:"/>
+    <Item english="Parallelism:" text="التوازي:"/>
+    <Item english="Digest:" text="دالة التجزئة:"/>
+    <Item english="Hash length (bytes):" text="طول التجزئة (بايت):"/>
+    <Item english="Hash:" text="التجزئة:"/>
+    <Item english="Verify" text="تحقق"/>
+    <Item english="Hash to check the password against:" text="التجزئة المطلوب مطابقة كلمة المرور معها:"/>
+    <Item english="The salt is not valid hexadecimal." text="الملح ليس قيمة ست عشرية صالحة."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="يتطلب bcrypt ملحاً من 16 بايت بالضبط."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="يتطلب Argon2 ملحاً لا يقل عن 8 بايت."/>
+    <Item english="The hash could not be generated with these settings." text="تعذر توليد التجزئة بهذه الإعدادات."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="هذه ليست تجزئة bcrypt أو scrypt أو Argon2 أو PBKDF2."/>
+    <Item english="The password matches the hash." text="كلمة المرور تطابق التجزئة."/>
+    <Item english="The password does not match the hash." text="كلمة المرور لا تطابق التجزئة."/>
+    <Item english="The cost must be between 4 and 31." text="يجب أن تكون التكلفة بين 4 و 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="يجب أن تكون النسخة 2a أو 2b أو 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="يجب أن يكون N بين 2^1 و 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="يجب أن يكون r و p بين 1 و 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="تحتاج هذه الإعدادات إلى أكثر من 2 GB من الذاكرة."/>
+    <Item english="The parallelism must be between 1 and 64." text="يجب أن يكون التوازي بين 1 و 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="يجب أن يكون عدد التكرارات بين 1 و 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="يجب ألا تقل الذاكرة عن 8 KiB لكل مسار."/>
+    <Item english="These settings need more than 4 GB of memory." text="تحتاج هذه الإعدادات إلى أكثر من 4 GB من الذاكرة."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="يجب أن تكون دالة التجزئة SHA-1 أو SHA-256 أو SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="يجب أن يكون عدد التكرارات بين 1 و 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="يجب أن يكون طول التجزئة بين 4 و 1024 بايت."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (آمن لعناوين URL)"/>
+    <Item english="Encode" text="ترميز"/>
+    <Item english="Decode" text="فك الترميز"/>
+    <Item english="The input is:" text="نوع الإدخال:"/>
+    <Item english="Bytes in hexadecimal" text="بايتات بالنظام الست عشري"/>
+    <Item english="Input:" text="الإدخال:"/>
+    <Item english="Result:" text="النتيجة:"/>
+    <Item english="Text:" text="النص:"/>
+    <Item english="Bytes in hexadecimal:" text="بايتات بالنظام الست عشري:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="الإدخال ليس بايتات مكتوبة بالنظام الست عشري."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="الإدخال ليس $STR_REPLACE$ صالحاً."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="البايتات بعد فك الترميز ليست نص UTF-8؛ لذا تُعرض بالنظام الست عشري فقط."/>
+    <Item english="Password Generator" text="مولد كلمات المرور"/>
+    <Item english="Length:" text="الطول:"/>
+    <Item english="Number of passwords:" text="عدد كلمات المرور:"/>
+    <Item english="Uppercase letters (A-Z)" text="أحرف كبيرة (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="أحرف صغيرة (a-z)"/>
+    <Item english="Digits (0-9)" text="أرقام (0-9)"/>
+    <Item english="Symbols:" text="الرموز:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="استبعاد الأحرف المتشابهة (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="حرف واحد على الأقل من كل نوع"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="الإنتروبيا: حوالي $INT_REPLACE$ بت"/>
+    <Item english="Choose at least one kind of character." text="اختر نوعاً واحداً على الأقل من الأحرف."/>
+    <Item english="Insert into Document" text="إدراج في المستند"/>
+    <Item english="Show the bare key in hexadecimal" text="إظهار المفتاح نفسه بالنظام الست عشري"/>
+    <Item english="Empty: a random salt each time" text="فارغ: ملح عشوائي في كل مرة"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="يقرأ bcrypt أول 72 بايت فقط."/>
 </NativeLangExtra>

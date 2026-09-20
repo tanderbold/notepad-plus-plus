@@ -137,4 +137,74 @@
     <Item english="Transparent" text="Үтә-күренмәле"/>
     <Item english="View 1" text="1-нче өлкә"/>
     <Item english="View 2" text="2-нче өлкә"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Хешлар"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Серсүз…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC ачкычы (мәҗбүри түгел):"/>
+    <Item english="Salt (hexadecimal):" text="Тоз (уналтылы):"/>
+    <Item english="Random" text="Очраклы"/>
+    <Item english="Cost (4-31):" text="Катлаулылык (4-31):"/>
+    <Item english="Version:" text="Версия:"/>
+    <Item english="N, as a power of 2:" text="N, 2 нең дәрәҗәсе буларак:"/>
+    <Item english="Block size (r):" text="Блок зурлыгы (r):"/>
+    <Item english="Parallelism (p):" text="Параллельлек (p):"/>
+    <Item english="Variant:" text="Вариант:"/>
+    <Item english="Memory (KiB):" text="Хәтер (KiB):"/>
+    <Item english="Iterations:" text="Итерацияләр:"/>
+    <Item english="Parallelism:" text="Параллельлек:"/>
+    <Item english="Digest:" text="Хеш-функция:"/>
+    <Item english="Hash length (bytes):" text="Хеш озынлыгы (байт):"/>
+    <Item english="Hash:" text="Хеш:"/>
+    <Item english="Verify" text="Тикшерергә"/>
+    <Item english="Hash to check the password against:" text="Серсүзне тикшерү өчен хеш:"/>
+    <Item english="The salt is not valid hexadecimal." text="Тоз дөрес уналтылы язма түгел."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt өчен төгәл 16 байтлы тоз кирәк."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 өчен кимендә 8 байтлы тоз кирәк."/>
+    <Item english="The hash could not be generated with these settings." text="Бу көйләүләр белән хешне ясап булмады."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Бу bcrypt, scrypt, Argon2 яки PBKDF2 хеше түгел."/>
+    <Item english="The password matches the hash." text="Серсүз хешкә туры килә."/>
+    <Item english="The password does not match the hash." text="Серсүз хешкә туры килми."/>
+    <Item english="The cost must be between 4 and 31." text="Катлаулылык 4 белән 31 арасында булырга тиеш."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Версия 2a, 2b яки 2y булырга тиеш."/>
+    <Item english="N must be between 2^1 and 2^24." text="N 2^1 белән 2^24 арасында булырга тиеш."/>
+    <Item english="r and p must be between 1 and 64." text="r һәм p 1 белән 64 арасында булырга тиеш."/>
+    <Item english="These settings need more than 2 GB of memory." text="Бу көйләүләр өчен 2 GB-тан артык хәтер кирәк."/>
+    <Item english="The parallelism must be between 1 and 64." text="Параллельлек 1 белән 64 арасында булырга тиеш."/>
+    <Item english="The iterations must be between 1 and 1000." text="Итерацияләр саны 1 белән 1000 арасында булырга тиеш."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Хәтер һәр агым өчен кимендә 8 KiB булырга тиеш."/>
+    <Item english="These settings need more than 4 GB of memory." text="Бу көйләүләр өчен 4 GB-тан артык хәтер кирәк."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Хеш-функция SHA-1, SHA-256 яки SHA-512 булырга тиеш."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Итерацияләр саны 1 белән 100000000 арасында булырга тиеш."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Хеш озынлыгы 4 белән 1024 байт арасында булырга тиеш."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL өчен)"/>
+    <Item english="Encode" text="Кодларга"/>
+    <Item english="Decode" text="Декодларга"/>
+    <Item english="The input is:" text="Кертелгән мәгълүмат:"/>
+    <Item english="Bytes in hexadecimal" text="Уналтылы рәвештәге байтлар"/>
+    <Item english="Input:" text="Кертү:"/>
+    <Item english="Result:" text="Нәтиҗә:"/>
+    <Item english="Text:" text="Текст:"/>
+    <Item english="Bytes in hexadecimal:" text="Уналтылы рәвештәге байтлар:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Кертелгән мәгълүмат уналтылы рәвештә язылган байтлар түгел."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Кертелгән мәгълүмат дөрес $STR_REPLACE$ түгел."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Декодланган байтлар UTF-8 тексты түгел; алар уналтылы рәвештә генә күрсәтелгән."/>
+    <Item english="Password Generator" text="Серсүзләр генераторы"/>
+    <Item english="Length:" text="Озынлык:"/>
+    <Item english="Number of passwords:" text="Серсүзләр саны:"/>
+    <Item english="Uppercase letters (A-Z)" text="Баш хәрефләр (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Юл хәрефләре (a-z)"/>
+    <Item english="Digits (0-9)" text="Цифрлар (0-9)"/>
+    <Item english="Symbols:" text="Символлар:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Охшаш символларны кертмәскә (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Һәр төрдән кимендә бер символ"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Энтропия: якынча $INT_REPLACE$ бит"/>
+    <Item english="Choose at least one kind of character." text="Кимендә бер символ төрен сайлагыз."/>
+    <Item english="Insert into Document" text="Документка куярга"/>
+    <Item english="Show the bare key in hexadecimal" text="Ачкычның үзен уналтылы рәвештә күрсәтергә"/>
+    <Item english="Empty: a random salt each time" text="Буш: һәр юлы очраклы тоз"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt беренче 72 байтны гына укый."/>
 </NativeLangExtra>

@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Gjennomsiktig"/>
     <Item english="View 1" text="Visning 1"/>
     <Item english="View 2" text="Visning 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hashverdier"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Passord…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC-nøkkel (valgfri):"/>
+    <Item english="Salt (hexadecimal):" text="Salt (heksadesimalt):"/>
+    <Item english="Random" text="Tilfeldig"/>
+    <Item english="Cost (4-31):" text="Kostnad (4-31):"/>
+    <Item english="Version:" text="Versjon:"/>
+    <Item english="N, as a power of 2:" text="N, som en potens av 2:"/>
+    <Item english="Block size (r):" text="Blokkstørrelse (r):"/>
+    <Item english="Parallelism (p):" text="Parallellisme (p):"/>
+    <Item english="Variant:" text="Variant:"/>
+    <Item english="Memory (KiB):" text="Minne (KiB):"/>
+    <Item english="Iterations:" text="Iterasjoner:"/>
+    <Item english="Parallelism:" text="Parallellisme:"/>
+    <Item english="Digest:" text="Hashfunksjon:"/>
+    <Item english="Hash length (bytes):" text="Hashlengde (byte):"/>
+    <Item english="Hash:" text="Hash:"/>
+    <Item english="Verify" text="Kontroller"/>
+    <Item english="Hash to check the password against:" text="Hash som passordet skal kontrolleres mot:"/>
+    <Item english="The salt is not valid hexadecimal." text="Saltet er ikke gyldig heksadesimalt."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt krever et salt på nøyaktig 16 byte."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 krever et salt på minst 8 byte."/>
+    <Item english="The hash could not be generated with these settings." text="Hashen kunne ikke genereres med disse innstillingene."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Dette er ikke en bcrypt-, scrypt-, Argon2- eller PBKDF2-hash."/>
+    <Item english="The password matches the hash." text="Passordet samsvarer med hashen."/>
+    <Item english="The password does not match the hash." text="Passordet samsvarer ikke med hashen."/>
+    <Item english="The cost must be between 4 and 31." text="Kostnaden må være mellom 4 og 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Versjonen må være 2a, 2b eller 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N må være mellom 2^1 og 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r og p må være mellom 1 og 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Disse innstillingene krever mer enn 2 GB minne."/>
+    <Item english="The parallelism must be between 1 and 64." text="Parallellismen må være mellom 1 og 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Antall iterasjoner må være mellom 1 og 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Minnet må være minst 8 KiB for hver tråd."/>
+    <Item english="These settings need more than 4 GB of memory." text="Disse innstillingene krever mer enn 4 GB minne."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Hashfunksjonen må være SHA-1, SHA-256 eller SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Antall iterasjoner må være mellom 1 og 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Hashlengden må være mellom 4 og 1024 byte."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-sikker)"/>
+    <Item english="Encode" text="Kod"/>
+    <Item english="Decode" text="Dekod"/>
+    <Item english="The input is:" text="Inndata er:"/>
+    <Item english="Bytes in hexadecimal" text="Byte i heksadesimal form"/>
+    <Item english="Input:" text="Inndata:"/>
+    <Item english="Result:" text="Resultat:"/>
+    <Item english="Text:" text="Tekst:"/>
+    <Item english="Bytes in hexadecimal:" text="Byte i heksadesimal form:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Inndata er ikke byte skrevet i heksadesimal form."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Inndata er ikke gyldig $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="De dekodede bytene er ikke UTF-8-tekst; de vises bare i heksadesimal form."/>
+    <Item english="Password Generator" text="Passordgenerator"/>
+    <Item english="Length:" text="Lengde:"/>
+    <Item english="Number of passwords:" text="Antall passord:"/>
+    <Item english="Uppercase letters (A-Z)" text="Store bokstaver (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Små bokstaver (a-z)"/>
+    <Item english="Digits (0-9)" text="Sifre (0-9)"/>
+    <Item english="Symbols:" text="Symboler:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Utelat tegn som ligner på hverandre (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Minst ett tegn av hver type"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropi: omtrent $INT_REPLACE$ bit"/>
+    <Item english="Choose at least one kind of character." text="Velg minst én type tegn."/>
+    <Item english="Insert into Document" text="Sett inn i dokumentet"/>
+    <Item english="Show the bare key in hexadecimal" text="Vis selve nøkkelen i heksadesimal form"/>
+    <Item english="Empty: a random salt each time" text="Tomt: et tilfeldig salt hver gang"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt leser bare de første 72 bytene."/>
 </NativeLangExtra>

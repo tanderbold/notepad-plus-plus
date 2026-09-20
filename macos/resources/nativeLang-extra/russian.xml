@@ -142,4 +142,74 @@
     <Item english="View 1" text="Вид 1"/>
     <Item english="View 2" text="Вид 2"/>
     <Item english="Where" text="Где"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Хеши"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Пароль…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="Ключ HMAC (необязательно):"/>
+    <Item english="Salt (hexadecimal):" text="Соль (шестнадцатеричная):"/>
+    <Item english="Random" text="Случайная"/>
+    <Item english="Cost (4-31):" text="Стоимость (4-31):"/>
+    <Item english="Version:" text="Версия:"/>
+    <Item english="N, as a power of 2:" text="N, как степень двойки:"/>
+    <Item english="Block size (r):" text="Размер блока (r):"/>
+    <Item english="Parallelism (p):" text="Параллелизм (p):"/>
+    <Item english="Variant:" text="Вариант:"/>
+    <Item english="Memory (KiB):" text="Память (КиБ):"/>
+    <Item english="Iterations:" text="Итерации:"/>
+    <Item english="Parallelism:" text="Параллелизм:"/>
+    <Item english="Digest:" text="Хеш-функция:"/>
+    <Item english="Hash length (bytes):" text="Длина хеша (байт):"/>
+    <Item english="Hash:" text="Хеш:"/>
+    <Item english="Verify" text="Проверить"/>
+    <Item english="Hash to check the password against:" text="Хеш для проверки пароля:"/>
+    <Item english="The salt is not valid hexadecimal." text="Соль не является шестнадцатеричной записью."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="Для bcrypt нужна соль ровно из 16 байт."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Для Argon2 нужна соль не короче 8 байт."/>
+    <Item english="The hash could not be generated with these settings." text="С этими настройками хеш создать не удалось."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Это не хеш bcrypt, scrypt, Argon2 или PBKDF2."/>
+    <Item english="The password matches the hash." text="Пароль соответствует хешу."/>
+    <Item english="The password does not match the hash." text="Пароль не соответствует хешу."/>
+    <Item english="The cost must be between 4 and 31." text="Стоимость должна быть от 4 до 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Версия должна быть 2a, 2b или 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N должно быть от 2^1 до 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r и p должны быть от 1 до 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Для этих настроек нужно больше 2 ГБ памяти."/>
+    <Item english="The parallelism must be between 1 and 64." text="Параллелизм должен быть от 1 до 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Число итераций должно быть от 1 до 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Памяти должно быть не меньше 8 КиБ на каждый поток."/>
+    <Item english="These settings need more than 4 GB of memory." text="Для этих настроек нужно больше 4 ГБ памяти."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Хеш-функция должна быть SHA-1, SHA-256 или SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Число итераций должно быть от 1 до 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Длина хеша должна быть от 4 до 1024 байт."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (для URL)"/>
+    <Item english="Encode" text="Кодировать"/>
+    <Item english="Decode" text="Декодировать"/>
+    <Item english="The input is:" text="На входе:"/>
+    <Item english="Bytes in hexadecimal" text="Байты в шестнадцатеричном виде"/>
+    <Item english="Input:" text="Ввод:"/>
+    <Item english="Result:" text="Результат:"/>
+    <Item english="Text:" text="Текст:"/>
+    <Item english="Bytes in hexadecimal:" text="Байты в шестнадцатеричном виде:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Ввод не является шестнадцатеричной записью байтов."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Ввод не является корректным $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Декодированные байты не являются текстом UTF-8; они показаны только в шестнадцатеричном виде."/>
+    <Item english="Password Generator" text="Генератор паролей"/>
+    <Item english="Length:" text="Длина:"/>
+    <Item english="Number of passwords:" text="Количество паролей:"/>
+    <Item english="Uppercase letters (A-Z)" text="Заглавные буквы (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Строчные буквы (a-z)"/>
+    <Item english="Digits (0-9)" text="Цифры (0-9)"/>
+    <Item english="Symbols:" text="Символы:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Исключить похожие символы (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Хотя бы один символ каждого вида"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Энтропия: около $INT_REPLACE$ бит"/>
+    <Item english="Choose at least one kind of character." text="Выберите хотя бы один вид символов."/>
+    <Item english="Insert into Document" text="Вставить в документ"/>
+    <Item english="Show the bare key in hexadecimal" text="Показать сам ключ в шестнадцатеричном виде"/>
+    <Item english="Empty: a random salt each time" text="Пусто: каждый раз случайная соль"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt читает только первые 72 байта."/>
 </NativeLangExtra>

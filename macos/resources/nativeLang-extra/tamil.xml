@@ -140,4 +140,74 @@
     <Item english="Transparent" text="வெளிப்படையான"/>
     <Item english="View 1" text="காட்சி 1"/>
     <Item english="View 2" text="காட்சி 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="ஹாஷ்கள்"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="கடவுச்சொல்…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC திறவுகோல் (விருப்பத்தேர்வு):"/>
+    <Item english="Salt (hexadecimal):" text="சால்ட் (பதினறுமம்):"/>
+    <Item english="Random" text="சீரற்றது"/>
+    <Item english="Cost (4-31):" text="செலவு (4-31):"/>
+    <Item english="Version:" text="பதிப்பு:"/>
+    <Item english="N, as a power of 2:" text="N, 2-இன் அடுக்காக:"/>
+    <Item english="Block size (r):" text="தொகுதி அளவு (r):"/>
+    <Item english="Parallelism (p):" text="இணைச் செயலாக்கம் (p):"/>
+    <Item english="Variant:" text="மாறுபாடு:"/>
+    <Item english="Memory (KiB):" text="நினைவகம் (KiB):"/>
+    <Item english="Iterations:" text="மறுசெய்கைகள்:"/>
+    <Item english="Parallelism:" text="இணைச் செயலாக்கம்:"/>
+    <Item english="Digest:" text="ஹாஷ் செயற்கூறு:"/>
+    <Item english="Hash length (bytes):" text="ஹாஷ் நீளம் (பைட்டுகள்):"/>
+    <Item english="Hash:" text="ஹாஷ்:"/>
+    <Item english="Verify" text="சரிபார்"/>
+    <Item english="Hash to check the password against:" text="கடவுச்சொல்லைச் சரிபார்க்க வேண்டிய ஹாஷ்:"/>
+    <Item english="The salt is not valid hexadecimal." text="சால்ட் சரியான பதினறுமம் அல்ல."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt-க்கு சரியாக 16 பைட்டுகள் கொண்ட சால்ட் தேவை."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2-க்கு குறைந்தது 8 பைட்டுகள் கொண்ட சால்ட் தேவை."/>
+    <Item english="The hash could not be generated with these settings." text="இந்த அமைப்புகளுடன் ஹாஷை உருவாக்க முடியவில்லை."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="இது bcrypt, scrypt, Argon2 அல்லது PBKDF2 ஹாஷ் அல்ல."/>
+    <Item english="The password matches the hash." text="கடவுச்சொல் ஹாஷுடன் பொருந்துகிறது."/>
+    <Item english="The password does not match the hash." text="கடவுச்சொல் ஹாஷுடன் பொருந்தவில்லை."/>
+    <Item english="The cost must be between 4 and 31." text="செலவு 4 முதல் 31 வரை இருக்க வேண்டும்."/>
+    <Item english="The version must be 2a, 2b or 2y." text="பதிப்பு 2a, 2b அல்லது 2y ஆக இருக்க வேண்டும்."/>
+    <Item english="N must be between 2^1 and 2^24." text="N 2^1 முதல் 2^24 வரை இருக்க வேண்டும்."/>
+    <Item english="r and p must be between 1 and 64." text="r மற்றும் p 1 முதல் 64 வரை இருக்க வேண்டும்."/>
+    <Item english="These settings need more than 2 GB of memory." text="இந்த அமைப்புகளுக்கு 2 GB-க்கு மேல் நினைவகம் தேவை."/>
+    <Item english="The parallelism must be between 1 and 64." text="இணைச் செயலாக்கம் 1 முதல் 64 வரை இருக்க வேண்டும்."/>
+    <Item english="The iterations must be between 1 and 1000." text="மறுசெய்கைகள் 1 முதல் 1000 வரை இருக்க வேண்டும்."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="ஒவ்வொரு இழைக்கும் நினைவகம் குறைந்தது 8 KiB இருக்க வேண்டும்."/>
+    <Item english="These settings need more than 4 GB of memory." text="இந்த அமைப்புகளுக்கு 4 GB-க்கு மேல் நினைவகம் தேவை."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="ஹாஷ் செயற்கூறு SHA-1, SHA-256 அல்லது SHA-512 ஆக இருக்க வேண்டும்."/>
+    <Item english="The iterations must be between 1 and 100000000." text="மறுசெய்கைகள் 1 முதல் 100000000 வரை இருக்க வேண்டும்."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="ஹாஷ் நீளம் 4 முதல் 1024 பைட்டுகள் வரை இருக்க வேண்டும்."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-பாதுகாப்பானது)"/>
+    <Item english="Encode" text="என்கோட் செய்"/>
+    <Item english="Decode" text="டிகோட் செய்"/>
+    <Item english="The input is:" text="உள்ளீட்டு வகை:"/>
+    <Item english="Bytes in hexadecimal" text="பதினறுமத்தில் பைட்டுகள்"/>
+    <Item english="Input:" text="உள்ளீடு:"/>
+    <Item english="Result:" text="முடிவு:"/>
+    <Item english="Text:" text="உரை:"/>
+    <Item english="Bytes in hexadecimal:" text="பதினறுமத்தில் பைட்டுகள்:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="உள்ளீடு பதினறுமத்தில் எழுதப்பட்ட பைட்டுகள் அல்ல."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="உள்ளீடு சரியான $STR_REPLACE$ அல்ல."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="டிகோட் செய்த பைட்டுகள் UTF-8 உரை அல்ல; அவை பதினறுமத்தில் மட்டுமே காட்டப்படுகின்றன."/>
+    <Item english="Password Generator" text="கடவுச்சொல் உருவாக்கி"/>
+    <Item english="Length:" text="நீளம்:"/>
+    <Item english="Number of passwords:" text="கடவுச்சொற்களின் எண்ணிக்கை:"/>
+    <Item english="Uppercase letters (A-Z)" text="பேரெழுத்துகள் (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="சிற்றெழுத்துகள் (a-z)"/>
+    <Item english="Digits (0-9)" text="இலக்கங்கள் (0-9)"/>
+    <Item english="Symbols:" text="குறியீடுகள்:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="ஒரே மாதிரி தோன்றும் எழுத்துகளைத் தவிர் (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="ஒவ்வொரு வகையிலும் குறைந்தது ஒரு எழுத்து"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="என்ட்ரோபி: சுமார் $INT_REPLACE$ பிட்கள்"/>
+    <Item english="Choose at least one kind of character." text="குறைந்தது ஒரு வகை எழுத்தைத் தேர்வுசெய்யவும்."/>
+    <Item english="Insert into Document" text="ஆவணத்தில் செருகு"/>
+    <Item english="Show the bare key in hexadecimal" text="வெறும் திறவுகோலைப் பதினறுமத்தில் காட்டு"/>
+    <Item english="Empty: a random salt each time" text="காலி: ஒவ்வொரு முறையும் சீரற்ற சால்ட்"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt முதல் 72 பைட்டுகளை மட்டுமே படிக்கிறது."/>
 </NativeLangExtra>

@@ -416,6 +416,55 @@ repositories were read to establish what the commands are and how they behave.
   Function List are a split view and floating panels rather than a dockable
   layout that can be rearranged and saved.
 
+### Tools: hashes, Base encodings and passwords
+
+Upstream's Tools menu is four digests. Here they sit under **Tools > Hashes**
+with what the port adds, the ids and shortcuts of upstream's twelve commands
+kept (`ShortcutMapper` finds them one level further down):
+
+- **Digests**: MD5, SHA-1, SHA-256, SHA-512 as upstream, and SHA-224, SHA-384,
+  SHA3-256, SHA3-512, BLAKE2b and CRC-32. Each has upstream's three commands.
+  The window is upstream's dialog - the digest follows the text as it is typed,
+  "Treat each line as a separate string", Copy to Clipboard - with one addition,
+  an optional HMAC key for the digests HMAC is defined over. From files writes
+  `digest  name` lines, as `shasum` does.
+- **Password hashes**: bcrypt (cost, `$2a$`/`$2b$`/`$2y$`), scrypt (N, r, p),
+  Argon2 (id, i, d; memory, iterations, parallelism) and PBKDF2 (SHA-1, -256,
+  -512; iterations). Each has the digests' three commands and the digests'
+  window - the text, each line on its own if wanted, the result, or files
+  chosen and a line for each - with its own settings above it. The salt is
+  given in hexadecimal or, left empty, made anew for every hash; the result
+  is the string one stores, or the bare key in hexadecimal. **Verify** reads
+  any such string back and says whether the text matches it. "Into clipboard"
+  uses the kind's default settings. The work is done off the main thread, and
+  only the last thing asked for is shown. Settings that would need gigabytes
+  are refused in words; past 72 bytes bcrypt says that it reads no further.
+- **Tools > Base**: Base64, Base58 and Base32, a window each that offers no
+  other encoding; Base64's has a box for the URL alphabet, Base58's one for
+  Base58Check. Encoding takes a text or bytes written in hexadecimal
+  (`48656c`, `48 65 6C`, `0x48, 0x65`, `48:65`); decoding gives the text and
+  the bytes in hexadecimal, or the bytes alone when they are not UTF-8. The
+  window opens with the editor's selection.
+- **Tools > Password…**: length, how many, upper and lower case, digits, a
+  list of symbols one can edit, look-alikes left out, at least one of each
+  kind. Characters are drawn with `SecRandomCopyBytes` and rejection sampling,
+  so none is likelier than another; the entropy is shown; the settings are
+  remembered; Insert into Document puts the result at the caret. A hash of
+  each password can be had beside it - any of the four password hashes with
+  its default settings, or any digest - which is what one stores where the
+  password is to be checked.
+
+Where the code comes from: CommonCrypto for the SHA-2 family, HMAC and PBKDF2;
+zlib for CRC-32; Argon2 and BLAKE2b are the reference implementation
+(`macos/third_party/argon2`, CC0, built without threads); bcrypt, scrypt,
+SHA-3, Base58 and Base32 are written here (`app/CryptoTools.mm`), Blowfish's
+tables being generated from pi by `gen_blowfish_tables.py` rather than copied.
+All of it is held against published vectors in the suite: RFC 7914 for scrypt,
+the reference implementations' own output for bcrypt and Argon2, RFC 4648,
+Bitcoin's address example for Base58Check. The windows are laid out by
+constraints, so their texts fit in every language by construction, and the
+suite checks that they do.
+
 ### Plugins: what was decided
 
 Notepad++'s plugins are Windows DLLs. A plugin exports `setInfo`,
@@ -661,6 +710,9 @@ macos/
 ├── gen_features.sh    regenerates FEATURES.md from the Windows menu resource
 ├── test.sh            builds if needed, then runs the built-in suite
 ├── train-language-model.py  fits resources/language-model.bin
+├── fetch-language-corpus.py fetches real-world code for it to learn from
+├── gen_blowfish_tables.py   regenerates app/BlowfishTables.h (bcrypt) from pi
+├── third_party/argon2       Argon2's reference implementation (CC0)
 └── app/
     ├── main.mm            entry point
     ├── AppDelegate.mm     menus, shortcuts, file/search actions, self-test
@@ -668,6 +720,8 @@ macos/
     ├── LanguageCatalog.mm  parses langs.model.xml
     ├── LanguageDetection.mm a language from a file's contents
     ├── LanguageModel.mm    reads the trained model
+    ├── CryptoTools.mm      password hashes, SHA-3, Base58/32, passwords
+    ├── ToolsWindows.mm     the windows of the Tools menu
     ├── StyleCatalog.mm     parses stylers.model.xml
     ├── LangMap.h           generated: language -> Lexilla lexer ID
     └── Info.plist          bundle metadata, plain-text/source-code types

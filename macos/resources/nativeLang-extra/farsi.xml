@@ -141,4 +141,74 @@
     <Item english="Transparent" text="پشت نما"/>
     <Item english="View 1" text="نمای 1"/>
     <Item english="View 2" text="نمای 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="هش ها"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="رمز عبور…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="کلید HMAC (اختیاری):"/>
+    <Item english="Salt (hexadecimal):" text="نمک (هگزادسیمال):"/>
+    <Item english="Random" text="تصادفی"/>
+    <Item english="Cost (4-31):" text="هزینه (4-31):"/>
+    <Item english="Version:" text="نسخه:"/>
+    <Item english="N, as a power of 2:" text="N، به صورت توانی از 2:"/>
+    <Item english="Block size (r):" text="اندازه بلوک (r):"/>
+    <Item english="Parallelism (p):" text="موازی سازی (p):"/>
+    <Item english="Variant:" text="گونه:"/>
+    <Item english="Memory (KiB):" text="حافظه (KiB):"/>
+    <Item english="Iterations:" text="تکرارها:"/>
+    <Item english="Parallelism:" text="موازی سازی:"/>
+    <Item english="Digest:" text="تابع هش:"/>
+    <Item english="Hash length (bytes):" text="طول هش (بایت):"/>
+    <Item english="Hash:" text="هش:"/>
+    <Item english="Verify" text="بررسی"/>
+    <Item english="Hash to check the password against:" text="هشی که رمز عبور با آن بررسی می شود:"/>
+    <Item english="The salt is not valid hexadecimal." text="نمک هگزادسیمال معتبر نیست."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt به نمکی دقیقا 16 بایتی نیاز دارد."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 به نمکی با حداقل 8 بایت نیاز دارد."/>
+    <Item english="The hash could not be generated with these settings." text="با این تنظیمات نمی توان هش را تولید کرد."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="این یک هش bcrypt، scrypt، Argon2 یا PBKDF2 نیست."/>
+    <Item english="The password matches the hash." text="رمز عبور با هش مطابقت دارد."/>
+    <Item english="The password does not match the hash." text="رمز عبور با هش مطابقت ندارد."/>
+    <Item english="The cost must be between 4 and 31." text="هزینه باید بین 4 و 31 باشد."/>
+    <Item english="The version must be 2a, 2b or 2y." text="نسخه باید 2a، 2b یا 2y باشد."/>
+    <Item english="N must be between 2^1 and 2^24." text="N باید بین 2^1 و 2^24 باشد."/>
+    <Item english="r and p must be between 1 and 64." text="r و p باید بین 1 و 64 باشند."/>
+    <Item english="These settings need more than 2 GB of memory." text="این تنظیمات به بیش از 2 GB حافظه نیاز دارد."/>
+    <Item english="The parallelism must be between 1 and 64." text="موازی سازی باید بین 1 و 64 باشد."/>
+    <Item english="The iterations must be between 1 and 1000." text="تعداد تکرارها باید بین 1 و 1000 باشد."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="حافظه باید برای هر رشته حداقل 8 KiB باشد."/>
+    <Item english="These settings need more than 4 GB of memory." text="این تنظیمات به بیش از 4 GB حافظه نیاز دارد."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="تابع هش باید SHA-1، SHA-256 یا SHA-512 باشد."/>
+    <Item english="The iterations must be between 1 and 100000000." text="تعداد تکرارها باید بین 1 و 100000000 باشد."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="طول هش باید بین 4 و 1024 بایت باشد."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (ایمن برای URL)"/>
+    <Item english="Encode" text="رمزگذاری"/>
+    <Item english="Decode" text="رمزگشایی"/>
+    <Item english="The input is:" text="نوع ورودی:"/>
+    <Item english="Bytes in hexadecimal" text="بایت ها به صورت هگزادسیمال"/>
+    <Item english="Input:" text="ورودی:"/>
+    <Item english="Result:" text="نتیجه:"/>
+    <Item english="Text:" text="متن:"/>
+    <Item english="Bytes in hexadecimal:" text="بایت ها به صورت هگزادسیمال:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="ورودی بایت های نوشته شده به صورت هگزادسیمال نیست."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="ورودی $STR_REPLACE$ معتبر نیست."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="بایت های رمزگشایی شده متن UTF-8 نیستند؛ فقط به صورت هگزادسیمال نمایش داده می شوند."/>
+    <Item english="Password Generator" text="تولیدکننده رمز عبور"/>
+    <Item english="Length:" text="طول:"/>
+    <Item english="Number of passwords:" text="تعداد رمزهای عبور:"/>
+    <Item english="Uppercase letters (A-Z)" text="حروف بزرگ (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="حروف کوچک (a-z)"/>
+    <Item english="Digits (0-9)" text="ارقام (0-9)"/>
+    <Item english="Symbols:" text="نمادها:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="حذف کاراکترهای مشابه (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="حداقل یک کاراکتر از هر نوع"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="آنتروپی: حدود $INT_REPLACE$ بیت"/>
+    <Item english="Choose at least one kind of character." text="حداقل یک نوع کاراکتر را انتخاب کنید."/>
+    <Item english="Insert into Document" text="درج در سند"/>
+    <Item english="Show the bare key in hexadecimal" text="نمایش خود کلید به صورت هگزادسیمال"/>
+    <Item english="Empty: a random salt each time" text="خالی: هر بار یک نمک تصادفی"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt فقط 72 بایت اول را می خواند."/>
 </NativeLangExtra>

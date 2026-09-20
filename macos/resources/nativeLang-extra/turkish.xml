@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Saydam"/>
     <Item english="View 1" text="Görünüm 1"/>
     <Item english="View 2" text="Görünüm 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Karmalar"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Parola…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC anahtarı (isteğe bağlı):"/>
+    <Item english="Salt (hexadecimal):" text="Tuz (onaltılık):"/>
+    <Item english="Random" text="Rastgele"/>
+    <Item english="Cost (4-31):" text="Maliyet (4-31):"/>
+    <Item english="Version:" text="Versiyon:"/>
+    <Item english="N, as a power of 2:" text="N, 2'nin kuvveti olarak:"/>
+    <Item english="Block size (r):" text="Blok boyutu (r):"/>
+    <Item english="Parallelism (p):" text="Paralellik (p):"/>
+    <Item english="Variant:" text="Varyant:"/>
+    <Item english="Memory (KiB):" text="Bellek (KiB):"/>
+    <Item english="Iterations:" text="Yinelemeler:"/>
+    <Item english="Parallelism:" text="Paralellik:"/>
+    <Item english="Digest:" text="Karma işlevi:"/>
+    <Item english="Hash length (bytes):" text="Karma uzunluğu (bayt):"/>
+    <Item english="Hash:" text="Karma:"/>
+    <Item english="Verify" text="Doğrula"/>
+    <Item english="Hash to check the password against:" text="Parolanın karşılaştırılacağı karma:"/>
+    <Item english="The salt is not valid hexadecimal." text="Tuz geçerli bir onaltılık değer değil."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt tam olarak 16 baytlık bir tuz gerektirir."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 en az 8 baytlık bir tuz gerektirir."/>
+    <Item english="The hash could not be generated with these settings." text="Karma bu ayarlarla üretilemedi."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Bu bir bcrypt, scrypt, Argon2 veya PBKDF2 karması değil."/>
+    <Item english="The password matches the hash." text="Parola karmayla eşleşiyor."/>
+    <Item english="The password does not match the hash." text="Parola karmayla eşleşmiyor."/>
+    <Item english="The cost must be between 4 and 31." text="Maliyet 4 ile 31 arasında olmalıdır."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Versiyon 2a, 2b veya 2y olmalıdır."/>
+    <Item english="N must be between 2^1 and 2^24." text="N, 2^1 ile 2^24 arasında olmalıdır."/>
+    <Item english="r and p must be between 1 and 64." text="r ve p 1 ile 64 arasında olmalıdır."/>
+    <Item english="These settings need more than 2 GB of memory." text="Bu ayarlar 2 GB'tan fazla bellek gerektirir."/>
+    <Item english="The parallelism must be between 1 and 64." text="Paralellik 1 ile 64 arasında olmalıdır."/>
+    <Item english="The iterations must be between 1 and 1000." text="Yineleme sayısı 1 ile 1000 arasında olmalıdır."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Bellek her iş parçacığı için en az 8 KiB olmalıdır."/>
+    <Item english="These settings need more than 4 GB of memory." text="Bu ayarlar 4 GB'tan fazla bellek gerektirir."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Karma işlevi SHA-1, SHA-256 veya SHA-512 olmalıdır."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Yineleme sayısı 1 ile 100000000 arasında olmalıdır."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Karma uzunluğu 4 ile 1024 bayt arasında olmalıdır."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL için güvenli)"/>
+    <Item english="Encode" text="Kodla"/>
+    <Item english="Decode" text="Kodu Çöz"/>
+    <Item english="The input is:" text="Girdi türü:"/>
+    <Item english="Bytes in hexadecimal" text="Onaltılık baytlar"/>
+    <Item english="Input:" text="Girdi:"/>
+    <Item english="Result:" text="Sonuç:"/>
+    <Item english="Text:" text="Metin:"/>
+    <Item english="Bytes in hexadecimal:" text="Onaltılık baytlar:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Girdi, onaltılık olarak yazılmış baytlar değil."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Girdi geçerli bir $STR_REPLACE$ değil."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Çözülen baytlar UTF-8 metni değil; yalnızca onaltılık olarak gösteriliyor."/>
+    <Item english="Password Generator" text="Parola Üretici"/>
+    <Item english="Length:" text="Uzunluk:"/>
+    <Item english="Number of passwords:" text="Parola sayısı:"/>
+    <Item english="Uppercase letters (A-Z)" text="Büyük harfler (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Küçük harfler (a-z)"/>
+    <Item english="Digits (0-9)" text="Rakamlar (0-9)"/>
+    <Item english="Symbols:" text="Semboller:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Birbirine benzeyen karakterleri çıkar (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Her türden en az bir karakter"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropi: yaklaşık $INT_REPLACE$ bit"/>
+    <Item english="Choose at least one kind of character." text="En az bir karakter türü seçin."/>
+    <Item english="Insert into Document" text="Belgeye Ekle"/>
+    <Item english="Show the bare key in hexadecimal" text="Yalın anahtarı onaltılık olarak göster"/>
+    <Item english="Empty: a random salt each time" text="Boş: her seferinde rastgele tuz"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt yalnızca ilk 72 baytı okur."/>
 </NativeLangExtra>

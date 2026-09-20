@@ -141,4 +141,74 @@
     <Item english="Transparent" text="Ansparenttray"/>
     <Item english="View 1" text="Iewvay 1"/>
     <Item english="View 2" text="Iewvay 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Asheshay"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Asswordpay…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC eykay (optionalyay):"/>
+    <Item english="Salt (hexadecimal):" text="Altsay (exadecimalhay):"/>
+    <Item english="Random" text="Andomray"/>
+    <Item english="Cost (4-31):" text="Ostcay (4-31):"/>
+    <Item english="Version:" text="Ersionvay:"/>
+    <Item english="N, as a power of 2:" text="N, asyay ayay owerpay ofyay 2:"/>
+    <Item english="Block size (r):" text="Ockblay izesay (r):"/>
+    <Item english="Parallelism (p):" text="Arallelismpay (p):"/>
+    <Item english="Variant:" text="Ariantvay:"/>
+    <Item english="Memory (KiB):" text="Emorymay (KiB):"/>
+    <Item english="Iterations:" text="Iterationsyay:"/>
+    <Item english="Parallelism:" text="Arallelismpay:"/>
+    <Item english="Digest:" text="Igestday:"/>
+    <Item english="Hash length (bytes):" text="Ashhay engthlay (ytesbay):"/>
+    <Item english="Hash:" text="Ashhay:"/>
+    <Item english="Verify" text="Erifyvay"/>
+    <Item english="Hash to check the password against:" text="Ashhay otay eckchay ethay asswordpay againstyay:"/>
+    <Item english="The salt is not valid hexadecimal." text="Ethay altsay isyay otnay alidvay exadecimalhay."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt akestay ayay altsay ofyay exactlyyay 16 ytesbay."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 akestay ayay altsay ofyay atyay eastlay 8 ytesbay."/>
+    <Item english="The hash could not be generated with these settings." text="Ethay ashhay ouldcay otnay ebay eneratedgay ithway esethay ettingssay."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Isthay isyay otnay ayay bcrypt, scrypt, Argon2 oryay PBKDF2 ashhay."/>
+    <Item english="The password matches the hash." text="Ethay asswordpay atchesmay ethay ashhay."/>
+    <Item english="The password does not match the hash." text="Ethay asswordpay oesday otnay atchmay ethay ashhay."/>
+    <Item english="The cost must be between 4 and 31." text="Ethay ostcay ustmay ebay etweenbay 4 andyay 31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Ethay ersionvay ustmay ebay 2a, 2b oryay 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N ustmay ebay etweenbay 2^1 andyay 2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r andyay p ustmay ebay etweenbay 1 andyay 64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Esethay ettingssay eednay oremay anthay 2 GB ofyay emorymay."/>
+    <Item english="The parallelism must be between 1 and 64." text="Ethay arallelismpay ustmay ebay etweenbay 1 andyay 64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Ethay iterationsyay ustmay ebay etweenbay 1 andyay 1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Ethay emorymay ustmay ebay atyay eastlay 8 KiB orfay eachyay anelay."/>
+    <Item english="These settings need more than 4 GB of memory." text="Esethay ettingssay eednay oremay anthay 4 GB ofyay emorymay."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Ethay igestday ustmay ebay SHA-1, SHA-256 oryay SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Ethay iterationsyay ustmay ebay etweenbay 1 andyay 100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Ethay ashhay engthlay ustmay ebay etweenbay 4 andyay 1024 ytesbay."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-afesay)"/>
+    <Item english="Encode" text="Encodeyay"/>
+    <Item english="Decode" text="Ecodeday"/>
+    <Item english="The input is:" text="Ethay inputyay isyay:"/>
+    <Item english="Bytes in hexadecimal" text="Ytesbay inyay exadecimalhay"/>
+    <Item english="Input:" text="Inputyay:"/>
+    <Item english="Result:" text="Esultray:"/>
+    <Item english="Text:" text="Exttay:"/>
+    <Item english="Bytes in hexadecimal:" text="Ytesbay inyay exadecimalhay:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Ethay inputyay isyay otnay ytesbay ittenwray inyay exadecimalhay."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Ethay inputyay isyay otnay alidvay $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Ethay ecodedday ytesbay areyay otnay UTF-8 exttay; eythay areyay ownshay inyay exadecimalhay onlyyay."/>
+    <Item english="Password Generator" text="Asswordpay Eneratorgay"/>
+    <Item english="Length:" text="Engthlay:"/>
+    <Item english="Number of passwords:" text="Umbernay ofyay asswordspay:"/>
+    <Item english="Uppercase letters (A-Z)" text="Uppercaseyay etterslay (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Owercaselay etterslay (a-z)"/>
+    <Item english="Digits (0-9)" text="Igitsday (0-9)"/>
+    <Item english="Symbols:" text="Ymbolssay:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Eavelay outyay aracterschay atthay ooklay alikeyay (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Atyay eastlay oneyay aracterchay ofyay eachyay indkay"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropyyay: aboutyay $INT_REPLACE$ itsbay"/>
+    <Item english="Choose at least one kind of character." text="Oosechay atyay eastlay oneyay indkay ofyay aracterchay."/>
+    <Item english="Insert into Document" text="Insertyay intoyay Ocumentday"/>
+    <Item english="Show the bare key in hexadecimal" text="Owshay ethay arebay eykay inyay exadecimalhay"/>
+    <Item english="Empty: a random salt each time" text="Emptyyay: ayay andomray altsay eachyay imetay"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt eadsray onlyyay ethay irstfay 72 ytesbay."/>
 </NativeLangExtra>

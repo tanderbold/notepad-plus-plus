@@ -136,4 +136,73 @@
     <Item english="Transparent" text="විනිවිද පෙනෙන"/>
     <Item english="View 1" text="පෙනුම 1"/>
     <Item english="View 2" text="පෙනුම 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="හෑෂ්"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="මුරපදය…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC යතුර (විකල්ප):"/>
+    <Item english="Salt (hexadecimal):" text="සෝල්ට් (ෂඩ්දශම):"/>
+    <Item english="Random" text="අහඹු"/>
+    <Item english="Cost (4-31):" text="පිරිවැය (4-31):"/>
+    <Item english="Version:" text="අනුවාදය:"/>
+    <Item english="N, as a power of 2:" text="N, 2 හි බලයක් ලෙස:"/>
+    <Item english="Block size (r):" text="බ්ලොක් ප්‍රමාණය (r):"/>
+    <Item english="Parallelism (p):" text="සමාන්තරතාව (p):"/>
+    <Item english="Variant:" text="ප්‍රභේදය:"/>
+    <Item english="Memory (KiB):" text="මතකය (KiB):"/>
+    <Item english="Iterations:" text="පුනරාවර්තන:"/>
+    <Item english="Parallelism:" text="සමාන්තරතාව:"/>
+    <Item english="Digest:" text="හෑෂ් ශ්‍රිතය:"/>
+    <Item english="Hash length (bytes):" text="හෑෂ් දිග (බයිට):"/>
+    <Item english="Hash:" text="හෑෂ්:"/>
+    <Item english="Verify" text="සත්‍යාපනය කරන්න"/>
+    <Item english="Hash to check the password against:" text="මුරපදය පරීක්ෂා කළ යුතු හෑෂ් එක:"/>
+    <Item english="The salt is not valid hexadecimal." text="සෝල්ට් එක වලංගු ෂඩ්දශම නොවේ."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt සඳහා හරියටම බයිට 16 ක සෝල්ට් එකක් අවශ්‍යයි."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 සඳහා අවම වශයෙන් බයිට 8 ක සෝල්ට් එකක් අවශ්‍යයි."/>
+    <Item english="The hash could not be generated with these settings." text="මෙම සිටවුම් සමඟ හෑෂ් එක ජනනය කළ නොහැකි විය."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="මෙය bcrypt, scrypt, Argon2 හෝ PBKDF2 හෑෂ් එකක් නොවේ."/>
+    <Item english="The password matches the hash." text="මුරපදය හෑෂ් එකට ගැළපේ."/>
+    <Item english="The password does not match the hash." text="මුරපදය හෑෂ් එකට නොගැළපේ."/>
+    <Item english="The cost must be between 4 and 31." text="පිරිවැය 4 සහ 31 අතර විය යුතුය."/>
+    <Item english="The version must be 2a, 2b or 2y." text="අනුවාදය 2a, 2b හෝ 2y විය යුතුය."/>
+    <Item english="N must be between 2^1 and 2^24." text="N 2^1 සහ 2^24 අතර විය යුතුය."/>
+    <Item english="r and p must be between 1 and 64." text="r සහ p 1 සහ 64 අතර විය යුතුය."/>
+    <Item english="These settings need more than 2 GB of memory." text="මෙම සිටවුම් සඳහා 2 GB ට වඩා මතකය අවශ්‍යයි."/>
+    <Item english="The parallelism must be between 1 and 64." text="සමාන්තරතාව 1 සහ 64 අතර විය යුතුය."/>
+    <Item english="The iterations must be between 1 and 1000." text="පුනරාවර්තන 1 සහ 1000 අතර විය යුතුය."/>
+    <Item english="These settings need more than 4 GB of memory." text="මෙම සිටවුම් සඳහා 4 GB ට වඩා මතකය අවශ්‍යයි."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="හෑෂ් ශ්‍රිතය SHA-1, SHA-256 හෝ SHA-512 විය යුතුය."/>
+    <Item english="The iterations must be between 1 and 100000000." text="පුනරාවර්තන 1 සහ 100000000 අතර විය යුතුය."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="හෑෂ් දිග බයිට 4 සහ 1024 අතර විය යුතුය."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-ආරක්ෂිත)"/>
+    <Item english="Encode" text="කේතනය කරන්න"/>
+    <Item english="Decode" text="විකේතනය කරන්න"/>
+    <Item english="The input is:" text="ආදාන වර්ගය:"/>
+    <Item english="Bytes in hexadecimal" text="ෂඩ්දශම බයිට"/>
+    <Item english="Input:" text="ආදානය:"/>
+    <Item english="Result:" text="ප්‍රතිඵලය:"/>
+    <Item english="Text:" text="පාඨය:"/>
+    <Item english="Bytes in hexadecimal:" text="ෂඩ්දශම බයිට:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="ආදානය ෂඩ්දශමයෙන් ලියූ බයිට නොවේ."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="ආදානය වලංගු $STR_REPLACE$ නොවේ."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="විකේතනය කළ බයිට UTF-8 පාඨයක් නොවේ; ඒවා පෙන්වන්නේ ෂඩ්දශමයෙන් පමණි."/>
+    <Item english="Password Generator" text="මුරපද ජනකය"/>
+    <Item english="Length:" text="දිග:"/>
+    <Item english="Number of passwords:" text="මුරපද ගණන:"/>
+    <Item english="Uppercase letters (A-Z)" text="ලොකු අකුරු (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="කුඩා අකුරු (a-z)"/>
+    <Item english="Digits (0-9)" text="ඉලක්කම් (0-9)"/>
+    <Item english="Symbols:" text="සංකේත:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="එක සමාන ලෙස පෙනෙන අක්ෂර අත්හරින්න (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="එක් එක් වර්ගයෙන් අවම වශයෙන් එක් අක්ෂරයක්"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="එන්ට්‍රොපිය: බිටු $INT_REPLACE$ ක් පමණ"/>
+    <Item english="Choose at least one kind of character." text="අවම වශයෙන් එක් අක්ෂර වර්ගයක් තෝරන්න."/>
+    <Item english="Insert into Document" text="ලේඛනයට ඇතුළු කරන්න"/>
+    <Item english="Show the bare key in hexadecimal" text="යතුර පමණක් ෂඩ්දශමයෙන් පෙන්වන්න"/>
+    <Item english="Empty: a random salt each time" text="හිස්: සෑම වරම අහඹු සෝල්ට් එකක්"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt කියවන්නේ පළමු බයිට 72 පමණි."/>
 </NativeLangExtra>

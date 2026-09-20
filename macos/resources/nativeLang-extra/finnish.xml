@@ -139,4 +139,74 @@
     <Item english="Transparent" text="Läpinäkyvä"/>
     <Item english="View 1" text="Näkymä 1"/>
     <Item english="View 2" text="Näkymä 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Tiivisteet"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Salasana…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC-avain (valinnainen):"/>
+    <Item english="Salt (hexadecimal):" text="Suola (heksadesimaali):"/>
+    <Item english="Random" text="Satunnainen"/>
+    <Item english="Cost (4-31):" text="Kustannus (4-31):"/>
+    <Item english="Version:" text="Versio:"/>
+    <Item english="N, as a power of 2:" text="N, kakkosen potenssina:"/>
+    <Item english="Block size (r):" text="Lohkon koko (r):"/>
+    <Item english="Parallelism (p):" text="Rinnakkaisuus (p):"/>
+    <Item english="Variant:" text="Variantti:"/>
+    <Item english="Memory (KiB):" text="Muisti (KiB):"/>
+    <Item english="Iterations:" text="Iteraatiot:"/>
+    <Item english="Parallelism:" text="Rinnakkaisuus:"/>
+    <Item english="Digest:" text="Tiivistefunktio:"/>
+    <Item english="Hash length (bytes):" text="Tiivisteen pituus (tavua):"/>
+    <Item english="Hash:" text="Tiiviste:"/>
+    <Item english="Verify" text="Tarkista"/>
+    <Item english="Hash to check the password against:" text="Tiiviste, johon salasanaa verrataan:"/>
+    <Item english="The salt is not valid hexadecimal." text="Suola ei ole kelvollista heksadesimaalia."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt vaatii täsmälleen 16 tavun suolan."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 vaatii vähintään 8 tavun suolan."/>
+    <Item english="The hash could not be generated with these settings." text="Tiivistettä ei voitu luoda näillä asetuksilla."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Tämä ei ole bcrypt-, scrypt-, Argon2- tai PBKDF2-tiiviste."/>
+    <Item english="The password matches the hash." text="Salasana vastaa tiivistettä."/>
+    <Item english="The password does not match the hash." text="Salasana ei vastaa tiivistettä."/>
+    <Item english="The cost must be between 4 and 31." text="Kustannuksen on oltava välillä 4–31."/>
+    <Item english="The version must be 2a, 2b or 2y." text="Version on oltava 2a, 2b tai 2y."/>
+    <Item english="N must be between 2^1 and 2^24." text="N:n on oltava välillä 2^1–2^24."/>
+    <Item english="r and p must be between 1 and 64." text="r:n ja p:n on oltava välillä 1–64."/>
+    <Item english="These settings need more than 2 GB of memory." text="Nämä asetukset vaativat yli 2 GB muistia."/>
+    <Item english="The parallelism must be between 1 and 64." text="Rinnakkaisuuden on oltava välillä 1–64."/>
+    <Item english="The iterations must be between 1 and 1000." text="Iteraatioiden määrän on oltava välillä 1–1000."/>
+    <Item english="The memory must be at least 8 KiB for each lane." text="Muistia on oltava vähintään 8 KiB kutakin säiettä kohden."/>
+    <Item english="These settings need more than 4 GB of memory." text="Nämä asetukset vaativat yli 4 GB muistia."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="Tiivistefunktion on oltava SHA-1, SHA-256 tai SHA-512."/>
+    <Item english="The iterations must be between 1 and 100000000." text="Iteraatioiden määrän on oltava välillä 1–100000000."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="Tiivisteen pituuden on oltava välillä 4–1024 tavua."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-turvallinen)"/>
+    <Item english="Encode" text="Koodaa"/>
+    <Item english="Decode" text="Dekoodaa"/>
+    <Item english="The input is:" text="Syöte on:"/>
+    <Item english="Bytes in hexadecimal" text="Tavut heksadesimaalina"/>
+    <Item english="Input:" text="Syöte:"/>
+    <Item english="Result:" text="Tulos:"/>
+    <Item english="Text:" text="Teksti:"/>
+    <Item english="Bytes in hexadecimal:" text="Tavut heksadesimaalina:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="Syöte ei ole heksadesimaalina kirjoitettuja tavuja."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="Syöte ei ole kelvollista $STR_REPLACE$-koodausta."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Dekoodatut tavut eivät ole UTF-8-tekstiä; ne näytetään vain heksadesimaalina."/>
+    <Item english="Password Generator" text="Salasanageneraattori"/>
+    <Item english="Length:" text="Pituus:"/>
+    <Item english="Number of passwords:" text="Salasanojen määrä:"/>
+    <Item english="Uppercase letters (A-Z)" text="Isot kirjaimet (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Pienet kirjaimet (a-z)"/>
+    <Item english="Digits (0-9)" text="Numerot (0-9)"/>
+    <Item english="Symbols:" text="Erikoismerkit:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Jätä pois toisiaan muistuttavat merkit (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Vähintään yksi merkki kutakin lajia"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropia: noin $INT_REPLACE$ bittiä"/>
+    <Item english="Choose at least one kind of character." text="Valitse vähintään yksi merkkilaji."/>
+    <Item english="Insert into Document" text="Lisää asiakirjaan"/>
+    <Item english="Show the bare key in hexadecimal" text="Näytä pelkkä avain heksadesimaalina"/>
+    <Item english="Empty: a random salt each time" text="Tyhjä: joka kerta satunnainen suola"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt lukee vain ensimmäiset 72 tavua."/>
 </NativeLangExtra>

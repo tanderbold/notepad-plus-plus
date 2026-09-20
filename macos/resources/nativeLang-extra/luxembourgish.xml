@@ -122,4 +122,68 @@
     <Item english="Transparent" text="Transparent"/>
     <Item english="View 1" text="Usiicht 1"/>
     <Item english="View 2" text="Usiicht 2"/>
+    <!-- Tools: Hashes, Base, Password -->
+    <Item english="Hashes" text="Hashes"/>
+    <Item english="Base" text="Base"/>
+    <Item english="Password…" text="Passwuert…"/>
+    <Item english="Base64…" text="Base64…"/>
+    <Item english="Base58…" text="Base58…"/>
+    <Item english="Base32…" text="Base32…"/>
+    <Item english="HMAC key (optional):" text="HMAC-Schlëssel (optional):"/>
+    <Item english="Salt (hexadecimal):" text="Salt (hexadezimal):"/>
+    <Item english="Random" text="Zoufälleg"/>
+    <Item english="Version:" text="Versioun:"/>
+    <Item english="N, as a power of 2:" text="N, als Potenz vun 2:"/>
+    <Item english="Block size (r):" text="Blockgréisst (r):"/>
+    <Item english="Variant:" text="Variant:"/>
+    <Item english="Memory (KiB):" text="Späicher (KiB):"/>
+    <Item english="Iterations:" text="Iteratiounen:"/>
+    <Item english="Digest:" text="Hashfunktioun:"/>
+    <Item english="Hash length (bytes):" text="Hash-Längt (Bytes):"/>
+    <Item english="Hash:" text="Hash:"/>
+    <Item english="Verify" text="Iwwerpréiwen"/>
+    <Item english="Hash to check the password against:" text="Hash, géint deen d'Passwuert gepréift gëtt:"/>
+    <Item english="The salt is not valid hexadecimal." text="De Salt ass net gülteg hexadezimal."/>
+    <Item english="bcrypt takes a salt of exactly 16 bytes." text="bcrypt brauch e Salt vu genee 16 Bytes."/>
+    <Item english="Argon2 takes a salt of at least 8 bytes." text="Argon2 brauch e Salt vu mindestens 8 Bytes."/>
+    <Item english="The hash could not be generated with these settings." text="Den Hash konnt mat dësen Astellungen net generéiert ginn."/>
+    <Item english="This is not a bcrypt, scrypt, Argon2 or PBKDF2 hash." text="Dëst ass kee bcrypt-, scrypt-, Argon2- oder PBKDF2-Hash."/>
+    <Item english="The password matches the hash." text="D'Passwuert passt zum Hash."/>
+    <Item english="The password does not match the hash." text="D'Passwuert passt net zum Hash."/>
+    <Item english="The version must be 2a, 2b or 2y." text="D'Versioun muss 2a, 2b oder 2y sinn."/>
+    <Item english="N must be between 2^1 and 2^24." text="N muss tëscht 2^1 an 2^24 leien."/>
+    <Item english="r and p must be between 1 and 64." text="r a p mussen tëscht 1 a 64 leien."/>
+    <Item english="These settings need more than 2 GB of memory." text="Dës Astellunge brauche méi wéi 2 GB Späicher."/>
+    <Item english="The iterations must be between 1 and 1000." text="D'Unzuel vun den Iteratioune muss tëscht 1 an 1000 leien."/>
+    <Item english="These settings need more than 4 GB of memory." text="Dës Astellunge brauche méi wéi 4 GB Späicher."/>
+    <Item english="The digest must be SHA-1, SHA-256 or SHA-512." text="D'Hashfunktioun muss SHA-1, SHA-256 oder SHA-512 sinn."/>
+    <Item english="The iterations must be between 1 and 100000000." text="D'Unzuel vun den Iteratioune muss tëscht 1 an 100000000 leien."/>
+    <Item english="The hash length must be between 4 and 1024 bytes." text="D'Hash-Längt muss tëscht 4 an 1024 Bytes leien."/>
+    <Item english="Base64 (URL-safe)" text="Base64 (URL-sécher)"/>
+    <Item english="Encode" text="Kodéieren"/>
+    <Item english="Decode" text="Dekodéieren"/>
+    <Item english="The input is:" text="D'Agab ass:"/>
+    <Item english="Bytes in hexadecimal" text="Bytes am Hexadezimalformat"/>
+    <Item english="Input:" text="Agab:"/>
+    <Item english="Result:" text="Resultat:"/>
+    <Item english="Text:" text="Text:"/>
+    <Item english="Bytes in hexadecimal:" text="Bytes am Hexadezimalformat:"/>
+    <Item english="The input is not bytes written in hexadecimal." text="D'Agab besteet net aus hexadezimal geschriwwene Bytes."/>
+    <Item english="The input is not valid $STR_REPLACE$." text="D'Agab ass kee gültege $STR_REPLACE$."/>
+    <Item english="The decoded bytes are not UTF-8 text; they are shown in hexadecimal only." text="Déi dekodéiert Bytes si keen UTF-8-Text; si ginn nëmmen hexadezimal ugewisen."/>
+    <Item english="Password Generator" text="Passwuert-Generator"/>
+    <Item english="Length:" text="Längt:"/>
+    <Item english="Number of passwords:" text="Unzuel vu Passwierder:"/>
+    <Item english="Uppercase letters (A-Z)" text="Groussbuschtawen (A-Z)"/>
+    <Item english="Lowercase letters (a-z)" text="Klengbuschtawen (a-z)"/>
+    <Item english="Digits (0-9)" text="Zifferen (0-9)"/>
+    <Item english="Symbols:" text="Symboler:"/>
+    <Item english="Leave out characters that look alike (O 0 o I l 1)" text="Zeechen ewechloossen, déi sech gläichen (O 0 o I l 1)"/>
+    <Item english="At least one character of each kind" text="Mindestens een Zeechen vun all Zort"/>
+    <Item english="Entropy: about $INT_REPLACE$ bits" text="Entropie: ongeféier $INT_REPLACE$ Bits"/>
+    <Item english="Choose at least one kind of character." text="Wielt mindestens eng Zort Zeechen."/>
+    <Item english="Insert into Document" text="An d'Dokument afügen"/>
+    <Item english="Show the bare key in hexadecimal" text="De renge Schlëssel hexadezimal uweisen"/>
+    <Item english="Empty: a random salt each time" text="Eidel: all Kéier en zoufällege Salt"/>
+    <Item english="bcrypt reads only the first 72 bytes." text="bcrypt liest nëmmen déi éischt 72 Bytes."/>
 </NativeLangExtra>
